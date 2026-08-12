@@ -1,5 +1,13 @@
-<?php require 'layout_top.php'; ?>
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$currentRole = strtolower(trim((string)($_SESSION['role'] ?? '')));
+if (!isset($_SESSION['user_id']) || !in_array($currentRole, ['librarian', 'admin'], true)) {
+    header('Location: ../index.php');
+    exit;
+}
 require '../config/db_connect.php';
 
 function table_exists(mysqli $conn, string $table): bool {
@@ -1433,6 +1441,7 @@ if ($editAdditionalCopyCount > 0 && count($editNewAccessionsInput) < $editAdditi
 } else {
     $editNewAccessionsInput = [];
 }
+require 'layout_top.php';
 ?>
 
 <div class="page-top">
