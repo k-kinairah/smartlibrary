@@ -7,6 +7,7 @@ const AUTH_2FA_MAX_ATTEMPTS = 5;
 const AUTH_RESET_TOKEN_TTL_MINUTES = 15;
 const AUTH_RESET_MAX_REQUESTS_PER_HOUR = 3;
 const AUTH_RESET_MIN_SECONDS_BETWEEN_REQUESTS = 60;
+const AUTH_EMAIL_EMBED_IMAGES = false;
 
 function auth_safe_query(mysqli $conn, string $sql) {
     try {

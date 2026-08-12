@@ -44,9 +44,33 @@ function respond_json(array $payload, int $statusCode = 200): void {
     while (ob_get_level() > 0) {
         @ob_end_clean();
     }
+
     $GLOBALS['__smartlib_json_sent'] = true;
+    $json = json_encode($payload, JSON_UNESCAPED_UNICODE);
+    if ($json === false) {
+        $json = '{"status":"error","message":"Unable to encode server response."}';
+        $statusCode = 500;
+    }
+
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+
     http_response_code($statusCode);
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+        header('Content-Length: ' . strlen($json));
+        header('Connection: close');
+    }
+
+    echo $json;
+
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    } else {
+        @flush();
+    }
+
     exit;
 }
 
@@ -197,7 +221,7 @@ if ($normalizedRole === 'librarian') {
     $inlineImages = [];
 
     $logoPath = __DIR__ . '/assets/images/stjude_logo.jpg';
-    if (is_file($logoPath) && is_readable($logoPath)) {
+    if (AUTH_EMAIL_EMBED_IMAGES && is_file($logoPath) && is_readable($logoPath)) {
         $inlineImages[] = [
             'cid' => 'smartlib_logo',
             'path' => $logoPath,
