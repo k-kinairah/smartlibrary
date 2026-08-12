@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require 'config/db_connect.php';
 session_start();
 
@@ -74,7 +74,7 @@ function split_tags($genre, $course = '') {
     }
 
     if (empty($tags)) {
-        $tags = ['Featured', 'Library', 'Student Pick'];
+        $tags = ['General Collection'];
     }
 
     return array_slice(array_values(array_unique($tags)), 0, 3);
@@ -244,7 +244,6 @@ function fallback_book_by_cover($coverName) {
             'year_published' => '2021',
             'isbn' => '978-621-555-014-3',
             'description' => 'A character-driven adventure story about self-discovery, friendship, and courage while navigating open waters and uncertain choices.',
-            'rating' => '4.8',
             'location' => 'Shelf A2 - Adventure',
             'available_copies' => 4,
             'total_copies' => 6,
@@ -288,7 +287,6 @@ function fallback_book_by_cover($coverName) {
             'year_published' => '2022',
             'isbn' => '978-0-262-04630-5',
             'description' => 'A foundational textbook that covers algorithm analysis, data structures, and design techniques used in modern computing.',
-            'rating' => '4.8',
             'location' => 'Shelf C1 - Algorithms',
             'available_copies' => 3,
             'total_copies' => 5,
@@ -366,9 +364,16 @@ $book = null;
 $hasLocationTable = table_exists($conn, 'library_locations');
 $hasBookLocationId = column_exists($conn, 'books', 'location_id');
 $hasBookCallNumber = column_exists($conn, 'books', 'call_number');
+$hasCategoryTable = table_exists($conn, 'categories');
+$hasProgramTable = table_exists($conn, 'programs');
+$hasCategoryGroup = $hasCategoryTable && column_exists($conn, 'categories', 'category_group');
 
 $locationSelect = '';
 $locationJoin = '';
+$categorySelect = '';
+$categoryJoin = '';
+$programSelect = '';
+$programJoin = '';
 
 if ($hasLocationTable && $hasBookLocationId) {
     $locationSelect = ",
@@ -386,9 +391,24 @@ if ($hasBookCallNumber) {
     $locationSelect .= ', b.call_number AS db_call_number';
 }
 
+if ($hasCategoryTable) {
+    $categoryExpr = $hasCategoryGroup
+        ? "TRIM(COALESCE(NULLIF(c.category_group, ''), c.category_name))"
+        : "TRIM(c.category_name)";
+
+    $categorySelect = ",
+        {$categoryExpr} AS genre_name";
+    $categoryJoin = ' LEFT JOIN categories c ON b.category_id = c.category_id';
+}
+
+if ($hasProgramTable) {
+    $programSelect = ', p.program_name AS program_name';
+    $programJoin = ' LEFT JOIN programs p ON b.program_id = p.program_id';
+}
+
 $baseSql = "
     SELECT
-        b.*{$locationSelect},
+        b.*{$locationSelect}{$categorySelect}{$programSelect},
         (
             SELECT COUNT(*)
             FROM book_copies bc_total
@@ -400,7 +420,7 @@ $baseSql = "
             WHERE bc_avail.book_id = b.book_id
               AND bc_avail.status = 'available'
         ) AS available_copies
-    FROM books b{$locationJoin}
+    FROM books b{$locationJoin}{$categoryJoin}{$programJoin}
 ";
 
 if ($id > 0) {
@@ -431,11 +451,10 @@ if (!$book) {
     $book = [
         'title' => 'Book Preview',
         'author' => 'Library Collection',
-        'genre' => 'Featured, Library, Student Pick',
+        'genre' => 'General Collection',
         'year_published' => date('Y'),
         'isbn' => '978-000-000-000-0',
         'description' => 'Book details will appear here once records are added to your database. You can still use this layout as your final kiosk modal design.',
-        'rating' => '4.8',
         'location' => 'Main Library - Front Desk',
         'available_copies' => 1,
         'total_copies' => 1,
@@ -449,19 +468,14 @@ if (!$book) {
 
 $title = (string)pick($book, ['title'], 'Untitled Book');
 $author = (string)pick($book, ['author'], 'Unknown Author');
-$genre = (string)pick($book, ['genre'], 'Featured, Library');
-$course = (string)pick($book, ['course', 'program', 'program_name'], 'Computer Science');
+$genre = (string)pick($book, ['genre_name', 'genre', 'category_name'], 'General Collection');
+$course = (string)pick($book, ['course', 'program', 'program_name'], '');
 $year = (string)pick($book, ['year_published', 'published_year'], 'N/A');
 $isbn = (string)pick($book, ['isbn'], 'N/A');
 $description = (string)pick($book, ['description', 'summary', 'synopsis'], 'No description available yet.');
 $location = (string)pick($book, ['location'], '');
 $coverName = (string)pick($book, ['cover'], $requestedCover);
 $cover = cover_path($coverName);
-
-$ratingRaw = (string)pick($book, ['rating'], '4.8');
-$ratingDisplay = is_numeric($ratingRaw)
-    ? number_format((float)$ratingRaw, 1) . ' / 5.0'
-    : h($ratingRaw);
 
 $tags = split_tags($genre, $course);
 $availability = availability_text($book);
@@ -569,8 +583,6 @@ echo "
     <div class='book-modal-body'>
         <div class='book-modal-left'>
             <img class='book-cover-lg' src='" . h($cover) . "' alt='Book cover'>
-            " . ($canCheckout ? "<button type='button' class='checkout-btn' data-book-id='" . intval($bookId) . "'" . $checkoutDisabled . ">" . h($checkoutLabel) . "</button>" : "") . "
-            <button type='button' class='find-book-btn'>" . icon_svg('pin') . "<span>Find This Book</span></button>
         </div>
 
         <div class='book-modal-right'>
@@ -581,18 +593,28 @@ echo "
                 " . info_item('published', 'Published', $year) . "
                 " . info_item('isbn', 'ISBN', $isbn) . "
                 " . info_item('availability', 'Availability', $availability) . "
-                " . info_item('rating', 'Rating', $ratingDisplay) . "
             </div>
 
             <div class='book-description'>
                 <h3>Description</h3>
                 <p>" . h($description) . "</p>
             </div>
+
+            <div class='book-actions-inline'>
+                " . ($canCheckout ? "<button type='button' class='checkout-btn' data-book-id='" . intval($bookId) . "'" . $checkoutDisabled . ">" . h($checkoutLabel) . "</button>" : "") . "
+                <button type='button' class='find-book-btn'>" . icon_svg('pin') . "<span>Find This Book</span></button>
+            </div>
         </div>
     </div>
 </div>
 ";
 ?>
+
+
+
+
+
+
 
 
 

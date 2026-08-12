@@ -1,6 +1,7 @@
 <?php require 'layout_top.php'; ?>
 <?php
 require '../config/db_connect.php';
+require_once '../config/borrow_fine_rules.php';
 
 function qres(mysqli $conn, string $sql) {
     try {
@@ -27,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_action'])) {
             $conn->begin_transaction();
 
             $recordStmt = $conn->prepare(
-                "SELECT record_id, copy_id, status
+                "SELECT record_id, copy_id, status, due_date
                  FROM borrow_records
                  WHERE record_id = ?
                  LIMIT 1
@@ -64,11 +65,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_action'])) {
                 }
 
                 $returnDate = date('Y-m-d');
+                $dueDate = (string)($record['due_date'] ?? '');
+                $returnFine = smartlib_overdue_fine_amount($dueDate, $returnDate);
 
                 $updateRecord = $conn->prepare(
                     "UPDATE borrow_records
                      SET status = 'returned',
-                         date_returned = ?
+                         date_returned = ?,
+                         fine = ?
                      WHERE record_id = ?"
                 );
 
@@ -76,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_action'])) {
                     throw new RuntimeException('Unable to update borrow record.');
                 }
 
-                $updateRecord->bind_param('si', $returnDate, $recordId);
+                $updateRecord->bind_param('sdi', $returnDate, $returnFine, $recordId);
                 $updateRecord->execute();
                 $updateRecord->close();
 
@@ -162,13 +166,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_action'])) {
     exit;
 }
 
+sync_overdue_status_and_fines($conn);
+
 $flash = $_SESSION['borrow_flash'] ?? null;
 unset($_SESSION['borrow_flash']);
 
 $search = trim($_GET['search'] ?? '');
 $status = trim($_GET['status'] ?? '');
+$dateFilter = trim($_GET['date'] ?? '');
 $dateFrom = trim($_GET['date_from'] ?? '');
 $dateTo = trim($_GET['date_to'] ?? '');
+
+if ($dateFilter !== '') {
+    $dateFrom = $dateFilter;
+    $dateTo = $dateFilter;
+} elseif ($dateFrom !== '' && $dateFrom === $dateTo) {
+    $dateFilter = $dateFrom;
+}
 
 $where = ['1=1'];
 
@@ -202,6 +216,26 @@ if ($dateTo !== '') {
 
 $whereSql = implode(' AND ', $where);
 
+$activeStatus = in_array($status, $allowedStatus, true) ? $status : '';
+$baseFilterParams = [
+    'search' => $search,
+    'date' => $dateFilter,
+    'date_from' => $dateFilter === '' ? $dateFrom : '',
+    'date_to' => $dateFilter === '' ? $dateTo : ''
+];
+
+$buildBorrowRecordsUrl = static function (array $params): string {
+    $clean = [];
+    foreach ($params as $key => $value) {
+        $text = trim((string)$value);
+        if ($text !== '') {
+            $clean[(string)$key] = $text;
+        }
+    }
+
+    return 'borrow_records.php' . (!empty($clean) ? ('?' . http_build_query($clean)) : '');
+};
+
 $totalRecords = 0;
 $borrowedCount = 0;
 $returnedCount = 0;
@@ -232,6 +266,14 @@ $resMissing = qres($conn, "SELECT COUNT(*) AS total FROM borrow_records WHERE st
 if ($resMissing && ($r = $resMissing->fetch_assoc())) {
     $missingCount = (int)($r['total'] ?? 0);
 }
+
+$chipMetrics = [
+    ['status' => '', 'title' => 'Total Records', 'count' => $totalRecords],
+    ['status' => 'borrowed', 'title' => 'Borrowed', 'count' => $borrowedCount],
+    ['status' => 'returned', 'title' => 'Returned', 'count' => $returnedCount],
+    ['status' => 'overdue', 'title' => 'Overdue', 'count' => $overdueCount],
+    ['status' => 'missing', 'title' => 'Missing', 'count' => $missingCount]
+];
 
 $records = qres(
     $conn,
@@ -273,46 +315,34 @@ $records = qres(
     </section>
 <?php endif; ?>
 
-<section class="stats-grid">
-    <article class="stat-card glass-card">
-        <h3>Total Records</h3>
-        <p class="value"><?= number_format($totalRecords) ?></p>
-    </article>
-    <article class="stat-card glass-card">
-        <h3>Borrowed</h3>
-        <p class="value"><?= number_format($borrowedCount) ?></p>
-    </article>
-    <article class="stat-card glass-card">
-        <h3>Returned</h3>
-        <p class="value"><?= number_format($returnedCount) ?></p>
-    </article>
-    <article class="stat-card glass-card">
-        <h3>Overdue</h3>
-        <p class="value"><?= number_format($overdueCount) ?></p>
-    </article>
-    <article class="stat-card glass-card">
-        <h3>Missing</h3>
-        <p class="value"><?= number_format($missingCount) ?></p>
-    </article>
+<section class="stats-grid borrow-status-chips">
+    <?php foreach ($chipMetrics as $chip): ?>
+        <?php
+            $chipStatus = (string)($chip['status'] ?? '');
+            $chipParams = $baseFilterParams;
+            if ($chipStatus !== '') {
+                $chipParams['status'] = $chipStatus;
+            }
+            $isActiveChip = ($chipStatus === '' && $activeStatus === '') || ($chipStatus !== '' && $activeStatus === $chipStatus);
+            $chipHref = $buildBorrowRecordsUrl($chipParams);
+        ?>
+        <a href="<?= htmlspecialchars($chipHref) ?>" class="stat-card glass-card borrow-chip<?= $isActiveChip ? ' is-active' : '' ?>">
+            <h3><?= htmlspecialchars((string)($chip['title'] ?? '')) ?></h3>
+            <p class="value"><?= number_format((int)($chip['count'] ?? 0)) ?></p>
+        </a>
+    <?php endforeach; ?>
 </section>
 
 <section class="panel glass-card">
     <form method="GET" class="filters-inline borrow-filters">
+        <input type="hidden" name="status" value="<?= htmlspecialchars($activeStatus) ?>">
+
         <input type="text" name="search" placeholder="Search user, book, accession, record #" value="<?= htmlspecialchars($search) ?>">
 
-        <select name="status">
-            <option value="">All Status</option>
-            <option value="borrowed" <?= $status === 'borrowed' ? 'selected' : '' ?>>Borrowed</option>
-            <option value="returned" <?= $status === 'returned' ? 'selected' : '' ?>>Returned</option>
-            <option value="overdue" <?= $status === 'overdue' ? 'selected' : '' ?>>Overdue</option>
-            <option value="missing" <?= $status === 'missing' ? 'selected' : '' ?>>Missing</option>
-        </select>
-
-        <input type="date" name="date_from" value="<?= htmlspecialchars($dateFrom) ?>">
-        <input type="date" name="date_to" value="<?= htmlspecialchars($dateTo) ?>">
+        <input type="date" name="date" value="<?= htmlspecialchars($dateFilter) ?>">
 
         <button type="submit" class="btn-primary">Apply</button>
-        <a href="borrow_records.php" class="btn-status activate">Reset</a>
+        <a href="borrow_records.php" class="filter-reset-btn">Reset</a>
     </form>
 </section>
 
@@ -338,6 +368,17 @@ $records = qres(
                         <?php
                             $rid = (int)($row['record_id'] ?? 0);
                             $statusVal = strtolower((string)($row['status'] ?? 'borrowed'));
+                            $statusText = ucfirst($statusVal);
+                            $statusTextClass = 'borrow-record-status-text borrow-record-status-muted';
+                            if ($statusVal === 'borrowed') {
+                                $statusTextClass = 'borrow-record-status-text borrow-record-status-borrowed';
+                            } elseif ($statusVal === 'overdue') {
+                                $statusTextClass = 'borrow-record-status-text borrow-record-status-overdue';
+                            } elseif ($statusVal === 'missing') {
+                                $statusTextClass = 'borrow-record-status-text borrow-record-status-missing';
+                            } elseif ($statusVal === 'returned') {
+                                $statusTextClass = 'borrow-record-status-text borrow-record-status-returned';
+                            }
                             $borrower = trim(((string)($row['first_name'] ?? '')) . ' ' . ((string)($row['last_name'] ?? '')));
                             if ($borrower === '') {
                                 $borrower = 'Unknown User';
@@ -360,7 +401,7 @@ $records = qres(
                             <td><?= htmlspecialchars((string)($row['date_borrowed'] ?? '-')) ?></td>
                             <td><?= htmlspecialchars((string)($row['due_date'] ?? '-')) ?></td>
                             <td><?= htmlspecialchars((string)($row['date_returned'] ?? '-')) ?></td>
-                            <td><span class="badge status-<?= htmlspecialchars($statusVal) ?>"><?= htmlspecialchars(ucfirst($statusVal)) ?></span></td>
+                            <td><span class="<?= htmlspecialchars($statusTextClass) ?>"><?= htmlspecialchars($statusText) ?></span></td>
                             <td><?= htmlspecialchars($fine) ?></td>
                             <td>
                                 <div class="borrow-action-row">
@@ -368,7 +409,11 @@ $records = qres(
                                         <form method="POST" class="row-action-form">
                                             <input type="hidden" name="record_action" value="mark_returned">
                                             <input type="hidden" name="record_id" value="<?= $rid ?>">
-                                            <button type="submit" class="borrow-action-btn">Mark Returned</button>
+                                            <button type="submit" class="borrow-action-icon-btn returned" aria-label="Mark returned">
+                                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M5 12.5 10 17l9-10"></path>
+                                                </svg>
+                                            </button>
                                         </form>
                                     <?php endif; ?>
 
@@ -376,7 +421,12 @@ $records = qres(
                                         <form method="POST" class="row-action-form">
                                             <input type="hidden" name="record_action" value="mark_missing">
                                             <input type="hidden" name="record_id" value="<?= $rid ?>">
-                                            <button type="submit" class="borrow-action-btn missing">Mark Missing</button>
+                                            <button type="submit" class="borrow-action-icon-btn missing" aria-label="Mark missing">
+                                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M7 7 17 17"></path>
+                                                    <path d="M17 7 7 17"></path>
+                                                </svg>
+                                            </button>
                                         </form>
                                     <?php endif; ?>
 
@@ -427,3 +477,12 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <?php require 'layout_bottom.php'; ?>
+
+
+
+
+
+
+
+
+

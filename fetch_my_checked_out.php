@@ -1,6 +1,7 @@
-﻿<?php
+<?php
 session_start();
 require 'config/db_connect.php';
+require_once 'config/borrow_fine_rules.php';
 
 header('Content-Type: application/json');
 
@@ -15,12 +16,16 @@ if ($userId <= 0) {
     respond(['status' => 'error', 'message' => 'Please sign in first.'], 401);
 }
 
+sync_overdue_status_and_fines($conn, $userId);
+
+
 $sql = "
     SELECT
         br.record_id,
         br.date_borrowed,
         br.due_date,
         br.status,
+        br.fine,
         bc.accession_no,
         b.title,
         b.author,
@@ -49,6 +54,16 @@ $books = [];
 if ($res) {
     while ($row = $res->fetch_assoc()) {
         $coverFile = trim((string)($row['cover'] ?? ''));
+        $coverPath = 'assets/covers/default.jpg';
+        if ($coverFile !== '') {
+            if (preg_match('/^(https?:)?\/\//i', $coverFile) || str_starts_with($coverFile, 'assets/')) {
+                $coverPath = $coverFile;
+            } elseif (str_contains($coverFile, '/')) {
+                $coverPath = $coverFile;
+            } else {
+                $coverPath = 'assets/covers/' . $coverFile;
+            }
+        }
 
         $books[] = [
             'record_id' => (int)($row['record_id'] ?? 0),
@@ -58,7 +73,8 @@ if ($res) {
             'date_borrowed' => (string)($row['date_borrowed'] ?? ''),
             'due_date' => (string)($row['due_date'] ?? ''),
             'status' => (string)($row['status'] ?? 'borrowed'),
-            'cover' => $coverFile !== '' ? ('assets/covers/' . $coverFile) : 'assets/covers/default.jpg'
+            'fine' => round((float)($row['fine'] ?? 0), 2),
+            'cover' => $coverPath
         ];
     }
 }
@@ -69,3 +85,5 @@ respond([
     'status' => 'success',
     'books' => $books
 ]);
+
+

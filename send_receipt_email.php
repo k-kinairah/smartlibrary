@@ -91,7 +91,6 @@ $isbn = esc_text((string)($receipt['isbn'] ?? 'N/A'));
 $accession = esc_text((string)($receipt['accession'] ?? 'N/A'));
 $borrowedDate = esc_text((string)($receipt['borrowedDate'] ?? 'N/A'));
 $dueDate = esc_text((string)($receipt['dueDate'] ?? 'N/A'));
-$transactionId = esc_text((string)($receipt['transactionId'] ?? 'N/A'));
 $library = esc_text((string)($receipt['library'] ?? 'PHINMA-SJCDC Library'));
 $issuedAt = esc_text((string)($receipt['issuedAt'] ?? date('n/j/Y, g:i:s A')));
 
@@ -100,7 +99,83 @@ if (function_exists('mb_encode_mimeheader')) {
     $subject = mb_encode_mimeheader($subject, 'UTF-8', 'B', "\r\n");
 }
 
-$htmlBody = "\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>SmartLib Receipt</title>\n</head>\n<body style=\"font-family:Arial,Helvetica,sans-serif;color:#20372c;\">\n  <h2 style=\"margin-bottom:4px;\">SmartLib Borrowing Receipt</h2>\n  <div style=\"color:#4f655c;margin-bottom:14px;\">{$library}<br>Issued: {$issuedAt}</div>\n\n  <table cellpadding=\"6\" cellspacing=\"0\" border=\"0\" style=\"border-collapse:collapse;width:100%;max-width:560px;\">\n    <tr><td colspan=\"2\" style=\"font-weight:700;padding-top:10px;\">Student Information</td></tr>\n    <tr><td>Name</td><td><strong>{$studentName}</strong></td></tr>\n    <tr><td>ID Number</td><td><strong>{$studentId}</strong></td></tr>\n    <tr><td>Course</td><td><strong>{$course}</strong></td></tr>\n\n    <tr><td colspan=\"2\" style=\"font-weight:700;padding-top:14px;\">Book Information</td></tr>\n    <tr><td>Title</td><td><strong>{$title}</strong></td></tr>\n    <tr><td>Author</td><td><strong>{$author}</strong></td></tr>\n    <tr><td>Accession Number</td><td><strong>{$accession}</strong></td></tr>\n    <tr><td>ISBN</td><td><strong>{$isbn}</strong></td></tr>\n    <tr><td>Borrowed</td><td><strong>{$borrowedDate}</strong></td></tr>\n    <tr><td>Due Date</td><td><strong>{$dueDate}</strong></td></tr>\n    <tr><td>Transaction ID</td><td><strong>{$transactionId}</strong></td></tr>\n  </table>\n\n  <p style=\"margin-top:16px;color:#4f655c;\">Please return this book on or before the due date. Late returns may incur fines.</p>\n</body>\n</html>\n";
+$htmlBody = <<<HTML
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartLib Receipt</title>
+</head>
+<body style="margin:0;padding:0;background:#eef3f8;font-family:Arial,Helvetica,sans-serif;color:#1e293b;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef3f8;padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:660px;background:#ffffff;border:1px solid #dbe4ee;border-radius:14px;overflow:hidden;">
+          <tr>
+            <td style="background:#0f5132;padding:18px 24px;color:#ffffff;">
+              <div style="font-size:18px;font-weight:700;letter-spacing:.3px;">SmartLib Borrowing Receipt</div>
+              <div style="font-size:12px;opacity:.9;margin-top:4px;">{$library} | Issued: {$issuedAt}</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+                <tr>
+                  <td colspan="2" style="padding:0 0 10px;font-size:16px;font-weight:700;color:#0f172a;">Student Information</td>
+                </tr>
+                <tr>
+                  <td style="padding:9px 8px;border-top:1px solid #e2e8f0;font-size:14px;color:#64748b;width:38%;">Name</td>
+                  <td style="padding:9px 8px;border-top:1px solid #e2e8f0;font-size:14px;color:#0f172a;font-weight:600;">{$studentName}</td>
+                </tr>
+                <tr>
+                  <td style="padding:9px 8px;border-top:1px solid #e2e8f0;font-size:14px;color:#64748b;">ID Number</td>
+                  <td style="padding:9px 8px;border-top:1px solid #e2e8f0;font-size:14px;color:#0f172a;font-weight:600;">{$studentId}</td>
+                </tr>
+                <tr>
+                  <td style="padding:9px 8px;border-top:1px solid #e2e8f0;font-size:14px;color:#64748b;">Course</td>
+                  <td style="padding:9px 8px;border-top:1px solid #e2e8f0;font-size:14px;color:#0f172a;font-weight:600;">{$course}</td>
+                </tr>
+
+                <tr>
+                  <td colspan="2" style="padding:18px 0 10px;font-size:16px;font-weight:700;color:#0f172a;">Book Information</td>
+                </tr>
+                <tr>
+                  <td style="padding:9px 8px;border-top:1px solid #e2e8f0;font-size:14px;color:#64748b;">Title</td>
+                  <td style="padding:9px 8px;border-top:1px solid #e2e8f0;font-size:14px;color:#0f172a;font-weight:600;">{$title}</td>
+                </tr>
+                <tr>
+                  <td style="padding:9px 8px;border-top:1px solid #e2e8f0;font-size:14px;color:#64748b;">Author</td>
+                  <td style="padding:9px 8px;border-top:1px solid #e2e8f0;font-size:14px;color:#0f172a;font-weight:600;">{$author}</td>
+                </tr>
+                <tr>
+                  <td style="padding:9px 8px;border-top:1px solid #e2e8f0;font-size:14px;color:#64748b;">Accession Number</td>
+                  <td style="padding:9px 8px;border-top:1px solid #e2e8f0;font-size:14px;color:#0f172a;font-weight:600;">{$accession}</td>
+                </tr>
+                <tr>
+                  <td style="padding:9px 8px;border-top:1px solid #e2e8f0;font-size:14px;color:#64748b;">ISBN</td>
+                  <td style="padding:9px 8px;border-top:1px solid #e2e8f0;font-size:14px;color:#0f172a;font-weight:600;">{$isbn}</td>
+                </tr>
+                <tr>
+                  <td style="padding:9px 8px;border-top:1px solid #e2e8f0;font-size:14px;color:#64748b;">Borrowed</td>
+                  <td style="padding:9px 8px;border-top:1px solid #e2e8f0;font-size:14px;color:#0f172a;font-weight:600;">{$borrowedDate}</td>
+                </tr>
+                <tr>
+                  <td style="padding:9px 8px;border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;font-size:14px;color:#64748b;">Due Date</td>
+                  <td style="padding:9px 8px;border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;font-size:14px;color:#0f172a;font-weight:600;">{$dueDate}</td>
+                </tr>
+              </table>
+
+              <p style="margin:18px 0 0;font-size:14px;line-height:1.6;color:#475569;">Please return this book on or before the due date. Late returns may incur fines.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+HTML;
 
 $textBody = "SMARTLIB RECEIPT\n"
     . "{$library}\n"
@@ -116,7 +191,6 @@ $textBody = "SMARTLIB RECEIPT\n"
     . "ISBN: {$isbn}\n"
     . "Borrowed: {$borrowedDate}\n"
     . "Due Date: {$dueDate}\n"
-    . "Transaction ID: {$transactionId}\n\n"
     . "Please return this book on or before the due date.";
 
 $boundary = 'smartlib_' . bin2hex(random_bytes(8));
@@ -150,3 +224,6 @@ respond([
     'message' => 'Receipt sent to ' . mask_email($email)
 ]);
 ?>
+
+
+

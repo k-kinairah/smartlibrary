@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 session_start();
 require 'config/db_connect.php';
 
@@ -47,7 +47,7 @@ if ($genreRes) {
 <div id="discover-view">
     <div class="discover-section" id="discover-section">
         <div class="discover-hero">
-            <div class="discover-pill">✨ AI-Powered Recommendations</div>
+            <div class="discover-pill">? AI-Powered Recommendations</div>
             <h1>Discover Your Next Read</h1>
             <p>Personalized book suggestions curated just for you</p>
             <div class="discover-search-wrap">
@@ -339,41 +339,11 @@ if ($genreRes) {
 
             <div class="floating-field">
                 <label class="floating-label">PIN</label>
-                <div class="password-field-wrap">
-                    <input type="password" id="signin-password" placeholder="2026">
-                    <button
-                        type="button"
-                        id="signin-password-toggle"
-                        class="password-toggle-btn"
-                        aria-controls="signin-password"
-                        aria-label="Show PIN"
-                        aria-pressed="false">
-                        <svg class="icon-eye" viewBox="0 0 24 24" role="presentation" aria-hidden="true">
-                            <path d="M1.5 12s3.6-6.5 10.5-6.5S22.5 12 22.5 12s-3.6 6.5-10.5 6.5S1.5 12 1.5 12z"></path>
-                            <circle cx="12" cy="12" r="3.2"></circle>
-                        </svg>
-                        <svg class="icon-eye-off" viewBox="0 0 24 24" role="presentation" aria-hidden="true">
-                            <path d="M1.5 12s3.6-6.5 10.5-6.5c2.1 0 3.9.6 5.4 1.5"></path>
-                            <path d="M22.5 12s-3.6 6.5-10.5 6.5c-2.1 0-3.9-.6-5.4-1.5"></path>
-                            <circle cx="12" cy="12" r="3.2"></circle>
-                            <path d="M3 21L21 3"></path>
-                        </svg>
-                    </button>
-                </div>
+                <input type="password" id="signin-password" placeholder="2026">
             </div>
 
-            <div id="signin-2fa-wrap" class="floating-field hidden">
-                <label class="floating-label">Verification Code</label>
-                <input type="text" id="signin-otp" inputmode="numeric" maxlength="6" placeholder="123456">
-            </div>
-
-            <p id="signin-helper" class="modal-helper"> </p>
+            <p class="modal-helper"> </p>
             <button type="button" id="signin-btn" class="primary-btn">Sign In</button>
-
-            <div class="signin-links-row">
-                <button type="button" id="signin-forgot-pin" class="signin-text-btn">Forgot your PIN?</button>
-            </div>
-
             <div id="signin-msg" class="form-msg"></div>
         </form>
     </div>
@@ -430,9 +400,6 @@ if ($genreRes) {
 <script src="assets/javascript/filters.js?v=<?= $filtersJsVer ?>"></script>
 </body>
 </html>
-
-
-
 
 
 

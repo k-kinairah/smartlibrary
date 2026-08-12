@@ -34,7 +34,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let activeFilters = {
         search: "",
         genre: [],
-        year_published: []
+        year_from: "",
+        year_to: ""
     };
 
     let totalBooks = 0;
@@ -45,6 +46,159 @@ document.addEventListener("DOMContentLoaded", () => {
     const advancedSearchInput = document.getElementById("advanced-search-input");
     const bookGrid = document.getElementById("book-grid");
     const resultsCount = document.getElementById("results-count");
+    const topSearchCard = advancedSearchInput?.closest(".top-search-card") || null;
+
+    let suggestionPanel = null;
+    let suggestionItems = [];
+    let activeSuggestionIndex = -1;
+    let suggestionDebounceTimer = null;
+    let suggestionFetchToken = 0;
+
+    const escapeSuggestionText = (value) => String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+
+    const ensureSuggestionPanel = () => {
+        if (!topSearchCard) return null;
+        if (suggestionPanel) return suggestionPanel;
+
+        suggestionPanel = document.createElement("div");
+        suggestionPanel.className = "search-suggestions-panel";
+        topSearchCard.appendChild(suggestionPanel);
+        return suggestionPanel;
+    };
+
+    const closeSuggestions = () => {
+        if (!suggestionPanel) return;
+        suggestionPanel.classList.remove("is-open");
+        suggestionPanel.innerHTML = "";
+        suggestionItems = [];
+        activeSuggestionIndex = -1;
+    };
+
+    const highlightActiveSuggestion = () => {
+        if (!suggestionPanel) return;
+        suggestionPanel.querySelectorAll(".search-suggestion-item").forEach((btn, idx) => {
+            btn.classList.toggle("is-active", idx === activeSuggestionIndex);
+        });
+    };
+
+    const applySuggestion = (value) => {
+        const text = String(value || "").trim();
+        if (text === "") return;
+
+        setSearch(text);
+        closeSuggestions();
+
+        if (advancedSearchInput) {
+            advancedSearchInput.focus();
+            const caret = advancedSearchInput.value.length;
+            advancedSearchInput.setSelectionRange(caret, caret);
+        }
+    };
+
+    const renderSuggestions = (items) => {
+        const panel = ensureSuggestionPanel();
+        if (!panel) return;
+
+        suggestionItems = Array.isArray(items)
+            ? items.map(item => String(item || "").trim()).filter(Boolean).slice(0, 8)
+            : [];
+        activeSuggestionIndex = -1;
+
+        if (suggestionItems.length === 0) {
+            closeSuggestions();
+            return;
+        }
+
+        panel.innerHTML = suggestionItems.map((text, idx) => `
+            <button type="button" class="search-suggestion-item" data-index="${idx}">
+                <span class="search-suggestion-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.4-3.4"></path></svg>
+                </span>
+                <span class="search-suggestion-text">${escapeSuggestionText(text)}</span>
+            </button>
+        `).join("");
+
+        panel.querySelectorAll(".search-suggestion-item").forEach(btn => {
+            btn.addEventListener("mousedown", e => {
+                e.preventDefault();
+            });
+
+            btn.addEventListener("click", () => {
+                const idx = Number.parseInt(btn.dataset.index || "-1", 10);
+                if (!Number.isFinite(idx) || idx < 0 || idx >= suggestionItems.length) return;
+                applySuggestion(suggestionItems[idx]);
+            });
+        });
+
+        panel.classList.add("is-open");
+    };
+
+    const fetchSuggestions = (rawQuery) => {
+        const query = String(rawQuery || "").trim();
+        if (query.length < 1) {
+            closeSuggestions();
+            return;
+        }
+
+        if (!searchView || searchView.classList.contains("hidden")) {
+            closeSuggestions();
+            return;
+        }
+
+        const requestToken = ++suggestionFetchToken;
+        fetch(`fetch_suggestions.php?q=${encodeURIComponent(query)}&limit=8`, { headers: { Accept: "application/json" } })
+            .then(res => res.ok ? res.json() : Promise.reject(new Error("Suggestion request failed")))
+            .then(data => {
+                if (requestToken !== suggestionFetchToken) return;
+                const items = Array.isArray(data?.suggestions)
+                    ? data.suggestions.map(s => s?.text)
+                    : [];
+                renderSuggestions(items);
+            })
+            .catch(() => {
+                if (expectsTwoFactor) {
+                    pendingTwoFactor = true;
+                    signinOtpWrap?.classList.remove("hidden");
+                    signinForgotPinBtn?.classList.add("hidden");
+                    if (signinHelper) {
+                        signinHelper.textContent = "Enter the 6-digit verification code from your email.";
+                    }
+                    setSigninBusy(false, "Verify Code");
+                    if (signinOtpInput) signinOtpInput.focus();
+                    setSigninMessage("Code may have been sent. Enter the 6-digit code to continue.");
+                    return;
+                }
+
+                resetTwoFactorState(false);
+                setSigninMessage("Login failed.");
+            });
+    };
+
+    const queueSuggestions = () => {
+        if (!advancedSearchInput) return;
+        window.clearTimeout(suggestionDebounceTimer);
+        suggestionDebounceTimer = window.setTimeout(() => {
+            fetchSuggestions(advancedSearchInput.value);
+        }, 120);
+    };
+
+    const moveActiveSuggestion = (direction) => {
+        if (!suggestionPanel || !suggestionPanel.classList.contains("is-open") || suggestionItems.length === 0) {
+            return;
+        }
+
+        if (activeSuggestionIndex < 0) {
+            activeSuggestionIndex = direction > 0 ? 0 : suggestionItems.length - 1;
+        } else {
+            activeSuggestionIndex = (activeSuggestionIndex + direction + suggestionItems.length) % suggestionItems.length;
+        }
+
+        highlightActiveSuggestion();
+    };
 
     function attachTypingPlaceholder(input, phrases, config = {}) {
         if (!input || !Array.isArray(phrases) || phrases.length === 0) return;
@@ -189,7 +343,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         activeFilters.genre.forEach(v => params.append("genre[]", v));
-        activeFilters.year_published.forEach(v => params.append("year_published[]", v));
+        if (activeFilters.year_from !== "") params.append("year_from", activeFilters.year_from);
+        if (activeFilters.year_to !== "") params.append("year_to", activeFilters.year_to);
 
         return params;
     }
@@ -214,7 +369,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (activeFilters.search.trim() !== "") {
             const chip = document.createElement("div");
             chip.className = "active-chip";
-            chip.innerHTML = `Search: \"${activeFilters.search}\" <span class=\"remove-x\">x</span>`;
+            chip.innerHTML = `Search: "${activeFilters.search}" <span class="remove-x">x</span>`;
             chip.querySelector(".remove-x")?.addEventListener("click", () => {
                 activeFilters.search = "";
                 syncSearchInputs("");
@@ -230,7 +385,7 @@ document.addEventListener("DOMContentLoaded", () => {
             values.forEach(value => {
                 const chip = document.createElement("div");
                 chip.className = "active-chip";
-                chip.innerHTML = `${value} <span class=\"remove-x\">x</span>`;
+                chip.innerHTML = `${value} <span class="remove-x">x</span>`;
 
                 chip.querySelector(".remove-x")?.addEventListener("click", () => {
                     removeFilter(type, value);
@@ -239,9 +394,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 container.appendChild(chip);
             });
         }
-    }
 
-    function loadBooks() {
+        if (activeFilters.year_from !== "" || activeFilters.year_to !== "") {
+            const fromLabel = activeFilters.year_from !== "" ? activeFilters.year_from : "Any";
+            const toLabel = activeFilters.year_to !== "" ? activeFilters.year_to : "Any";
+            const chip = document.createElement("div");
+            chip.className = "active-chip";
+            chip.innerHTML = `Year: ${fromLabel} - ${toLabel} <span class="remove-x">x</span>`;
+            chip.querySelector(".remove-x")?.addEventListener("click", () => {
+                activeFilters.year_from = "";
+                activeFilters.year_to = "";
+                if (yearFromSelect) yearFromSelect.value = "";
+                if (yearToSelect) yearToSelect.value = "";
+                refreshActiveFilterDisplay();
+                loadBooks();
+            });
+            container.appendChild(chip);
+        }
+    }
+function loadBooks() {
         const params = buildParams();
 
         fetch("fetch_books.php?" + params.toString())
@@ -297,7 +468,87 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    advancedSearchInput?.addEventListener("input", () => setSearch(advancedSearchInput.value));
+    advancedSearchInput?.addEventListener("input", () => {
+        setSearch(advancedSearchInput.value);
+        queueSuggestions();
+    });
+
+    advancedSearchInput?.addEventListener("focus", () => {
+        if ((advancedSearchInput.value || "").trim() !== "") {
+            queueSuggestions();
+        }
+    });
+
+    advancedSearchInput?.addEventListener("keydown", e => {
+        const isOpen = !!suggestionPanel?.classList.contains("is-open");
+
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            if (!isOpen) {
+                queueSuggestions();
+                return;
+            }
+            moveActiveSuggestion(1);
+            return;
+        }
+
+        if (e.key === "ArrowUp") {
+            e.preventDefault();
+            if (!isOpen) {
+                queueSuggestions();
+                return;
+            }
+            moveActiveSuggestion(-1);
+            return;
+        }
+
+        if (e.key === "Enter" && isOpen && activeSuggestionIndex >= 0 && activeSuggestionIndex < suggestionItems.length) {
+            e.preventDefault();
+            applySuggestion(suggestionItems[activeSuggestionIndex]);
+            return;
+        }
+
+        if (e.key === "Escape" && isOpen) {
+            e.preventDefault();
+            closeSuggestions();
+        }
+    });
+
+    document.addEventListener("click", e => {
+        if (!topSearchCard || !suggestionPanel) return;
+        if (!topSearchCard.contains(e.target)) {
+            closeSuggestions();
+        }
+    });
+
+    const yearFromSelect = document.getElementById("year-from-select");
+    const yearToSelect = document.getElementById("year-to-select");
+
+    const applyYearRangeFilter = () => {
+        const rawFrom = String(yearFromSelect?.value || "").trim();
+        const rawTo = String(yearToSelect?.value || "").trim();
+
+        let from = rawFrom;
+        let to = rawTo;
+
+        if (from !== "" && to !== "") {
+            const fromNum = Number.parseInt(from, 10);
+            const toNum = Number.parseInt(to, 10);
+            if (Number.isFinite(fromNum) && Number.isFinite(toNum) && fromNum > toNum) {
+                [from, to] = [to, from];
+                if (yearFromSelect) yearFromSelect.value = from;
+                if (yearToSelect) yearToSelect.value = to;
+            }
+        }
+
+        activeFilters.year_from = from;
+        activeFilters.year_to = to;
+        refreshActiveFilterDisplay();
+        loadBooks();
+    };
+
+    yearFromSelect?.addEventListener("change", applyYearRangeFilter);
+    yearToSelect?.addEventListener("change", applyYearRangeFilter);
     document.querySelectorAll(".chip").forEach(chip => {
         chip.addEventListener("click", () => {
             const type = chip.dataset.filter;
@@ -333,43 +584,25 @@ document.addEventListener("DOMContentLoaded", () => {
         activeFilters = {
             search: "",
             genre: [],
-            year_published: []
+            year_from: "",
+            year_to: ""
         };
 
         syncSearchInputs("");
+        if (yearFromSelect) yearFromSelect.value = "";
+        if (yearToSelect) yearToSelect.value = "";
         document.querySelectorAll(".chip").forEach(c => c.classList.remove("chip-active"));
 
         refreshActiveFilterDisplay();
         loadBooks();
     }
-
-    document.getElementById("clear-filters")?.addEventListener("click", clearAllFilters);
+document.getElementById("clear-filters")?.addEventListener("click", clearAllFilters);
     document.getElementById("clear-active")?.addEventListener("click", clearAllFilters);
 
     const openModal = document.getElementById("open-account-modal");
     const closeModal = document.getElementById("close-modal");
     const modal = document.getElementById("account-modal");
     const modalBackdrop = modal?.querySelector(".modal-backdrop") || null;
-
-    const showAccountModal = () => {
-        modal?.classList.remove("hidden");
-    };
-
-    const hideAccountModal = () => {
-        modal?.classList.add("hidden");
-        const accountTypeMenu = document.getElementById("signin-account-type-menu");
-        const accountTypeToggle = document.getElementById("signin-account-type-toggle");
-        accountTypeMenu?.classList.add("hidden");
-        accountTypeToggle?.setAttribute("aria-expanded", "false");
-    };
-
-    if (openModal && modal) openModal.onclick = showAccountModal;
-    if (closeModal && modal) closeModal.onclick = hideAccountModal;
-    modalBackdrop?.addEventListener("click", hideAccountModal);
-
-    document.getElementById("discover-signin")?.addEventListener("click", () => {
-        showAccountModal();
-    });
 
     const accountTypeToggle = document.getElementById("signin-account-type-toggle");
     const accountTypeMenu = document.getElementById("signin-account-type-menu");
@@ -378,6 +611,119 @@ document.addEventListener("DOMContentLoaded", () => {
     const accountTypeSub = document.getElementById("signin-account-type-sub");
     const signinIdentifierLabel = document.getElementById("signin-identifier-label");
     const signinIdentifierInput = document.getElementById("signin-identifier");
+    const signinPasswordInput = document.getElementById("signin-password");
+    const signinPasswordToggle = document.getElementById("signin-password-toggle");
+    const signinOtpWrap = document.getElementById("signin-2fa-wrap");
+    const signinOtpInput = document.getElementById("signin-otp");
+    const signinHelper = document.getElementById("signin-helper");
+    const signinForgotPinBtn = document.getElementById("signin-forgot-pin");
+    const signinMsgBox = document.getElementById("signin-msg");
+    const signinBtn = document.getElementById("signin-btn");
+
+    let pendingTwoFactor = false;
+let signinCountdownTimer = null;
+let signinCountdownEndTs = 0;
+
+    const clearSigninCountdown = () => {
+        if (signinCountdownTimer) {
+            clearInterval(signinCountdownTimer);
+            signinCountdownTimer = null;
+        }
+        signinCountdownEndTs = 0;
+    };
+
+    const setSigninMessage = (text = "") => {
+        if (signinMsgBox) signinMsgBox.textContent = text;
+    };
+
+    const formatSigninTimeLeft = (seconds = 0) => {
+        const safe = Math.max(0, Math.floor(seconds));
+        const mins = Math.floor(safe / 60);
+        const secs = safe % 60;
+        if (mins > 0) {
+            return `${mins}m ${String(secs).padStart(2, "0")}s`;
+        }
+        return `${secs}s`;
+    };
+
+    const startSigninCountdown = (seconds, prefix = "Too many failed sign-in attempts. Try again in ") => {
+        clearSigninCountdown();
+        const safeSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
+        if (safeSeconds <= 0) {
+            setSigninMessage(`${prefix}0s.`);
+            return;
+        }
+
+        signinCountdownEndTs = Date.now() + (safeSeconds * 1000);
+
+        const tick = () => {
+            const left = Math.max(0, Math.ceil((signinCountdownEndTs - Date.now()) / 1000));
+            setSigninMessage(`${prefix}${formatSigninTimeLeft(left)}.`);
+            if (left <= 0) {
+                clearSigninCountdown();
+            }
+        };
+
+        tick();
+        signinCountdownTimer = setInterval(tick, 1000);
+    };
+
+    const setSigninBusy = (busy, label) => {
+        if (!signinBtn) return;
+        signinBtn.disabled = !!busy;
+        signinBtn.textContent = label;
+    };
+
+    const setSigninPasswordVisibility = (visible) => {
+        if (!signinPasswordInput) return;
+        const show = !!visible;
+        signinPasswordInput.type = show ? "text" : "password";
+
+        if (signinPasswordToggle) {
+            signinPasswordToggle.classList.toggle("is-visible", show);
+            signinPasswordToggle.setAttribute("aria-pressed", show ? "true" : "false");
+            signinPasswordToggle.setAttribute("aria-label", show ? "Hide PIN" : "Show PIN");
+        }
+    };
+
+    const resetTwoFactorState = (clearMessage = false) => {
+        pendingTwoFactor = false;
+        clearSigninCountdown();
+        signinOtpWrap?.classList.add("hidden");
+        if (signinOtpInput) signinOtpInput.value = "";
+        signinForgotPinBtn?.classList.remove("hidden");
+        if (signinHelper) signinHelper.textContent = " ";
+        setSigninBusy(false, "Sign In");
+        if (clearMessage) setSigninMessage("");
+    };
+
+    const showAccountModal = () => {
+        modal?.classList.remove("hidden");
+        setSigninPasswordVisibility(false);
+        resetTwoFactorState(true);
+    };
+
+    const hideAccountModal = () => {
+        modal?.classList.add("hidden");
+        accountTypeMenu?.classList.add("hidden");
+        accountTypeToggle?.setAttribute("aria-expanded", "false");
+        setSigninPasswordVisibility(false);
+        resetTwoFactorState(true);
+    };
+
+    if (openModal && modal) openModal.onclick = showAccountModal;
+    if (closeModal && modal) closeModal.onclick = hideAccountModal;
+    modalBackdrop?.addEventListener("click", hideAccountModal);
+
+    if (signinPasswordToggle && signinPasswordInput) {
+        signinPasswordToggle.addEventListener("click", () => {
+            setSigninPasswordVisibility(signinPasswordInput.type === "password");
+        });
+    }
+
+    document.getElementById("discover-signin")?.addEventListener("click", () => {
+        showAccountModal();
+    });
 
     const applyAccountType = (optionEl) => {
         if (!optionEl) return;
@@ -400,6 +746,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         accountTypeMenu?.classList.add("hidden");
         accountTypeToggle?.setAttribute("aria-expanded", "false");
+        resetTwoFactorState(true);
     };
 
     if (accountTypeToggle && accountTypeMenu) {
@@ -434,41 +781,199 @@ document.addEventListener("DOMContentLoaded", () => {
         applyAccountType(initialOption);
     }
 
-    const signinBtn = document.getElementById("signin-btn");
+    try {
+        const signinTarget = new URLSearchParams(window.location.search).get("signin");
+        if (signinTarget) {
+            const normalizedTarget = signinTarget.toLowerCase();
+            const targetOption = accountTypeMenu?.querySelector(`.account-type-option[data-type="${normalizedTarget}"]`);
+            if (targetOption) applyAccountType(targetOption);
+            showAccountModal();
+        }
+    } catch (_err) {
+        // Ignore malformed URLs; sign-in still works through the normal buttons.
+    }
+
+    const submitPasswordStep = () => {
+        const identifier = signinIdentifierInput?.value.trim() || "";
+        const password = signinPasswordInput?.value.trim() || "";
+        const accountType = (accountTypeHidden?.value || "student").trim();
+        const idLabel = signinIdentifierLabel?.textContent || "ID";
+        const expectsTwoFactor = accountType === "librarian";
+
+        clearSigninCountdown();
+        setSigninMessage("");
+
+        if (!identifier || !password) {
+            setSigninMessage(`Please enter ${idLabel} and PIN.`);
+            return;
+        }
+
+        if (expectsTwoFactor) {
+            signinOtpWrap?.classList.remove("hidden");
+            signinForgotPinBtn?.classList.add("hidden");
+            if (signinHelper) signinHelper.textContent = "Checking account and sending verification code...";
+            setSigninBusy(true, "Sending Code...");
+        } else {
+            setSigninBusy(true, "Signing In...");
+        }
+
+        fetch("login_handler.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            credentials: "same-origin",
+            cache: "no-store",
+            body: new URLSearchParams({ identifier, password, account_type: accountType })
+        })
+            .then(async (res) => {
+                const raw = await res.text();
+                try {
+                    return JSON.parse(raw);
+                } catch (_err) {
+                    const snippet = String(raw || "").replace(/\s+/g, " ").trim().slice(0, 180);
+                    throw new Error("NON_JSON_LOGIN::" + snippet);
+                }
+            })
+            .then(data => {
+                if (data.status === "success") {
+                    window.location.href = data.role === "librarian" ? "admin/dashboard.php" : "index.php";
+                    return;
+                }
+
+                if (data.status === "2fa_required") {
+                    pendingTwoFactor = true;
+                    signinOtpWrap?.classList.remove("hidden");
+                    signinForgotPinBtn?.classList.add("hidden");
+                    if (signinHelper) {
+                        signinHelper.textContent = "Enter the 6-digit code sent to your email to continue.";
+                    }
+                    setSigninBusy(false, "Verify Code");
+                    if (signinPasswordInput) signinPasswordInput.value = "";
+                    if (signinOtpInput) signinOtpInput.focus();
+                    clearSigninCountdown();
+                    setSigninMessage(data.message || "Verification code required.");
+                    return;
+                }
+
+                const maybeCodeSent = expectsTwoFactor && /verification code sent/i.test(String(data.message || ""));
+                if (maybeCodeSent) {
+                    pendingTwoFactor = true;
+                    signinOtpWrap?.classList.remove("hidden");
+                    signinForgotPinBtn?.classList.add("hidden");
+                    if (signinHelper) {
+                        signinHelper.textContent = "Enter the 6-digit code sent to your email to continue.";
+                    }
+                    setSigninBusy(false, "Verify Code");
+                    if (signinPasswordInput) signinPasswordInput.value = "";
+                    if (signinOtpInput) signinOtpInput.focus();
+                    clearSigninCountdown();
+                    setSigninMessage(data.message || "Verification code required.");
+                    return;
+                }
+
+                resetTwoFactorState(false);
+                const retryAfter = Number(data.retry_after_seconds || 0);
+                if (Number.isFinite(retryAfter) && retryAfter > 0) {
+                    startSigninCountdown(retryAfter);
+                } else {
+                    setSigninMessage(data.message || "Login failed.");
+                }
+            })
+            .catch((err) => {
+                resetTwoFactorState(false);
+                const rawMsg = String(err && err.message ? err.message : "");
+                if (rawMsg.startsWith("NON_JSON_LOGIN::")) {
+                    setSigninMessage("Sign-in service returned an invalid response. Please check server PHP errors/logs.");
+                    return;
+                }
+                setSigninMessage("Login failed. Please try again.");
+            });
+    };
+
+    const submitTwoFactorStep = () => {
+        const code = (signinOtpInput?.value || "").replace(/\D+/g, "").trim();
+        if (code.length !== 6) {
+            setSigninMessage("Enter the 6-digit verification code.");
+            return;
+        }
+
+        setSigninBusy(true, "Verifying...");
+
+        fetch("verify_2fa.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            credentials: "same-origin",
+            cache: "no-store",
+            body: new URLSearchParams({ code })
+        })
+            .then(async (res) => {
+                const raw = await res.text();
+                try {
+                    return JSON.parse(raw);
+                } catch (_err) {
+                    const snippet = String(raw || "").replace(/\s+/g, " ").trim().slice(0, 180);
+                    throw new Error("NON_JSON_2FA::" + snippet);
+                }
+            })
+            .then(data => {
+                if (data.status === "success") {
+                    window.location.href = data.role === "librarian" ? "admin/dashboard.php" : "index.php";
+                    return;
+                }
+
+                if (data.status === "expired") {
+                    resetTwoFactorState(false);
+                } else {
+                    setSigninBusy(false, "Verify Code");
+                }
+
+                setSigninMessage(data.message || "Verification failed.");
+            })
+            .catch((err) => {
+                setSigninBusy(false, "Verify Code");
+                const rawMsg = String(err && err.message ? err.message : "");
+                if (rawMsg.startsWith("NON_JSON_2FA::")) {
+                    setSigninMessage("Verification endpoint returned an invalid response. Check server logs / verify_2fa.php.");
+                    return;
+                }
+                setSigninMessage("Verification failed.");
+            });
+    };
+
     if (signinBtn) {
         signinBtn.addEventListener("click", () => {
-            const identifier = signinIdentifierInput?.value.trim() || "";
-            const password = document.getElementById("signin-password")?.value.trim() || "";
-            const accountType = (accountTypeHidden?.value || "student").trim();
-            const msgBox = document.getElementById("signin-msg");
-            const idLabel = signinIdentifierLabel?.textContent || "ID";
-
-            if (msgBox) msgBox.textContent = "";
-
-            if (!identifier || !password) {
-                if (msgBox) msgBox.textContent = `Please enter ${idLabel} and PIN.`;
-                return;
+            if (pendingTwoFactor) {
+                submitTwoFactorStep();
+            } else {
+                submitPasswordStep();
             }
-
-            fetch("login_handler.php", {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({ identifier, password, account_type: accountType })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === "success") {
-                        window.location.href = data.role === "librarian" ? "admin/dashboard.php" : "index.php";
-                    } else if (msgBox) {
-                        msgBox.textContent = data.message;
-                    }
-                })
-                .catch(() => {
-                    if (msgBox) msgBox.textContent = "Login failed.";
-                });
         });
     }
 
+
+    signinForgotPinBtn?.addEventListener("click", () => {
+        const identifier = signinIdentifierInput?.value.trim() || "";
+        const accountType = (accountTypeHidden?.value || "student").trim();
+        const idLabel = signinIdentifierLabel?.textContent || "ID";
+
+        if (!identifier) {
+            setSigninMessage(`Enter ${idLabel} first, then click Forgot PIN.`);
+            return;
+        }
+
+        setSigninMessage("Sending reset link...");
+        fetch("request_pin_reset.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ identifier, account_type: accountType })
+        })
+            .then(res => res.json())
+            .then(data => {
+                setSigninMessage(data.message || "If this account exists, a reset link was sent.");
+            })
+            .catch(() => {
+                setSigninMessage("Could not process reset request right now.");
+            });
+    });
     document.addEventListener("click", e => {
         const discoverImg = e.target.closest(".discover-book, .discover-carousel img");
         if (discoverImg) {
@@ -632,17 +1137,37 @@ document.addEventListener("DOMContentLoaded", () => {
         return receiptStatusUi;
     };
 
-    const showReceiptStatus = (type, message) => {
+    const showReceiptStatus = (type, message, options = {}) => {
         const ui = ensureReceiptStatusUi();
         if (!ui) return;
 
-        const isSuccess = type === "success";
-        ui.root.classList.remove("hidden", "is-success", "is-error");
-        ui.root.classList.add(isSuccess ? "is-success" : "is-error");
-        if (ui.icon) ui.icon.innerHTML = isSuccess ? "&#10003;" : "!";
-        if (ui.title) ui.title.textContent = isSuccess ? "Receipt Sent to Email" : "Email Not Sent";
-        if (ui.message) ui.message.textContent = message || (isSuccess ? "Your receipt was sent successfully." : "Unable to send receipt email.");
-        if (ui.action) ui.action.textContent = isSuccess ? "Nice" : "Close";
+        // Keep the email-status popup above receipt and other open modals.
+        try {
+            document.body.appendChild(ui.root);
+            ui.root.style.zIndex = "9800";
+        } catch (_) {
+            // no-op
+        }
+
+        const normalizedType = type === "success" || type === "warning" || type === "error" ? type : "error";
+        const isSuccess = normalizedType === "success";
+        const isWarning = normalizedType === "warning";
+
+        const defaultTitle = isSuccess
+            ? "Receipt Sent to Email"
+            : (isWarning ? "Borrow Limit Reached" : "Email Not Sent");
+        const defaultMessage = isSuccess
+            ? "Your receipt was sent successfully."
+            : (isWarning ? "You have reached your borrowing limit for this account." : "Unable to send receipt email.");
+        const defaultAction = isSuccess ? "Nice" : (isWarning ? "Okay" : "Close");
+
+        ui.root.classList.remove("hidden", "is-success", "is-error", "is-warning");
+        ui.root.classList.add(`is-${normalizedType}`);
+
+        if (ui.icon) ui.icon.innerHTML = isSuccess ? "&#10003;" : (isWarning ? "&#9888;" : "!");
+        if (ui.title) ui.title.textContent = options.title || defaultTitle;
+        if (ui.message) ui.message.textContent = message || options.message || defaultMessage;
+        if (ui.action) ui.action.textContent = options.actionLabel || defaultAction;
     };
 
     const formatDate = (d) => d.toLocaleDateString("en-US", {
@@ -817,8 +1342,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             <div class="receipt-divider"></div>
 
-            <div class="receipt-transaction-title">Transaction ID</div>
-            <div class="receipt-transaction-id">${escapeHtml(data.transactionId)}</div>
             <div class="receipt-barcode">${data.barcodeSvg || ""}</div>
             <div class="receipt-barcode-text">${escapeHtml(data.barcode)}</div>
 
@@ -844,7 +1367,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const bookId = Number(modalRoot?.dataset.bookId || 0);
 
         if (!bookId) {
-            alert("Invalid book selection.");
+            showReceiptStatus("error", "Invalid book selection.", {
+                title: "Unable to Check Out",
+                actionLabel: "Close"
+            });
             return;
         }
 
@@ -891,7 +1417,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 window.smartlibRefreshBooks();
             }
         } catch (error) {
-            alert(error?.message || "Checkout failed.");
+            const errorMessage = String(error?.message || "Checkout failed.").trim();
+            const isBorrowLimit = /borrow\s+limit\s+reached/i.test(errorMessage);
+
+            showReceiptStatus(isBorrowLimit ? "warning" : "error", errorMessage, {
+                title: isBorrowLimit ? "Borrow Limit Reached" : "Unable to Check Out",
+                actionLabel: "Okay"
+            });
+
             checkoutBtn.disabled = false;
             checkoutBtn.textContent = originalText;
         }
@@ -920,7 +1453,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         .line { border-top: 1px solid #d5e1da; margin: 10px 0; }
                         .grid { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; font-size: 13px; }
                         .section { font-weight: 700; margin-top: 6px; margin-bottom: 6px; }
-                        .tx { background: #edf4ef; padding: 8px; border-radius: 8px; text-align: center; font-family: monospace; }
                         .barcode { text-align: center; margin-top: 8px; }
                         .barcode svg { width: 100%; height: 56px; display: block; }
                         .barcode-text { text-align: center; font-family: monospace; letter-spacing: 1px; margin-top: 6px; font-size: 12px; }
@@ -949,8 +1481,6 @@ document.addEventListener("DOMContentLoaded", () => {
                             <span>Due Date:</span><span>${escapeHtml(lastReceiptData.dueDate)}</span>
                         </div>
                         <div class="line"></div>
-                        <div class="section" style="text-align:center;">Transaction ID</div>
-                        <div class="tx">${escapeHtml(lastReceiptData.transactionId)}</div>
                         <div class="barcode">${lastReceiptData.barcodeSvg || ""}</div>
                         <div class="barcode-text">${escapeHtml(lastReceiptData.barcode)}</div>
                     </div>
@@ -1160,11 +1690,31 @@ document.addEventListener("DOMContentLoaded", () => {
     const applyRecommendationPayload = (payload) => {
         if (!payload || !Array.isArray(payload.panels)) return;
 
+        const orderedPanels = [];
+
         payload.panels.forEach((panelData, idx) => {
             const key = String(panelData?.key || "").trim();
             const panel = (key && panelMap.get(key)) || panels[idx] || null;
             if (!panel) return;
+
             hydratePanel(panel, panelData);
+            if (!orderedPanels.includes(panel)) {
+                orderedPanels.push(panel);
+            }
+        });
+
+        panels.forEach((panel) => {
+            if (!orderedPanels.includes(panel)) {
+                orderedPanels.push(panel);
+            }
+        });
+
+        const discoverSection = document.getElementById("discover-section");
+        if (!discoverSection || orderedPanels.length === 0) return;
+
+        const cta = discoverSection.querySelector(".recommend-cta");
+        orderedPanels.forEach((panel) => {
+            discoverSection.insertBefore(panel, cta || null);
         });
     };
 
@@ -1610,6 +2160,27 @@ document.addEventListener("DOMContentLoaded", () => {
     closeMyBooksBtn?.addEventListener("click", closeMyBooks);
     myBooksBackdrop?.addEventListener("click", closeMyBooks);
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

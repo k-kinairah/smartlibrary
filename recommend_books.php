@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 session_start();
 require 'config/db_connect.php';
 
@@ -93,6 +93,7 @@ function load_recommendation_event_weights(mysqli $conn, int $userId): array {
 
     $panelWeightExpr = "CASE
         WHEN panel_key = 'course_highlights' THEN 1.45
+        WHEN panel_key = 'most_searched' THEN 1.35
         WHEN panel_key = 'most_borrowed' THEN 1.2
         WHEN panel_key = 'new_arrivals' THEN 1.1
         ELSE 1
@@ -105,6 +106,7 @@ function load_recommendation_event_weights(mysqli $conn, int $userId): array {
             SUM({$eventWeightExpr}) AS weighted_score,
             SUM({$eventWeightExpr} * {$panelWeightExpr}) AS panel_score,
             SUM(CASE WHEN panel_key = 'course_highlights' THEN {$eventWeightExpr} ELSE 0 END) AS panel_course,
+            SUM(CASE WHEN panel_key IN ('most_searched', 'course_highlights') THEN {$eventWeightExpr} ELSE 0 END) AS panel_search,
             SUM(CASE WHEN panel_key = 'most_borrowed' THEN {$eventWeightExpr} ELSE 0 END) AS panel_popular,
             SUM(CASE WHEN panel_key = 'new_arrivals' THEN {$eventWeightExpr} ELSE 0 END) AS panel_new
          FROM recommendation_events
@@ -123,6 +125,7 @@ function load_recommendation_event_weights(mysqli $conn, int $userId): array {
             'weighted' => (float)($row['weighted_score'] ?? 0),
             'panel_weighted' => (float)($row['panel_score'] ?? 0),
             'course' => (float)($row['panel_course'] ?? 0),
+            'search' => (float)($row['panel_search'] ?? 0),
             'popular' => (float)($row['panel_popular'] ?? 0),
             'new' => (float)($row['panel_new'] ?? 0)
         ];
@@ -138,6 +141,7 @@ function load_recommendation_event_weights(mysqli $conn, int $userId): array {
                 SUM({$eventWeightExpr}) AS weighted_score,
                 SUM({$eventWeightExpr} * {$panelWeightExpr}) AS panel_score,
                 SUM(CASE WHEN panel_key = 'course_highlights' THEN {$eventWeightExpr} ELSE 0 END) AS panel_course,
+                SUM(CASE WHEN panel_key IN ('most_searched', 'course_highlights') THEN {$eventWeightExpr} ELSE 0 END) AS panel_search,
                 SUM(CASE WHEN panel_key = 'most_borrowed' THEN {$eventWeightExpr} ELSE 0 END) AS panel_popular,
                 SUM(CASE WHEN panel_key = 'new_arrivals' THEN {$eventWeightExpr} ELSE 0 END) AS panel_new
              FROM recommendation_events
@@ -157,6 +161,7 @@ function load_recommendation_event_weights(mysqli $conn, int $userId): array {
                 'weighted' => (float)($row['weighted_score'] ?? 0),
                 'panel_weighted' => (float)($row['panel_score'] ?? 0),
                 'course' => (float)($row['panel_course'] ?? 0),
+                'search' => (float)($row['panel_search'] ?? 0),
                 'popular' => (float)($row['panel_popular'] ?? 0),
                 'new' => (float)($row['panel_new'] ?? 0)
             ];
@@ -174,6 +179,7 @@ function rank_rows_with_event_weights(array $rows, array $eventBundle, string $p
 
     $panelMap = [
         'course_highlights' => 'course',
+        'most_searched' => 'search',
         'most_borrowed' => 'popular',
         'new_arrivals' => 'new'
     ];
@@ -525,29 +531,32 @@ if ($isPersonalized) {
 }
 
 $popularRows = rank_rows_with_event_weights($popularRows, $recEventBundle, 'most_borrowed', $isPersonalized);
-$newArrivalRows = rank_rows_with_event_weights($newArrivalRows, $recEventBundle, 'new_arrivals', $isPersonalized);
-$searchDrivenRows = rank_rows_with_event_weights($searchDrivenRows, $recEventBundle, 'course_highlights', $isPersonalized);
+
+$searchDrivenRows = rank_rows_with_event_weights($searchDrivenRows, $recEventBundle, 'most_searched', $isPersonalized);
 $courseRows = rank_rows_with_event_weights($courseRows, $recEventBundle, 'course_highlights', $isPersonalized);
 
-$used = [];
-$mostBorrowedBooks = unique_take($popularRows, 5, $used);
-$newArrivalBooks = unique_take($newArrivalRows, 5, $used);
+$usedMostBorrowed = [];
+$mostBorrowedBooks = unique_take($popularRows, 5, $usedMostBorrowed);
+
+$usedNewArrivals = [];
+$newArrivalBooks = unique_take($newArrivalRows, 5, $usedNewArrivals);
 
 if ($isPersonalized) {
     $courseReason = $programName !== '' ? "Matches {$programName}" : 'Matches your course';
-    $courseBooks = unique_take($courseRows, 5, $used, $courseReason);
+    $usedCourse = [];
+    $courseBooks = unique_take($courseRows, 5, $usedCourse, $courseReason);
 
     if (count($courseBooks) < 5 && count($searchDrivenRows) > 0) {
         $courseBooks = array_merge(
             $courseBooks,
-            unique_take($searchDrivenRows, 5 - count($courseBooks), $used, 'Trending in current kiosk searches')
+            unique_take($searchDrivenRows, 5 - count($courseBooks), $usedCourse, 'Trending in current kiosk searches')
         );
     }
 
     if (count($courseBooks) < 5) {
         $courseBooks = array_merge(
             $courseBooks,
-            unique_take($popularRows, 5 - count($courseBooks), $used, 'Campus favorite')
+            unique_take($popularRows, 5 - count($courseBooks), $usedCourse, 'Campus favorite')
         );
     }
 
@@ -555,19 +564,20 @@ if ($isPersonalized) {
         ? "AI highlights for {$programName} students"
         : 'AI highlights based on your course and activity';
 } else {
-    $courseBooks = unique_take($searchDrivenRows, 5, $used, 'Trending in current kiosk searches');
+    $usedCourse = [];
+    $courseBooks = unique_take($searchDrivenRows, 5, $usedCourse, 'Trending in current kiosk searches');
 
     if (count($courseBooks) < 5) {
         $courseBooks = array_merge(
             $courseBooks,
-            unique_take($courseRows, 5 - count($courseBooks), $used, 'AI trending pick')
+            unique_take($courseRows, 5 - count($courseBooks), $usedCourse, 'AI trending pick')
         );
     }
 
     if (count($courseBooks) < 5) {
         $courseBooks = array_merge(
             $courseBooks,
-            unique_take($popularRows, 5 - count($courseBooks), $used, 'Campus favorite')
+            unique_take($popularRows, 5 - count($courseBooks), $usedCourse, 'Campus favorite')
         );
     }
 
@@ -576,26 +586,65 @@ if ($isPersonalized) {
         : 'AI highlights based on campus trends';
 }
 
-$panels = [
-    [
-        'key' => 'most_borrowed',
-        'title' => 'Most Borrowed Books',
-        'subtitle' => 'Popular titles frequently checked out by students',
-        'books' => $mostBorrowedBooks
-    ],
-    [
-        'key' => 'new_arrivals',
-        'title' => 'New Arrivals',
-        'subtitle' => 'Latest books and journals added to our collection',
-        'books' => $newArrivalBooks
-    ],
-    [
-        'key' => 'course_highlights',
-        'title' => $isPersonalized ? 'Course-Specific Highlights' : 'Smart Highlights',
-        'subtitle' => $courseSubtitle,
-        'books' => $courseBooks
-    ]
-];
+$usedMostSearched = [];
+$mostSearchedBooks = unique_take($searchDrivenRows, 5, $usedMostSearched, 'Trending in current kiosk searches');
+
+if (count($mostSearchedBooks) < 5) {
+    $mostSearchedBooks = array_merge(
+        $mostSearchedBooks,
+        unique_take($popularRows, 5 - count($mostSearchedBooks), $usedMostSearched, 'Popular on campus')
+    );
+}
+
+if ($isPersonalized) {
+    $panels = [
+        [
+            'key' => 'course_highlights',
+            'title' => 'Course-Specific Highlights',
+            'subtitle' => $courseSubtitle,
+            'books' => $courseBooks
+        ],
+        [
+            'key' => 'most_borrowed',
+            'title' => 'Most Borrowed Books',
+            'subtitle' => 'Popular titles frequently checked out by students',
+            'books' => $mostBorrowedBooks
+        ],
+        [
+            'key' => 'most_searched',
+            'title' => 'Most Searched',
+            'subtitle' => 'Topics and titles students are actively looking for',
+            'books' => $mostSearchedBooks
+        ],
+        [
+            'key' => 'new_arrivals',
+            'title' => 'New Arrivals',
+            'subtitle' => 'Latest books and journals added to our collection',
+            'books' => $newArrivalBooks
+        ]
+    ];
+} else {
+    $panels = [
+        [
+            'key' => 'most_borrowed',
+            'title' => 'Most Borrowed Books',
+            'subtitle' => 'Popular titles frequently checked out by students',
+            'books' => $mostBorrowedBooks
+        ],
+        [
+            'key' => 'most_searched',
+            'title' => 'Most Searched',
+            'subtitle' => 'Topics and titles students are actively looking for',
+            'books' => $mostSearchedBooks
+        ],
+        [
+            'key' => 'new_arrivals',
+            'title' => 'New Arrivals',
+            'subtitle' => 'Latest books and journals added to our collection',
+            'books' => $newArrivalBooks
+        ]
+    ];
+}
 
 echo json_encode([
     'status' => 'success',
@@ -616,3 +665,9 @@ echo json_encode([
     'panels' => $panels
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 ?>
+
+
+
+
+
+
