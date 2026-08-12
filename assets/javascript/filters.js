@@ -781,6 +781,18 @@ let signinCountdownEndTs = 0;
         applyAccountType(initialOption);
     }
 
+    try {
+        const signinTarget = new URLSearchParams(window.location.search).get("signin");
+        if (signinTarget) {
+            const normalizedTarget = signinTarget.toLowerCase();
+            const targetOption = accountTypeMenu?.querySelector(`.account-type-option[data-type="${normalizedTarget}"]`);
+            if (targetOption) applyAccountType(targetOption);
+            showAccountModal();
+        }
+    } catch (_err) {
+        // Ignore malformed URLs; sign-in still works through the normal buttons.
+    }
+
     const submitPasswordStep = () => {
         const identifier = signinIdentifierInput?.value.trim() || "";
         const password = signinPasswordInput?.value.trim() || "";
