@@ -1580,6 +1580,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const cover = String(book.cover || fileFromSrc).trim();
         const title = String(book.title || "").trim();
         const author = String(book.author || "").trim();
+        const reason = String(book.reason || book.availability_label || "").trim();
+        const availability = String(book.availability_label || "").trim();
         const parsedId = Number.parseInt(String(book.book_id ?? book.id ?? ""), 10);
 
         return {
@@ -1588,6 +1590,8 @@ document.addEventListener("DOMContentLoaded", () => {
             alt: title ? `${title} cover` : "Book cover",
             title,
             author,
+            reason,
+            availability,
             bookId: Number.isFinite(parsedId) && parsedId > 0 ? parsedId : null
         };
     };
@@ -1636,6 +1640,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 alt: img.getAttribute("alt") || "Book cover",
                 title: img.dataset.title || meta.title || "Book",
                 author: img.dataset.author || meta.author || "Unknown Author",
+                reason: img.dataset.reason || img.dataset.availability || "",
+                availability: img.dataset.availability || "",
                 bookId: Number.isFinite(parsedId) && parsedId > 0 ? parsedId : null
             };
         });
@@ -1646,6 +1652,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const subtitleNode = panel.querySelector("p");
         const titleMetaNode = panel.querySelector(".carousel-title");
         const authorMetaNode = panel.querySelector(".carousel-author");
+        const reasonMetaNode = panel.querySelector(".carousel-reason");
         const booksWrap = panel.querySelector(".carousel-books");
 
         if (!booksWrap) return;
@@ -1672,12 +1679,15 @@ document.addEventListener("DOMContentLoaded", () => {
             const bookIdAttr = book.bookId ? ` data-book-id="${escapeAttr(book.bookId)}"` : "";
             const titleAttr = book.title ? ` data-title="${escapeAttr(book.title)}"` : "";
             const authorAttr = book.author ? ` data-author="${escapeAttr(book.author)}"` : "";
-            return `<img class="${cls}" data-cover="${escapeAttr(book.cover)}"${bookIdAttr}${titleAttr}${authorAttr} src="${escapeAttr(book.src)}" alt="${escapeAttr(book.alt)}">`;
+            const reasonAttr = book.reason ? ` data-reason="${escapeAttr(book.reason)}"` : "";
+            const availabilityAttr = book.availability ? ` data-availability="${escapeAttr(book.availability)}"` : "";
+            return `<img class="${cls}" data-cover="${escapeAttr(book.cover)}"${bookIdAttr}${titleAttr}${authorAttr}${reasonAttr}${availabilityAttr} src="${escapeAttr(book.src)}" alt="${escapeAttr(book.alt)}">`;
         }).join("");
 
         const centerBook = books[centerIndex] || books[0];
         if (titleMetaNode) titleMetaNode.textContent = centerBook.title || "Book";
         if (authorMetaNode) authorMetaNode.textContent = centerBook.author || "Unknown Author";
+        if (reasonMetaNode) reasonMetaNode.textContent = centerBook.reason || centerBook.availability || "Available now";
     };
 
     const panels = Array.from(document.querySelectorAll(".discover-panel"));
@@ -1727,6 +1737,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const nextBtn = arrows[1] || null;
             const titleEl = panel.querySelector(".carousel-title");
             const authorEl = panel.querySelector(".carousel-author");
+            const reasonEl = panel.querySelector(".carousel-reason");
 
             if (!booksWrap || images.length < 3 || !prevBtn || !nextBtn) return;
 
@@ -1743,6 +1754,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     alt: img.getAttribute("alt") || "Book cover",
                     title: (img.dataset.title || meta.title || "Book").trim(),
                     author: (img.dataset.author || meta.author || "Unknown Author").trim(),
+                    reason: (img.dataset.reason || img.dataset.availability || "").trim(),
+                    availability: (img.dataset.availability || "").trim(),
                     bookId: Number.isFinite(parsedBookId) && parsedBookId > 0 ? parsedBookId : null
                 };
             });
@@ -1756,6 +1769,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (titleEl) titleEl.textContent = title;
                 if (authorEl) authorEl.textContent = author;
+                if (reasonEl) reasonEl.textContent = center.reason || center.availability || "Available now";
             };
 
             const render = () => {
@@ -1773,6 +1787,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     if (item.author) img.dataset.author = item.author;
                     else img.removeAttribute("data-author");
+
+                    if (item.reason) img.dataset.reason = item.reason;
+                    else img.removeAttribute("data-reason");
+
+                    if (item.availability) img.dataset.availability = item.availability;
+                    else img.removeAttribute("data-availability");
 
                     img.classList.remove("center", "side");
                     img.classList.add(idx === centerIndex ? "center" : "side");

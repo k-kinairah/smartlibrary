@@ -34,11 +34,52 @@ function cover_url(string $cover): string {
     return 'assets/covers/' . basename($cover);
 }
 
+function load_book_availability(mysqli $conn): array {
+    $rows = query_rows(
+        $conn,
+        "SELECT
+            b.book_id,
+            COUNT(bc.copy_id) AS total_copies,
+            COALESCE(SUM(CASE WHEN bc.status = 'available' THEN 1 ELSE 0 END), 0) AS available_copies
+         FROM books b
+         LEFT JOIN book_copies bc ON bc.book_id = b.book_id
+         GROUP BY b.book_id"
+    );
+
+    $map = [];
+    foreach ($rows as $row) {
+        $bookId = (int)($row['book_id'] ?? 0);
+        if ($bookId <= 0) {
+            continue;
+        }
+
+        $map[$bookId] = [
+            'total' => (int)($row['total_copies'] ?? 0),
+            'available' => (int)($row['available_copies'] ?? 0)
+        ];
+    }
+
+    return $map;
+}
+
+function recommendation_availability_label(int $available, int $total): string {
+    if ($available <= 0) {
+        return 'Currently unavailable';
+    }
+
+    if ($total <= 1) {
+        return 'Available now';
+    }
+
+    return $available . ' of ' . $total . ' copies available';
+}
 function normalize_book(array $row, string $reason = ''): array {
     $bookId = (int)($row['book_id'] ?? 0);
     $title = trim((string)($row['title'] ?? 'Untitled'));
     $author = trim((string)($row['author'] ?? 'Unknown Author'));
     $cover = trim((string)($row['cover'] ?? ''));
+    $availableCopies = (int)($row['available_copies'] ?? 0);
+    $totalCopies = (int)($row['total_copies'] ?? 0);
 
     return [
         'book_id' => $bookId,
@@ -46,7 +87,10 @@ function normalize_book(array $row, string $reason = ''): array {
         'author' => $author !== '' ? $author : 'Unknown Author',
         'cover' => $cover,
         'cover_url' => cover_url($cover),
-        'reason' => trim($reason)
+        'reason' => trim($reason),
+        'available_copies' => $availableCopies,
+        'total_copies' => $totalCopies,
+        'availability_label' => recommendation_availability_label($availableCopies, $totalCopies)
     ];
 }
 
@@ -253,6 +297,8 @@ function rank_rows_with_event_weights(array $rows, array $eventBundle, string $p
 }
 
 function unique_take(array $rows, int $limit, array &$seenBookIds, string $reasonBuilder = ''): array {
+    global $availabilityByBookId;
+
     $picked = [];
 
     foreach ($rows as $row) {
@@ -260,6 +306,16 @@ function unique_take(array $rows, int $limit, array &$seenBookIds, string $reaso
         if ($bookId <= 0 || isset($seenBookIds[$bookId])) {
             continue;
         }
+
+        $availability = $availabilityByBookId[$bookId] ?? ['available' => 0, 'total' => 0];
+        $availableCopies = (int)($availability['available'] ?? 0);
+        $totalCopies = (int)($availability['total'] ?? 0);
+        if ($availableCopies <= 0) {
+            continue;
+        }
+
+        $row['available_copies'] = $availableCopies;
+        $row['total_copies'] = $totalCopies;
 
         $reason = $reasonBuilder;
         if ($reason === '' && isset($row['topic_score'])) {
@@ -276,11 +332,25 @@ function unique_take(array $rows, int $limit, array &$seenBookIds, string $reaso
             }
         }
 
+        if ($reason === '' && isset($row['created_day'])) {
+            $createdDay = trim((string)($row['created_day'] ?? ''));
+            if ($createdDay !== '') {
+                $ageDays = max(0, (int)floor((time() - strtotime($createdDay)) / 86400));
+                if ($ageDays <= 30) {
+                    $reason = 'New arrival';
+                }
+            }
+        }
+
         if ($reason === '' && isset($row['genre_label'])) {
             $genre = trim((string)$row['genre_label']);
             if ($genre !== '') {
                 $reason = "Popular in {$genre}";
             }
+        }
+
+        if ($reason === '') {
+            $reason = recommendation_availability_label($availableCopies, $totalCopies);
         }
 
         $picked[] = normalize_book($row, $reason);
@@ -342,6 +412,7 @@ $isPersonalized = in_array($profile['role'], ['student', 'faculty'], true) && (i
 $programId = (int)($profile['program_id'] ?? 0);
 $programName = (string)($profile['program_name'] ?? '');
 $recEventBundle = load_recommendation_event_weights($conn, $userId);
+$availabilityByBookId = load_book_availability($conn);
 $hasRecEvents = (bool)($recEventBundle['enabled'] ?? false);
 
 $hasCategoryGroup = column_exists($conn, 'categories', 'category_group');
@@ -660,7 +731,8 @@ echo json_encode([
         'search_terms_used' => $searchTopTermsCount,
         'recommendation_events_enabled' => $hasRecEvents,
         'recommendation_event_books_global' => (int)($recEventBundle['global_rows'] ?? 0),
-        'recommendation_event_books_user' => (int)($recEventBundle['user_rows'] ?? 0)
+        'recommendation_event_books_user' => (int)($recEventBundle['user_rows'] ?? 0),
+        'available_recommendation_books' => count(array_filter($availabilityByBookId, static function ($row): bool { return (int)($row['available'] ?? 0) > 0; }))
     ],
     'panels' => $panels
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
