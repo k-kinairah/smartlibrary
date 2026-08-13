@@ -208,6 +208,12 @@ try {
     }
     ok_verify('mark_returned updates record, copy status, returned date, and fine');
 
+    $returnAuditCount = (int)scalar_value($conn, "SELECT COUNT(*) FROM admin_activity_logs WHERE action_type = 'returned' AND entity_type = 'borrow_record' AND entity_id = {$returnRecordId}");
+    if ($returnAuditCount < 1) {
+        fail_verify('mark_returned did not create an audit log entry.');
+    }
+    ok_verify('mark_returned creates an audit log entry');
+
     $missingResponse = post_admin_action($baseUrl, $sessionId, [
         'record_action' => 'mark_missing',
         'record_id' => (string)$missingRecordId
@@ -237,10 +243,17 @@ try {
     }
     ok_verify('mark_missing updates record and copy status');
 
+    $missingAuditCount = (int)scalar_value($conn, "SELECT COUNT(*) FROM admin_activity_logs WHERE action_type = 'missing' AND entity_type = 'borrow_record' AND entity_id = {$missingRecordId}");
+    if ($missingAuditCount < 1) {
+        fail_verify('mark_missing did not create an audit log entry.');
+    }
+    ok_verify('mark_missing creates an audit log entry');
+
     echo 'Borrow workflow verification passed.' . PHP_EOL;
 } finally {
     if (!empty($createdRecordIds)) {
         $ids = implode(',', array_map('intval', $createdRecordIds));
+        $conn->query("DELETE FROM admin_activity_logs WHERE entity_type = 'borrow_record' AND entity_id IN ({$ids})");
         $conn->query("DELETE FROM borrow_records WHERE record_id IN ({$ids})");
     }
     if (!empty($createdCopyIds)) {

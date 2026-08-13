@@ -1,6 +1,7 @@
 <?php require 'layout_top.php'; ?>
 <?php
 require '../config/db_connect.php';
+require_once '../config/admin_audit.php';
 
 $buildManageUsersUrl = static function (array $params): string {
     $clean = [];
@@ -114,9 +115,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_user'])) {
             if ($insert) {
                 $insert->bind_param('sssssis', $userNumber, $firstName, $lastName, $email, $pinHash, $programId, $role);
                 $ok = $insert->execute();
+                $createdUserId = $ok ? (int)$conn->insert_id : 0;
                 $insert->close();
 
                 if ($ok) {
+                    smartlib_admin_audit_log($conn, 'added', 'user', $createdUserId, trim($firstName . ' ' . $lastName), [
+                        'user_number' => $userNumber,
+                        'email' => $email,
+                        'role' => $role,
+                        'status' => 'active',
+                        'program_id' => $programId
+                    ]);
                     $flash = ['type' => 'success', 'message' => 'User account created successfully.'];
                 } else {
                     $flash = ['type' => 'error', 'message' => 'Could not create user account. Please try again.'];
@@ -229,6 +238,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
             }
 
             if ($ok) {
+                smartlib_admin_audit_log($conn, 'updated', 'user', $editUserId, trim($firstName . ' ' . $lastName), [
+                    'user_number' => $userNumber,
+                    'email' => $email,
+                    'role' => $role,
+                    'status' => $status,
+                    'program_id' => $programId,
+                    'pin_changed' => $newPin !== ''
+                ]);
+
                 $redirectParams = [
                     'search' => $returnSearch,
                     'role' => $returnRole,
@@ -276,11 +294,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_user_status'])
     if ($postedToken !== '' && hash_equals($csrfToken, $postedToken)) {
         $userId = (int)($_POST['toggle_user_status'] ?? 0);
         if ($userId > 0) {
+            $beforeUser = null;
+            $beforeStmt = $conn->prepare('SELECT user_id, user_number, first_name, last_name, role, status FROM library_users WHERE user_id = ? LIMIT 1');
+            if ($beforeStmt) {
+                $beforeStmt->bind_param('i', $userId);
+                $beforeStmt->execute();
+                $beforeRes = $beforeStmt->get_result();
+                $beforeUser = $beforeRes ? $beforeRes->fetch_assoc() : null;
+                $beforeStmt->close();
+            }
+
             $toggleStmt = $conn->prepare("UPDATE library_users SET status = IF(status='active','inactive','active') WHERE user_id = ? LIMIT 1");
             if ($toggleStmt) {
                 $toggleStmt->bind_param('i', $userId);
                 $toggleStmt->execute();
+                $didToggle = $toggleStmt->affected_rows > 0;
                 $toggleStmt->close();
+
+                if ($didToggle && is_array($beforeUser)) {
+                    $oldStatus = strtolower((string)($beforeUser['status'] ?? ''));
+                    $newStatus = $oldStatus === 'active' ? 'inactive' : 'active';
+                    $displayName = trim((string)($beforeUser['first_name'] ?? '') . ' ' . (string)($beforeUser['last_name'] ?? ''));
+                    smartlib_admin_audit_log($conn, 'status_changed', 'user', $userId, $displayName, [
+                        'user_number' => (string)($beforeUser['user_number'] ?? ''),
+                        'role' => (string)($beforeUser['role'] ?? ''),
+                        'previous_status' => $oldStatus,
+                        'new_status' => $newStatus
+                    ]);
+                }
             }
         }
     }

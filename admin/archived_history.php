@@ -1,6 +1,7 @@
 <?php require 'layout_top.php'; ?>
 <?php
 require '../config/db_connect.php';
+require_once '../config/admin_audit.php';
 
 function safe_query(mysqli $conn, string $sql) {
     try {
@@ -11,37 +12,22 @@ function safe_query(mysqli $conn, string $sql) {
 }
 
 function ensure_admin_activity_log_table(mysqli $conn): bool {
-    $sql = "
-        CREATE TABLE IF NOT EXISTS admin_activity_logs (
-            activity_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-            actor_user_id INT NULL,
-            actor_name VARCHAR(160) NOT NULL,
-            action_type ENUM('added','deleted') NOT NULL,
-            entity_type VARCHAR(40) NOT NULL DEFAULT 'book',
-            entity_id INT NULL,
-            entity_title VARCHAR(255) NOT NULL,
-            metadata_json TEXT NULL,
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (activity_id),
-            KEY idx_activity_created_at (created_at),
-            KEY idx_activity_action_entity (action_type, entity_type),
-            KEY idx_activity_actor (actor_user_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ";
-
-    return (bool)safe_query($conn, $sql);
+    return smartlib_admin_audit_ensure_table($conn);
 }
 
 function action_badge_class(string $action): string {
-    return $action === 'added' ? 'status-active' : 'status-inactive';
+    if (in_array($action, ['added', 'returned', 'retrieved'], true)) {
+        return 'status-active';
+    }
+    if (in_array($action, ['deleted', 'missing'], true)) {
+        return 'status-inactive';
+    }
+    return 'status-pending';
 }
 
 function action_label(string $action): string {
-    if ($action === 'added') return 'Added';
-    if ($action === 'deleted') return 'Deleted';
-    return ucfirst($action);
+    return smartlib_admin_audit_action_label($action);
 }
-
 function parse_meta_json(?string $json): array {
     $raw = trim((string)$json);
     if ($raw === '') {
@@ -179,7 +165,7 @@ $archiveCsrfToken = archive_csrf_token();
 $tableReady = ensure_admin_activity_log_table($conn);
 
 if ($tableReady) {
-    safe_query($conn, "DELETE FROM admin_activity_logs WHERE created_at < DATE_SUB(NOW(), INTERVAL 30 DAY)");
+    safe_query($conn, "DELETE FROM admin_activity_logs WHERE created_at < DATE_SUB(NOW(), INTERVAL 180 DAY)");
 }
 
 if ($tableReady && $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -325,7 +311,7 @@ if ($tableReady && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 ) VALUES (
                     " . sql_nullable_int($actorUserId) . ",
                     " . sql_nullable_string($conn, $actorName) . ",
-                    'added',
+                    'retrieved',
                     'book',
                     {$newBookId},
                     " . sql_nullable_string($conn, $title) . ",
@@ -361,7 +347,7 @@ if ($dateFilter !== '') {
 
 $where = ['1=1'];
 
-if (in_array($action, ['added', 'deleted'], true)) {
+if (in_array($action, smartlib_admin_audit_actions(), true)) {
     $safeAction = $conn->real_escape_string($action);
     $where[] = "a.action_type = '{$safeAction}'";
 }
@@ -391,6 +377,9 @@ $whereSql = implode(' AND ', $where);
 $totalLogs = 0;
 $totalAdded = 0;
 $totalDeleted = 0;
+$totalUpdated = 0;
+$totalReturned = 0;
+$totalMissing = 0;
 $rows = [];
 
 if ($tableReady) {
@@ -407,6 +396,21 @@ if ($tableReady) {
     $resDeleted = safe_query($conn, "SELECT COUNT(*) AS total FROM admin_activity_logs WHERE action_type = 'deleted'");
     if ($resDeleted && ($r = $resDeleted->fetch_assoc())) {
         $totalDeleted = (int)($r['total'] ?? 0);
+    }
+
+    $resUpdated = safe_query($conn, "SELECT COUNT(*) AS total FROM admin_activity_logs WHERE action_type IN ('updated', 'status_changed')");
+    if ($resUpdated && ($r = $resUpdated->fetch_assoc())) {
+        $totalUpdated = (int)($r['total'] ?? 0);
+    }
+
+    $resReturned = safe_query($conn, "SELECT COUNT(*) AS total FROM admin_activity_logs WHERE action_type = 'returned'");
+    if ($resReturned && ($r = $resReturned->fetch_assoc())) {
+        $totalReturned = (int)($r['total'] ?? 0);
+    }
+
+    $resMissing = safe_query($conn, "SELECT COUNT(*) AS total FROM admin_activity_logs WHERE action_type = 'missing'");
+    if ($resMissing && ($r = $resMissing->fetch_assoc())) {
+        $totalMissing = (int)($r['total'] ?? 0);
     }
 
     $historyRes = safe_query(
@@ -458,16 +462,19 @@ $baseFilterParams = [
 $chipMetrics = [
     ['action' => '', 'title' => 'Total Logged Actions', 'count' => $totalLogs],
     ['action' => 'added', 'title' => 'Added', 'count' => $totalAdded],
+    ['action' => 'updated', 'title' => 'Updated', 'count' => $totalUpdated],
+    ['action' => 'returned', 'title' => 'Returned', 'count' => $totalReturned],
+    ['action' => 'missing', 'title' => 'Missing', 'count' => $totalMissing],
     ['action' => 'deleted', 'title' => 'Deleted', 'count' => $totalDeleted]
 ];
 $archiveFlash = pull_archive_flash();
 ?>
 
 <div class="page-top archive-top-row">
-    <h1>Archives</h1>
-    <p class="archive-inline-note" title="Archive records older than 30 days are automatically removed.">
+    <h1>Audit Log</h1>
+    <p class="archive-inline-note" title="Audit records older than 180 days are automatically removed.">
         <span class="archive-inline-note-icon" aria-hidden="true">i</span>
-        <span>Archive retention: 30 days</span>
+        <span>Audit retention: 180 days</span>
     </p>
 </div>
 
@@ -506,7 +513,7 @@ $archiveFlash = pull_archive_flash();
 
 <section class="panel glass-card">
     <form method="GET" class="filters-inline borrow-filters archive-filters">
-        <input type="text" name="search" placeholder="Search item, admin, metadata" value="<?= htmlspecialchars($search) ?>">
+        <input type="text" name="search" placeholder="Search item, admin, action details" value="<?= htmlspecialchars($search) ?>">
 
         <input type="hidden" name="action" value="<?= htmlspecialchars($action) ?>">
 

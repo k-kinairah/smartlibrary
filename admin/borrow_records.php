@@ -10,6 +10,7 @@ if (!isset($_SESSION['user_id']) || !in_array($currentRole, ['librarian', 'admin
 }
 require '../config/db_connect.php';
 require_once '../config/borrow_fine_rules.php';
+require_once '../config/admin_audit.php';
 
 function qres(mysqli $conn, string $sql) {
     try {
@@ -36,9 +37,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_action'])) {
             $conn->begin_transaction();
 
             $recordStmt = $conn->prepare(
-                "SELECT record_id, copy_id, status, due_date
-                 FROM borrow_records
-                 WHERE record_id = ?
+                "SELECT
+                    br.record_id,
+                    br.copy_id,
+                    br.user_id,
+                    br.status,
+                    br.due_date,
+                    bc.accession_no,
+                    b.book_id,
+                    b.title AS book_title,
+                    CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) AS borrower_name,
+                    u.user_number AS borrower_number
+                 FROM borrow_records br
+                 LEFT JOIN book_copies bc ON bc.copy_id = br.copy_id
+                 LEFT JOIN books b ON b.book_id = bc.book_id
+                 LEFT JOIN library_users u ON u.user_id = br.user_id
+                 WHERE br.record_id = ?
                  LIMIT 1
                  FOR UPDATE"
             );
@@ -106,6 +120,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_action'])) {
                 $updateCopy->execute();
                 $updateCopy->close();
 
+                smartlib_admin_audit_log($conn, 'returned', 'borrow_record', $recordId, (string)($record['book_title'] ?? 'Borrow Record #' . $recordId), [
+                    'record_id' => $recordId,
+                    'copy_id' => $copyId,
+                    'book_id' => (int)($record['book_id'] ?? 0),
+                    'accession_no' => (string)($record['accession_no'] ?? ''),
+                    'borrower' => trim((string)($record['borrower_name'] ?? '')),
+                    'borrower_number' => (string)($record['borrower_number'] ?? ''),
+                    'previous_status' => $currentStatus,
+                    'new_status' => 'returned',
+                    'fine' => $returnFine
+                ]);
+
                 $conn->commit();
                 set_borrow_flash('success', 'Book return has been recorded successfully.');
             }
@@ -154,6 +180,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_action'])) {
                 $updateCopy->execute();
                 $updateCopy->close();
 
+                smartlib_admin_audit_log($conn, 'missing', 'borrow_record', $recordId, (string)($record['book_title'] ?? 'Borrow Record #' . $recordId), [
+                    'record_id' => $recordId,
+                    'copy_id' => $copyId,
+                    'book_id' => (int)($record['book_id'] ?? 0),
+                    'accession_no' => (string)($record['accession_no'] ?? ''),
+                    'borrower' => trim((string)($record['borrower_name'] ?? '')),
+                    'borrower_number' => (string)($record['borrower_number'] ?? ''),
+                    'previous_status' => $currentStatus,
+                    'new_status' => 'missing',
+                    'copy_status' => 'lost'
+                ]);
                 $conn->commit();
                 set_borrow_flash('success', 'Record has been marked as missing and copy status set to lost.');
             }

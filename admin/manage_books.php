@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id']) || !in_array($currentRole, ['librarian', 'admin
     exit;
 }
 require '../config/db_connect.php';
+require_once '../config/admin_audit.php';
 
 function table_exists(mysqli $conn, string $table): bool {
     $table = $conn->real_escape_string($table);
@@ -230,98 +231,20 @@ function manage_books_fetch_book_copies(mysqli $conn, int $bookId): array {
 }
 
 function manage_books_ensure_activity_log_table(mysqli $conn): bool {
-    $sql = "
-        CREATE TABLE IF NOT EXISTS admin_activity_logs (
-            activity_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-            actor_user_id INT NULL,
-            actor_name VARCHAR(160) NOT NULL,
-            action_type ENUM('added','deleted') NOT NULL,
-            entity_type VARCHAR(40) NOT NULL DEFAULT 'book',
-            entity_id INT NULL,
-            entity_title VARCHAR(255) NOT NULL,
-            metadata_json TEXT NULL,
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (activity_id),
-            KEY idx_activity_created_at (created_at),
-            KEY idx_activity_action_entity (action_type, entity_type),
-            KEY idx_activity_actor (actor_user_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ";
-
-    try {
-        return (bool)$conn->query($sql);
-    } catch (Throwable $e) {
-        return false;
-    }
+    return smartlib_admin_audit_ensure_table($conn);
 }
 
 function manage_books_actor_user_id(): int {
-    $sessionKeys = ['admin_id', 'user_id', 'librarian_id'];
-    foreach ($sessionKeys as $key) {
-        $value = (int)($_SESSION[$key] ?? 0);
-        if ($value > 0) {
-            return $value;
-        }
-    }
-    return 0;
+    return smartlib_admin_audit_actor_user_id();
 }
 
 function manage_books_actor_name(): string {
-    $name = trim((string)($_SESSION['name'] ?? ''));
-    if ($name === '') {
-        $name = trim((string)($_SESSION['full_name'] ?? ''));
-    }
-    if ($name === '') {
-        $name = trim((string)($_SESSION['username'] ?? ''));
-    }
-    if ($name === '') {
-        $name = 'System Admin';
-    }
-    return $name;
+    return smartlib_admin_audit_actor_name();
 }
 
 function manage_books_log_activity(mysqli $conn, string $actionType, int $entityId, string $entityTitle, array $metadata = []): void {
-    if (!in_array($actionType, ['added', 'deleted'], true)) {
-        return;
-    }
-
-    if (!manage_books_ensure_activity_log_table($conn)) {
-        return;
-    }
-
-    $actorUserId = manage_books_actor_user_id();
-    $actorName = manage_books_actor_name();
-    $safeTitle = trim($entityTitle);
-    if ($safeTitle === '') {
-        $safeTitle = 'Untitled Book';
-    }
-
-    $metaJson = '';
-    if (!empty($metadata)) {
-        $encoded = json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        if (is_string($encoded)) {
-            $metaJson = $encoded;
-        }
-    }
-
-    $stmt = $conn->prepare(
-        "INSERT INTO admin_activity_logs (
-            actor_user_id, actor_name, action_type, entity_type,
-            entity_id, entity_title, metadata_json, created_at
-        ) VALUES (
-            NULLIF(?, 0), ?, ?, 'book', NULLIF(?, 0), ?, NULLIF(?, ''), NOW()
-        )"
-    );
-
-    if (!$stmt) {
-        return;
-    }
-
-    $stmt->bind_param('ississ', $actorUserId, $actorName, $actionType, $entityId, $safeTitle, $metaJson);
-    $stmt->execute();
-    $stmt->close();
+    smartlib_admin_audit_log($conn, $actionType, 'book', $entityId, $entityTitle, $metadata);
 }
-
 $categories = $conn->query('SELECT category_id, category_name FROM categories ORDER BY category_name ASC');
 $programs = $conn->query('SELECT program_id, program_name FROM programs ORDER BY program_name ASC');
 
@@ -1026,6 +949,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_book'])) {
                 $copyInsertStmt->close();
             }
 
+            manage_books_log_activity(
+                $conn,
+                'updated',
+                $bookId,
+                $title,
+                [
+                    'isbn' => $isbn,
+                    'author' => $author,
+                    'year_published' => $year,
+                    'copy_count_after_update' => count($finalExistingAccessions) + count($newAccessionsToInsert),
+                    'copies_added' => count($newAccessionsToInsert),
+                    'copies_removed' => count($copyDeleteIds)
+                ]
+            );
             $conn->commit();
             header('Location: manage_books.php?updated=1');
             exit;
