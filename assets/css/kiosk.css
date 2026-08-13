@@ -10247,3 +10247,249 @@ body,
     line-height: 1.35;
     max-width: 560px;
 }
+
+/* Kiosk account history view */
+#my-books-modal .my-books-modal-panel {
+  width: min(920px, 94vw) !important;
+  max-height: 86vh !important;
+}
+
+#my-books-modal .my-books-title {
+  margin-bottom: 12px !important;
+}
+
+#my-books-modal .my-books-title::after {
+  content: "Loans, fines, missing items, and returned history" !important;
+  display: block !important;
+  margin-top: 5px !important;
+  font-family: "Manrope", sans-serif !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  color: rgba(43, 83, 67, 0.78) !important;
+}
+
+#my-books-modal .my-books-content {
+  gap: 12px !important;
+}
+
+#my-books-modal .my-account-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  padding: 14px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(127, 171, 151, 0.46) !important;
+  background: rgba(247, 252, 249, 0.74) !important;
+}
+
+#my-books-modal .my-account-kicker {
+  margin: 0 0 4px !important;
+  color: #5b7b6d !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0 !important;
+}
+
+#my-books-modal .my-account-head h4 {
+  margin: 0 !important;
+  color: #183e2f !important;
+  font-size: clamp(18px, 2vw, 24px) !important;
+  line-height: 1.15 !important;
+}
+
+#my-books-modal .my-account-meta {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 7px !important;
+  margin-top: 8px !important;
+}
+
+#my-books-modal .my-account-meta span {
+  display: inline-flex !important;
+  align-items: center !important;
+  min-height: 25px !important;
+  padding: 5px 9px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(122, 164, 145, 0.36) !important;
+  background: rgba(232, 244, 238, 0.85) !important;
+  color: #244d3c !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+#my-books-modal .my-account-fine {
+  min-width: 150px !important;
+  padding: 11px 12px !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(122, 164, 145, 0.36) !important;
+  background: rgba(232, 244, 238, 0.88) !important;
+  text-align: right !important;
+}
+
+#my-books-modal .my-account-fine.has-fine {
+  border-color: rgba(174, 128, 22, 0.36) !important;
+  background: rgba(255, 246, 215, 0.92) !important;
+}
+
+#my-books-modal .my-account-fine span {
+  display: block !important;
+  color: #607a6e !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+#my-books-modal .my-account-fine strong {
+  display: block !important;
+  margin-top: 4px !important;
+  color: #183e2f !important;
+  font-size: 20px !important;
+}
+
+#my-books-modal .my-account-summary {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 9px !important;
+}
+
+#my-books-modal .my-account-summary article {
+  min-width: 0 !important;
+  padding: 11px 12px !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(127, 171, 151, 0.42) !important;
+  background: rgba(247, 252, 249, 0.8) !important;
+}
+
+#my-books-modal .my-account-summary span {
+  display: block !important;
+  color: #5b7b6d !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+#my-books-modal .my-account-summary strong {
+  display: block !important;
+  margin-top: 4px !important;
+  color: #183e2f !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+}
+
+#my-books-modal .my-account-section {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  padding: 12px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(127, 171, 151, 0.38) !important;
+  background: rgba(239, 248, 243, 0.7) !important;
+}
+
+#my-books-modal .my-account-section.alert {
+  border-color: rgba(173, 68, 83, 0.28) !important;
+  background: rgba(255, 240, 243, 0.66) !important;
+}
+
+#my-books-modal .my-account-section-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+}
+
+#my-books-modal .my-account-section-head h5 {
+  margin: 0 !important;
+  color: #183e2f !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+}
+
+#my-books-modal .my-account-section-head span {
+  color: #5b7b6d !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+#my-books-modal .my-book-item.compact {
+  grid-template-columns: 58px minmax(0, 1fr) auto !important;
+}
+
+#my-books-modal .my-book-item.compact .my-book-cover {
+  width: 58px !important;
+  min-width: 58px !important;
+  max-width: 58px !important;
+  height: 82px !important;
+  max-height: 82px !important;
+}
+
+#my-books-modal .my-book-due-note {
+  margin: 8px 0 0 !important;
+  color: #547264 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+}
+
+#my-books-modal .my-book-due-note.overdue,
+#my-books-modal .my-book-due-note.missing {
+  color: #9a3345 !important;
+}
+
+#my-books-modal .my-history-table {
+  display: grid !important;
+  gap: 7px !important;
+}
+
+#my-books-modal .my-history-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.7fr) 0.9fr 0.9fr 0.7fr !important;
+  gap: 8px !important;
+  align-items: center !important;
+  padding: 10px 11px !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(130, 171, 153, 0.3) !important;
+  background: rgba(249, 253, 251, 0.78) !important;
+  color: #315544 !important;
+  font-size: 12px !important;
+}
+
+#my-books-modal .my-history-row strong {
+  min-width: 0 !important;
+  color: #183e2f !important;
+  overflow-wrap: anywhere !important;
+}
+
+#my-books-modal .my-history-row span {
+  min-width: 0 !important;
+}
+
+#my-books-modal .my-books-empty.slim {
+  padding: 12px !important;
+}
+
+@media (max-width: 760px) {
+  #my-books-modal .my-account-head {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  #my-books-modal .my-account-fine {
+    width: 100% !important;
+    text-align: left !important;
+  }
+
+  #my-books-modal .my-account-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  #my-books-modal .my-history-row {
+    grid-template-columns: 1fr !important;
+    gap: 4px !important;
+  }
+
+  #my-books-modal .my-book-item.compact {
+    grid-template-columns: 58px minmax(0, 1fr) !important;
+  }
+}

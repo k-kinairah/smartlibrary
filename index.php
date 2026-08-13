@@ -186,7 +186,7 @@ if ($genreRes) {
                                 <path d="M10 6h4"></path>
                             </svg>
                         </span>
-                        <span>My Checked Out Books</span>
+                        <span>My Library Account</span>
                     </button>
                     <form action="logout.php" method="POST" class="user-menu-form">
                         <button class="user-menu-item danger" type="submit">
@@ -427,7 +427,7 @@ if ($genreRes) {
     <div class="modal-backdrop"></div>
     <div class="modal-panel my-books-modal-panel">
         <button class="close-btn" id="close-my-books-modal">&times;</button>
-        <h3 class="my-books-title">My Checked Out Books</h3>
+        <h3 class="my-books-title">My Library Account</h3>
         <div id="my-books-content" class="my-books-content"></div>
     </div>
 </div>

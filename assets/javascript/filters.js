@@ -2065,80 +2065,149 @@ document.addEventListener("DOMContentLoaded", () => {
         const s = String(status || "").toLowerCase();
         if (s === "overdue") return "Overdue";
         if (s === "missing") return "Missing";
+        if (s === "returned") return "Returned";
         if (s === "borrowed") return "Borrowed";
         return "Active";
+    };
+
+    const money = (value) => {
+        const amount = Number(value || 0);
+        return `PHP ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
+    const dueNote = (book) => {
+        const status = String(book?.status || "").toLowerCase();
+        const days = Number(book?.days_until_due);
+        if (status === "missing") return "Marked missing";
+        if (status === "returned") return `Returned ${esc(book?.date_returned_label || book?.date_returned || "")}`;
+        if (!Number.isFinite(days)) return "Due date unavailable";
+        if (days < 0) return `${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"} overdue`;
+        if (days === 0) return "Due today";
+        return `${days} day${days === 1 ? "" : "s"} left`;
     };
 
     const forceMyBooksLayout = () => {
         if (!myBooksModal || !myBooksContent) return;
 
         if (myBooksPanel) {
-            myBooksPanel.style.width = "min(720px, 92vw)";
-            myBooksPanel.style.maxHeight = "82vh";
+            myBooksPanel.style.width = "min(920px, 94vw)";
+            myBooksPanel.style.maxHeight = "86vh";
             myBooksPanel.style.overflow = "auto";
         }
-
-        myBooksContent.style.display = "flex";
-        myBooksContent.style.flexDirection = "column";
-        myBooksContent.style.gap = "10px";
-
-        myBooksContent.querySelectorAll(".my-book-item").forEach((item) => {
-            item.style.display = "grid";
-            item.style.gridTemplateColumns = "64px minmax(0, 1fr) auto";
-            item.style.gap = "12px";
-            item.style.alignItems = "center";
-            item.style.background = "#f5faf7";
-            item.style.border = "1px solid #d5e3db";
-            item.style.borderRadius = "12px";
-            item.style.padding = "10px";
-        });
-
-        myBooksContent.querySelectorAll(".my-book-cover").forEach((img) => {
-            img.style.width = "64px";
-            img.style.minWidth = "64px";
-            img.style.maxWidth = "64px";
-            img.style.height = "92px";
-            img.style.maxHeight = "92px";
-            img.style.objectFit = "cover";
-            img.style.borderRadius = "6px";
-            img.style.boxShadow = "0 3px 10px rgba(0, 0, 0, 0.18)";
-            img.style.display = "block";
-        });
     };
 
-    const renderMyBooks = (books = []) => {
-        if (!myBooksContent) return;
-
-        if (!Array.isArray(books) || books.length === 0) {
-            myBooksContent.innerHTML = `
-                <div class="my-books-empty">
-                    <strong>No checked out books yet.</strong>
-                    <p>Borrow a book from the catalog and it will appear here.</p>
+    const renderBookCard = (book, compact = false) => `
+        <div class="my-book-item ${compact ? 'compact' : ''}">
+            <img src="${esc(book.cover || 'assets/covers/default.jpg')}" alt="Book cover" class="my-book-cover">
+            <div class="my-book-meta">
+                <h4>${esc(book.title || 'Untitled')}</h4>
+                <p class="my-book-author">${esc(book.author || 'Unknown Author')}</p>
+                <div class="my-book-details">
+                    <span><strong>Accession:</strong> ${esc(book.accession_no || 'N/A')}</span>
+                    <span><strong>Borrowed:</strong> ${esc(book.date_borrowed_label || book.date_borrowed || 'N/A')}</span>
+                    <span><strong>Due:</strong> ${esc(book.due_date_label || book.due_date || 'N/A')}</span>
+                    ${book.date_returned_label ? `<span><strong>Returned:</strong> ${esc(book.date_returned_label)}</span>` : ''}
+                    ${Number(book.fine || 0) > 0 ? `<span><strong>Fine:</strong> ${money(book.fine)}</span>` : ''}
                 </div>
-            `;
-            forceMyBooksLayout();
-            return;
+                <p class="my-book-due-note ${esc(String(book.status || '').toLowerCase())}">${esc(dueNote(book))}</p>
+            </div>
+            <span class="my-book-status ${esc(String(book.status || '').toLowerCase())}">${esc(statusLabel(book.status))}</span>
+        </div>
+    `;
+
+    const renderHistoryRows = (books = []) => {
+        if (!Array.isArray(books) || books.length === 0) {
+            return '<div class="my-books-empty slim"><strong>No returned books yet.</strong><p>Your completed loans will appear here.</p></div>';
         }
 
-        myBooksContent.innerHTML = books.map((book) => `
-            <div class="my-book-item">
-                <img src="${esc(book.cover || 'assets/covers/default.jpg')}" alt="Book cover" class="my-book-cover">
-                <div class="my-book-meta">
-                    <h4>${esc(book.title || 'Untitled')}</h4>
-                    <p class="my-book-author">${esc(book.author || 'Unknown Author')}</p>
-                    <div class="my-book-details">
-                        <span><strong>Accession:</strong> ${esc(book.accession_no || 'N/A')}</span>
-                        <span><strong>Borrowed:</strong> ${esc(book.date_borrowed || 'N/A')}</span>
-                        <span><strong>Due:</strong> ${esc(book.due_date || 'N/A')}</span>
+        return `
+            <div class="my-history-table">
+                ${books.slice(0, 25).map((book) => `
+                    <div class="my-history-row">
+                        <strong>${esc(book.title || 'Untitled')}</strong>
+                        <span>${esc(book.date_borrowed_label || book.date_borrowed || 'N/A')}</span>
+                        <span>${esc(book.date_returned_label || book.date_returned || 'N/A')}</span>
+                        <span>${Number(book.fine || 0) > 0 ? money(book.fine) : 'No fine'}</span>
                     </div>
-                </div>
-                <span class="my-book-status ${esc(String(book.status || '').toLowerCase())}">${esc(statusLabel(book.status))}</span>
+                `).join("")}
             </div>
-        `).join("");
+        `;
+    };
+
+    const renderMyBooks = (payload = {}) => {
+        if (!myBooksContent) return;
+
+        const legacyBooks = Array.isArray(payload) ? payload : null;
+        const account = legacyBooks ? { active_books: legacyBooks, books: legacyBooks } : payload;
+        const summary = account?.summary || {};
+        const borrower = account?.borrower || {};
+        const activeBooks = Array.isArray(account?.active_books) ? account.active_books : [];
+        const missingBooks = Array.isArray(account?.missing_books) ? account.missing_books : [];
+        const returnedBooks = Array.isArray(account?.returned_books) ? account.returned_books : [];
+        const hasAnyRecords = Number(summary.total_records || 0) > 0 || activeBooks.length || missingBooks.length || returnedBooks.length;
+
+        const borrowerMeta = [
+            borrower.user_number ? `ID ${esc(borrower.user_number)}` : '',
+            borrower.role ? esc(String(borrower.role).charAt(0).toUpperCase() + String(borrower.role).slice(1)) : '',
+            borrower.program ? esc(borrower.program) : ''
+        ].filter(Boolean).map((item) => `<span>${item}</span>`).join("");
+
+        myBooksContent.innerHTML = `
+            <section class="my-account-head">
+                <div>
+                    <p class="my-account-kicker">Borrower</p>
+                    <h4>${esc(borrower.name || 'Library Account')}</h4>
+                    <div class="my-account-meta">${borrowerMeta}</div>
+                </div>
+                <div class="my-account-fine ${Number(summary.active_fines || 0) > 0 ? 'has-fine' : ''}">
+                    <span>Active Fine</span>
+                    <strong>${money(summary.active_fines)}</strong>
+                </div>
+            </section>
+
+            <section class="my-account-summary">
+                <article><span>Current Loans</span><strong>${Number(summary.current_loans || activeBooks.length)}</strong></article>
+                <article><span>Overdue</span><strong>${Number(summary.overdue_books || 0)}</strong></article>
+                <article><span>Missing</span><strong>${Number(summary.missing_books || missingBooks.length)}</strong></article>
+                <article><span>Returned</span><strong>${Number(summary.returned_books || returnedBooks.length)}</strong></article>
+            </section>
+
+            ${!hasAnyRecords ? `
+                <div class="my-books-empty">
+                    <strong>No borrowing history yet.</strong>
+                    <p>Borrow a book from the catalog and your account activity will appear here.</p>
+                </div>
+            ` : `
+                <section class="my-account-section">
+                    <div class="my-account-section-head">
+                        <h5>Current Loans</h5>
+                        <span>${activeBooks.length} active</span>
+                    </div>
+                    ${activeBooks.length ? activeBooks.map((book) => renderBookCard(book)).join("") : '<div class="my-books-empty slim"><strong>No current borrowed books.</strong><p>You do not have active loans right now.</p></div>'}
+                </section>
+
+                ${missingBooks.length ? `
+                    <section class="my-account-section alert">
+                        <div class="my-account-section-head">
+                            <h5>Missing Books</h5>
+                            <span>${missingBooks.length} item${missingBooks.length === 1 ? '' : 's'}</span>
+                        </div>
+                        ${missingBooks.map((book) => renderBookCard(book, true)).join("")}
+                    </section>
+                ` : ''}
+
+                <section class="my-account-section">
+                    <div class="my-account-section-head">
+                        <h5>Returned History</h5>
+                        <span>${returnedBooks.length} returned</span>
+                    </div>
+                    ${renderHistoryRows(returnedBooks)}
+                </section>
+            `}
+        `;
 
         forceMyBooksLayout();
     };
-
     const openMyBooks = async () => {
         closeMenu();
 
@@ -2156,7 +2225,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 throw new Error(data.message || "Unable to load books.");
             }
 
-            renderMyBooks(data.books || []);
+            renderMyBooks(data);
         } catch (err) {
             myBooksContent.innerHTML = `
                 <div class="my-books-empty error">
