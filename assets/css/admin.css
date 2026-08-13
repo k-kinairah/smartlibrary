@@ -5007,3 +5007,106 @@ body.modal-open {
     border-top-right-radius: 12px;
     border-bottom-right-radius: 12px;
 }
+
+/* Overdue fine dashboard */
+.overdue-panel-head {
+    gap: 12px;
+}
+
+.panel-link-btn {
+    flex: 0 0 auto;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 8px 13px;
+    border-radius: 999px;
+    border: 1px solid rgba(151, 201, 173, 0.42);
+    background: rgba(236, 247, 241, 0.12);
+    color: #d9f0e2;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.panel-link-btn:hover {
+    border-color: rgba(242, 201, 76, 0.7);
+    color: #fff4c5;
+}
+
+.overdue-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin: 2px 0 10px;
+}
+
+.overdue-summary-card {
+    text-decoration: none;
+    border: 1px solid rgba(151, 201, 173, 0.28);
+    background: rgba(236, 247, 241, 0.08);
+    border-radius: 8px;
+    padding: 9px 10px;
+    min-width: 0;
+}
+
+.overdue-summary-card span {
+    display: block;
+    color: #c4decf;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.overdue-summary-card strong {
+    display: block;
+    margin-top: 4px;
+    color: #f5ffe9;
+    font-size: 18px;
+    line-height: 1.05;
+}
+
+.overdue-summary-card-alert {
+    border-color: rgba(242, 201, 76, 0.42);
+    background: rgba(242, 201, 76, 0.11);
+}
+
+.overdue-due-date {
+    display: block;
+    margin-top: 3px;
+    color: #b6cabc;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.overdue-books-panel .overdue-preview-table th:nth-child(1),
+.overdue-books-panel .overdue-preview-table td:nth-child(1) { width: 20%; }
+.overdue-books-panel .overdue-preview-table th:nth-child(2),
+.overdue-books-panel .overdue-preview-table td:nth-child(2) { width: 35%; white-space: normal; }
+.overdue-books-panel .overdue-preview-table th:nth-child(3),
+.overdue-books-panel .overdue-preview-table td:nth-child(3) { width: 10%; white-space: nowrap; }
+.overdue-books-panel .overdue-preview-table th:nth-child(4),
+.overdue-books-panel .overdue-preview-table td:nth-child(4) { width: 15%; white-space: nowrap; }
+.overdue-books-panel .overdue-preview-table th:nth-child(5),
+.overdue-books-panel .overdue-preview-table td:nth-child(5) { width: 20%; white-space: normal; text-align: center; }
+
+[data-theme="light"] .panel-link-btn,
+[data-theme="light"] .overdue-summary-card {
+    background: #f7fcf9;
+    border-color: rgba(64, 109, 88, 0.22);
+    color: #244435;
+}
+
+[data-theme="light"] .overdue-summary-card span,
+[data-theme="light"] .overdue-due-date {
+    color: #5f7f70;
+}
+
+[data-theme="light"] .overdue-summary-card strong {
+    color: #244435;
+}
+
+[data-theme="light"] .overdue-summary-card-alert {
+    background: #fff7d7;
+    border-color: rgba(183, 141, 32, 0.32);
+}
