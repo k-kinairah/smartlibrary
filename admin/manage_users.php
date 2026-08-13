@@ -529,6 +529,7 @@ if ($openEditUserModal) {
                             $editParams = $baseFilterParams;
                             $editParams['edit_user'] = (string)intval($u['user_id']);
                             $editHref = $buildManageUsersUrl($editParams);
+                            $historyHref = 'borrower_history.php?user_id=' . intval($u['user_id']);
 
                             $rowRole = strtolower((string)($u['role'] ?? ''));
                             $displayRole = $rowRole === 'admin' ? 'Librarian' : ucfirst((string)$rowRole);
@@ -555,6 +556,13 @@ if ($openEditUserModal) {
                             <td class="<?= htmlspecialchars($roleTextClass) ?>"><?= htmlspecialchars($displayRole) ?></td>
                             <td><span class="<?= htmlspecialchars($statusClass) ?>"><?= htmlspecialchars($statusLabel) ?></span></td>
                             <td class="user-actions-cell">
+                                <a class="btn-status user-pin-btn user-action-icon-btn borrower-history-icon-btn" href="<?= htmlspecialchars($historyHref) ?>" aria-label="View borrower history">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M7 4h10a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-4 2V6a2 2 0 0 1 2-2Z"></path>
+                                        <path d="M8 9h8"></path>
+                                        <path d="M8 13h6"></path>
+                                    </svg>
+                                </a>
                                 <a class="btn-status user-pin-btn user-action-icon-btn" href="<?= htmlspecialchars($editHref) ?>" aria-label="Edit user">
                                     <svg viewBox="0 0 24 24" aria-hidden="true">
                                         <path d="M4 20h4.2l9.7-9.7-4.2-4.2L4 15.8V20Z"></path>

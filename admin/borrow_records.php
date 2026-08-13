@@ -442,6 +442,7 @@ require 'layout_top.php';
                             <td>
                                 <div><?= htmlspecialchars($borrower) ?></div>
                                 <small><?= htmlspecialchars($userNo) ?></small>
+                                <a class="borrower-history-inline-link" href="borrower_history.php?user_id=<?= (int)($row['user_id'] ?? 0) ?>">History</a>
                             </td>
                             <td><?= htmlspecialchars($title) ?></td>
                             <td><?= htmlspecialchars((string)($row['date_borrowed'] ?? '-')) ?></td>
