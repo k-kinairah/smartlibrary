@@ -78,7 +78,7 @@ function admin_icon(string $key): string {
         <a class="nav-link <?= $currentPage === 'dashboard.php' ? 'active' : '' ?>" href="dashboard.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('dashboard') ?></span><span>Dashboard</span></a>
         <a class="nav-link <?= $currentPage === 'borrow_records.php' ? 'active' : '' ?>" href="borrow_records.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('borrow') ?></span><span>Borrow Records</span></a>
         <a class="nav-link <?= $currentPage === 'reports.php' ? 'active' : '' ?>" href="reports.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('reports') ?></span><span>Reports</span></a>
-        <a class="nav-link <?= $currentPage === 'export_center.php' ? 'active' : '' ?>" href="export_center.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('export') ?></span><span>Export Center</span></a>
+        <a class="nav-link <?= $currentPage === 'export_center.php' ? 'active' : '' ?>" href="export_center.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('export') ?></span><span>Backup & Data Export</span></a>
         <a class="nav-link <?= $currentPage === 'manage_books.php' ? 'active' : '' ?>" href="manage_books.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('books') ?></span><span>Books</span></a>
         <a class="nav-link <?= $currentPage === 'manage_users.php' ? 'active' : '' ?>" href="manage_users.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('users') ?></span><span>Users</span></a>
         <a class="nav-link <?= $currentPage === 'archived_history.php' ? 'active' : '' ?>" href="archived_history.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('archives') ?></span><span>Archives</span></a>

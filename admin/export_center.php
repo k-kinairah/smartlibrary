@@ -62,8 +62,8 @@ $exportCards = [
 
 <div class="page-top export-center-top">
     <div>
-        <h1>Export Center</h1>
-        <p class="page-subtitle">Download clean CSV backups for catalog, borrowers, circulation, overdue loans, and missing books.</p>
+        <h1>Backup & Data Export</h1>
+        <p class="page-subtitle">Reports are for summaries. Exports are raw CSV backups for catalog, borrowers, circulation, overdue loans, and missing books.</p>
     </div>
     <a href="reports.php" class="filter-reset-btn">Open Reports</a>
 </div>
@@ -71,7 +71,7 @@ $exportCards = [
 <section class="panel glass-card export-center-note">
     <div>
         <h2>Backup-ready CSV exports</h2>
-        <p>Use these files for spreadsheet reporting, backup snapshots, and school library inspections. Password hashes are never included.</p>
+        <p>Use these raw CSV files for backup snapshots, spreadsheet audits, migration prep, and school library inspections. Password hashes are never included.</p>
     </div>
     <span>Generated on download</span>
 </section>
