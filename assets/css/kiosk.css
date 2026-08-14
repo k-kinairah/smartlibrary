@@ -10560,3 +10560,13 @@ body,
     text-align: left !important;
   }
 }
+
+/* Kiosk carousel metadata alignment */
+.discover-panel .carousel-reason {
+    display: block !important;
+    width: fit-content !important;
+    max-width: min(560px, 92%) !important;
+    margin: 8px auto 0 !important;
+    text-align: center !important;
+    overflow-wrap: anywhere !important;
+}
