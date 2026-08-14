@@ -10493,3 +10493,70 @@ body,
     grid-template-columns: 58px minmax(0, 1fr) !important;
   }
 }
+
+/* Kiosk borrower renewal actions */
+#my-books-modal .my-book-actions {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 7px !important;
+  min-width: 118px !important;
+}
+
+#my-books-modal .my-book-actions small {
+  max-width: 150px !important;
+  color: #657d71 !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+  text-align: right !important;
+}
+
+#my-books-modal .my-book-renew-btn {
+  min-height: 34px !important;
+  min-width: 96px !important;
+  padding: 8px 12px !important;
+  border: 1px solid rgba(20, 115, 72, 0.36) !important;
+  border-radius: 999px !important;
+  background: linear-gradient(180deg, #1fa563 0%, #14824d 100%) !important;
+  color: #ffffff !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+  box-shadow: 0 8px 16px rgba(20, 130, 77, 0.22) !important;
+}
+
+#my-books-modal .my-book-renew-btn:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 10px 20px rgba(20, 130, 77, 0.26) !important;
+}
+
+#my-books-modal .my-book-renew-btn:disabled {
+  cursor: wait !important;
+  opacity: 0.74 !important;
+  transform: none !important;
+}
+
+#my-books-modal .my-books-loading.success {
+  border-style: solid !important;
+  border-color: rgba(20, 130, 77, 0.32) !important;
+  background: rgba(231, 247, 238, 0.95) !important;
+  color: #195438 !important;
+  font-weight: 900 !important;
+}
+
+#my-books-modal .renewal-error {
+  border-style: solid !important;
+}
+
+@media (max-width: 760px) {
+  #my-books-modal .my-book-actions {
+    grid-column: 1 / -1 !important;
+    align-items: flex-start !important;
+    margin-left: 68px !important;
+  }
+
+  #my-books-modal .my-book-actions small {
+    text-align: left !important;
+  }
+}

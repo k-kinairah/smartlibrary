@@ -75,6 +75,45 @@ if (!function_exists('smartlib_overdue_fine_amount')) {
     }
 }
 
+
+if (!function_exists('smartlib_loan_policy_for_role')) {
+    function smartlib_loan_policy_for_role(string $role): array {
+        $role = strtolower(trim($role));
+        $policies = [
+            'student' => ['days' => 7, 'max_borrows' => 3, 'max_renewals' => 1],
+            'faculty' => ['days' => 30, 'max_borrows' => 5, 'max_renewals' => 1],
+            'librarian' => ['days' => 7, 'max_borrows' => 5, 'max_renewals' => 1],
+            'admin' => ['days' => 7, 'max_borrows' => 5, 'max_renewals' => 1]
+        ];
+
+        return $policies[$role] ?? $policies['student'];
+    }
+}
+
+if (!function_exists('smartlib_ensure_borrow_renewal_columns')) {
+    function smartlib_ensure_borrow_renewal_columns(mysqli $conn): void {
+        $renewCountExists = false;
+        $lastRenewedExists = false;
+
+        $res = $conn->query("SHOW COLUMNS FROM borrow_records LIKE 'renew_count'");
+        if ($res && $res->num_rows > 0) {
+            $renewCountExists = true;
+        }
+
+        $res = $conn->query("SHOW COLUMNS FROM borrow_records LIKE 'last_renewed_at'");
+        if ($res && $res->num_rows > 0) {
+            $lastRenewedExists = true;
+        }
+
+        if (!$renewCountExists) {
+            $conn->query("ALTER TABLE borrow_records ADD COLUMN renew_count INT NOT NULL DEFAULT 0 AFTER status");
+        }
+
+        if (!$lastRenewedExists) {
+            $conn->query("ALTER TABLE borrow_records ADD COLUMN last_renewed_at DATETIME NULL AFTER renew_count");
+        }
+    }
+}
 if (!function_exists('sync_overdue_status_and_fines')) {
     function sync_overdue_status_and_fines(mysqli $conn, ?int $userId = null): void {
         $today = (new DateTimeImmutable('today'))->format('Y-m-d');

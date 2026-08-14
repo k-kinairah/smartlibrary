@@ -1,6 +1,7 @@
 <?php
 session_start();
 require 'config/db_connect.php';
+require_once 'config/borrow_fine_rules.php';
 
 header('Content-Type: application/json');
 
@@ -20,18 +21,12 @@ if ($userId <= 0) {
     respond(['status' => 'error', 'message' => 'Please sign in first before checking out a book.'], 401);
 }
 
-$loanPolicyByRole = [
-    'student' => ['days' => 7, 'max_borrows' => 3],
-    'faculty' => ['days' => 30, 'max_borrows' => 5],
-    'librarian' => ['days' => 7, 'max_borrows' => 5],
-    'admin' => ['days' => 7, 'max_borrows' => 5]
-];
-
-if (!array_key_exists($userRole, $loanPolicyByRole)) {
+$allowedBorrowerRoles = ['student', 'faculty', 'librarian', 'admin'];
+if (!in_array($userRole, $allowedBorrowerRoles, true)) {
     respond(['status' => 'error', 'message' => 'This account type is not allowed to check out from kiosk.'], 403);
 }
 
-$loanPolicy = $loanPolicyByRole[$userRole];
+$loanPolicy = smartlib_loan_policy_for_role($userRole);
 $loanDays = (int)($loanPolicy['days'] ?? 7);
 $maxBorrows = (int)($loanPolicy['max_borrows'] ?? 3);
 

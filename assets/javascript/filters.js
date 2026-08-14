@@ -2111,7 +2111,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
                 <p class="my-book-due-note ${esc(String(book.status || '').toLowerCase())}">${esc(dueNote(book))}</p>
             </div>
-            <span class="my-book-status ${esc(String(book.status || '').toLowerCase())}">${esc(statusLabel(book.status))}</span>
+            <div class="my-book-actions">
+                <span class="my-book-status ${esc(String(book.status || '').toLowerCase())}">${esc(statusLabel(book.status))}</span>
+                ${book.can_renew ? `<button type="button" class="my-book-renew-btn" data-record-id="${esc(book.record_id)}">Renew</button>` : `<small>${esc(book.renew_note || '')}</small>`}
+            </div>
         </div>
     `;
 
@@ -2208,6 +2211,40 @@ document.addEventListener("DOMContentLoaded", () => {
 
         forceMyBooksLayout();
     };
+    const renewLoan = async (recordId, button = null) => {
+        if (!recordId || !myBooksContent) return;
+
+        if (button) {
+            button.disabled = true;
+            button.textContent = "Renewing...";
+        }
+
+        try {
+            const res = await fetch("renew_loan.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ record_id: String(recordId) }),
+                credentials: "same-origin"
+            });
+            const data = await res.json();
+
+            if (!res.ok || data.status !== "success") {
+                throw new Error(data.message || "Unable to renew loan.");
+            }
+
+            myBooksContent.innerHTML = `<div class="my-books-loading success">Renewed. New due date: ${esc(data.due_date_label || data.due_date || '')}</div>`;
+            await openMyBooks();
+        } catch (err) {
+            if (button) {
+                button.disabled = false;
+                button.textContent = "Renew";
+            }
+            const message = document.createElement("div");
+            message.className = "my-books-empty error renewal-error";
+            message.innerHTML = `<strong>Could not renew this loan.</strong><p>${esc(err?.message || 'Please try again.')}</p>`;
+            myBooksContent.prepend(message);
+        }
+    };
     const openMyBooks = async () => {
         closeMenu();
 
@@ -2237,6 +2274,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
+    myBooksContent?.addEventListener("click", (e) => {
+        const renewButton = e.target.closest(".my-book-renew-btn");
+        if (!renewButton) return;
+        e.preventDefault();
+        renewLoan(renewButton.dataset.recordId, renewButton);
+    });
     openMyBooksBtn?.addEventListener("click", (e) => {
         e.preventDefault();
         openMyBooks();

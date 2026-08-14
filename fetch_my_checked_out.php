@@ -58,6 +58,7 @@ if ($userId <= 0) {
     respond(['status' => 'error', 'message' => 'Please sign in first.'], 401);
 }
 
+smartlib_ensure_borrow_renewal_columns($conn);
 sync_overdue_status_and_fines($conn, $userId);
 
 $userStmt = $conn->prepare(
@@ -140,6 +141,7 @@ $sql = "
         br.date_returned,
         br.status,
         br.fine,
+        COALESCE(br.renew_count, 0) AS renew_count,
         bc.accession_no,
         b.title,
         b.author,
@@ -184,6 +186,26 @@ if ($res) {
             $daysLate = abs($daysUntilDue);
         }
 
+        $renewCount = (int)($row['renew_count'] ?? 0);
+        $policy = smartlib_loan_policy_for_role((string)$borrower['role']);
+        $maxRenewals = max(0, (int)($policy['max_renewals'] ?? 1));
+        $fine = round((float)($row['fine'] ?? 0), 2);
+        $canRenew = ($status === 'borrowed' && $daysUntilDue !== null && $daysUntilDue >= 0 && $fine <= 0 && $renewCount < $maxRenewals);
+        $renewNote = 'Renewal unavailable';
+        if ($canRenew) {
+            $renewNote = 'Renew once before the due date';
+        } elseif ($status === 'overdue' || ($daysUntilDue !== null && $daysUntilDue < 0)) {
+            $renewNote = 'Overdue loans cannot be renewed online';
+        } elseif ($status === 'missing') {
+            $renewNote = 'Missing books cannot be renewed';
+        } elseif ($status === 'returned') {
+            $renewNote = 'Returned books do not need renewal';
+        } elseif ($renewCount >= $maxRenewals) {
+            $renewNote = 'Renewal already used';
+        } elseif ($fine > 0) {
+            $renewNote = 'Settle fines before renewing';
+        }
+
         $item = [
             'record_id' => (int)($row['record_id'] ?? 0),
             'title' => (string)($row['title'] ?? 'Untitled'),
@@ -198,7 +220,11 @@ if ($res) {
             'days_until_due' => $daysUntilDue,
             'days_late' => $daysLate,
             'status' => $status,
-            'fine' => round((float)($row['fine'] ?? 0), 2),
+            'fine' => $fine,
+            'renew_count' => $renewCount,
+            'max_renewals' => $maxRenewals,
+            'can_renew' => $canRenew,
+            'renew_note' => $renewNote,
             'cover' => my_books_cover_path((string)($row['cover'] ?? ''))
         ];
 
