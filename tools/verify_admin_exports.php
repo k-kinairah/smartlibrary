@@ -70,14 +70,14 @@ try {
 
     $center = fetch_admin_export_url(rtrim($baseUrl, '/') . '/admin/export_center.php', $sessionId);
     if (strpos($center['status_line'], '200') === false) {
-        fail_admin_exports_verify('Backup & Data Export did not return HTTP 200. Status: ' . $center['status_line']);
+        fail_admin_exports_verify('Data Export did not return HTTP 200. Status: ' . $center['status_line']);
     }
-    foreach (['Backup & Data Export', 'Books Summary', 'Book Copies', 'Borrowers &amp; Staff', 'Borrow Records', 'Overdue &amp; Missing'] as $fragment) {
+    foreach (['Data Export', 'Books Summary', 'Book Copies', 'Borrowers &amp; Staff', 'Borrow Records', 'Overdue &amp; Missing'] as $fragment) {
         if (strpos($center['body'], $fragment) === false) {
-            fail_admin_exports_verify('Backup & Data Export page missing expected text: ' . $fragment);
+            fail_admin_exports_verify('Data Export page missing expected text: ' . $fragment);
         }
     }
-    ok_admin_exports_verify('backup export page renders all export cards');
+    ok_admin_exports_verify('data export page renders all export cards');
 
     $expectedHeaders = [
         'books' => ['book_id', 'isbn', 'title', 'author', 'publisher', 'year_published', 'category', 'program', 'location', 'call_number', 'copy_count', 'available_copies', 'borrowed_copies', 'lost_copies', 'created_at'],
