@@ -5296,3 +5296,122 @@ body.modal-open {
     border-color: rgba(183, 141, 32, 0.32);
     color: #7a5b12;
 }
+
+/* Export Center */
+.export-center-top {
+    align-items: flex-start;
+}
+
+.export-center-note {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.export-center-note h2 {
+    margin: 0 0 6px;
+    color: #f5ffe9;
+    font-size: 21px;
+}
+
+.export-center-note p {
+    margin: 0;
+    color: #c4decf;
+    line-height: 1.45;
+}
+
+.export-center-note > span {
+    flex: 0 0 auto;
+    border-radius: 999px;
+    border: 1px solid rgba(151, 201, 173, 0.34);
+    background: rgba(236, 247, 241, 0.1);
+    color: #d9f0e2;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 7px 10px;
+}
+
+.export-center-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.export-card {
+    margin-bottom: 0;
+    min-width: 0;
+}
+
+.export-card-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.export-card-title-row h3 {
+    margin: 1px 0 6px;
+}
+
+.export-card-title-row span {
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: rgba(242, 201, 76, 0.14);
+    border: 1px solid rgba(242, 201, 76, 0.3);
+    color: #fff4c5;
+    font-size: 11px;
+    font-weight: 900;
+    padding: 5px 8px;
+    white-space: nowrap;
+}
+
+.export-download-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 9px 13px;
+    border-radius: 10px;
+    font-weight: 900;
+}
+
+.export-center-table-panel {
+    margin-top: 16px;
+}
+
+.export-center-table {
+    min-width: 760px;
+}
+
+@media (max-width: 960px) {
+    .export-center-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .export-center-note {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
+[data-theme="light"] .export-center-note h2 {
+    color: #244435;
+}
+
+[data-theme="light"] .export-center-note p {
+    color: #5f7f70;
+}
+
+[data-theme="light"] .export-center-note > span {
+    background: #f7fcf9;
+    border-color: rgba(64, 109, 88, 0.22);
+    color: #244435;
+}
+
+[data-theme="light"] .export-card-title-row span {
+    background: #fff7d7;
+    border-color: rgba(183, 141, 32, 0.32);
+    color: #7a5b12;
+}

@@ -18,6 +18,7 @@ function admin_icon(string $key): string {
         'books' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4.8 6.5 12 10 19.2 6.5 12 3Z"></path><path d="M4.8 11 12 14.5 19.2 11"></path><path d="M4.8 15.5 12 19 19.2 15.5"></path></svg>',
         'borrow' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14"></path><path d="M10 4v15"></path><path d="M14 6v13"></path><path d="M18 4.5 20 19"></path></svg>',
         'reports' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19.2h14"></path><path d="M8 16v-4.2"></path><path d="M12 16V7.6"></path><path d="M16 16v-6.8"></path></svg>',
+        'export' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="m8 10 4 4 4-4"></path><path d="M5 19h14"></path><path d="M6 6h12"></path></svg>',
         'users' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.4" r="2.9"></circle><path d="M5.3 18.8c0-3.2 2.9-5.3 6.7-5.3s6.7 2.1 6.7 5.3"></path></svg>',
         'archives' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.4A2.4 2.4 0 0 1 6.4 6h3l1.7 1.7H17.6A2.4 2.4 0 0 1 20 10.1v7.5A2.4 2.4 0 0 1 17.6 20H6.4A2.4 2.4 0 0 1 4 17.6V8.4Z"></path></svg>',
         'logout' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5.5H6.8A1.8 1.8 0 0 0 5 7.3v9.4a1.8 1.8 0 0 0 1.8 1.8H10"></path><path d="M13 8.2 17.8 12 13 15.8"></path><path d="M9.8 12h8"></path></svg>',
@@ -77,6 +78,7 @@ function admin_icon(string $key): string {
         <a class="nav-link <?= $currentPage === 'dashboard.php' ? 'active' : '' ?>" href="dashboard.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('dashboard') ?></span><span>Dashboard</span></a>
         <a class="nav-link <?= $currentPage === 'borrow_records.php' ? 'active' : '' ?>" href="borrow_records.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('borrow') ?></span><span>Borrow Records</span></a>
         <a class="nav-link <?= $currentPage === 'reports.php' ? 'active' : '' ?>" href="reports.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('reports') ?></span><span>Reports</span></a>
+        <a class="nav-link <?= $currentPage === 'export_center.php' ? 'active' : '' ?>" href="export_center.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('export') ?></span><span>Export Center</span></a>
         <a class="nav-link <?= $currentPage === 'manage_books.php' ? 'active' : '' ?>" href="manage_books.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('books') ?></span><span>Books</span></a>
         <a class="nav-link <?= $currentPage === 'manage_users.php' ? 'active' : '' ?>" href="manage_users.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('users') ?></span><span>Users</span></a>
         <a class="nav-link <?= $currentPage === 'archived_history.php' ? 'active' : '' ?>" href="archived_history.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('archives') ?></span><span>Archives</span></a>
