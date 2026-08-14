@@ -54,6 +54,7 @@ $createdUserId = 0;
 $createdBookId = 0;
 $createdCopyId = 0;
 $createdRecordId = 0;
+$exitCode = 0;
 
 try {
     smartlib_ensure_borrow_renewal_columns($conn);
@@ -180,10 +181,10 @@ try {
 
     ok_borrower_renewal_verify('account endpoint marks eligible active loans as renewable');
     ok_borrower_renewal_verify('renew endpoint extends due date once and blocks a second renewal');
-    exit(0);
+    $exitCode = 0;
 } catch (Throwable $e) {
     fwrite(STDERR, 'FAIL: ' . $e->getMessage() . PHP_EOL);
-    exit(1);
+    $exitCode = 1;
 } finally {
     if ($createdRecordId > 0) {
         $conn->query('DELETE FROM borrow_records WHERE record_id = ' . (int)$createdRecordId);
@@ -203,3 +204,5 @@ try {
         @unlink($sessionFile);
     }
 }
+
+exit($exitCode);

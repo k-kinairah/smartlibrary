@@ -43,6 +43,7 @@ $createdUserId = 0;
 $createdBookId = 0;
 $createdCopyId = 0;
 $createdRecordId = 0;
+$exitCode = 0;
 
 try {
     session_id($sessionId);
@@ -144,10 +145,10 @@ try {
 
     ok_overdue_verify('dashboard renders overdue fine summary and overdue table');
     ok_overdue_verify('temporary overdue record appears with expected fine');
-    exit(0);
+    $exitCode = 0;
 } catch (Throwable $e) {
     fwrite(STDERR, 'FAIL: ' . $e->getMessage() . PHP_EOL);
-    exit(1);
+    $exitCode = 1;
 } finally {
     if ($createdRecordId > 0) {
         $conn->query('DELETE FROM borrow_records WHERE record_id = ' . (int)$createdRecordId);
@@ -167,3 +168,5 @@ try {
         @unlink($sessionFile);
     }
 }
+
+exit($exitCode);

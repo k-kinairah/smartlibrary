@@ -49,6 +49,7 @@ $createdUserId = 0;
 $createdBookId = 0;
 $createdCopyIds = [];
 $createdRecordIds = [];
+$exitCode = 0;
 
 try {
     $userNumber = 'BAV' . $stamp;
@@ -187,10 +188,10 @@ try {
 
     ok_borrower_account_verify('account endpoint returns borrower profile, summary, and split loan history');
     ok_borrower_account_verify('account endpoint syncs overdue status and active fines');
-    exit(0);
+    $exitCode = 0;
 } catch (Throwable $e) {
     fwrite(STDERR, 'FAIL: ' . $e->getMessage() . PHP_EOL);
-    exit(1);
+    $exitCode = 1;
 } finally {
     if (!empty($createdRecordIds)) {
         $ids = implode(',', array_map('intval', $createdRecordIds));
@@ -212,3 +213,5 @@ try {
         @unlink($sessionFile);
     }
 }
+
+exit($exitCode);

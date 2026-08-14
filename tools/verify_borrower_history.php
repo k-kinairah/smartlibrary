@@ -44,6 +44,7 @@ $createdUserId = 0;
 $createdBookId = 0;
 $createdCopyIds = [];
 $createdRecordIds = [];
+$exitCode = 0;
 
 try {
     session_id($sessionId);
@@ -193,10 +194,10 @@ try {
 
     ok_borrower_history_verify('borrower history page renders profile, summary, and record sections');
     ok_borrower_history_verify('borrower history syncs overdue status and fine for the selected borrower');
-    exit(0);
+    $exitCode = 0;
 } catch (Throwable $e) {
     fwrite(STDERR, 'FAIL: ' . $e->getMessage() . PHP_EOL);
-    exit(1);
+    $exitCode = 1;
 } finally {
     if (!empty($createdRecordIds)) {
         $ids = implode(',', array_map('intval', $createdRecordIds));
@@ -218,3 +219,5 @@ try {
         @unlink($sessionFile);
     }
 }
+
+exit($exitCode);
