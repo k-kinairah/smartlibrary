@@ -38,6 +38,12 @@ function my_books_date(?string $raw): string {
     return $ts ? date('M d, Y', $ts) : $raw;
 }
 
+function my_books_favorites_table_exists(mysqli $conn): bool {
+    // 2026-10-10: hardcoded -- see index.php for why. favorites is
+    // confirmed present in smartlib_FULL_BACKUP_20261010.sql.
+    return true;
+}
+
 function my_books_days_until_due(?string $raw): ?int {
     $raw = trim((string)$raw);
     if ($raw === '') {
@@ -101,7 +107,8 @@ $summary = [
     'overdue_books' => 0,
     'missing_books' => 0,
     'total_fines' => 0.0,
-    'active_fines' => 0.0
+    'active_fines' => 0.0,
+    'favorites' => 0
 ];
 
 $summaryStmt = $conn->prepare(
@@ -241,6 +248,63 @@ if ($res) {
 
 $stmt->close();
 
+// Favorites (heart icon on book cards / detail modal). Kept as its own
+// query rather than folded into the borrow_records SQL above since a
+// favorite has nothing to do with ever having borrowed the book -- guarded
+// with the same table_exists() pattern the rest of this codebase already
+// uses for newer/optional tables, so a database that hasn't run
+// database/favorites_setup.sql yet just reports zero favorites instead of
+// a fatal error.
+$favorite_books = [];
+
+if (my_books_favorites_table_exists($conn)) {
+    $favStmt = $conn->prepare(
+        "SELECT
+            f.book_id,
+            f.created_at,
+            b.title,
+            b.author,
+            b.cover,
+            (SELECT COUNT(*) FROM book_copies bc_total WHERE bc_total.book_id = b.book_id) AS total_copies,
+            (SELECT COUNT(*) FROM book_copies bc_avail WHERE bc_avail.book_id = b.book_id AND bc_avail.status = 'available') AS available_copies
+         FROM favorites f
+         JOIN books b ON b.book_id = f.book_id
+         WHERE f.user_id = ?
+         ORDER BY f.created_at DESC
+         LIMIT 120"
+    );
+
+    if ($favStmt) {
+        $favStmt->bind_param('i', $userId);
+        $favStmt->execute();
+        $favRes = $favStmt->get_result();
+
+        while ($favRow = $favRes->fetch_assoc()) {
+            $totalCopies = (int)($favRow['total_copies'] ?? 0);
+            $availableCopies = (int)($favRow['available_copies'] ?? 0);
+            $availabilityLabel = $totalCopies > 0
+                ? "{$availableCopies} of {$totalCopies} available"
+                : 'Availability unknown';
+
+            $favorite_books[] = [
+                'book_id' => (int)($favRow['book_id'] ?? 0),
+                'title' => (string)($favRow['title'] ?? 'Untitled'),
+                'author' => (string)($favRow['author'] ?? 'Unknown Author'),
+                'cover' => my_books_cover_path((string)($favRow['cover'] ?? '')),
+                'added_at_label' => my_books_date((string)($favRow['created_at'] ?? '')),
+                'total_copies' => $totalCopies,
+                'available_copies' => $availableCopies,
+                'is_available' => $availableCopies > 0,
+                'availability_label' => $availabilityLabel
+            ];
+        }
+
+        $favStmt->close();
+    }
+}
+
+$summary['favorites'] = count($favorite_books);
+
 respond([
     'status' => 'success',
     'borrower' => $borrower,
@@ -248,5 +312,6 @@ respond([
     'books' => $books,
     'active_books' => $active_books,
     'returned_books' => $returned_books,
-    'missing_books' => $missing_books
+    'missing_books' => $missing_books,
+    'favorite_books' => $favorite_books
 ]);

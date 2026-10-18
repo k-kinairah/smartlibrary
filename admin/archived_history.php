@@ -1,5 +1,14 @@
-<?php require 'layout_top.php'; ?>
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$currentRole = strtolower(trim((string)($_SESSION['role'] ?? '')));
+if (!isset($_SESSION['user_id']) || !in_array($currentRole, ['librarian', 'admin'], true)) {
+    header('Location: ../index.php');
+    exit;
+}
+
 require '../config/db_connect.php';
 require_once '../config/admin_audit.php';
 
@@ -468,10 +477,12 @@ $chipMetrics = [
     ['action' => 'deleted', 'title' => 'Deleted', 'count' => $totalDeleted]
 ];
 $archiveFlash = pull_archive_flash();
+
+require 'layout_top.php';
 ?>
 
 <div class="page-top archive-top-row">
-    <h1>Audit Log</h1>
+    <h1 class="page-heading"><span class="page-icon" aria-hidden="true"><?= admin_icon('archives') ?></span>Audit Log</h1>
     <p class="archive-inline-note" title="Audit records older than 180 days are automatically removed.">
         <span class="archive-inline-note-icon" aria-hidden="true">i</span>
         <span>Audit retention: 180 days</span>
@@ -504,16 +515,23 @@ $archiveFlash = pull_archive_flash();
             }
             $chipHref = $buildArchiveUrl($chipParams);
         ?>
+        <?php $chipMeta = stat_chip_meta((string)($chip['title'] ?? '')); ?>
         <a href="<?= htmlspecialchars($chipHref) ?>" class="stat-card glass-card borrow-chip<?= $isActiveChip ? ' is-active' : '' ?>">
-            <h3><?= htmlspecialchars((string)($chip['title'] ?? '')) ?></h3>
+            <div class="metric-head-row">
+                <span class="metric-icon-badge metric-icon-badge--<?= htmlspecialchars($chipMeta['accent']) ?>" aria-hidden="true"><?= admin_icon($chipMeta['icon']) ?></span>
+                <h3><?= htmlspecialchars((string)($chip['title'] ?? '')) ?></h3>
+            </div>
             <p class="value"><?= number_format((int)($chip['count'] ?? 0)) ?></p>
         </a>
     <?php endforeach; ?>
 </section>
 
-<section class="panel glass-card">
+<section class="filters-bar-panel">
     <form method="GET" class="filters-inline borrow-filters archive-filters">
-        <input type="text" name="search" placeholder="Search item, admin, action details" value="<?= htmlspecialchars($search) ?>">
+        <div class="search-field-wrap">
+            <span class="filters-search-icon" aria-hidden="true"><?= admin_icon('search') ?></span>
+            <input type="text" name="search" placeholder="Search item, admin, action details" value="<?= htmlspecialchars($search) ?>">
+        </div>
 
         <input type="hidden" name="action" value="<?= htmlspecialchars($action) ?>">
 
@@ -521,11 +539,11 @@ $archiveFlash = pull_archive_flash();
         <input type="date" name="date" value="<?= htmlspecialchars($dateFilter) ?>">
 
         <button type="submit" class="btn-primary">Apply</button>
-        <a href="archived_history.php" class="archive-reset-btn filter-reset-btn">Reset</a>
+        <a href="archived_history.php" class="filter-reset-btn">Reset</a>
     </form>
 </section>
 
-<section class="panel glass-card">
+<section class="panel glass-card data-table-panel">
     <div class="table-wrap">
         <table class="data-table archive-table">
             <thead>
@@ -599,12 +617,18 @@ $archiveFlash = pull_archive_flash();
                                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($archiveCsrfToken) ?>">
                                         <input type="hidden" name="archive_action" value="retrieve_book">
                                         <input type="hidden" name="activity_id" value="<?= (int)($row['activity_id'] ?? 0) ?>">
-                                        <button type="submit" class="archive-action-btn">Retrieve</button>
+                                        <button type="submit" class="archive-action-btn">
+                                            <span class="archive-action-icon" aria-hidden="true"><?= admin_icon('check-circle') ?></span>
+                                            Retrieve
+                                        </button>
                                     </form>
                                 <?php elseif ($canRetrieveBook && $restoredBookId > 0): ?>
                                     <span class="archive-retrieved">Retrieved #<?= $restoredBookId ?></span>
                                 <?php elseif ($isAddedBook && $viewHref !== ''): ?>
-                                    <a href="<?= htmlspecialchars($viewHref) ?>" class="archive-action-btn archive-action-btn-view">Open</a>
+                                    <a href="<?= htmlspecialchars($viewHref) ?>" class="archive-action-btn archive-action-btn-view">
+                                        <span class="archive-action-icon" aria-hidden="true"><?= admin_icon('book-open') ?></span>
+                                        Open
+                                    </a>
                                 <?php else: ?>
                                     <span class="archive-action-muted">-</span>
                                 <?php endif; ?>
@@ -622,18 +646,18 @@ $archiveFlash = pull_archive_flash();
 </section>
 
 <div class="overlay-modal" id="archiveRetrieveConfirmModal" aria-hidden="true">
-    <div class="overlay-card glass-card archive-confirm-card" role="dialog" aria-modal="true" aria-labelledby="archiveRetrieveConfirmTitle" aria-describedby="archiveRetrieveConfirmText">
-        <div class="archive-confirm-header">
-            <span class="archive-confirm-icon" aria-hidden="true">i</span>
+    <div class="overlay-card glass-card archive-confirm-card confirm-modal-card" role="dialog" aria-modal="true" aria-labelledby="archiveRetrieveConfirmTitle" aria-describedby="archiveRetrieveConfirmText">
+        <button type="button" class="icon-close archive-confirm-cancel confirm-modal-close" aria-label="Cancel">&times;</button>
+        <div class="archive-confirm-header confirm-modal-header">
+            <span class="archive-confirm-icon confirm-modal-icon is-positive" aria-hidden="true">i</span>
             <div>
                 <h2 id="archiveRetrieveConfirmTitle">Retrieve Book</h2>
                 <p id="archiveRetrieveConfirmText">Retrieve this deleted book into Books?</p>
             </div>
         </div>
-        <p class="archive-confirm-note">This restores the book as a new active record and logs the action in Archives.</p>
-        <div class="archive-confirm-actions">
-            <button type="button" class="archive-confirm-cancel">Cancel</button>
-            <button type="button" class="archive-confirm-submit">Retrieve</button>
+        <p class="archive-confirm-note confirm-modal-note">This restores the book as a new active record and logs the action in Archives.</p>
+        <div class="archive-confirm-actions confirm-modal-actions">
+            <button type="button" class="archive-confirm-submit confirm-modal-confirm is-positive">Retrieve</button>
         </div>
     </div>
 </div>

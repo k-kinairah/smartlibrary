@@ -31,9 +31,19 @@ function safe_scalar_float(mysqli $conn, string $sql, float $fallback = 0.0): fl
     return $row ? (float)$row[0] : $fallback;
 }
 function table_exists(mysqli $conn, string $table): bool {
-    $safe = $conn->real_escape_string($table);
-    $res = safe_query($conn, "SHOW TABLES LIKE '{$safe}'");
-    return $res && $res->num_rows > 0;
+    // 2026-10-10: hardcoded against a known-good table list instead of
+    // querying information_schema -- see index.php for why. Every name
+    // below is confirmed present in smartlib_FULL_BACKUP_20261010.sql.
+    static $knownTables = [
+        'auth_2fa_challenges', 'auth_login_attempts', 'auth_pin_reset_tokens',
+        'books', 'book_categories', 'book_copies', 'book_embeddings',
+        'book_programs', 'borrow_records', 'categories',
+        'due_soon_reminder_logs', 'favorites', 'library_locations',
+        'library_users', 'notifications', 'overdue_reminder_logs',
+        'programs', 'recommendation_events', 'search_logs',
+        'admin_activity_logs',
+    ];
+    return in_array($table, $knownTables, true);
 }
 
 function normalize_term(string $term): string {
@@ -669,6 +679,16 @@ if ($coursePopularityRes && $coursePopularityRes->num_rows > 0) {
     }
 }
 
+// "Top Borrowed Book per Program" panel below. This is a plain all-time
+// borrow-count aggregate per program -- NOT the same engine as
+// recommend_books.php (the kiosk's actual personalized recommendation
+// engine, which factors in search trends, per-user event weights, AI
+// semantic similarity, and only runs for a specific signed-in patron).
+// This panel used to be mislabeled as "Local Recommendation Engine" /
+// "Local Weighted Rules (v3)" with fabricated "confidence" copy that
+// implied it reflected the kiosk's real logic -- it didn't, and an admin
+// had no way to tell. Keep this panel's copy honest about being a simple
+// circulation-leaders stat, not a recommendation engine.
 $recommendationCards = [];
 if (!empty($courseLabels)) {
     $courseBestBookRes = safe_query(
@@ -734,16 +754,6 @@ if (empty($recommendationCards) && !empty($mostBorrowedRows)) {
     }
 }
 
-$recommendationMaxBorrows = 1;
-if (!empty($recommendationCards)) {
-    $recommendationMaxBorrows = max(
-        1,
-        ...array_map(
-            static fn(array $card): int => (int)($card['borrow_count'] ?? 0),
-            $recommendationCards
-        )
-    );
-}
 $chartPayload = [
     'searchKeywords' => [
         'labels' => $searchKeywordLabels,
@@ -777,39 +787,57 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
 
 <div class="page-top dashboard-top">
     <div>
-        <h1>Dashboard</h1>
+        <h1 class="page-heading"><span class="page-icon" aria-hidden="true"><?= admin_icon('dashboard') ?></span>Dashboard</h1>
         <p class="page-subtitle">Admin view with new arrivals, search behavior, borrowing trends, and course-based recommendations.</p>
     </div>
-    <div class="welcome">Welcome, <?= htmlspecialchars($_SESSION['name'] ?? 'Librarian') ?>!</div>
+    <div class="welcome">
+        <span class="welcome-icon" aria-hidden="true"><?= admin_icon('user-check') ?></span>
+        <span class="welcome-text">Welcome, <strong><?= htmlspecialchars($_SESSION['name'] ?? 'Librarian') ?></strong>!</span>
+    </div>
 </div>
 
 <section class="stats-grid dashboard-metrics compact-metrics">
     <article class="stat-card glass-card metric-card">
-        <div class="metric-label">Total Books</div>
+        <div class="metric-head-row">
+            <span class="metric-icon-badge metric-icon-badge--blue" aria-hidden="true"><?= admin_icon('books') ?></span>
+            <div class="metric-label">Total Books</div>
+        </div>
         <div class="metric-value"><?= number_format($totalBooks) ?></div>
         <div class="metric-meta">Catalog titles in collection</div>
     </article>
 
     <article class="stat-card glass-card metric-card">
-        <div class="metric-label">Total Students</div>
+        <div class="metric-head-row">
+            <span class="metric-icon-badge metric-icon-badge--blue" aria-hidden="true"><?= admin_icon('graduation-cap') ?></span>
+            <div class="metric-label">Total Students</div>
+        </div>
         <div class="metric-value"><?= number_format($totalStudents) ?></div>
         <div class="metric-meta">Registered student accounts</div>
     </article>
 
     <article class="stat-card glass-card metric-card">
-        <div class="metric-label">Total Faculty</div>
+        <div class="metric-head-row">
+            <span class="metric-icon-badge metric-icon-badge--blue" aria-hidden="true"><?= admin_icon('id-badge') ?></span>
+            <div class="metric-label">Total Faculty</div>
+        </div>
         <div class="metric-value"><?= number_format($totalFaculty) ?></div>
         <div class="metric-meta">Registered faculty accounts</div>
     </article>
 
     <article class="stat-card glass-card metric-card">
-        <div class="metric-label">Total Borrows</div>
+        <div class="metric-head-row">
+            <span class="metric-icon-badge metric-icon-badge--blue" aria-hidden="true"><?= admin_icon('swap') ?></span>
+            <div class="metric-label">Total Borrows</div>
+        </div>
         <div class="metric-value"><?= number_format($totalBorrows) ?></div>
         <div class="metric-meta">All-time borrow transactions</div>
     </article>
 
     <article class="stat-card glass-card metric-card">
-        <div class="metric-label">Programs</div>
+        <div class="metric-head-row">
+            <span class="metric-icon-badge metric-icon-badge--blue" aria-hidden="true"><?= admin_icon('layers') ?></span>
+            <div class="metric-label">Programs</div>
+        </div>
         <div class="metric-value"><?= number_format($totalPrograms) ?></div>
         <div class="metric-meta">All listed courses/programs</div>
     </article>
@@ -819,7 +847,7 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
     <article class="panel glass-card chart-panel compact-panel overdue-books-panel">
         <div class="panel-head overdue-panel-head">
             <div>
-                <h2>Overdue & Fines</h2>
+                <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('clock') ?></span>Overdue & Fines</h2>
                 <p class="panel-sub">Priority returns, estimated fines, and quick email reminders</p>
             </div>
             <a class="panel-link-btn" href="borrow_records.php?status=overdue">View all</a>
@@ -903,7 +931,7 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
         <div class="live-activity-feed compact-feed">
             <?php if (!empty($liveActivityRows)): ?>
                 <?php foreach ($liveActivityRows as $item): ?>
-                    <div class="live-activity-item">
+                    <div class="live-activity-item status-<?= htmlspecialchars($item['status']) ?>">
                         <div class="live-activity-main">
                             <strong><?= htmlspecialchars($item['borrower']) ?></strong>
                             <?= htmlspecialchars($item['action']) ?>
@@ -921,10 +949,10 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
 
 <section class="dashboard-section-wrap analytics-feature-wrap">
     <section class="dashboard-chart-grid full-width-grid analytics-feature-row">
-        <article class="panel glass-card chart-panel feature-chart-panel">
+        <article class="panel glass-card chart-panel feature-chart-panel search-trend-panel">
             <div class="panel-head">
                 <div>
-                    <h2>Search Trends Over Time</h2>
+                    <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('search') ?></span>Search Trends Over Time</h2>
                     <p class="panel-sub">Searches per day over the last 14 days</p>
                 </div>
             </div>
@@ -942,7 +970,7 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
                 <article class="panel glass-card chart-panel search-keywords-panel">
             <div class="panel-head search-keywords-head">
                 <div>
-                    <h2>Top Search Keywords</h2>
+                    <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('list') ?></span>Top Search Keywords</h2>
                     <p class="panel-sub">Normalized intents from live user searches</p>
                 </div>
                 <div class="search-smart-chip" id="search-keywords-chip">Calculating...</div>
@@ -956,7 +984,7 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
         <article class="panel glass-card chart-panel borrowed-books-panel">
             <div class="panel-head search-keywords-head">
                 <div>
-                    <h2>Top 10 Borrowed Books</h2>
+                    <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('book-open') ?></span>Top 10 Borrowed Books</h2>
                     <p class="panel-sub">Most borrowed books across all records</p>
                 </div>
                 <div class="search-smart-chip borrow-smart-chip" id="borrowed-books-chip">Calculating...</div>
@@ -971,10 +999,10 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
 
 <section class="dashboard-section-wrap borrow-trend-wrap">
     <section class="dashboard-chart-grid full-width-grid borrow-trend-row">
-        <article class="panel glass-card chart-panel feature-chart-panel">
+        <article class="panel glass-card chart-panel feature-chart-panel borrow-trend-panel">
             <div class="panel-head">
                 <div>
-                    <h2>Borrow Trend Over Time</h2>
+                    <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('swap') ?></span>Borrow Trend Over Time</h2>
                     <p class="panel-sub">Daily borrowing activity over the last 14 days</p>
                 </div>
             </div>
@@ -988,20 +1016,20 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
     <div class="section-heading">Course-Based Recommendations</div>
 
     <section class="dashboard-chart-grid equal-grid">
-        <article class="panel glass-card chart-panel">
+        <article class="panel glass-card chart-panel course-popularity-panel">
             <div class="panel-head">
                 <div>
-                    <h2>Books per Course Popularity</h2>
+                    <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('layers') ?></span>Books per Course Popularity</h2>
                     <p class="panel-sub">Stacked bar chart: borrowed titles vs not-yet-borrowed titles per course</p>
                 </div>
             </div>
             <div id="course-popularity-stacked-chart" class="chart-shell"></div>
         </article>
 
-        <article class="panel glass-card chart-panel">
+        <article class="panel glass-card chart-panel course-activity-panel">
             <div class="panel-head">
                 <div>
-                    <h2>Course Borrowing Activity</h2>
+                    <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('activity') ?></span>Course Borrowing Activity</h2>
                     <p class="panel-sub">Total borrow transactions per course/program</p>
                 </div>
             </div>
@@ -1012,50 +1040,28 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
     <section class="panel glass-card recommendation-panel">
     <div class="panel-head recommendation-head">
         <div>
-            <div class="recommendation-kicker"><span class="ai-pulse-dot" aria-hidden="true"></span>Local Recommendation Engine - Live Signals</div>
-            <h2>AI Recommendation Output</h2>
-            <p class="panel-sub">Card output format for course-specific suggested books</p>
+            <div class="recommendation-kicker">Circulation Leaders</div>
+            <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('books') ?></span>Top Borrowed Book per Program</h2>
+            <p class="panel-sub">The single most-borrowed title in each active program, by all-time checkout count</p>
         </div>
-        <div class="recommendation-chip">Engine: Local Weighted Rules (v3)</div>
+        <div class="recommendation-chip">Basis: All-Time Borrow Count</div>
     </div>
 
     <div class="recommendation-grid">
         <?php if (!empty($recommendationCards)): ?>
             <?php foreach ($recommendationCards as $card): ?>
-                <?php
-                    $borrowCount = (int)($card['borrow_count'] ?? 0);
-                    $signalPct = (int)round(($borrowCount / max(1, $recommendationMaxBorrows)) * 100);
-                    $signalPct = max(6, min(100, $signalPct));
-                    $confidenceClass = 'emerging';
-                    $confidenceLabel = 'Early Trend';
-                    $reasonText = 'Early-match candidate based on current course patterns.';
-                    if ($signalPct >= 80) {
-                        $confidenceClass = 'high';
-                        $confidenceLabel = 'High Demand';
-                        $reasonText = 'Strong circulation momentum and repeat borrower interest.';
-                    } elseif ($signalPct >= 45) {
-                        $confidenceClass = 'medium';
-                        $confidenceLabel = 'Moderate Demand';
-                        $reasonText = 'Steady demand with consistent course-aligned borrowing.';
-                    }
-                ?>
-                <article class="recommendation-card recommendation-card--<?= htmlspecialchars($confidenceClass) ?>">
+                <?php $borrowCount = (int)($card['borrow_count'] ?? 0); ?>
+                <article class="recommendation-card">
                     <div class="recommendation-card-top">
-                        <div class="recommendation-course">Recommended for <?= htmlspecialchars($card['program_name']) ?></div>
-                        <span class="recommendation-confidence recommendation-confidence--<?= htmlspecialchars($confidenceClass) ?>"><?= htmlspecialchars($confidenceLabel) ?></span>
+                        <div class="recommendation-course">Top pick in <?= htmlspecialchars($card['program_name']) ?></div>
                     </div>
                     <div class="recommendation-title"><?= htmlspecialchars($card['title']) ?></div>
-                    <div class="recommendation-reason"><?= htmlspecialchars($reasonText) ?></div>
-                    <div class="recommendation-signal-row">
-                        <span>Recommendation Score</span>
-                        <span><?= (int)$signalPct ?>%</span>
-                    </div>
-                    <div class="recommendation-signal-track"><span style="width: <?= (int)$signalPct ?>%;"></span></div>
-                    <div class="recommendation-meta"><?= number_format($borrowCount) ?> total borrows</div>
+                    <div class="recommendation-reason">The most-borrowed title in this program, all-time.</div>
+                    <div class="recommendation-meta"><?= number_format($borrowCount) ?> total borrow<?= $borrowCount === 1 ? '' : 's' ?></div>
                 </article>
             <?php endforeach; ?>
         <?php else: ?>
-            <div class="chart-empty">No recommendation-ready data yet.</div>
+            <div class="chart-empty">No borrowing activity recorded yet.</div>
         <?php endif; ?>
     </div>
 </section>

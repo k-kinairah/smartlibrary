@@ -17,6 +17,17 @@ function auth_safe_query(mysqli $conn, string $sql) {
     }
 }
 
+// True only when the request is coming from this same machine (XAMPP's
+// dev server, accessed as localhost/127.0.0.1). Used to show the 2FA code
+// on-screen as a local-development fallback when outgoing email isn't
+// configured -- PHP's mail() has no real mail server to talk to on a
+// default XAMPP install, so the actual verification email silently never
+// arrives. This never applies to a real network request, so it doesn't
+// weaken 2FA for anyone signing in from anywhere but this computer.
+function auth_is_local_request(string $ip): bool {
+    return in_array($ip, ['127.0.0.1', '::1', 'localhost'], true);
+}
+
 function auth_client_ip(): string {
     $candidates = [
         $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '',

@@ -496,6 +496,25 @@ $checkoutDisabled = $isUnavailable ? ' disabled' : '';
 $sessionRole = strtolower(trim((string)($_SESSION['role'] ?? '')));
 $canCheckout = isset($_SESSION['user_id']) && in_array($sessionRole, ['student', 'faculty', 'librarian', 'admin'], true);
 $bookId = (int)pick($book, ['book_id'], 0);
+
+// Favorites heart on the cover. Only meaningful for a book that actually
+// resolved to a real row (bookId > 0) -- the "no records yet" placeholder
+// book above has no book_id, so the heart button is simply omitted for it
+// rather than rendered in some indeterminate state. Guarded the same way
+// as the rest of this file guards optional tables/columns, so a database
+// that hasn't run database/favorites_setup.sql yet just hides the heart.
+$favoritesEnabled = $bookId > 0 && table_exists($conn, 'favorites');
+$isFavorited = false;
+if ($favoritesEnabled && isset($_SESSION['user_id'])) {
+    $favUserId = (int)$_SESSION['user_id'];
+    $favStmt = $conn->prepare('SELECT favorite_id FROM favorites WHERE user_id = ? AND book_id = ? LIMIT 1');
+    if ($favStmt) {
+        $favStmt->bind_param('ii', $favUserId, $bookId);
+        $favStmt->execute();
+        $isFavorited = (bool)$favStmt->get_result()->fetch_assoc();
+        $favStmt->close();
+    }
+}
 $accession = (string)pick(
     $book,
     ['accession_number', 'accession'],
@@ -545,9 +564,10 @@ foreach ($tags as $tag) {
     $tagsHtml .= "<span class='book-tag'>" . h($tag) . "</span>";
 }
 
-function info_item($icon, $label, $value) {
+function info_item($icon, $label, $value, $extraClass = '') {
+    $classAttr = $extraClass !== '' ? ' ' . $extraClass : '';
     return "
-    <div class='book-info-item'>
+    <div class='book-info-item{$classAttr}'>
         <span class='book-info-icon'>" . icon_svg($icon) . "</span>
         <div>
             <div class='book-info-label'>" . h($label) . "</div>
@@ -582,7 +602,14 @@ echo "
 
     <div class='book-modal-body'>
         <div class='book-modal-left'>
-            <img class='book-cover-lg' src='" . h($cover) . "' alt='Book cover'>
+            <div class='book-cover-wrap'>
+                <img class='book-cover-lg' src='" . h($cover) . "' alt='Book cover'>
+                " . ($favoritesEnabled ? "<button type='button' class='fav-heart-btn fav-heart-btn-lg" . ($isFavorited ? ' is-favorited' : '') . "' data-book-id='" . intval($bookId) . "' aria-pressed='" . ($isFavorited ? 'true' : 'false') . "' aria-label='Save to favorites'>
+                    <svg class='fav-heart-icon' viewBox='0 0 24 24' aria-hidden='true'>
+                        <path d='M12 20.2s-7.2-4.6-10-9.2C0.3 8 1.4 4.6 4.6 3.5c2.1-0.7 4.3 0 5.6 1.7L12 7l1.8-1.8c1.3-1.7 3.5-2.4 5.6-1.7 3.2 1.1 4.3 4.5 2.6 7.5-2.8 4.6-10 9.2-10 9.2z'></path>
+                    </svg>
+                </button>" : "") . "
+            </div>
         </div>
 
         <div class='book-modal-right'>
@@ -592,7 +619,7 @@ echo "
                 " . info_item('author', 'Author', $author) . "
                 " . info_item('published', 'Published', $year) . "
                 " . info_item('isbn', 'ISBN', $isbn) . "
-                " . info_item('availability', 'Availability', $availability) . "
+                " . info_item('availability', 'Availability', $availability, 'is-availability') . "
             </div>
 
             <div class='book-description'>

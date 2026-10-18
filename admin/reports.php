@@ -20,9 +20,19 @@ function reports_query(mysqli $conn, string $sql) {
 }
 
 function reports_table_exists(mysqli $conn, string $table): bool {
-    $safe = $conn->real_escape_string($table);
-    $res = reports_query($conn, "SHOW TABLES LIKE '{$safe}'");
-    return $res && $res->num_rows > 0;
+    // 2026-10-10: hardcoded against a known-good table list instead of
+    // querying information_schema -- see index.php for why. Every name
+    // below is confirmed present in smartlib_FULL_BACKUP_20261010.sql.
+    static $knownTables = [
+        'auth_2fa_challenges', 'auth_login_attempts', 'auth_pin_reset_tokens',
+        'books', 'book_categories', 'book_copies', 'book_embeddings',
+        'book_programs', 'borrow_records', 'categories',
+        'due_soon_reminder_logs', 'favorites', 'library_locations',
+        'library_users', 'notifications', 'overdue_reminder_logs',
+        'programs', 'recommendation_events', 'search_logs',
+        'admin_activity_logs',
+    ];
+    return in_array($table, $knownTables, true);
 }
 
 function reports_valid_date(string $value): bool {
@@ -1556,13 +1566,13 @@ require 'layout_top.php';
 
 <div class="page-top reports-top">
     <div>
-        <h1>Reports</h1>
+        <h1 class="page-heading"><span class="page-icon" aria-hidden="true"><?= admin_icon('reports') ?></span>Reports</h1>
         <p class="page-subtitle">Generate custom PDF reports by date range and report type, then download or print.</p>
     </div>
     <div class="welcome">Period: <?= htmlspecialchars($rangeLabel) ?></div>
 </div>
 
-<section class="panel glass-card reports-custom-panel">
+<section class="panel glass-card reports-custom-panel data-table-panel">
     <div class="panel-head">
         <h2>Generate Custom Report</h2>
     </div>
@@ -1664,7 +1674,7 @@ require 'layout_top.php';
                 </span>
                 Download Report
             </a>
-            <a class="btn-status activate reports-export-secondary reports-icon-btn" href="<?= htmlspecialchars($printReportHref) ?>" target="_blank" rel="noopener">
+            <a class="reports-export-secondary reports-icon-btn" href="<?= htmlspecialchars($printReportHref) ?>" target="_blank" rel="noopener">
                 <span class="reports-btn-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><path d="M6 9V4h12v5M6 14H5a2 2 0 0 1-2-2v-1a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-1M7 14h10v6H7z"/></svg>
                 </span>
@@ -1686,7 +1696,7 @@ require 'layout_top.php';
     </div>
     <div class="reports-quick-grid">
         <?php foreach ($quickReports as $card): ?>
-            <article class="panel glass-card reports-quick-card">
+            <article class="panel glass-card reports-quick-card data-table-panel">
                 <div class="reports-card-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7zM14 3v6h6M10 13h6M10 17h6"/></svg>
                 </div>
@@ -1705,7 +1715,7 @@ require 'layout_top.php';
                             </span>
                             View
                         </button>
-                        <a class="btn-status activate reports-icon-btn" href="<?= htmlspecialchars((string)$card['download_url']) ?>">
+                        <a class="reports-download-link reports-icon-btn" href="<?= htmlspecialchars((string)$card['download_url']) ?>">
                             <span class="reports-btn-icon" aria-hidden="true">
                                 <svg viewBox="0 0 24 24"><path d="M12 4v10m0 0l-4-4m4 4l4-4M5 18h14"/></svg>
                             </span>
@@ -1719,7 +1729,7 @@ require 'layout_top.php';
 </section>
 
 <section class="reports-trend-grid">
-    <article class="panel glass-card" id="borrowTrend">
+    <article class="panel glass-card data-table-panel" id="borrowTrend">
         <div class="panel-head">
             <h2>Borrow Trend (Daily)</h2>
         </div>
@@ -1752,7 +1762,7 @@ require 'layout_top.php';
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="3">No borrow trend data for this range.</td>
+                            <td colspan="3" class="dashboard-empty-cell">No borrow trend data for this range.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
@@ -1760,7 +1770,7 @@ require 'layout_top.php';
         </div>
     </article>
 
-    <article class="panel glass-card" id="searchTrend">
+    <article class="panel glass-card data-table-panel" id="searchTrend">
         <div class="panel-head">
             <h2>Search Trend (Daily)</h2>
         </div>
@@ -1793,7 +1803,7 @@ require 'layout_top.php';
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="3">No search trend data available for this range.</td>
+                            <td colspan="3" class="dashboard-empty-cell">No search trend data available for this range.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
@@ -1801,7 +1811,7 @@ require 'layout_top.php';
         </div>
     </article>
 
-    <article class="panel glass-card" id="programActivity">
+    <article class="panel glass-card data-table-panel" id="programActivity">
         <div class="panel-head">
             <h2>Program Borrow Activity</h2>
         </div>
@@ -1834,7 +1844,7 @@ require 'layout_top.php';
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="3">No program trend data for this range.</td>
+                            <td colspan="3" class="dashboard-empty-cell">No program trend data for this range.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>

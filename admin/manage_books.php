@@ -10,241 +10,11 @@ if (!isset($_SESSION['user_id']) || !in_array($currentRole, ['librarian', 'admin
 }
 require '../config/db_connect.php';
 require_once '../config/admin_audit.php';
+require_once '../config/csrf.php';
 
-function table_exists(mysqli $conn, string $table): bool {
-    $table = $conn->real_escape_string($table);
-    $dbRes = $conn->query('SELECT DATABASE() AS db');
-    $db = $dbRes ? (string)($dbRes->fetch_assoc()['db'] ?? '') : '';
-    if ($db === '') return false;
-    $db = $conn->real_escape_string($db);
+require_once __DIR__ . '/includes/manage_books_functions.php';
+require_once __DIR__ . '/../config/cover_fetch_helpers.php';
 
-    $sql = "SELECT 1 FROM information_schema.tables WHERE table_schema = '$db' AND table_name = '$table' LIMIT 1";
-    $res = $conn->query($sql);
-    return $res && $res->num_rows > 0;
-}
-
-function column_exists(mysqli $conn, string $table, string $column): bool {
-    $table = $conn->real_escape_string($table);
-    $column = $conn->real_escape_string($column);
-    $dbRes = $conn->query('SELECT DATABASE() AS db');
-    $db = $dbRes ? (string)($dbRes->fetch_assoc()['db'] ?? '') : '';
-    if ($db === '') return false;
-    $db = $conn->real_escape_string($db);
-
-    $sql = "SELECT 1 FROM information_schema.columns WHERE table_schema = '$db' AND table_name = '$table' AND column_name = '$column' LIMIT 1";
-    $res = $conn->query($sql);
-    return $res && $res->num_rows > 0;
-}
-
-function get_or_create_location_id(
-    mysqli $conn,
-    string $section,
-    string $classCode,
-    string $className,
-    string $shelf,
-    string $row,
-    string $position
-): int {
-    $find = $conn->prepare(
-        'SELECT location_id FROM library_locations
-         WHERE section = ? AND class_code = ? AND shelf_code = ? AND row_label = ? AND position_label = ?
-         LIMIT 1'
-    );
-
-    if ($find) {
-        $find->bind_param('sssss', $section, $classCode, $shelf, $row, $position);
-        $find->execute();
-        $res = $find->get_result();
-        if ($res && ($rowData = $res->fetch_assoc())) {
-            $find->close();
-            return (int)($rowData['location_id'] ?? 0);
-        }
-        $find->close();
-    }
-
-    $insert = $conn->prepare(
-        'INSERT INTO library_locations (section, class_code, class_name, shelf_code, row_label, position_label, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, NOW())'
-    );
-
-    if (!$insert) {
-        return 0;
-    }
-
-    $insert->bind_param('ssssss', $section, $classCode, $className, $shelf, $row, $position);
-    $insert->execute();
-    $newId = (int)$insert->insert_id;
-    $insert->close();
-
-    return $newId;
-}
-
-function build_legacy_location_text(string $section, string $classCode, string $shelf, string $row, string $position, string $callNumber): string {
-    $locationParts = [];
-    if ($section !== '') $locationParts[] = 'Section: ' . $section;
-    if ($classCode !== '') $locationParts[] = 'Class: ' . $classCode;
-    if ($shelf !== '') $locationParts[] = 'Shelf: ' . $shelf;
-    if ($row !== '') $locationParts[] = 'Row: ' . $row;
-    if ($position !== '') $locationParts[] = 'Position: ' . $position;
-    if ($callNumber !== '') $locationParts[] = 'Call: ' . $callNumber;
-    return implode(' | ', $locationParts);
-}
-
-function manage_books_csrf_token(): string {
-    if (empty($_SESSION['manage_books_csrf']) || !is_string($_SESSION['manage_books_csrf'])) {
-        $_SESSION['manage_books_csrf'] = bin2hex(random_bytes(32));
-    }
-
-    return (string)$_SESSION['manage_books_csrf'];
-}
-
-function manage_books_parse_accession_inputs($rawInput): array {
-    $values = [];
-    if (is_array($rawInput)) {
-        $values = $rawInput;
-    } elseif (is_string($rawInput) && trim($rawInput) !== '') {
-        $split = preg_split('/[\r\n,;]+/', $rawInput);
-        if (is_array($split)) {
-            $values = $split;
-        }
-    }
-
-    $normalized = [];
-    foreach ($values as $value) {
-        $normalized[] = trim((string)$value);
-    }
-
-    return $normalized;
-}
-
-function manage_books_has_duplicate_values(array $values): bool {
-    $seen = [];
-    foreach ($values as $value) {
-        $key = strtolower(trim((string)$value));
-        if ($key === '') {
-            continue;
-        }
-        if (isset($seen[$key])) {
-            return true;
-        }
-        $seen[$key] = true;
-    }
-    return false;
-}
-
-function manage_books_accession_exists(mysqli $conn, string $accessionNo): bool {
-    $token = trim($accessionNo);
-    if ($token === '') {
-        return false;
-    }
-
-    $stmt = $conn->prepare('SELECT 1 FROM book_copies WHERE accession_no = ? LIMIT 1');
-    if (!$stmt) {
-        return false;
-    }
-
-    $stmt->bind_param('s', $token);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $exists = (bool)($res && $res->num_rows > 0);
-    $stmt->close();
-
-    return $exists;
-}
-
-function manage_books_effective_copy_status(string $copyStatusRaw, string $loanStatusRaw): string {
-    $copyStatus = strtolower(trim($copyStatusRaw));
-    $loanStatus = strtolower(trim($loanStatusRaw));
-
-    foreach ([$loanStatus, $copyStatus] as $status) {
-        if (in_array($status, ['missing', 'overdue', 'borrowed'], true)) {
-            return $status;
-        }
-    }
-
-    if ($copyStatus === 'available') {
-        return 'available';
-    }
-
-    return 'unknown';
-}
-
-function manage_books_copy_status_is_locked(string $effectiveStatus): bool {
-    return in_array(strtolower(trim($effectiveStatus)), ['borrowed', 'overdue', 'missing'], true);
-}
-
-function manage_books_fetch_book_copies(mysqli $conn, int $bookId): array {
-    if ($bookId <= 0) {
-        return [];
-    }
-
-    $rows = [];
-    $sql = "
-        SELECT
-            bc.copy_id,
-            bc.book_id,
-            COALESCE(NULLIF(TRIM(bc.accession_no), ''), CONCAT('Copy #', bc.copy_id)) AS accession_no,
-            LOWER(COALESCE(NULLIF(TRIM(bc.status), ''), 'unknown')) AS copy_status,
-            LOWER(COALESCE(ar.status, '')) AS loan_status
-        FROM book_copies bc
-        LEFT JOIN (
-            SELECT br1.copy_id, br1.record_id, br1.status
-            FROM borrow_records br1
-            INNER JOIN (
-                SELECT copy_id, MAX(record_id) AS max_record_id
-                FROM borrow_records
-                WHERE status IN ('borrowed', 'overdue', 'missing')
-                GROUP BY copy_id
-            ) latest ON latest.max_record_id = br1.record_id
-        ) ar ON ar.copy_id = bc.copy_id
-        WHERE bc.book_id = ?
-        ORDER BY bc.copy_id ASC
-    ";
-
-    $stmt = $conn->prepare($sql);
-    if (!$stmt) {
-        return [];
-    }
-
-    $stmt->bind_param('i', $bookId);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    if ($res) {
-        while ($row = $res->fetch_assoc()) {
-            $copyStatus = (string)($row['copy_status'] ?? '');
-            $loanStatus = (string)($row['loan_status'] ?? '');
-            $effectiveStatus = manage_books_effective_copy_status($copyStatus, $loanStatus);
-            $rows[] = [
-                'copy_id' => (int)($row['copy_id'] ?? 0),
-                'book_id' => (int)($row['book_id'] ?? 0),
-                'accession_no' => trim((string)($row['accession_no'] ?? '')),
-                'copy_status' => $copyStatus,
-                'loan_status' => $loanStatus,
-                'effective_status' => $effectiveStatus,
-                'is_locked' => manage_books_copy_status_is_locked($effectiveStatus)
-            ];
-        }
-    }
-    $stmt->close();
-
-    return $rows;
-}
-
-function manage_books_ensure_activity_log_table(mysqli $conn): bool {
-    return smartlib_admin_audit_ensure_table($conn);
-}
-
-function manage_books_actor_user_id(): int {
-    return smartlib_admin_audit_actor_user_id();
-}
-
-function manage_books_actor_name(): string {
-    return smartlib_admin_audit_actor_name();
-}
-
-function manage_books_log_activity(mysqli $conn, string $actionType, int $entityId, string $entityTitle, array $metadata = []): void {
-    smartlib_admin_audit_log($conn, $actionType, 'book', $entityId, $entityTitle, $metadata);
-}
 $categories = $conn->query('SELECT category_id, category_name FROM categories ORDER BY category_name ASC');
 $programs = $conn->query('SELECT program_id, program_name FROM programs ORDER BY program_name ASC');
 
@@ -320,7 +90,7 @@ $hasBookLocationId = column_exists($conn, 'books', 'location_id');
 $hasBookCallNumber = column_exists($conn, 'books', 'call_number');
 $hasLegacyLocation = column_exists($conn, 'books', 'location');
 
-$csrfToken = manage_books_csrf_token();
+$csrfToken = smartlib_csrf_token('manage_books_csrf');
 $flash = ['type' => '', 'message' => ''];
 $openAddBookModal = false;
 $openEditBookModal = false;
@@ -484,7 +254,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_book'])) {
                 if ($hasBookCallNumber) {
                     $stmt = $conn->prepare(
                         "INSERT INTO books (isbn, title, author, publisher, year_published, category_id, program_id, location_id, call_number, created_at)
-                         VALUES (?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, ''), NOW())"
+                         VALUES (NULLIF(?, ''), ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, ''), NOW())"
                     );
                     if (!$stmt) {
                         throw new RuntimeException('Unable to prepare book insert statement.');
@@ -493,7 +263,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_book'])) {
                 } else {
                     $stmt = $conn->prepare(
                         "INSERT INTO books (isbn, title, author, publisher, year_published, category_id, program_id, location_id, created_at)
-                         VALUES (?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), NOW())"
+                         VALUES (NULLIF(?, ''), ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NULLIF(?, 0), NOW())"
                     );
                     if (!$stmt) {
                         throw new RuntimeException('Unable to prepare book insert statement.');
@@ -503,7 +273,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_book'])) {
             } elseif ($hasLegacyLocation) {
                 $stmt = $conn->prepare(
                     "INSERT INTO books (isbn, title, author, publisher, year_published, category_id, program_id, location, created_at)
-                     VALUES (?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), ?, NOW())"
+                     VALUES (NULLIF(?, ''), ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), ?, NOW())"
                 );
                 if (!$stmt) {
                     throw new RuntimeException('Unable to prepare book insert statement.');
@@ -512,7 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_book'])) {
             } else {
                 $stmt = $conn->prepare(
                     "INSERT INTO books (isbn, title, author, publisher, year_published, category_id, program_id, created_at)
-                     VALUES (?, ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NOW())"
+                     VALUES (NULLIF(?, ''), ?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), NOW())"
                 );
                 if (!$stmt) {
                     throw new RuntimeException('Unable to prepare book insert statement.');
@@ -578,6 +348,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_book'])) {
             );
 
             $conn->commit();
+
+            // Immediate cover fetch: Open Library only (useGoogle=false), so
+            // saving a new book stays fast and never spends any of the
+            // shared Google Books daily quota the nightly backfill job
+            // relies on. Best-effort -- the book is already saved and
+            // committed above, so a failure here never blocks adding it;
+            // books.cover just stays NULL and the nightly job will try
+            // again on its own.
+            if (fbc_curl_available()) {
+                try {
+                    $coverResult = fbc_find_cover($title, $author, $isbn, false, false);
+                    if ($coverResult['status'] === 'found') {
+                        fbc_save_cover_bytes($conn, $newBookId, $coverResult['bytes'], $coverResult['ext']);
+                    }
+                } catch (Throwable $coverError) {
+                    // Swallow -- cover lookup failures must never block adding the book.
+                }
+            }
+
             header('Location: manage_books.php');
             exit;
         } catch (Throwable $e) {
@@ -850,7 +639,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_book'])) {
         try {
             $coreUpd = $conn->prepare(
                 "UPDATE books
-                 SET isbn = ?,
+                 SET isbn = NULLIF(?, ''),
                      title = ?,
                      author = ?,
                      publisher = ?,
@@ -905,7 +694,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_book'])) {
                 }
             }
 
-            $copyIsbnStmt = $conn->prepare('UPDATE book_copies SET isbn = ? WHERE book_id = ?');
+            $copyIsbnStmt = $conn->prepare("UPDATE book_copies SET isbn = NULLIF(?, '') WHERE book_id = ?");
             if ($copyIsbnStmt) {
                 $copyIsbnStmt->bind_param('si', $copyIsbn, $bookId);
                 $copyIsbnStmt->execute();
@@ -1049,6 +838,142 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_book'])) {
     exit;
 }
 
+// --- Cover fix-up actions for the Edit Book modal: re-fetch, manual
+// upload, and clear. All three redirect back into edit mode for the same
+// book (?edit=<id>) so the librarian immediately sees the result without
+// losing their place, carrying a short status message via query string. ---
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['refetch_cover'])) {
+    $postedToken = trim((string)($_POST['csrf_token'] ?? ''));
+    $coverBookId = (int)($_POST['book_id'] ?? 0);
+    if ($postedToken === '' || !hash_equals($csrfToken, $postedToken) || $coverBookId <= 0) {
+        header('Location: manage_books.php');
+        exit;
+    }
+
+    $coverBookRow = null;
+    $coverBookStmt = $conn->prepare('SELECT title, author, isbn FROM books WHERE book_id = ? LIMIT 1');
+    if ($coverBookStmt) {
+        $coverBookStmt->bind_param('i', $coverBookId);
+        $coverBookStmt->execute();
+        $coverBookRes = $coverBookStmt->get_result();
+        $coverBookRow = $coverBookRes ? $coverBookRes->fetch_assoc() : null;
+        $coverBookStmt->close();
+    }
+
+    $refetchOk = false;
+    $refetchMessage = 'Book not found.';
+
+    if ($coverBookRow) {
+        if (!fbc_curl_available()) {
+            $refetchMessage = "The server's PHP curl extension is disabled, so cover lookups aren't available right now.";
+        } else {
+            try {
+                // The librarian is right here to look at the result before
+                // it's saved, so allow the full cascade (including Google)
+                // rather than the Add Book fast path's Open-Library-only lookup.
+                $coverResult = fbc_find_cover(
+                    (string)($coverBookRow['title'] ?? ''),
+                    (string)($coverBookRow['author'] ?? ''),
+                    (string)($coverBookRow['isbn'] ?? ''),
+                    false,
+                    true
+                );
+                if ($coverResult['status'] === 'found') {
+                    $coverSaveResult = fbc_save_cover_bytes($conn, $coverBookId, $coverResult['bytes'], $coverResult['ext']);
+                    if ($coverSaveResult['ok']) {
+                        $refetchOk = true;
+                        $refetchMessage = 'Found and saved a new cover (via ' . $coverResult['via'] . '). Check that it looks right.';
+                        manage_books_log_activity($conn, 'cover_refetched', $coverBookId, (string)($coverBookRow['title'] ?? ''), ['via' => $coverResult['via']]);
+                    } else {
+                        $refetchMessage = (string)($coverSaveResult['error'] ?? 'Found a cover but could not save it.');
+                    }
+                } elseif (($coverResult['no_cover_notice'] ?? null) !== null) {
+                    $notice = $coverResult['no_cover_notice'];
+                    $refetchMessage = 'Found a confident match ("' . (string)($notice['matched_title'] ?? '') . '") but that source has no cover image for it.';
+                } else {
+                    $refetchMessage = 'No confident match found for this title/author/ISBN.';
+                }
+            } catch (Throwable $coverError) {
+                $refetchMessage = 'Cover lookup failed unexpectedly. Please try again.';
+            }
+        }
+    }
+
+    header('Location: manage_books.php?edit=' . $coverBookId . '&cover_status=' . ($refetchOk ? 'ok' : 'error') . '&cover_msg=' . rawurlencode($refetchMessage));
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_cover'])) {
+    $postedToken = trim((string)($_POST['csrf_token'] ?? ''));
+    $coverBookId = (int)($_POST['book_id'] ?? 0);
+    if ($postedToken === '' || !hash_equals($csrfToken, $postedToken) || $coverBookId <= 0) {
+        header('Location: manage_books.php');
+        exit;
+    }
+
+    $uploadOk = false;
+    $uploadMessage = 'Please choose a JPG or PNG image to upload.';
+
+    $fileInfo = $_FILES['cover_image'] ?? null;
+    $uploadError = (int)($fileInfo['error'] ?? UPLOAD_ERR_NO_FILE);
+
+    if ($fileInfo && $uploadError === UPLOAD_ERR_OK && is_uploaded_file((string)($fileInfo['tmp_name'] ?? ''))) {
+        $validated = fbc_validate_uploaded_image((string)$fileInfo['tmp_name']);
+        if ($validated['ok']) {
+            $uploadSaveResult = fbc_save_cover_bytes($conn, $coverBookId, $validated['bytes'], $validated['ext']);
+            if ($uploadSaveResult['ok']) {
+                $uploadOk = true;
+                $uploadMessage = 'Cover image uploaded.';
+                $uploadTitleRow = $conn->query('SELECT title FROM books WHERE book_id = ' . $coverBookId);
+                $uploadTitle = $uploadTitleRow ? (string)($uploadTitleRow->fetch_assoc()['title'] ?? '') : '';
+                manage_books_log_activity($conn, 'cover_uploaded', $coverBookId, $uploadTitle, []);
+            } else {
+                $uploadMessage = (string)($uploadSaveResult['error'] ?? 'Could not save the uploaded image.');
+            }
+        } else {
+            $uploadMessage = (string)($validated['error'] ?? 'That file could not be used as a cover image.');
+        }
+    } elseif ($fileInfo && $uploadError !== UPLOAD_ERR_NO_FILE) {
+        $uploadMessage = 'Upload failed (the file may be too large). Please try a smaller image.';
+    }
+
+    header('Location: manage_books.php?edit=' . $coverBookId . '&cover_status=' . ($uploadOk ? 'ok' : 'error') . '&cover_msg=' . rawurlencode($uploadMessage));
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_cover'])) {
+    $postedToken = trim((string)($_POST['csrf_token'] ?? ''));
+    $coverBookId = (int)($_POST['book_id'] ?? 0);
+    if ($postedToken === '' || !hash_equals($csrfToken, $postedToken) || $coverBookId <= 0) {
+        header('Location: manage_books.php');
+        exit;
+    }
+
+    $clearMessage = 'Book not found.';
+    $clearBookRow = null;
+    $clearStmt = $conn->prepare('SELECT title, cover FROM books WHERE book_id = ? LIMIT 1');
+    if ($clearStmt) {
+        $clearStmt->bind_param('i', $coverBookId);
+        $clearStmt->execute();
+        $clearRes = $clearStmt->get_result();
+        $clearBookRow = $clearRes ? $clearRes->fetch_assoc() : null;
+        $clearStmt->close();
+    }
+
+    if ($clearBookRow) {
+        $clearResult = fbc_clear_cover($conn, $coverBookId, (string)($clearBookRow['cover'] ?? ''));
+        if ($clearResult['ok']) {
+            $clearMessage = 'Cover cleared. The nightly job will try to find a replacement automatically.';
+            manage_books_log_activity($conn, 'cover_cleared', $coverBookId, (string)($clearBookRow['title'] ?? ''), []);
+        } else {
+            $clearMessage = (string)($clearResult['error'] ?? 'Could not clear the cover.');
+        }
+    }
+
+    header('Location: manage_books.php?edit=' . $coverBookId . '&cover_status=ok&cover_msg=' . rawurlencode($clearMessage));
+    exit;
+}
 
 $editBook = null;
 $editId = isset($editId) ? (int)$editId : 0;
@@ -1079,7 +1004,8 @@ if ($editId > 0) {
             b.year_published,
             b.category_id,
             b.program_id,
-            b.location
+            b.location,
+            b.cover
             {$locationSelect}
             {$callSelect}
          FROM books b
@@ -1277,6 +1203,14 @@ $chipMetrics = [
 
 $updatedFlag = isset($_GET['updated']) && (string)$_GET['updated'] === '1';
 
+$coverFlash = null;
+if (isset($_GET['cover_status'])) {
+    $coverFlash = [
+        'status' => (string)$_GET['cover_status'],
+        'message' => (string)($_GET['cover_msg'] ?? '')
+    ];
+}
+
 $editCopyRows = [];
 $editCopyTotal = 0;
 $editRemovableCount = 0;
@@ -1300,6 +1234,7 @@ $editForm = [
     'year_published' => (string)($editBook['year_published'] ?? ''),
     'category_id' => (int)($editBook['category_id'] ?? 0),
     'program_id' => (int)($editBook['program_id'] ?? 0),
+    'cover' => (string)($editBook['cover'] ?? ''),
     'location_section' => 'General Collection',
     'location_class' => 'T',
     'location_shelf' => 'YA-05',
@@ -1381,9 +1316,25 @@ if ($editAdditionalCopyCount > 0 && count($editNewAccessionsInput) < $editAdditi
 require 'layout_top.php';
 ?>
 
+<style>
+    .page-top-actions { display: flex; gap: 10px; align-items: center; }
+    .bulk-import-nav-btn {
+        display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+        border-radius: 999px; padding: 10px 18px; font-weight: 700; font-size: 14px;
+        background: rgba(140, 185, 235, 0.16); border: 1.5px solid rgba(140, 185, 235, 0.55); color: #eaf3fc;
+        transition: background .15s ease, border-color .15s ease, transform .14s ease, box-shadow .14s ease;
+    }
+    .bulk-import-nav-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .bulk-import-nav-btn:hover { background: rgba(140, 185, 235, 0.27); border-color: rgba(140, 185, 235, 0.8); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(13, 36, 64, 0.22); }
+    .bulk-import-nav-btn:active { transform: translateY(0); }
+</style>
+
 <div class="page-top">
-    <h1>Manage Books</h1>
-    <button class="btn-primary" onclick="openBookModal()">+ Add Book</button>
+    <h1 class="page-heading"><span class="page-icon" aria-hidden="true"><?= admin_icon('books') ?></span>Manage Books</h1>
+    <div class="page-top-actions">
+        <a class="bulk-import-nav-btn" href="bulk_import_books.php"><?= admin_icon('box') ?> Bulk Import</a>
+        <button class="btn-primary" onclick="openBookModal()">+ Add Book</button>
+    </div>
 </div>
 
 <?php if ($updatedFlag): ?>
@@ -1409,23 +1360,30 @@ require 'layout_top.php';
             $isActiveChip = ($chipStatus === '' && $activeStatus === '') || ($chipStatus !== '' && $activeStatus === $chipStatus);
             $chipHref = $buildManageBooksUrl($chipParams);
         ?>
+        <?php $chipMeta = stat_chip_meta((string)($chip['title'] ?? '')); ?>
         <a href="<?= htmlspecialchars($chipHref) ?>" class="stat-card glass-card borrow-chip<?= $isActiveChip ? ' is-active' : '' ?>">
-            <h3><?= htmlspecialchars((string)($chip['title'] ?? '')) ?></h3>
+            <div class="metric-head-row">
+                <span class="metric-icon-badge metric-icon-badge--<?= htmlspecialchars($chipMeta['accent']) ?>" aria-hidden="true"><?= admin_icon($chipMeta['icon']) ?></span>
+                <h3><?= htmlspecialchars((string)($chip['title'] ?? '')) ?></h3>
+            </div>
             <p class="value"><?= number_format((int)($chip['count'] ?? 0)) ?></p>
         </a>
     <?php endforeach; ?>
 </section>
 
-<section class="panel glass-card">
+<section class="filters-bar-panel">
     <form method="GET" class="filters-inline manage-books-filters borrow-filters">
         <input type="hidden" name="status" value="<?= htmlspecialchars($activeStatus) ?>">
-        <input type="text" name="search" placeholder="Search ISBN, title, author, year, accession" value="<?= htmlspecialchars($search) ?>">
+        <div class="search-field-wrap">
+            <span class="filters-search-icon" aria-hidden="true"><?= admin_icon('search') ?></span>
+            <input type="text" name="search" placeholder="Search ISBN, title, author, year, accession" value="<?= htmlspecialchars($search) ?>">
+        </div>
         <button type="submit" class="btn-primary">Apply</button>
-        <a href="manage_books.php" class="btn-status activate">Reset</a>
+        <a href="manage_books.php" class="filter-reset-btn">Reset</a>
     </form>
 </section>
 
-<section class="panel glass-card">
+<section class="panel glass-card data-table-panel">
     <div class="table-wrap">
         <table class="data-table manage-books-table">
             <thead>
@@ -1617,7 +1575,7 @@ require 'layout_top.php';
 <div class="overlay-modal<?= $openAddBookModal ? ' show' : '' ?>" id="bookModal" aria-hidden="<?= $openAddBookModal ? 'false' : 'true' ?>">
     <div class="overlay-card glass-card">
         <div class="panel-head">
-            <h2>Add Book</h2>
+            <h2><span class="modal-icon" aria-hidden="true"><?= admin_icon('books') ?></span>Add Book</h2>
             <button class="icon-close" onclick="closeBookModal()">&times;</button>
         </div>
 
@@ -1720,7 +1678,10 @@ require 'layout_top.php';
                 </select>
             </div>
 
-            <button type="submit" name="add_book" class="btn-primary form-submit">Add Book</button>
+            <button type="submit" name="add_book" class="btn-primary form-submit modal-submit-btn">
+                <span class="modal-submit-icon" aria-hidden="true"><?= admin_icon('plus-circle') ?></span>
+                Add Book
+            </button>
         </form>
     </div>
 </div>
@@ -1731,6 +1692,67 @@ require 'layout_top.php';
         <div class="panel-head">
             <h2>Edit Book</h2>
             <a class="icon-close" href="manage_books.php" aria-label="Close">&times;</a>
+        </div>
+
+        <?php
+            $editCoverFilename = trim((string)($editForm['cover'] ?? ''));
+            $editBookIdForCover = (int)($editForm['book_id'] ?? 0);
+            $editCoverIsExcluded = array_key_exists($editBookIdForCover, EXCLUDED_BOOK_IDS);
+        ?>
+        <style>
+            .book-cover-panel { display: flex; gap: 16px; align-items: flex-start; padding: 10px 2px 14px; border-bottom: 1px solid rgba(201, 224, 210, 0.2); margin-bottom: 10px; flex-wrap: wrap; }
+            .book-cover-preview { flex: 0 0 auto; width: 110px; }
+            .book-cover-thumb-img { width: 110px; height: 160px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(201, 224, 210, 0.3); display: block; }
+            .book-cover-thumb-placeholder { width: 110px; height: 160px; border-radius: 8px; border: 1px dashed rgba(201, 224, 210, 0.4); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 12px; opacity: 0.75; padding: 6px; }
+            .book-cover-actions { flex: 1 1 220px; display: flex; flex-direction: column; gap: 8px; min-width: 200px; }
+            .book-cover-mini-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0; }
+            .book-cover-mini-form input[type="file"] { max-width: 180px; font-size: 12px; }
+            .book-cover-flash { margin: 0; padding: 6px 10px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+            .book-cover-flash-success { background: rgba(68, 148, 96, 0.2); color: #e7fff0; border: 1px solid rgba(84, 188, 123, 0.45); }
+            .book-cover-flash-error { background: rgba(150, 57, 57, 0.22); color: #ffe6e6; border: 1px solid rgba(233, 113, 113, 0.45); }
+            .book-cover-caution { margin: 0; padding: 6px 10px; border-radius: 8px; font-size: 12px; background: rgba(214, 171, 58, 0.18); border: 1px solid rgba(214, 171, 58, 0.4); color: #ffe9b3; }
+        </style>
+        <div class="book-cover-panel">
+            <div class="book-cover-preview">
+                <?php if ($editCoverFilename !== ''): ?>
+                    <img src="../assets/covers/<?= htmlspecialchars($editCoverFilename) ?>?v=<?= time() ?>" alt="Current cover for this book" class="book-cover-thumb-img">
+                <?php else: ?>
+                    <div class="book-cover-thumb-placeholder">No cover yet</div>
+                <?php endif; ?>
+            </div>
+
+            <div class="book-cover-actions">
+                <?php if (($coverFlash['message'] ?? '') !== ''): ?>
+                    <p class="book-cover-flash book-cover-flash-<?= ($coverFlash['status'] ?? '') === 'ok' ? 'success' : 'error' ?>">
+                        <?= htmlspecialchars((string)$coverFlash['message']) ?>
+                    </p>
+                <?php endif; ?>
+
+                <?php if ($editCoverIsExcluded): ?>
+                    <p class="book-cover-caution">Heads up: automated lookups have returned the wrong image for this book before. Check any re-fetched result carefully, or upload the correct cover yourself.</p>
+                <?php endif; ?>
+
+                <form method="POST" class="book-cover-mini-form" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                    <input type="hidden" name="book_id" value="<?= $editBookIdForCover ?>">
+                    <input type="file" name="cover_image" accept="image/jpeg,image/png" required>
+                    <button type="submit" name="upload_cover" class="btn-status">Upload cover</button>
+                </form>
+
+                <form method="POST" class="book-cover-mini-form" onsubmit="return confirm('Look for a new cover for this book? This will replace the current cover if a match is found.');">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                    <input type="hidden" name="book_id" value="<?= $editBookIdForCover ?>">
+                    <button type="submit" name="refetch_cover" class="btn-status">Re-fetch cover</button>
+                </form>
+
+                <?php if ($editCoverFilename !== ''): ?>
+                    <form method="POST" class="book-cover-mini-form" onsubmit="return confirm(&quot;Clear this book's cover? The nightly job will try to find a replacement automatically.&quot;);">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                        <input type="hidden" name="book_id" value="<?= $editBookIdForCover ?>">
+                        <button type="submit" name="clear_cover" class="btn-status deactivate">Clear cover</button>
+                    </form>
+                <?php endif; ?>
+            </div>
         </div>
 
         <form method="POST" class="form-grid book-form-grid edit-book-form-grid">
@@ -1872,258 +1894,23 @@ require 'layout_top.php';
 <?php endif; ?>
 
 <div class="overlay-modal" id="deleteBookConfirmModal" aria-hidden="true">
-    <div class="overlay-card glass-card confirm-delete-card" role="dialog" aria-modal="true" aria-labelledby="deleteBookConfirmTitle" aria-describedby="deleteBookConfirmText">
-        <div class="confirm-delete-header">
-            <span class="confirm-delete-icon" aria-hidden="true">!</span>
+    <div class="overlay-card glass-card confirm-delete-card confirm-modal-card" role="dialog" aria-modal="true" aria-labelledby="deleteBookConfirmTitle" aria-describedby="deleteBookConfirmText">
+        <button type="button" class="icon-close confirm-delete-cancel confirm-modal-close" aria-label="Cancel">&times;</button>
+        <div class="confirm-delete-header confirm-modal-header">
+            <span class="confirm-delete-icon confirm-modal-icon is-danger" aria-hidden="true">!</span>
             <div>
                 <h2 id="deleteBookConfirmTitle">Delete Book</h2>
                 <p id="deleteBookConfirmText">Delete this book from Manage Books?</p>
             </div>
         </div>
-        <p class="confirm-delete-note">This cannot be undone from this page. You can still review activity in Archives.</p>
-        <div class="confirm-delete-actions">
-            <button type="button" class="btn-status activate confirm-delete-cancel">Cancel</button>
-            <button type="button" class="confirm-delete-confirm">Delete</button>
+        <p class="confirm-delete-note confirm-modal-note">This cannot be undone from this page. You can still review activity in Archives.</p>
+        <div class="confirm-delete-actions confirm-modal-actions">
+            <button type="button" class="confirm-delete-confirm confirm-modal-confirm is-danger">Delete</button>
         </div>
     </div>
 </div>
 
-<script>
-function openBookModal() {
-    const modal = document.getElementById('bookModal');
-    if (!modal) return;
-    modal.classList.add('show');
-    modal.setAttribute('aria-hidden', 'false');
-}
-
-function closeBookModal() {
-    const modal = document.getElementById('bookModal');
-    if (!modal) return;
-    modal.classList.remove('show');
-    modal.setAttribute('aria-hidden', 'true');
-}
-
-window.addEventListener('click', function (e) {
-    if (e.target.id === 'bookModal') {
-        closeBookModal();
-    }
-});
-
-const copyCountInput = document.getElementById('copyCountInput');
-const accessionInputsWrap = document.getElementById('accessionInputsWrap');
-
-function normalizeCopyCount(value) {
-    const text = String(value || '').trim();
-    if (text === '') return null;
-    if (!/^\d+$/.test(text)) return null;
-
-    const parsed = Number.parseInt(text, 10);
-    if (Number.isNaN(parsed) || parsed < 1 || parsed > 200) return null;
-
-    return parsed;
-}
-
-function renderAccessionInputs() {
-    if (!copyCountInput || !accessionInputsWrap) return;
-
-    const targetCount = normalizeCopyCount(copyCountInput.value);
-
-    const existingValues = Array.from(
-        accessionInputsWrap.querySelectorAll('input[name="accession_numbers[]"]')
-    ).map(function (input) {
-        return input.value || '';
-    });
-
-    accessionInputsWrap.innerHTML = '';
-
-    if (targetCount === null) {
-        return;
-    }
-
-    for (let i = 0; i < targetCount; i += 1) {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.name = 'accession_numbers[]';
-        input.placeholder = 'Accession #' + (i + 1);
-        input.value = existingValues[i] || '';
-        accessionInputsWrap.appendChild(input);
-    }
-}
-
-if (copyCountInput && accessionInputsWrap) {
-    copyCountInput.addEventListener('input', renderAccessionInputs);
-    copyCountInput.addEventListener('change', renderAccessionInputs);
-    copyCountInput.addEventListener('blur', function () {
-        const parsed = normalizeCopyCount(copyCountInput.value);
-        if (parsed !== null) {
-            copyCountInput.value = String(parsed);
-        }
-    });
-    renderAccessionInputs();
-}
-
-const editCopyCountInput = document.getElementById('editCopyCountInput');
-const editCurrentCopyCountInput = document.getElementById('editCurrentCopyCount');
-const editNewAccessionInputsWrap = document.getElementById('editNewAccessionInputsWrap');
-const editCopyAdjustmentHint = document.getElementById('editCopyAdjustmentHint');
-
-function getEditCurrentCopyCount() {
-    if (!editCurrentCopyCountInput) {
-        return 0;
-    }
-    const raw = String(editCurrentCopyCountInput.value || '').trim();
-    if (!/^\d+$/.test(raw)) {
-        return 0;
-    }
-    return Number.parseInt(raw, 10);
-}
-
-function setEditCopyHint(message) {
-    if (!editCopyAdjustmentHint) return;
-    editCopyAdjustmentHint.textContent = message;
-}
-
-function renderEditNewAccessionInputs() {
-    if (!editCopyCountInput || !editNewAccessionInputsWrap) return;
-
-    const desiredCount = normalizeCopyCount(editCopyCountInput.value);
-    const currentCount = getEditCurrentCopyCount();
-
-    const existingValues = Array.from(
-        editNewAccessionInputsWrap.querySelectorAll('input[name="new_accession_numbers[]"]')
-    ).map(function (input) {
-        return input.value || '';
-    });
-
-    editNewAccessionInputsWrap.innerHTML = '';
-
-    if (desiredCount === null) {
-        setEditCopyHint('Enter a valid Number of Copies (1-200).');
-        return;
-    }
-
-    const additionalCount = Math.max(0, desiredCount - currentCount);
-
-    if (additionalCount === 0) {
-        if (desiredCount < currentCount) {
-            setEditCopyHint('Lower copy count will remove available copies first (borrowed/overdue/missing stay protected).');
-        } else {
-            setEditCopyHint('Copy count matches current inventory. No new accession fields needed.');
-        }
-        return;
-    }
-
-    setEditCopyHint('Provide accession numbers for ' + additionalCount + ' new ' + (additionalCount === 1 ? 'copy.' : 'copies.'));
-
-    for (let i = 0; i < additionalCount; i += 1) {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.name = 'new_accession_numbers[]';
-        input.placeholder = 'New Accession #' + (i + 1);
-        input.value = existingValues[i] || '';
-        editNewAccessionInputsWrap.appendChild(input);
-    }
-}
-
-if (editCopyCountInput && editNewAccessionInputsWrap) {
-    editCopyCountInput.addEventListener('input', renderEditNewAccessionInputs);
-    editCopyCountInput.addEventListener('change', renderEditNewAccessionInputs);
-    editCopyCountInput.addEventListener('blur', function () {
-        const parsed = normalizeCopyCount(editCopyCountInput.value);
-        if (parsed !== null) {
-            editCopyCountInput.value = String(parsed);
-        }
-        renderEditNewAccessionInputs();
-    });
-    renderEditNewAccessionInputs();
-}
-document.querySelectorAll('.book-copy-toggle-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-        const rowId = btn.getAttribute('data-target');
-        if (!rowId) return;
-
-        const detailRow = document.getElementById(rowId);
-        if (!detailRow) return;
-
-        const willShow = detailRow.hasAttribute('hidden');
-        if (willShow) {
-            detailRow.removeAttribute('hidden');
-            btn.setAttribute('aria-expanded', 'true');
-            btn.textContent = 'Hide';
-        } else {
-            detailRow.setAttribute('hidden', '');
-            btn.setAttribute('aria-expanded', 'false');
-            btn.textContent = 'View';
-        }
-    });
-});
-
-const deleteConfirmModal = document.getElementById('deleteBookConfirmModal');
-const deleteConfirmText = document.getElementById('deleteBookConfirmText');
-const deleteConfirmCancel = document.querySelector('.confirm-delete-cancel');
-const deleteConfirmButton = document.querySelector('.confirm-delete-confirm');
-let pendingDeleteForm = null;
-
-function openDeleteBookConfirm(formEl) {
-    if (!deleteConfirmModal || !deleteConfirmText || !deleteConfirmButton) return;
-
-    pendingDeleteForm = formEl;
-    const rawTitle = (formEl && formEl.dataset && formEl.dataset.bookTitle) ? formEl.dataset.bookTitle.trim() : '';
-    const displayTitle = rawTitle !== '' ? '"' + rawTitle + '"' : 'this book';
-    deleteConfirmText.textContent = 'Delete ' + displayTitle + ' from Manage Books?';
-
-    deleteConfirmModal.classList.add('show');
-    deleteConfirmModal.setAttribute('aria-hidden', 'false');
-    deleteConfirmButton.focus();
-}
-
-function closeDeleteBookConfirm() {
-    if (!deleteConfirmModal) return;
-    deleteConfirmModal.classList.remove('show');
-    deleteConfirmModal.setAttribute('aria-hidden', 'true');
-    pendingDeleteForm = null;
-}
-
-document.querySelectorAll('.delete-book-form').forEach(function (formEl) {
-    formEl.addEventListener('submit', function (event) {
-        event.preventDefault();
-        openDeleteBookConfirm(formEl);
-    });
-});
-
-if (deleteConfirmCancel) {
-    deleteConfirmCancel.addEventListener('click', function () {
-        closeDeleteBookConfirm();
-    });
-}
-
-if (deleteConfirmButton) {
-    deleteConfirmButton.addEventListener('click', function () {
-        if (!pendingDeleteForm) {
-            closeDeleteBookConfirm();
-            return;
-        }
-
-        const formToSubmit = pendingDeleteForm;
-        pendingDeleteForm = null;
-        deleteConfirmModal.classList.remove('show');
-        deleteConfirmModal.setAttribute('aria-hidden', 'true');
-        formToSubmit.submit();
-    });
-}
-
-window.addEventListener('click', function (event) {
-    if (event.target === deleteConfirmModal) {
-        closeDeleteBookConfirm();
-    }
-});
-
-window.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape' && deleteConfirmModal && deleteConfirmModal.classList.contains('show')) {
-        closeDeleteBookConfirm();
-    }
-});
-</script>
+<script src="../assets/javascript/manage_books_admin.js"></script>
 
 <?php require 'layout_bottom.php'; ?>
 

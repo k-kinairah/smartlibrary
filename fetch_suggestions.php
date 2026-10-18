@@ -29,11 +29,9 @@ if ($term === '') {
     exit;
 }
 
-$hasCategoryGroup = false;
-$groupColRes = $conn->query("SHOW COLUMNS FROM categories LIKE 'category_group'");
-if ($groupColRes && $groupColRes->num_rows > 0) {
-    $hasCategoryGroup = true;
-}
+// 2026-10-10: hardcoded -- see index.php for why. categories.category_group
+// is confirmed present in smartlib_FULL_BACKUP_20261010.sql.
+$hasCategoryGroup = true;
 
 $genreExpr = $hasCategoryGroup
     ? "TRIM(COALESCE(NULLIF(c.category_group, ''), c.category_name))"

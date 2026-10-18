@@ -352,7 +352,7 @@ require 'layout_top.php';
 ?>
 
 <div class="page-top">
-    <h1>Borrow Records</h1>
+    <h1 class="page-heading"><span class="page-icon" aria-hidden="true"><?= admin_icon('borrow') ?></span>Borrow Records</h1>
 </div>
 
 <?php if (is_array($flash) && !empty($flash['message'])): ?>
@@ -372,18 +372,25 @@ require 'layout_top.php';
             $isActiveChip = ($chipStatus === '' && $activeStatus === '') || ($chipStatus !== '' && $activeStatus === $chipStatus);
             $chipHref = $buildBorrowRecordsUrl($chipParams);
         ?>
+        <?php $chipMeta = stat_chip_meta((string)($chip['title'] ?? '')); ?>
         <a href="<?= htmlspecialchars($chipHref) ?>" class="stat-card glass-card borrow-chip<?= $isActiveChip ? ' is-active' : '' ?>">
-            <h3><?= htmlspecialchars((string)($chip['title'] ?? '')) ?></h3>
+            <div class="metric-head-row">
+                <span class="metric-icon-badge metric-icon-badge--<?= htmlspecialchars($chipMeta['accent']) ?>" aria-hidden="true"><?= admin_icon($chipMeta['icon']) ?></span>
+                <h3><?= htmlspecialchars((string)($chip['title'] ?? '')) ?></h3>
+            </div>
             <p class="value"><?= number_format((int)($chip['count'] ?? 0)) ?></p>
         </a>
     <?php endforeach; ?>
 </section>
 
-<section class="panel glass-card">
+<section class="filters-bar-panel">
     <form method="GET" class="filters-inline borrow-filters">
         <input type="hidden" name="status" value="<?= htmlspecialchars($activeStatus) ?>">
 
-        <input type="text" name="search" placeholder="Search user, book, accession, record #" value="<?= htmlspecialchars($search) ?>">
+        <div class="search-field-wrap">
+            <span class="filters-search-icon" aria-hidden="true"><?= admin_icon('search') ?></span>
+            <input type="text" name="search" placeholder="Search user, book, accession, record #" value="<?= htmlspecialchars($search) ?>">
+        </div>
 
         <input type="date" name="date" value="<?= htmlspecialchars($dateFilter) ?>">
 
@@ -392,7 +399,7 @@ require 'layout_top.php';
     </form>
 </section>
 
-<section class="panel glass-card">
+<section class="panel glass-card data-table-panel">
     <div class="table-wrap">
         <table class="data-table borrow-table">
             <thead>
@@ -453,7 +460,7 @@ require 'layout_top.php';
                             <td>
                                 <div class="borrow-action-row">
                                     <?php if ($canMarkReturned): ?>
-                                        <form method="POST" class="row-action-form">
+                                        <form method="POST" class="row-action-form borrow-confirm-form" data-borrow-action="returned" data-book-title="<?= htmlspecialchars($title) ?>">
                                             <input type="hidden" name="record_action" value="mark_returned">
                                             <input type="hidden" name="record_id" value="<?= $rid ?>">
                                             <button type="submit" class="borrow-action-icon-btn returned" aria-label="Mark returned">
@@ -465,7 +472,7 @@ require 'layout_top.php';
                                     <?php endif; ?>
 
                                     <?php if ($canMarkMissing): ?>
-                                        <form method="POST" class="row-action-form">
+                                        <form method="POST" class="row-action-form borrow-confirm-form" data-borrow-action="missing" data-book-title="<?= htmlspecialchars($title) ?>">
                                             <input type="hidden" name="record_action" value="mark_missing">
                                             <input type="hidden" name="record_id" value="<?= $rid ?>">
                                             <button type="submit" class="borrow-action-icon-btn missing" aria-label="Mark missing">
@@ -486,11 +493,11 @@ require 'layout_top.php';
                         <tr id="detail-<?= $rid ?>" class="borrow-detail-row" hidden>
                             <td colspan="9">
                                 <div class="borrow-detail-grid">
-                                    <div><strong>ISBN:</strong> <?= htmlspecialchars($isbn) ?></div>
-                                    <div><strong>Accession No:</strong> <?= htmlspecialchars($accession) ?></div>
-                                    <div><strong>User ID:</strong> <?= (int)($row['user_id'] ?? 0) ?></div>
-                                    <div><strong>Copy ID:</strong> <?= (int)($row['copy_id'] ?? 0) ?></div>
-                                    <div><strong>Created At:</strong> <?= htmlspecialchars((string)($row['created_at'] ?? '-')) ?></div>
+                                    <div><strong>ISBN</strong><span><?= htmlspecialchars($isbn) ?></span></div>
+                                    <div><strong>Accession No</strong><span><?= htmlspecialchars($accession) ?></span></div>
+                                    <div><strong>User ID</strong><span><?= (int)($row['user_id'] ?? 0) ?></span></div>
+                                    <div><strong>Copy ID</strong><span><?= (int)($row['copy_id'] ?? 0) ?></span></div>
+                                    <div><strong>Created At</strong><span><?= htmlspecialchars((string)($row['created_at'] ?? '-')) ?></span></div>
                                 </div>
                             </td>
                         </tr>
@@ -521,6 +528,119 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+</script>
+
+<div class="overlay-modal" id="borrowActionConfirmModal" aria-hidden="true">
+    <div class="overlay-card glass-card confirm-modal-card" role="dialog" aria-modal="true" aria-labelledby="borrowActionConfirmTitle" aria-describedby="borrowActionConfirmText">
+        <button type="button" class="icon-close confirm-modal-close" id="borrowActionConfirmCancel" aria-label="Cancel">&times;</button>
+        <div class="confirm-modal-header">
+            <span class="confirm-modal-icon" id="borrowActionConfirmIcon" aria-hidden="true">!</span>
+            <div>
+                <h2 id="borrowActionConfirmTitle">Confirm Action</h2>
+                <p id="borrowActionConfirmText">Apply this action?</p>
+            </div>
+        </div>
+        <p class="confirm-modal-note" id="borrowActionConfirmNote"></p>
+        <div class="confirm-modal-actions">
+            <button type="button" class="confirm-modal-confirm" id="borrowActionConfirmSubmit">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const modal = document.getElementById('borrowActionConfirmModal');
+    const iconEl = document.getElementById('borrowActionConfirmIcon');
+    const titleEl = document.getElementById('borrowActionConfirmTitle');
+    const textEl = document.getElementById('borrowActionConfirmText');
+    const noteEl = document.getElementById('borrowActionConfirmNote');
+    const cancelBtn = document.getElementById('borrowActionConfirmCancel');
+    const submitBtn = document.getElementById('borrowActionConfirmSubmit');
+    if (!modal || !iconEl || !titleEl || !textEl || !noteEl || !cancelBtn || !submitBtn) {
+        return;
+    }
+
+    const TONES = ['is-positive', 'is-warning', 'is-danger'];
+    const COPY = {
+        returned: {
+            title: 'Mark as Returned',
+            icon: String.fromCharCode(0x2713),
+            note: 'The book copy will be marked available again.',
+            confirmLabel: 'Mark Returned',
+            tone: 'is-positive'
+        },
+        missing: {
+            title: 'Mark as Missing',
+            icon: '!',
+            note: 'This flags the copy as missing until it is resolved manually.',
+            confirmLabel: 'Mark Missing',
+            tone: 'is-warning'
+        }
+    };
+
+    let pendingForm = null;
+
+    function setTone(el, tone) {
+        TONES.forEach(function (t) { el.classList.remove(t); });
+        el.classList.add(tone);
+    }
+
+    function closeModal() {
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+        pendingForm = null;
+    }
+
+    document.querySelectorAll('.borrow-confirm-form').forEach(function (formEl) {
+        formEl.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const action = formEl.dataset.borrowAction === 'missing' ? 'missing' : 'returned';
+            const copy = COPY[action];
+            const rawTitle = (formEl.dataset.bookTitle || '').trim();
+            const label = rawTitle !== '' ? '"' + rawTitle + '"' : 'this record';
+
+            pendingForm = formEl;
+            titleEl.textContent = copy.title;
+            textEl.textContent = copy.title + ' for ' + label + '?';
+            noteEl.textContent = copy.note;
+            iconEl.textContent = copy.icon;
+            setTone(iconEl, copy.tone);
+            submitBtn.textContent = copy.confirmLabel;
+            setTone(submitBtn, copy.tone);
+
+            modal.classList.add('show');
+            modal.setAttribute('aria-hidden', 'false');
+            submitBtn.focus();
+        });
+    });
+
+    cancelBtn.addEventListener('click', closeModal);
+
+    submitBtn.addEventListener('click', function () {
+        if (!pendingForm) {
+            closeModal();
+            return;
+        }
+
+        const formToSubmit = pendingForm;
+        pendingForm = null;
+        closeModal();
+        formToSubmit.submit();
+    });
+
+    window.addEventListener('click', function (event) {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+
+    window.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && modal.classList.contains('show')) {
+            closeModal();
+        }
+    });
+}());
 </script>
 
 <?php require 'layout_bottom.php'; ?>

@@ -4,13 +4,19 @@ require 'config/db_connect.php';
 
 $kioskCssVer = @filemtime(__DIR__ . '/assets/css/kiosk.css') ?: time();
 $filtersJsVer = @filemtime(__DIR__ . '/assets/javascript/filters.js') ?: time();
+$yearSelectJsVer = @filemtime(__DIR__ . '/assets/javascript/year-select-ui.js') ?: time();
 
 $genreChips = [];
-$hasCategoryGroup = false;
-$groupColRes = $conn->query("SHOW COLUMNS FROM categories LIKE 'category_group'");
-if ($groupColRes && $groupColRes->num_rows > 0) {
-    $hasCategoryGroup = true;
-}
+// 2026-10-10: was a live information_schema lookup on every page load.
+// Root cause of the "MySQL server has gone away" crash on this line: this
+// MariaDB build crashes on SHOW COLUMNS *and* information_schema queries
+// alike while running in InnoDB emergency recovery mode
+// (innodb_force_recovery=6) -- both paths touch the same damaged data
+// dictionary. Verified against smartlib_FULL_BACKUP_20261010.sql that
+// categories.category_group already exists, so there's nothing left to
+// detect -- hardcoded to skip the query entirely. Revert to a live check
+// once the database has been rebuilt into a fresh data directory.
+$hasCategoryGroup = true;
 
 $genreExpr = $hasCategoryGroup
     ? "TRIM(COALESCE(NULLIF(c.category_group, ''), c.category_name))"
@@ -40,6 +46,7 @@ if ($genreRes) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartLib</title>
+    <link rel="icon" href="assets/images/phinma-icon.png" type="image/png">
     <link rel="stylesheet" href="assets/css/kiosk.css?v=<?= $kioskCssVer ?>">
 </head>
 <body>
@@ -50,8 +57,9 @@ if ($genreRes) {
             <div class="discover-pill">✨ AI-Powered Recommendations</div>
             <h1>Discover Your Next Read</h1>
             <p>Personalized book suggestions curated just for you</p>
+            <div class="discover-hero-divider" aria-hidden="true"></div>
             <div class="discover-search-wrap">
-                <input id="discover-search-input" type="text" placeholder="Search by title, author, ISBN, or subject...">
+                <input id="discover-search-input" type="text" placeholder="Search by title, author, subject, or book number...">
             </div>
         </div>
 
@@ -133,7 +141,7 @@ if ($genreRes) {
         </section>
         <?php if (!isset($_SESSION['user_id'])): ?>
         <section class="recommend-cta">
-            <div class="sparkle-icon">A+</div>
+            <div class="sparkle-icon">✨</div>
             <h3>Unlock Personalized Recommendations</h3>
             <p>Sign in to see recommendations tailored to your course and interests</p>
             <button id="discover-signin" class="discover-signin-btn">Sign In Now</button>
@@ -167,8 +175,8 @@ if ($genreRes) {
                         </svg>
                     </span>
                     <span class="user-info">
-                        <strong><?php echo $_SESSION['name']; ?></strong>
-                        <span>ID: <?php echo $_SESSION['user_number']; ?></span>
+                        <strong><?php echo htmlspecialchars((string)($_SESSION['name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></strong>
+                        <span>ID: <?php echo htmlspecialchars((string)($_SESSION['user_number'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></span>
                     </span>
                     <span class="user-menu-caret" aria-hidden="true">
                         <svg viewBox="0 0 24 24" role="presentation">
@@ -178,17 +186,44 @@ if ($genreRes) {
                 </button>
 
                 <div id="user-menu-dropdown" class="user-menu-dropdown hidden">
+                    <div class="user-menu-profile">
+                        <span class="user-menu-avatar" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" role="presentation">
+                                <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path>
+                                <path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path>
+                            </svg>
+                        </span>
+                        <div class="user-menu-profile-info">
+                            <p class="user-menu-profile-name">
+                                <?php echo htmlspecialchars((string)($_SESSION['name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                            </p>
+                            <p class="user-menu-profile-id">ID: <?php echo htmlspecialchars((string)($_SESSION['user_number'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></p>
+                        </div>
+                    </div>
+
+                    <div class="user-menu-divider" role="separator" aria-hidden="true"></div>
+
                     <button type="button" id="open-my-books" class="user-menu-item">
                         <span class="menu-item-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24" role="presentation">
-                                <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H10v16H6.5A2.5 2.5 0 0 1 4 17.5z"></path>
-                                <path d="M14 4h3.5A2.5 2.5 0 0 1 20 6.5v11A2.5 2.5 0 0 1 17.5 20H14z"></path>
-                                <path d="M10 6h4"></path>
+                                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
                             </svg>
                         </span>
-                        <span>My Library Account</span>
+                        <span>My Books</span>
                     </button>
-                    <form action="logout.php" method="POST" class="user-menu-form">
+                    <button type="button" id="open-my-favorites" class="user-menu-item">
+                        <span class="menu-item-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" role="presentation">
+                                <path d="M12 20.2s-7.2-4.6-10-9.2C0.3 8 1.4 4.6 4.6 3.5c2.1-0.7 4.3 0 5.6 1.7L12 7l1.8-1.8c1.3-1.7 3.5-2.4 5.6-1.7 3.2 1.1 4.3 4.5 2.6 7.5-2.8 4.6-10 9.2-10 9.2z"></path>
+                            </svg>
+                        </span>
+                        <span>My Favorites</span>
+                    </button>
+
+                    <div class="user-menu-divider" role="separator" aria-hidden="true"></div>
+
+                    <form action="logout.php" method="POST" class="user-menu-form" id="account-logout-form">
                         <button class="user-menu-item danger" type="submit">
                             <span class="menu-item-icon" aria-hidden="true">
                                 <svg viewBox="0 0 24 24" role="presentation">
@@ -203,11 +238,32 @@ if ($genreRes) {
                 </div>
             </div>
         <?php else: ?>
-            <button id="open-account-modal" class="btn-login">Sign In</button>
+            <button id="open-account-modal" class="btn-login">
+                <span class="btn-login-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <path d="M14 4H17.5A2.5 2.5 0 0 1 20 6.5v11A2.5 2.5 0 0 1 17.5 20H14"></path>
+                        <path d="M3 12H15"></path>
+                        <path d="M10 8l5 4-5 4"></path>
+                    </svg>
+                </span>
+                <span>Sign In</span>
+            </button>
         <?php endif; ?>
     </header>
 
     <div class="search-layout">
+        <div class="search-hero">
+            <div class="search-hero-brand">
+                <img src="assets/images/phinma-icon.png" alt="" class="search-hero-brand-icon">
+                <div class="search-hero-brand-text">
+                    <span class="search-hero-brand-title">PHINMA Education</span>
+                    <span class="search-hero-brand-tagline">Making Lives Better Through Education</span>
+                </div>
+            </div>
+            <h2>Find What You're Looking For</h2>
+            <p>Search our library by title, author, subject, or book number</p>
+            <div class="search-hero-divider" aria-hidden="true"></div>
+        </div>
         <div class="filters-wrapper">
             <div class="search-filters-top">
                 <div class="top-search-card">
@@ -217,14 +273,30 @@ if ($genreRes) {
                             <path d="M20 20l-3.4-3.4"></path>
                         </svg>
                     </span>
-                    <input type="text" id="advanced-search-input" autocomplete="off" placeholder="Search by title, author, ISBN, or subject...">
+                    <input type="text" id="advanced-search-input" autocomplete="off" placeholder="Search by title, author, subject, or book number...">
                 </div>
             </div>
 
                         <div class="filter-card filter-core">
                 <div class="filter-top-tabs">
-                    <button class="filter-top-tab active" data-type="genre">Genre</button>
-                    <button class="filter-top-tab" data-type="year_published">Year</button>
+                    <button class="filter-top-tab active" data-type="genre">
+                        <span class="filter-top-tab-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" role="presentation">
+                                <path d="M12.4 3.5h5.1A2 2 0 0 1 19.5 5.6v5.1a2 2 0 0 1-.6 1.4l-8 8a2 2 0 0 1-2.8 0l-4.6-4.6a2 2 0 0 1 0-2.8l8-8a2 2 0 0 1 1.4-.6z"></path>
+                                <circle cx="16" cy="8" r="1.1"></circle>
+                            </svg>
+                        </span>
+                        <span>Genre</span>
+                    </button>
+                    <button class="filter-top-tab" data-type="year_published">
+                        <span class="filter-top-tab-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" role="presentation">
+                                <rect x="3.5" y="5.5" width="17" height="15" rx="2"></rect>
+                                <path d="M8 3.8v3.4M16 3.8v3.4M3.5 9.2h17"></path>
+                            </svg>
+                        </span>
+                        <span>Year</span>
+                    </button>
                 </div>
 
                 <div class="filter-box-p" id="genre-box">
@@ -291,7 +363,7 @@ if ($genreRes) {
     <div class="modal-panel account-modal-panel">
         <button class="close-btn" id="close-modal">&times;</button>
         <div class="account-brand-mark">
-            <img src="assets/images/phinma.png" alt="PHINMA Education">
+            <img src="assets/images/phinma-dark-theme.png" alt="PHINMA Education">
         </div>
         <h3 class="modal-title">Welcome to SJCDC Library</h3>
         <p class="modal-subtitle">Sign in to borrow books and access personalized recommendations</p>
@@ -320,15 +392,15 @@ if ($genreRes) {
                 </button>
 
                 <div id="signin-account-type-menu" class="account-type-menu hidden">
-                    <button type="button" class="account-type-option active" data-type="student" data-label="Student" data-sub="3 books - 7 days" data-id-label="Student ID" data-id-placeholder="20232243">
+                    <button type="button" class="account-type-option active" data-type="student" data-label="Student" data-sub="3 books - 7 days" data-id-label="Student ID" data-id-placeholder="20232243" data-secret-label="PIN" data-secret-placeholder="2026">
                         <span class="option-title">Student</span>
                         <span class="option-sub">Borrow up to 3 books for 7 days</span>
                     </button>
-                    <button type="button" class="account-type-option" data-type="faculty" data-label="Faculty" data-sub="5 books - 30 days" data-id-label="Faculty ID" data-id-placeholder="FAC0001">
+                    <button type="button" class="account-type-option" data-type="faculty" data-label="Faculty" data-sub="5 books - 30 days" data-id-label="Faculty ID" data-id-placeholder="FAC0001" data-secret-label="PIN" data-secret-placeholder="2026">
                         <span class="option-title">Faculty</span>
                         <span class="option-sub">Borrow up to 5 books for 30 days</span>
                     </button>
-                    <button type="button" class="account-type-option" data-type="librarian" data-label="Librarian" data-sub="5 books - 7 days" data-id-label="Librarian ID" data-id-placeholder="LIB0001">
+                    <button type="button" class="account-type-option" data-type="librarian" data-label="Librarian" data-sub="5 books - 7 days" data-id-label="Librarian ID" data-id-placeholder="LIB0001" data-secret-label="Password" data-secret-placeholder="Enter your password">
                         <span class="option-title">Librarian</span>
                         <span class="option-sub">Staff access - up to 5 books for 7 days</span>
                     </button>
@@ -337,12 +409,24 @@ if ($genreRes) {
             <input type="hidden" id="signin-account-type" value="student">
 
             <div class="floating-field">
+                <span class="floating-field-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <circle cx="12" cy="8" r="3.4"></circle>
+                        <path d="M5 19c0-3.2 2.8-5.2 7-5.2s7 2 7 5.2"></path>
+                    </svg>
+                </span>
                 <label id="signin-identifier-label" class="floating-label">Student ID</label>
                 <input type="text" id="signin-identifier" placeholder="20232243">
             </div>
 
             <div class="floating-field">
-                <label class="floating-label">PIN</label>
+                <span class="floating-field-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <rect x="5" y="10.5" width="14" height="9" rx="2"></rect>
+                        <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"></path>
+                    </svg>
+                </span>
+                <label class="floating-label" id="signin-password-label">PIN</label>
                 <div class="password-field-wrap">
                     <input type="password" id="signin-password" placeholder="2026">
                     <button
@@ -367,6 +451,11 @@ if ($genreRes) {
             </div>
 
             <div id="signin-2fa-wrap" class="floating-field hidden">
+                <span class="floating-field-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <path d="M12 3.5l6.5 2.6v5.4c0 4.4-2.8 7.3-6.5 8.6-3.7-1.3-6.5-4.2-6.5-8.6V6.1z"></path>
+                    </svg>
+                </span>
                 <label class="floating-label">Verification Code</label>
                 <input type="text" id="signin-otp" inputmode="numeric" maxlength="6" placeholder="123456">
             </div>
@@ -375,7 +464,7 @@ if ($genreRes) {
             <button type="button" id="signin-btn" class="primary-btn">Sign In</button>
 
             <div class="signin-links-row">
-                <button type="button" id="signin-forgot-pin" class="signin-text-btn">Forgot your PIN?</button>
+                <button type="button" id="signin-forgot-pin" class="signin-text-btn">Forgot your <span id="signin-forgot-label">PIN</span>?</button>
             </div>
 
             <div id="signin-msg" class="form-msg"></div>
@@ -405,7 +494,11 @@ if ($genreRes) {
         <button class="close-btn" id="close-receipt-modal">&times;</button>
 
         <div class="receipt-success-head">
-            <span class="receipt-check-icon">&#10003;</span>
+            <span class="receipt-check-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="presentation">
+                    <path d="M5 12.5l4.5 4.5L19 7"></path>
+                </svg>
+            </span>
             <div>
                 <h3>Book Checked Out Successfully!</h3>
                 <p>Your borrowing receipt</p>
@@ -415,11 +508,36 @@ if ($genreRes) {
         <div id="receipt-content" class="receipt-paper"></div>
 
         <div class="receipt-actions-row">
-            <button type="button" id="receipt-print-btn" class="receipt-secondary-btn">Print Receipt</button>
-            <button type="button" id="receipt-download-btn" class="receipt-secondary-btn">Download</button>
+            <button type="button" id="receipt-print-btn" class="receipt-secondary-btn">
+                <span class="receipt-btn-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <path d="M7 8.5V4h10v4.5"></path>
+                        <rect x="4.5" y="8.5" width="15" height="7" rx="2"></rect>
+                        <path d="M7 14.5h10V20H7z"></path>
+                    </svg>
+                </span>
+                Print Receipt
+            </button>
+            <button type="button" id="receipt-download-btn" class="receipt-secondary-btn">
+                <span class="receipt-btn-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <path d="M12 4v11"></path>
+                        <path d="M7.5 11L12 15.5 16.5 11"></path>
+                        <path d="M4.5 18.5h15"></path>
+                    </svg>
+                </span>
+                Download
+            </button>
         </div>
 
-        <button type="button" id="receipt-done-btn" class="primary-btn receipt-done-btn">Done</button>
+        <button type="button" id="receipt-done-btn" class="primary-btn receipt-done-btn">
+            <span class="receipt-btn-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="presentation">
+                    <path d="M5 12.5l4.5 4.5L19 7"></path>
+                </svg>
+            </span>
+            Done
+        </button>
     </div>
 </div>
 
@@ -427,10 +545,59 @@ if ($genreRes) {
     <div class="modal-backdrop"></div>
     <div class="modal-panel my-books-modal-panel">
         <button class="close-btn" id="close-my-books-modal">&times;</button>
-        <h3 class="my-books-title">My Library Account</h3>
+        <div class="my-books-heading">
+            <span id="my-books-heading-icon" class="my-books-heading-icon books" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="presentation">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                </svg>
+            </span>
+            <div class="my-books-heading-text">
+                <h3 class="my-books-title">My Books</h3>
+                <p class="my-books-subtitle">Everything you currently have borrowed</p>
+            </div>
+        </div>
         <div id="my-books-content" class="my-books-content"></div>
     </div>
 </div>
+
+<div id="logout-confirm-modal" class="modal hidden logout-confirm-modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-panel logout-confirm-panel">
+        <span class="logout-confirm-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="presentation">
+                <path d="M10 4H6.5A2.5 2.5 0 0 0 4 6.5v11A2.5 2.5 0 0 0 6.5 20H10"></path>
+                <path d="M13 8l5 4-5 4"></path>
+                <path d="M18 12H9"></path>
+            </svg>
+        </span>
+        <h3 class="logout-confirm-title">Log out of SmartLib?</h3>
+        <p class="logout-confirm-text">You'll need to sign in again with your Student ID and PIN to search, borrow, or view your account.</p>
+        <div class="logout-confirm-actions">
+            <button type="button" id="logout-confirm-cancel-btn" class="logout-confirm-cancel">Stay Signed In</button>
+            <button type="button" id="logout-confirm-submit-btn" class="logout-confirm-confirm">Log Out</button>
+        </div>
+    </div>
+</div>
+
+<div id="checkout-confirm-modal" class="modal hidden checkout-confirm-modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-panel checkout-confirm-panel">
+        <span class="checkout-confirm-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="presentation">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+            </svg>
+        </span>
+        <h3 class="checkout-confirm-title">Confirm Checkout</h3>
+        <p class="checkout-confirm-text">You're about to borrow <strong id="checkout-confirm-book-title">this book</strong>. Please return it by the due date shown on your receipt.</p>
+        <div class="checkout-confirm-actions">
+            <button type="button" id="checkout-confirm-cancel-btn" class="checkout-confirm-cancel">Cancel</button>
+            <button type="button" id="checkout-confirm-submit-btn" class="checkout-confirm-confirm">Yes, Check Out</button>
+        </div>
+    </div>
+</div>
+<script src="assets/javascript/year-select-ui.js?v=<?= $yearSelectJsVer ?>"></script>
 <script src="assets/javascript/filters.js?v=<?= $filtersJsVer ?>"></script>
 </body>
 </html>

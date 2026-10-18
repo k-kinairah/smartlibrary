@@ -2,7 +2,12 @@
 declare(strict_types=1);
 
 function smartlib_admin_audit_actions(): array {
-    return ['added', 'updated', 'deleted', 'returned', 'missing', 'status_changed', 'retrieved'];
+    return [
+        'added', 'updated', 'deleted', 'returned', 'missing', 'status_changed', 'retrieved',
+        // Cover fix-up actions from the Edit Book modal (admin/manage_books.php)
+        // and the bulk book importer (admin/bulk_import_books.php).
+        'cover_refetched', 'cover_uploaded', 'cover_cleared', 'bulk_imported'
+    ];
 }
 
 function smartlib_admin_audit_ensure_table(mysqli $conn): bool {
@@ -132,7 +137,11 @@ function smartlib_admin_audit_action_label(string $action): string {
         'returned' => 'Returned',
         'missing' => 'Marked Missing',
         'status_changed' => 'Status Changed',
-        'retrieved' => 'Retrieved'
+        'retrieved' => 'Retrieved',
+        'cover_refetched' => 'Cover Re-fetched',
+        'cover_uploaded' => 'Cover Uploaded',
+        'cover_cleared' => 'Cover Cleared',
+        'bulk_imported' => 'Bulk Imported'
     ];
 
     $key = strtolower(trim($action));

@@ -152,6 +152,9 @@ body {
     padding: 8px 12px;
     border-radius: 10px;
     font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .stats-grid {
@@ -164,6 +167,7 @@ body {
 .stat-card {
     border-radius: 14px;
     padding: 16px;
+    min-width: 0;
 }
 
 .stat-card h3 {
@@ -178,6 +182,7 @@ body {
     font-size: 31px;
     font-weight: 800;
     color: #f4fff8;
+    overflow-wrap: break-word;
 }
 
 .panel {
@@ -211,23 +216,24 @@ body {
 
 .data-table th,
 .data-table td {
-    padding: 11px 12px;
+    padding: 13px 14px;
     text-align: left;
 }
 
 .data-table thead th {
-    background: rgba(10, 32, 24, 0.45);
-    color: #e7f4ec;
-    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(77, 138, 212, 0.32) 0%, rgba(41, 80, 130, 0.28) 100%);
+    color: #eaf3fc;
+    border-bottom: 1px solid rgba(140, 185, 235, 0.4);
     font-size: 13px;
+    font-weight: 700;
 }
 
 .data-table tbody tr {
-    background: rgba(236, 247, 240, 0.06);
+    background: rgba(140, 185, 235, 0.05);
 }
 
 .data-table tbody tr + tr td {
-    border-top: 1px solid rgba(218, 236, 224, 0.14);
+    border-top: 1px solid rgba(140, 185, 235, 0.16);
 }
 
 .badge {
@@ -303,14 +309,26 @@ body {
     outline: none;
 }
 
-.form-grid select option {
-    color: #1a2a22;
-    background: #f2f7f4;
+/* Universal dropdown-list styling (all <select> elements site-wide,
+   not just .form-grid) -- was only ever scoped to .form-grid with
+   stale pre-blue-conversion colors, so every other dropdown (filter
+   bars, Reports' Report Period/Type, custom-report fields) fell back
+   to the browser's plain gray option list, clashing hard with the
+   dark premium theme around it. Widened to a bare "select option"
+   so it's automatically inherited by every dropdown in the admin,
+   present and future, without having to enumerate each container
+   class. Browsers only allow CSS to style the option list's
+   background/text and the selected item -- the transient mouse-hover
+   highlight while the list is open stays OS-controlled. */
+select option {
+    color: #eaf4ff;
+    background: #0f2846;
 }
 
-.form-grid select option:checked {
+select option:checked,
+select option:hover {
     color: #ffffff;
-    background: #2b6dc5;
+    background: #3f7cc2;
 }
 
 .filters-inline input::placeholder,
@@ -324,7 +342,10 @@ body {
     display: none;
     justify-content: center;
     align-items: center;
-    background: rgba(2, 12, 8, 0.5);
+    /* Pass v44: backdrop darkened (separate from the card's own lighter
+       material) so the card reads with depth/contrast against the page
+       behind it, instead of blending into a similarly-toned veil. */
+    background: rgba(5, 13, 26, 0.74);
     z-index: 1000;
 }
 
@@ -827,7 +848,7 @@ body {
 
 .borrow-status-chips .borrow-chip:hover {
     transform: translateY(-1px);
-    border-color: rgba(236, 247, 241, 0.55);
+    border-color: rgba(236, 247, 241, 0.55) !important;
 }
 
 .borrow-status-chips .borrow-chip.is-active {
@@ -835,7 +856,7 @@ body {
     box-shadow: 0 0 0 1px rgba(242, 201, 76, 0.42) inset;
 }
 
-.borrow-filters input[name="search"] {
+.borrow-filters .search-field-wrap {
     flex: 1 1 320px;
     min-width: 240px;
 }
@@ -999,9 +1020,9 @@ body {
 }
 
 .book-copy-toggle-btn {
-    border: 1px solid rgba(255, 212, 90, 0.55);
-    background: rgba(255, 212, 90, 0.16);
-    color: #ffe8a1;
+    border: 1px solid rgba(140, 185, 235, 0.4);
+    background: rgba(140, 185, 235, 0.12);
+    color: #dcebfa;
     border-radius: 999px;
     padding: 3px 10px;
     font-size: 11px;
@@ -1010,19 +1031,20 @@ body {
 }
 
 .book-copy-details-row td {
-    background: rgba(4, 28, 20, 0.45);
+    background: rgba(13, 36, 64, 0.28);
     border-top: none !important;
 }
 
 .copy-detail-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
 .copy-detail-table th,
 .copy-detail-table td {
     padding: 8px 9px;
-    border-bottom: 1px solid rgba(221, 239, 228, 0.15);
+    border-bottom: 1px solid rgba(140, 185, 235, 0.16);
     font-size: 12px;
 }
 
@@ -1525,8 +1547,14 @@ body {
 
 .dashboard-empty-cell {
     text-align: center;
-    color: #c6dacd;
+    color: #9fb6d4;
     font-weight: 600;
+    font-style: italic;
+    padding: 26px 16px !important;
+}
+
+[data-theme="light"] .dashboard-empty-cell {
+    color: #6b83a0;
 }
 
 .overdue-action-col {
@@ -1731,14 +1759,14 @@ body {
 }
 
 .book-copy-details-wrap {
-    padding: 10px;
+    padding: 12px;
     border-radius: 10px;
-    border: 1px solid rgba(219, 238, 226, 0.14);
-    background: rgba(8, 34, 24, 0.34);
+    border: 1px solid rgba(140, 185, 235, 0.22);
+    background: rgba(13, 36, 64, 0.15);
 }
 
 .copy-detail-empty {
-    color: #c2d7ca;
+    color: #9fb6d4;
     font-size: 12px;
 }
 
@@ -1820,7 +1848,8 @@ body {
 }
 
 .borrow-detail-row td {
-    background: rgba(9, 37, 27, 0.45);
+    background: rgba(13, 36, 64, 0.28);
+    border-top: 1px solid rgba(140, 185, 235, 0.2) !important;
 }
 
 .borrow-detail-grid {
@@ -2176,7 +2205,12 @@ body {
 }
 
 .borrow-detail-grid strong {
-    color: #e7f6ed;
+    display: block;
+    color: #8fb3dd;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 800;
 }
 
 /* Manage books table + status + copy detail */
@@ -2235,27 +2269,27 @@ body {
 }
 
 .copy-detail-status-available {
-    color: #89f2b6;
+    color: #79b8ff;
     font-weight: 700;
 }
 
 .copy-detail-status-borrowed {
-    color: #9fd8ff;
+    color: #7bf0b0;
     font-weight: 700;
 }
 
 .copy-detail-status-overdue {
-    color: #ff929c;
+    color: #ff7f89;
     font-weight: 700;
 }
 
 .copy-detail-status-missing {
-    color: #ffc56e;
+    color: #ffbe63;
     font-weight: 700;
 }
 
 .copy-detail-muted {
-    color: #cadfd2;
+    color: #9fb6d4;
 }
 
 /* Manage users: keep chips in one row */
@@ -2267,6 +2301,7 @@ body {
     margin-bottom: 16px;
     padding-bottom: 2px;
     scrollbar-width: thin;
+    scrollbar-color: rgba(140, 185, 235, 0.46) transparent;
 }
 
 .manage-users-chip-row .borrow-chip {
@@ -2281,7 +2316,7 @@ body {
 }
 
 .manage-users-chip-row::-webkit-scrollbar-thumb {
-    background: rgba(185, 210, 196, 0.46);
+    background: rgba(140, 185, 235, 0.46);
     border-radius: 999px;
 }
 
@@ -2604,6 +2639,14 @@ a.archive-reset-btn,
     white-space: nowrap;
 }
 
+/* Pass v49: "improve this button too, make it look premium and
+   modern and green that looks premium" -- this is the winning rule
+   for .overdue-reminder-btn's color (the later of several duplicate
+   sizing-only overrides down the file all keep applying on top of
+   it, unaffected). Swapped the flat gold pill for the same premium
+   green gradient/glow used elsewhere (Retrieve, Confirm buttons) and
+   added hover/active/disabled feedback it never had -- previously
+   this button had no hover state at all. */
 .overdue-reminder-btn {
     width: auto;
     min-width: 128px;
@@ -2611,9 +2654,27 @@ a.archive-reset-btn,
     padding: 6px 12px;
     font-size: 12.5px;
     border-radius: 999px;
-    background: linear-gradient(180deg, #e9cf75 0%, #d8b452 100%) !important;
-    color: #244333 !important;
-    border: 1px solid rgba(124, 95, 17, 0.44) !important;
+    background: linear-gradient(180deg, #3fcf8e 0%, #1f9f68 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(63, 207, 142, 0.55) !important;
+    box-shadow: 0 4px 14px rgba(31, 159, 104, 0.32);
+    transition: transform 0.16s ease, filter 0.16s ease, box-shadow 0.16s ease;
+}
+
+.overdue-reminder-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+    box-shadow: 0 7px 18px rgba(31, 159, 104, 0.42);
+}
+
+.overdue-reminder-btn:active:not(:disabled) {
+    transform: translateY(0);
+    filter: brightness(0.96);
+}
+
+.overdue-reminder-btn:disabled {
+    cursor: default;
+    opacity: 0.85;
 }
 
 /* 6) Live kiosk: accent-yellow highlighted parts + translucent scrollbar */
@@ -2629,7 +2690,7 @@ a.archive-reset-btn,
 
 .live-activity-feed {
     scrollbar-width: thin;
-    scrollbar-color: rgba(231, 244, 236, 0.45) transparent;
+    scrollbar-color: rgba(140, 185, 235, 0.45) transparent;
 }
 
 .live-activity-feed::-webkit-scrollbar {
@@ -2641,7 +2702,7 @@ a.archive-reset-btn,
 }
 
 .live-activity-feed::-webkit-scrollbar-thumb {
-    background: rgba(231, 244, 236, 0.45);
+    background: rgba(140, 185, 235, 0.45);
     border-radius: 999px;
 }
 
@@ -2695,7 +2756,7 @@ a.archive-reset-btn,
 .overdue-table-wrap {
     max-height: 398px;
     scrollbar-width: thin;
-    scrollbar-color: rgba(231, 244, 236, 0.42) transparent;
+    scrollbar-color: rgba(140, 185, 235, 0.42) transparent;
 }
 
 .overdue-table-wrap::-webkit-scrollbar {
@@ -2707,7 +2768,7 @@ a.archive-reset-btn,
 }
 
 .overdue-table-wrap::-webkit-scrollbar-thumb {
-    background: rgba(231, 244, 236, 0.42);
+    background: rgba(140, 185, 235, 0.42);
     border-radius: 999px;
 }
 
@@ -2738,7 +2799,7 @@ a.archive-reset-btn,
 .live-activity-feed {
     max-height: 398px;
     scrollbar-width: thin;
-    scrollbar-color: rgba(231, 244, 236, 0.42) transparent;
+    scrollbar-color: rgba(140, 185, 235, 0.42) transparent;
 }
 
 .live-activity-feed::-webkit-scrollbar {
@@ -2750,7 +2811,7 @@ a.archive-reset-btn,
 }
 
 .live-activity-feed::-webkit-scrollbar-thumb {
-    background: rgba(231, 244, 236, 0.42);
+    background: rgba(140, 185, 235, 0.42);
     border-radius: 999px;
 }
 
@@ -3410,7 +3471,7 @@ a.archive-reset-btn,
 }
 
 .overdue-books-panel .overdue-preview-table tbody tr {
-    background: rgba(10, 39, 28, 0.26) !important;
+    background: rgba(63, 124, 194, 0.16) !important;
 }
 
 .overdue-books-panel .overdue-preview-table tbody td {
@@ -3503,7 +3564,7 @@ a.archive-reset-btn,
     flex-wrap: nowrap;
 }
 
-.archive-filters input[name="search"] {
+.archive-filters .search-field-wrap {
     flex: 1 1 560px;
     min-width: 280px;
 }
@@ -3666,42 +3727,87 @@ a.archive-reset-btn,
     justify-content: center;
 }
 
+/* Pass v48: "improve these buttons, make it look premium and lively
+   and depend the color on its alert level" -- Retrieve was styled
+   gold/warning here even though the confirm dialog it opens (Pass
+   v46) colors the same action green/positive, since retrieving a
+   deleted book is restorative, not risky -- the same kind of
+   tone/action mismatch the confirm-modal tone system was built to
+   avoid elsewhere. Recolored Retrieve to match (green), kept Open on
+   the neutral blue "view" tone, and gave both an icon + richer
+   gradient/glow so they read as premium pills instead of flat tags. */
 .archive-action-btn,
 .archive-action-btn-view,
 .archive-retrieved {
-    min-width: 98px;
-    height: 34px;
+    min-width: 104px;
+    height: 36px;
     border-radius: 999px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 6px;
     font-size: 12px !important;
     font-weight: 700;
     letter-spacing: 0.01em;
+    transition: transform 0.16s ease, filter 0.16s ease, box-shadow 0.16s ease;
+}
+
+.archive-action-icon {
+    width: 14px;
+    height: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.archive-action-icon svg {
+    width: 14px;
+    height: 14px;
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .archive-action-btn {
-    padding: 0 12px !important;
-    border: 1px solid rgba(246, 210, 94, 0.4);
-    background: linear-gradient(180deg, #f0cf66 0%, #ddb945 100%);
-    color: #4c3c07;
+    padding: 0 14px !important;
+    border: 1px solid rgba(63, 207, 142, 0.5);
+    background: linear-gradient(180deg, #3fcf8e 0%, #1f9f68 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(43, 179, 116, 0.3);
 }
 
 .archive-action-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 5px 14px rgba(241, 210, 97, 0.25);
+    filter: brightness(1.08);
+    box-shadow: 0 7px 18px rgba(43, 179, 116, 0.4);
+}
+
+.archive-action-btn:active {
+    transform: translateY(0);
+    filter: brightness(0.96);
 }
 
 .archive-action-btn-view {
-    padding: 0 12px !important;
-    border: 1px solid rgba(123, 187, 255, 0.45);
-    background: linear-gradient(180deg, #7ab7ff 0%, #4f91ef 100%);
-    color: #eef6ff;
+    padding: 0 14px !important;
+    border: 1px solid rgba(140, 185, 235, 0.55);
+    background: linear-gradient(180deg, #6fabf0 0%, #3f7cc2 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(63, 124, 194, 0.3);
 }
 
 .archive-action-btn-view:hover {
     transform: translateY(-1px);
-    box-shadow: 0 5px 14px rgba(94, 162, 244, 0.28);
+    filter: brightness(1.08);
+    box-shadow: 0 7px 18px rgba(63, 124, 194, 0.4);
+}
+
+.archive-action-btn-view:active {
+    transform: translateY(0);
+    filter: brightness(0.96);
 }
 
 .archive-retrieved {
@@ -3931,17 +4037,22 @@ a.archive-reset-btn,
 }
 
 [data-theme="light"] .overdue-table-wrap,
-[data-theme="light"] .live-activity-feed {
-    scrollbar-color: rgba(87, 127, 108, 0.38) transparent;
+[data-theme="light"] .live-activity-feed,
+[data-theme="light"] .manage-users-chip-row {
+    scrollbar-color: rgba(44, 84, 136, 0.35) transparent;
 }
 
 [data-theme="light"] .overdue-table-wrap::-webkit-scrollbar-thumb,
-[data-theme="light"] .live-activity-feed::-webkit-scrollbar-thumb {
-    background: rgba(87, 127, 108, 0.38);
+[data-theme="light"] .live-activity-feed::-webkit-scrollbar-thumb,
+[data-theme="light"] .manage-users-chip-row::-webkit-scrollbar-thumb {
+    background: rgba(44, 84, 136, 0.35);
 }
 
 [data-theme="light"] .overlay-modal {
-    background: rgba(15, 38, 28, 0.34);
+    /* Pass v44: was a leftover off-brand green tint; now a dark navy veil
+       (matching dark mode's depth approach) instead of a light backdrop
+       that let the card blend into the page. */
+    background: rgba(10, 22, 42, 0.5);
 }
 
 [data-theme="light"] .borrow-record-status-borrowed,
@@ -4172,7 +4283,7 @@ a.archive-reset-btn,
 
 [data-theme="light"] .btn-primary,
 [data-theme="light"] .filters-inline button {
-    background: linear-gradient(180deg, #1d824f 0%, #14693d 100%) !important;
+    background: linear-gradient(180deg, #3f7cc2 0%, #1c4573 100%) !important;
     color: #ffffff !important;
 }
 
@@ -4182,9 +4293,9 @@ a.archive-reset-btn,
 }
 
 [data-theme="light"] .filter-reset-btn {
-    background: #e8f5ed !important;
-    border-color: rgba(42, 120, 82, 0.35) !important;
-    color: #1e6d43 !important;
+    background: #e3edff !important;
+    border-color: rgba(63, 124, 194, 0.35) !important;
+    color: #1c4573 !important;
 }
 
 [data-theme="light"] .archive-retrieved {
@@ -4303,9 +4414,19 @@ a.archive-reset-btn,
     margin-bottom: 16px;
 }
 
+/* Pass v36: "put the monthly dropdown next to report period... put it
+   in the same row as report period" -- Month was always going to
+   land on its own orphan row in a 4-column grid, because every period
+   except Daily/Yearly shows exactly 5 field groups at once (Period,
+   Type, Status, Year, +one of Month/Quarter/Week, or Period, Type,
+   Status, From, To for Custom) -- one more than 4 columns can hold in
+   a row. Widened to 5 columns so every period's field set fits on a
+   single row instead of stranding the last one below by itself; the
+   markup in reports.php also moves Month to sit right after Report
+   Period so it's adjacent, not just same-row, per the request. */
 .reports-custom-form {
     display: grid;
-    grid-template-columns: repeat(4, minmax(170px, 1fr));
+    grid-template-columns: repeat(5, minmax(150px, 1fr));
     gap: 12px;
     align-items: end;
 }
@@ -4321,7 +4442,7 @@ a.archive-reset-btn,
     font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.02em;
-    color: #cbe2d2;
+    color: #a9c8e8;
 }
 
 .reports-field-group select,
@@ -4335,7 +4456,7 @@ a.archive-reset-btn,
     -webkit-appearance: none;
     -moz-appearance: none;
     padding-right: 44px !important;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23e7f6ed' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23cfe3f7' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 14px center;
     background-size: 16px;
@@ -4458,7 +4579,7 @@ a.archive-reset-btn,
     margin: 0 0 10px;
     font-size: 13px;
     line-height: 1.35;
-    color: #bdd5c4;
+    color: #b9cee2;
 }
 
 .reports-card-actions {
@@ -4699,23 +4820,35 @@ body.modal-open {
 }
 
 [data-theme="light"] .reports-custom-form select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23345d4b' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231c4573' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");
 }
 
 [data-theme="light"] .reports-export-link {
-    background: linear-gradient(180deg, #1d824f 0%, #14693d 100%) !important;
-    border-color: rgba(27, 112, 70, 0.4) !important;
+    background: linear-gradient(180deg, #3f7cc2 0%, #1c4573 100%) !important;
+    border-color: rgba(63, 124, 194, 0.4) !important;
     color: #ffffff !important;
 }
 
 [data-theme="light"] .reports-export-secondary {
-    color: #1e6d43 !important;
+    background: transparent !important;
+    border: 1px solid rgba(63, 124, 194, 0.35) !important;
+    color: #2c5488 !important;
+}
+
+[data-theme="light"] .reports-export-secondary:hover {
+    background: rgba(63, 124, 194, 0.1) !important;
+}
+
+[data-theme="light"] .reports-download-link {
+    border: 1px solid rgba(63, 207, 142, 0.5) !important;
+    background: linear-gradient(180deg, #3fcf8e 0%, #1f9f68 100%) !important;
+    color: #ffffff !important;
 }
 
 [data-theme="light"] .reports-card-icon {
-    background: rgba(102, 178, 131, 0.22);
-    border-color: rgba(54, 121, 89, 0.26);
-    color: #1f6d47;
+    background: rgba(63, 124, 194, 0.16) !important;
+    border-color: rgba(63, 124, 194, 0.3) !important;
+    color: #1c4573 !important;
 }
 
 [data-theme="light"] .reports-card-body p {
@@ -4723,13 +4856,13 @@ body.modal-open {
 }
 
 [data-theme="light"] .reports-action-link {
-    background: #f4fbf7;
-    border-color: rgba(57, 103, 82, 0.24);
-    color: #2b5944;
+    background: #eef4fc !important;
+    border-color: rgba(63, 124, 194, 0.28) !important;
+    color: #1c4573 !important;
 }
 
 [data-theme="light"] .reports-bar-track {
-    background: rgba(91, 129, 111, 0.2);
+    background: rgba(63, 124, 194, 0.16) !important;
 }
 
 [data-theme="light"] .reports-preview-close {
@@ -4843,51 +4976,52 @@ body.modal-open {
 }
 
 [data-theme="light"] .borrow-detail-row td {
-    background: #edf5f0 !important;
-    border-top: 1px solid rgba(76, 114, 95, 0.14) !important;
+    background: #eef4fc !important;
+    border-top: 1px solid rgba(63, 124, 194, 0.18) !important;
 }
 
 [data-theme="light"] .borrow-detail-grid {
-    color: #385749 !important;
+    color: #2c4a70 !important;
 }
 
 [data-theme="light"] .borrow-detail-grid strong {
-    color: #234334 !important;
+    color: #5f80ad !important;
 }
 
 [data-theme="light"] .book-copy-toggle-btn {
-    background: linear-gradient(180deg, #f4d67e 0%, #e2bb52 100%) !important;
-    border-color: #c49a2c !important;
-    color: #6b4e08 !important;
+    background: rgba(63, 124, 194, 0.08) !important;
+    border-color: rgba(63, 124, 194, 0.32) !important;
+    color: #1c4573 !important;
     font-weight: 800 !important;
 }
 
 [data-theme="light"] .book-copy-toggle-btn:hover {
-    filter: brightness(1.02);
+    background: rgba(63, 124, 194, 0.16) !important;
+    filter: none;
 }
 
 [data-theme="light"] .book-copy-details-row td {
-    background: #edf5f0 !important;
+    background: #eef4fc !important;
 }
 
 [data-theme="light"] .book-copy-details-wrap {
-    background: #f8fcf9 !important;
-    border-color: rgba(58, 102, 83, 0.2) !important;
+    background: #f7fafe !important;
+    border-color: rgba(63, 124, 194, 0.22) !important;
 }
 
 [data-theme="light"] .copy-detail-table th {
-    background: #e8f3ed !important;
-    color: #244234 !important;
-    border-bottom-color: rgba(64, 108, 88, 0.2) !important;
+    background: #e7f0fb !important;
+    color: #1c4573 !important;
+    border-bottom-color: rgba(63, 124, 194, 0.22) !important;
 }
 
 [data-theme="light"] .copy-detail-table td {
-    color: #335245 !important;
-    border-bottom-color: rgba(64, 108, 88, 0.15) !important;
+    color: #2c4a70 !important;
+    border-bottom-color: rgba(63, 124, 194, 0.16) !important;
 }
 
 [data-theme="light"] .copy-detail-empty {
-    color: #537364 !important;
+    color: #5f80ad !important;
 }
 
 [data-theme="light"] .icon-close {
@@ -5018,21 +5152,40 @@ body.modal-open {
     text-decoration: none;
     display: inline-flex;
     align-items: center;
+    gap: 7px;
     justify-content: center;
-    min-height: 34px;
-    padding: 8px 13px;
+    min-height: 36px;
+    padding: 8px 16px;
     border-radius: 999px;
-    border: 1px solid rgba(151, 201, 173, 0.42);
-    background: rgba(236, 247, 241, 0.12);
-    color: #d9f0e2;
+    border: 1px solid rgba(140, 185, 235, 0.4);
+    background: rgba(140, 185, 235, 0.1);
+    color: #dcebfa;
     font-size: 12px;
     font-weight: 800;
     white-space: nowrap;
+    transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.panel-link-btn svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.panel-link-btn svg * {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .panel-link-btn:hover {
-    border-color: rgba(242, 201, 76, 0.7);
-    color: #fff4c5;
+    border-color: rgba(140, 185, 235, 0.75);
+    background: rgba(140, 185, 235, 0.2);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(63, 124, 194, 0.25);
 }
 
 .overdue-summary-grid {
@@ -5090,11 +5243,21 @@ body.modal-open {
 .overdue-books-panel .overdue-preview-table th:nth-child(5),
 .overdue-books-panel .overdue-preview-table td:nth-child(5) { width: 20%; white-space: normal; text-align: center; }
 
-[data-theme="light"] .panel-link-btn,
 [data-theme="light"] .overdue-summary-card {
     background: #f7fcf9;
     border-color: rgba(64, 109, 88, 0.22);
     color: #244435;
+}
+
+[data-theme="light"] .panel-link-btn {
+    background: rgba(63, 124, 194, 0.08);
+    border-color: rgba(63, 124, 194, 0.32);
+    color: #1c4573;
+}
+
+[data-theme="light"] .panel-link-btn:hover {
+    background: rgba(63, 124, 194, 0.16);
+    border-color: rgba(63, 124, 194, 0.5);
 }
 
 [data-theme="light"] .overdue-summary-card span,
@@ -5122,12 +5285,12 @@ body.modal-open {
 
 .borrower-history-empty h2 {
     margin: 0 0 8px;
-    color: #f5ffe9;
+    color: #eaf3fc;
 }
 
 .borrower-history-empty p {
     margin: 0 0 14px;
-    color: #c4decf;
+    color: #b9cee2;
 }
 
 .borrower-history-cta {
@@ -5136,74 +5299,118 @@ body.modal-open {
     justify-content: center;
     min-height: 38px;
     padding: 9px 14px;
-    border-radius: 8px;
-    background: #1d8f53;
+    border-radius: 999px;
+    border: 1px solid rgba(140, 185, 235, 0.5);
+    background: linear-gradient(160deg, #4d8ad4 0%, #1c4573 100%);
     color: #ffffff;
     font-weight: 800;
     text-decoration: none;
 }
 
+/* No panel/glass-card box here by request -- the header row reads as
+   premium through the avatar glow, hierarchy and a hairline divider
+   instead of a boxed card. */
 .borrower-profile-panel {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
+    padding: 4px 0 22px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(140, 185, 235, 0.16);
 }
 
 .borrower-profile-main {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 16px;
     min-width: 0;
 }
 
 .borrower-avatar {
-    width: 58px;
-    height: 58px;
-    border-radius: 14px;
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
     display: grid;
     place-items: center;
     flex: 0 0 auto;
-    background: rgba(242, 201, 76, 0.16);
-    border: 1px solid rgba(242, 201, 76, 0.34);
-    color: #fff4c5;
-    font-size: 22px;
+    background: linear-gradient(160deg, rgba(140, 185, 235, 0.4) 0%, rgba(63, 124, 194, 0.3) 100%);
+    border: 1px solid rgba(140, 185, 235, 0.5);
+    color: #ffffff;
+    font-size: 25px;
     font-weight: 900;
+    box-shadow: 0 10px 24px rgba(63, 124, 194, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
 }
 
 .borrower-profile-main h2 {
     margin: 0;
-    color: #f5ffe9;
+    color: #eaf3fc;
+    font-size: 22px;
+    letter-spacing: -0.01em;
 }
 
 .borrower-profile-main p {
     margin: 6px 0 0;
-    color: #c4decf;
-}
-
-.borrower-profile-meta,
-.borrower-history-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    color: #b9cee2;
 }
 
 .borrower-profile-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
     margin-top: 8px;
 }
 
-.borrower-profile-meta span,
-.borrower-history-chips span {
+/* The stat-card row is fine as an even auto-fit grid everywhere else,
+   but here one card (Active Fine) holds a much longer value than its
+   siblings -- forcing it to equal width either wraps "PHP 3,270.00"
+   onto two cramped lines, or (if it's left free to size by content)
+   leaves the row short of the panel's full width. Flex with a taller
+   grow weight on the wide card gets both: the row still fills edge to
+   edge with no dead space, and Active Fine gets the extra room its
+   value actually needs instead of being squeezed to match the rest. */
+.borrower-history-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.borrower-history-chips .stat-card {
+    flex: 1 1 180px;
+}
+
+.borrower-history-chips .stat-card.stat-card-wide {
+    flex: 1.8 1 260px;
+}
+
+/* Only .borrower-profile-meta gets the pill treatment -- the old
+   combined selector also matched .metric-icon-badge (a <span> nested
+   inside .borrower-history-chips), leaking a faint pill background
+   behind those bare stat-card icons even though "icon only, no
+   container" was the explicit rule for that icon system. */
+.borrower-profile-meta span {
     display: inline-flex;
     align-items: center;
     min-height: 26px;
     padding: 5px 9px;
     border-radius: 999px;
-    border: 1px solid rgba(151, 201, 173, 0.28);
-    background: rgba(236, 247, 241, 0.08);
-    color: #d9f0e2;
+    border: 1px solid rgba(140, 185, 235, 0.32);
+    background: rgba(140, 185, 235, 0.1);
+    color: #dcebfa;
     font-size: 12px;
     font-weight: 800;
+}
+
+.borrower-profile-meta span.is-active {
+    border-color: rgba(137, 242, 182, 0.42);
+    background: rgba(137, 242, 182, 0.14);
+    color: #bdf5d6;
+}
+
+.borrower-profile-meta span.is-inactive {
+    border-color: rgba(255, 152, 161, 0.42);
+    background: rgba(255, 152, 161, 0.14);
+    color: #ffd3d8;
 }
 
 .borrower-profile-actions {
@@ -5229,7 +5436,7 @@ body.modal-open {
 
 .borrower-history-table strong {
     display: block;
-    color: #f5ffe9;
+    color: #eaf3fc;
 }
 
 .borrower-history-table small,
@@ -5241,13 +5448,32 @@ body.modal-open {
 }
 
 .borrower-history-table small {
-    color: #b6cabc;
+    color: #9fb6d4;
 }
 
 .borrower-history-inline-link {
-    color: #fff4c5;
+    color: #9fc7ff;
     text-decoration: none;
 }
+
+.borrower-history-full-table {
+    table-layout: fixed;
+}
+
+.borrower-history-full-table th:nth-child(1),
+.borrower-history-full-table td:nth-child(1) { width: 8%; }
+.borrower-history-full-table th:nth-child(2),
+.borrower-history-full-table td:nth-child(2) { width: 30%; word-break: break-word; }
+.borrower-history-full-table th:nth-child(3),
+.borrower-history-full-table td:nth-child(3) { width: 13%; }
+.borrower-history-full-table th:nth-child(4),
+.borrower-history-full-table td:nth-child(4) { width: 13%; }
+.borrower-history-full-table th:nth-child(5),
+.borrower-history-full-table td:nth-child(5) { width: 13%; }
+.borrower-history-full-table th:nth-child(6),
+.borrower-history-full-table td:nth-child(6) { width: 13%; }
+.borrower-history-full-table th:nth-child(7),
+.borrower-history-full-table td:nth-child(7) { width: 10%; }
 
 .borrower-history-inline-link:hover {
     text-decoration: underline;
@@ -5275,26 +5501,41 @@ body.modal-open {
 [data-theme="light"] .borrower-history-empty h2,
 [data-theme="light"] .borrower-profile-main h2,
 [data-theme="light"] .borrower-history-table strong {
-    color: #244435;
+    color: #1c4573;
 }
 
 [data-theme="light"] .borrower-history-empty p,
 [data-theme="light"] .borrower-profile-main p,
 [data-theme="light"] .borrower-history-table small {
-    color: #5f7f70;
+    color: #4a6178;
 }
 
-[data-theme="light"] .borrower-profile-meta span,
-[data-theme="light"] .borrower-history-chips span {
-    background: #f7fcf9;
-    border-color: rgba(64, 109, 88, 0.22);
-    color: #244435;
+[data-theme="light"] .borrower-history-inline-link {
+    color: #2c5488;
+}
+
+[data-theme="light"] .borrower-profile-meta span {
+    background: rgba(63, 124, 194, 0.08);
+    border-color: rgba(63, 124, 194, 0.3);
+    color: #1c4573;
+}
+
+[data-theme="light"] .borrower-profile-meta span.is-active {
+    background: rgba(29, 104, 149, 0.12);
+    border-color: rgba(29, 104, 149, 0.32);
+    color: #1d6895;
+}
+
+[data-theme="light"] .borrower-profile-meta span.is-inactive {
+    background: rgba(181, 47, 58, 0.12);
+    border-color: rgba(181, 47, 58, 0.32);
+    color: #b52f3a;
 }
 
 [data-theme="light"] .borrower-avatar {
-    background: #fff7d7;
-    border-color: rgba(183, 141, 32, 0.32);
-    color: #7a5b12;
+    background: linear-gradient(160deg, #ffffff 0%, #eaf1fb 100%);
+    border-color: rgba(63, 124, 194, 0.3);
+    color: #1c4573;
 }
 
 /* Export Center */
@@ -5312,22 +5553,22 @@ body.modal-open {
 
 .export-center-note h2 {
     margin: 0 0 6px;
-    color: #f5ffe9;
+    color: #eaf3fc;
     font-size: 21px;
 }
 
 .export-center-note p {
     margin: 0;
-    color: #c4decf;
+    color: #b9cee2;
     line-height: 1.45;
 }
 
 .export-center-note > span {
     flex: 0 0 auto;
     border-radius: 999px;
-    border: 1px solid rgba(151, 201, 173, 0.34);
-    background: rgba(236, 247, 241, 0.1);
-    color: #d9f0e2;
+    border: 1px solid rgba(140, 185, 235, 0.34);
+    background: rgba(140, 185, 235, 0.1);
+    color: #dcebfa;
     font-size: 12px;
     font-weight: 800;
     padding: 7px 10px;
@@ -5335,7 +5576,7 @@ body.modal-open {
 
 .export-center-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 14px;
 }
 
@@ -5385,6 +5626,20 @@ body.modal-open {
     min-width: 760px;
 }
 
+/* Pass v37: "make it in one row" -- Data Export's 5 cards were a
+   fixed 2-column grid, always stranding the 5th card (Overdue &
+   Missing) alone on its own third row. Widened to 5 columns above so
+   the whole set reads as one deliberate row on desktop. A 5-column
+   grid gets tight well before the existing 960px full-stack
+   breakpoint, so a 1400px tier steps it down to 3 columns first
+   (2 rows: 3+2) instead of jumping straight from 5-across to 1-per-
+   row. */
+@media (max-width: 1400px) {
+    .export-center-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 960px) {
     .export-center-grid {
         grid-template-columns: 1fr;
@@ -5397,21 +5652,2777 @@ body.modal-open {
 }
 
 [data-theme="light"] .export-center-note h2 {
-    color: #244435;
+    color: #1c4573;
 }
 
 [data-theme="light"] .export-center-note p {
-    color: #5f7f70;
+    color: #4a6178;
 }
 
 [data-theme="light"] .export-center-note > span {
-    background: #f7fcf9;
-    border-color: rgba(64, 109, 88, 0.22);
-    color: #244435;
+    background: #eef4fc;
+    border-color: rgba(63, 124, 194, 0.28);
+    color: #1c4573;
 }
 
 [data-theme="light"] .export-card-title-row span {
     background: #fff7d7;
     border-color: rgba(183, 141, 32, 0.32);
     color: #7a5b12;
+}
+
+/* ============================================================
+   Kiosk/Admin Consistency Pass v1 (Dashboard: PHINMA Blue)
+   ------------------------------------------------------------
+   Direct feedback: "now here too" (the admin dashboard, still on
+   its original dark green theme, next to the kiosk-facing pages
+   which this whole thread has moved to PHINMA blue). Only the
+   default/dark theme is touched -- [data-theme="light"] is a
+   separate, unscoped variant this thread was never shown and isn't
+   part of this ask.
+
+   Almost every surface here (.sidebar, stat cards, the Overdue &
+   Fines / Live Kiosk Activity panels, the active nav-link highlight)
+   is a .glass-card: a translucent white overlay (var(--glass)/
+   var(--glass-strong)) with no color of its own, sitting on top of
+   `body`'s gradient and picking up its hue through the transparency.
+   That means recoloring just the one `body` rule -- reusing the
+   exact kiosk-side blue diagonal + corner highlight from the search/
+   discover pages -- carries through to the sidebar, every stat card,
+   both dashboard panels, and the active nav item automatically,
+   without needing to touch each one's own (nonexistent) background.
+   Status badges, the gold action buttons, and other semantic colors
+   are untouched -- same reasoning as everywhere else in this thread. */
+
+/* Pass v39: "that look so dark, even the actual pages" -- direct
+   feedback that the whole dark theme reads too dark, not just the
+   sidebar from the pass right above. Since (per the comment above)
+   nearly every surface in the admin is a translucent overlay sitting
+   on this one `body` gradient, its floor being near-black (#08182a)
+   was dragging every panel, card and the sidebar down with it.
+   Raised the whole ramp by roughly one stop -- same hue family and
+   diagonal, just brighter -- so it carries through everywhere the
+   same way the original darkening did.
+
+   Pass v40: "this still look dark" -- v39 wasn't enough. The bigger
+   culprit turned out not to be `body` itself but the two dark-navy
+   tokens (rgba(13, 36, 64, X) and rgba(28, 69, 115, X)) reused as the
+   darkest gradient stop on essentially every premium panel, stat
+   card, and input/select field across the whole admin (48 uses total)
+   -- each one layering its own dark fill on top of `body` regardless
+   of how light `body` was. Scaled every one of those down (~45-60%
+   less alpha) site-wide so panels and fields actually lighten instead
+   of just the gaps between them, and pushed `body` noticeably lighter
+   again on top of that. */
+body {
+    background:
+        radial-gradient(120% 65% at 85% -10%, rgba(110, 175, 230, 0.26) 0%, rgba(110, 175, 230, 0) 55%),
+        linear-gradient(200deg, #4d7ebd 0%, #3a6aa8 42%, #2b5490 72%, #21447a 100%) !important;
+}
+
+/* Dark mode toggle: was still filling green in its "on" state (and a
+   green-tinted dark track off) -- direct follow-up to the dashboard
+   recolor above. This is a plain UI control, not a status indicator,
+   so it takes the same blue the rest of the sidebar just picked up
+   rather than green (green here stays reserved for actual status/
+   success meaning, e.g. the fine chips and gold action buttons). */
+.theme-toggle-switch {
+    background: rgba(13, 36, 64, 0.41) !important;
+    border-color: rgba(140, 185, 235, 0.4) !important;
+}
+
+.theme-toggle-btn[data-theme="light"] .theme-toggle-switch {
+    background: linear-gradient(135deg, #3f7cc2 0%, #1c4573 100%) !important;
+    border-color: rgba(140, 185, 235, 0.65) !important;
+}
+
+/* ============================================================
+   Kiosk/Admin Consistency Pass v2 (Light Theme: PHINMA Blue)
+   ------------------------------------------------------------
+   Direct feedback: "improve the light mode part too cuz look" --
+   Pass v1 above only recolored the dark theme (the default, and
+   the only one shown at the time); light mode (a fully separate
+   [data-theme="light"] rule set with its own hardcoded colors, not
+   variable-driven like dark mode's glass-card cascade) was still on
+   its original green throughout: the two dashboard panels' top
+   accent border, the "View all" button, the active Dashboard nav
+   highlight, and every checked-out/returned name and book title in
+   Live Kiosk Activity.
+
+   Recolors just those visible accent points to the same blue used
+   everywhere else this thread has touched, leaving the page's base
+   white/cream surface and body text colors alone (light mode's
+   whole point is a light neutral background, not a blue one) and
+   leaving the gold "live" dot and gold action buttons as the
+   established non-blue accents. This is a targeted pass on what
+   this screenshot showed, not every one of this stylesheet's ~100
+   light-theme rules -- flag anything still green and I'll fix it. */
+
+[data-theme="light"] .arrival-activity-row .overdue-books-panel,
+[data-theme="light"] .arrival-activity-row .live-activity-panel,
+[data-theme="light"] .arrival-activity-row .chart-panel.compact-panel {
+    border-top: 3px solid rgba(63, 124, 194, 0.65) !important;
+}
+
+[data-theme="light"] .live-activity-main strong,
+[data-theme="light"] .live-activity-book {
+    color: #1c5ca3 !important;
+}
+
+[data-theme="light"] .panel-link-btn {
+    background: #f2f8ff !important;
+    border-color: rgba(63, 124, 194, 0.35) !important;
+    color: #1c4573 !important;
+}
+
+[data-theme="light"] .nav-link:hover,
+[data-theme="light"] .nav-link.active {
+    background: rgba(63, 124, 194, 0.14) !important;
+}
+
+[data-theme="light"] .nav-link.active .nav-icon,
+[data-theme="light"] .nav-link:hover .nav-icon {
+    background: rgba(63, 124, 194, 0.16) !important;
+}
+
+/* ============================================================
+   Kiosk/Admin Consistency Pass v3 (Light Theme: Premium Surfaces)
+   ------------------------------------------------------------
+   Direct feedback: "i dont like the shade of white of it too, make
+   it look premium overall". Pass v2 fixed the accent colors but
+   left the actual surfaces alone -- body/sidebar were a flat pale
+   mint-green wash (left over from before this whole thread existed)
+   and every card/panel (.glass-card covers nearly all of them --
+   stat cards, both dashboard panels, Search Trends -- one rule, same
+   cascade idea as dark mode's) was a single flat white with one
+   plain shadow, no depth.
+
+   body/sidebar move to a cool blue-white gradient with the same
+   soft corner highlight glow used on every premium surface this
+   thread has built, instead of the muddy mint. Cards keep white as
+   their dominant color (that's still a light theme) but get a
+   subtle gradient instead of flat fill, a blue-tinted border instead
+   of green, and a layered shadow (soft ambient lift + inset top
+   highlight + faint blue glow) in place of the single flat shadow --
+   the same "premium card" recipe used throughout the dark theme,
+   just toned down for a light background. */
+
+[data-theme="light"] body {
+    background:
+        radial-gradient(120% 65% at 85% -10%, rgba(63, 124, 194, 0.08) 0%, rgba(63, 124, 194, 0) 55%),
+        linear-gradient(180deg, #eef3fa 0%, #e6edf7 50%, #dbe6f4 100%) !important;
+}
+
+[data-theme="light"] .sidebar {
+    background: linear-gradient(180deg, #f8fbff 0%, #eef3fb 100%) !important;
+    border-color: rgba(63, 124, 194, 0.18) !important;
+}
+
+[data-theme="light"] .glass-card,
+[data-theme="light"] .main-content,
+[data-theme="light"] .panel,
+[data-theme="light"] .welcome,
+[data-theme="light"] .overlay-card,
+[data-theme="light"] .borrow-chip,
+[data-theme="light"] .search-keywords-panel,
+[data-theme="light"] .borrowed-books-panel,
+[data-theme="light"] .recommendation-card,
+[data-theme="light"] .chart-panel,
+[data-theme="light"] .feature-chart-panel,
+[data-theme="light"] .category-panel,
+[data-theme="light"] .compact-panel {
+    background: linear-gradient(180deg, #ffffff 0%, #f6f9fd 100%) !important;
+    border-color: rgba(63, 124, 194, 0.16) !important;
+    box-shadow:
+        0 10px 26px rgba(20, 40, 70, 0.1),
+        0 1px 0 rgba(255, 255, 255, 0.6) inset,
+        0 0 0 1px rgba(63, 124, 194, 0.04) inset !important;
+}
+
+[data-theme="light"] .arrival-activity-row .overdue-books-panel,
+[data-theme="light"] .arrival-activity-row .live-activity-panel,
+[data-theme="light"] .arrival-activity-row .chart-panel.compact-panel {
+    background: linear-gradient(180deg, #ffffff 0%, #eef4fc 100%) !important;
+    box-shadow:
+        0 10px 26px rgba(20, 40, 70, 0.1),
+        0 1px 0 rgba(255, 255, 255, 0.6) inset !important;
+}
+
+/* ============================================================
+   Kiosk/Admin Consistency Pass v4 (Light Theme: More Blue + 2 Missed Spots)
+   ------------------------------------------------------------
+   Direct feedback: "make the light mode more premium or more light
+   thats close to blue maybe" -- v3's blue-white was too close to
+   plain white to read as blue at a glance, so this deepens it.
+   Also found two surfaces v3's .glass-card cascade never reached,
+   because they're not in that class list -- both still solid
+   mint-green, which is likely what still read as "off":
+   .theme-toggle-btn (the Appearance/Light-mode row itself) and the
+   data-table header rows (both still had their own hardcoded
+   #e7f2ec-family green with !important, untouched until now). */
+
+[data-theme="light"] body {
+    background:
+        radial-gradient(120% 65% at 85% -10%, rgba(63, 124, 194, 0.14) 0%, rgba(63, 124, 194, 0) 55%),
+        linear-gradient(180deg, #e9f0fa 0%, #dde8f6 50%, #cfdef2 100%) !important;
+}
+
+[data-theme="light"] .sidebar {
+    background: linear-gradient(180deg, #f3f7fd 0%, #e6eefa 100%) !important;
+    border-color: rgba(63, 124, 194, 0.22) !important;
+}
+
+[data-theme="light"] .glass-card,
+[data-theme="light"] .main-content,
+[data-theme="light"] .panel,
+[data-theme="light"] .welcome,
+[data-theme="light"] .overlay-card,
+[data-theme="light"] .borrow-chip,
+[data-theme="light"] .search-keywords-panel,
+[data-theme="light"] .borrowed-books-panel,
+[data-theme="light"] .recommendation-card,
+[data-theme="light"] .chart-panel,
+[data-theme="light"] .feature-chart-panel,
+[data-theme="light"] .category-panel,
+[data-theme="light"] .compact-panel {
+    background: linear-gradient(160deg, #ffffff 0%, #eef4fc 100%) !important;
+    border-color: rgba(63, 124, 194, 0.22) !important;
+}
+
+[data-theme="light"] .theme-toggle-btn {
+    background: linear-gradient(180deg, #ffffff 0%, #eaf1fb 100%) !important;
+    border-color: rgba(63, 124, 194, 0.28) !important;
+}
+
+[data-theme="light"] .data-table thead th,
+[data-theme="light"] .overdue-preview-table thead th {
+    background: #e3ecf9 !important;
+    color: #1c4573 !important;
+    border-bottom-color: rgba(63, 124, 194, 0.25) !important;
+}
+
+/* Pass v5: three spots still green because a MORE specific selector
+   elsewhere (e.g. .overdue-books-panel .overdue-preview-table thead th,
+   two classes deep) was beating v4's one-class version regardless of
+   file order -- matching that same specificity here instead. */
+
+[data-theme="light"] .overdue-books-panel .overdue-preview-table thead th {
+    background: #e3ecf9 !important;
+    color: #1c4573 !important;
+    border-top-color: rgba(63, 124, 194, 0.25) !important;
+    border-bottom-color: rgba(63, 124, 194, 0.25) !important;
+}
+
+[data-theme="light"] .overdue-books-panel .overdue-preview-table thead th:first-child {
+    border-left-color: rgba(63, 124, 194, 0.25) !important;
+}
+
+[data-theme="light"] .overdue-books-panel .overdue-preview-table thead th:last-child {
+    border-right-color: rgba(63, 124, 194, 0.25) !important;
+}
+
+[data-theme="light"] .overdue-books-panel .overdue-preview-table tbody td {
+    background: #f5f9ff !important;
+}
+
+[data-theme="light"] .overdue-summary-card {
+    background: linear-gradient(180deg, #ffffff 0%, #eef4fc 100%) !important;
+    border-color: rgba(63, 124, 194, 0.28) !important;
+}
+
+/* Keep the "7+ Days Late" alert card's distinct amber warning tint
+   (matches the dark-theme .overdue-summary-card-alert accent) instead
+   of letting the blue base rule above flatten it to the same color
+   as the other three stat cards. */
+[data-theme="light"] .overdue-summary-card-alert {
+    background: linear-gradient(180deg, #fffaf0 0%, #fdf0d0 100%) !important;
+    border-color: rgba(201, 155, 43, 0.4) !important;
+}
+
+/* Pass v6: Reports & Data Export pages were still on the original
+   green palette (never touched by earlier passes) -- ".btn-primary"'s
+   color comes from the --accent variable, used nowhere else, so
+   redeclaring it here is a safe single-point fix for every primary
+   button app-wide (e.g. "Generate Report"). The "Download Report" /
+   "Download CSV" / "Print Report" / "View" buttons, the quick-report
+   card icons, and the trend bar-fills on reports.php are recolored
+   individually below since they carry their own classes. Semantic
+   status colors (Active/Inactive, Overdue/Returned/Missing, the
+   account-reactivate button) are intentionally left untouched. */
+:root {
+    --accent: #2c5488;
+}
+
+.filter-reset-btn {
+    border-color: rgba(140, 185, 235, 0.55) !important;
+    background: #dce8f7 !important;
+    color: #1c4573 !important;
+}
+
+.reports-export-link {
+    border-color: rgba(140, 185, 235, 0.4) !important;
+    background: rgba(63, 124, 194, 0.26) !important;
+    color: #dcebfa !important;
+}
+
+.reports-export-secondary {
+    background: transparent !important;
+    border: 1px solid rgba(140, 185, 235, 0.4) !important;
+    color: #dcebfa !important;
+}
+
+.reports-export-link:hover,
+.reports-export-secondary:hover,
+.reports-action-link:hover,
+.reports-download-link:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+}
+
+.reports-export-link:active,
+.reports-export-secondary:active,
+.reports-action-link:active,
+.reports-download-link:active {
+    transform: translateY(0);
+    filter: brightness(0.96);
+}
+
+.reports-export-secondary:hover {
+    background: rgba(140, 185, 235, 0.12) !important;
+}
+
+.reports-action-link {
+    border-color: rgba(140, 185, 235, 0.4) !important;
+    background: rgba(63, 124, 194, 0.16) !important;
+    color: #d7e8f7 !important;
+}
+
+.reports-download-link {
+    border: 1px solid rgba(63, 207, 142, 0.5) !important;
+    background: linear-gradient(180deg, #3fcf8e 0%, #1f9f68 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(43, 179, 116, 0.28);
+}
+
+.reports-card-icon {
+    background: rgba(90, 150, 210, 0.22) !important;
+    border-color: rgba(140, 185, 235, 0.4) !important;
+    color: #cfe3f7 !important;
+}
+
+.reports-bar-track {
+    background: rgba(90, 130, 170, 0.22) !important;
+}
+
+.reports-bar-fill-borrow {
+    background: linear-gradient(90deg, #6ea8d8 0%, #2c5488 100%) !important;
+}
+
+.reports-bar-fill-search {
+    background: linear-gradient(90deg, #8fc3ea 0%, #3f7cc2 100%) !important;
+}
+
+.reports-bar-fill-program {
+    background: linear-gradient(90deg, #4a89c4 0%, #163a5e 100%) !important;
+}
+
+/* Pass v7: "Live Kiosk Activity" panel (dark theme) was still a flat
+   glass-card with no depth -- the light theme got a gradient+shadow
+   "premium card" treatment back in Pass v3/v4, but dark theme never
+   did. Giving this panel the same kind of gradient depth, a subtle
+   blue top accent (matching the light-theme Pass v2 accent bars), and
+   softer blue dividers between activity rows instead of the flat pale
+   green line. Gold name/book-title text is untouched -- it already
+   matches the established gold accent family. */
+.live-activity-panel {
+    /* Pass v32: "make this part light blue too like the overdue and
+       fines container" -- this panel's accent was a slightly deeper,
+       less saturated blue than its row-mate .overdue-books-panel
+       (Pass v15), so the top accent bar/corner read as flat navy
+       instead of the lighter powder blue used next to it. Matched to
+       the exact same background/border/border-top values as
+       .overdue-books-panel below so both panels in this row are
+       visually identical. */
+    background:
+        radial-gradient(120% 70% at 85% -15%, rgba(110, 175, 230, 0.24) 0%, rgba(110, 175, 230, 0) 55%),
+        linear-gradient(165deg, rgba(63, 124, 194, 0.2) 0%, rgba(28, 69, 115, 0.16) 55%, rgba(13, 36, 64, 0.19) 100%) !important;
+    border: 1px solid rgba(140, 185, 235, 0.36) !important;
+    border-top: 3px solid rgba(140, 185, 235, 0.75) !important;
+    box-shadow:
+        0 18px 36px rgba(4, 14, 28, 0.29),
+        0 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+.live-activity-item {
+    border-bottom: 1px solid rgba(140, 185, 235, 0.14) !important;
+}
+
+.live-activity-item:last-child {
+    border-bottom: none !important;
+}
+
+/* Pass v8: "organize" pass on Live Kiosk Activity + Overdue & Fines.
+   Live Kiosk Activity was a flat list separated only by divider lines
+   with no way to tell entry types apart at a glance -- turning each
+   entry into its own subtle card with a status-colored left accent
+   (reusing the same borrowed/returned/missing/overdue color vocabulary
+   as the .status-* badges already used on the Borrow Records table),
+   and pinning the timestamp to a small badge on the right instead of
+   stacking it as another line of text. Requires the status-<status>
+   class dashboard.php now adds to each .live-activity-item. */
+.live-activity-feed {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+}
+
+.live-activity-item {
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 14px !important;
+    padding: 10px 12px !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(140, 185, 235, 0.16) !important;
+    border-left: 3px solid rgba(140, 185, 235, 0.45) !important;
+    background: rgba(63, 124, 194, 0.06) !important;
+}
+
+.live-activity-item:last-child {
+    border-bottom: 1px solid rgba(140, 185, 235, 0.16) !important;
+}
+
+/* Pass v11: the red felt alarming, and worse, it was showing up on
+   entries whose text says "checked out" -- because the accent was
+   keyed off the raw DB status (which includes "overdue"), not off
+   what the action label actually says. A book that's now overdue but
+   was simply checked out is still just a "checked out" event in this
+   feed's wording, so it gets the same calm color as any other
+   checkout. Red is reserved for what the text actually calls out as
+   a problem: "marked missing". Softened all three accents (lower
+   opacity, and swapped the missing accent from amber to a muted
+   coral-red rather than a full-intensity red) so none of them read
+   as an alert unless it truly is one. */
+.live-activity-item.status-overdue {
+    border-left-color: rgba(140, 185, 235, 0.45) !important;
+    background: rgba(63, 124, 194, 0.06) !important;
+}
+
+.live-activity-item.status-returned {
+    border-left-color: rgba(63, 207, 142, 0.5) !important;
+    background: rgba(63, 207, 142, 0.06) !important;
+}
+
+.live-activity-item.status-missing {
+    border-left-color: rgba(224, 122, 110, 0.55) !important;
+    background: rgba(224, 122, 110, 0.07) !important;
+}
+
+.live-activity-main {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+}
+
+.live-activity-meta {
+    flex: 0 0 auto !important;
+    margin-top: 0 !important;
+    padding: 3px 9px !important;
+    border-radius: 999px !important;
+    background: rgba(140, 185, 235, 0.12) !important;
+    color: #a9c8e8 !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+}
+
+/* Overdue & Fines: even out row rhythm -- long book titles wrap to two
+   lines while short ones don't, which left the Late/Fine/Action cells
+   looking misaligned against the taller rows. Centering cell content
+   vertically fixes that regardless of how many lines a title wraps
+   to. Also a bit more breathing room under the four stat mini-cards
+   so the table doesn't feel like it's crowding them. */
+.overdue-books-panel .overdue-preview-table tbody td {
+    vertical-align: middle !important;
+}
+
+.overdue-summary-grid {
+    margin-bottom: 16px !important;
+}
+
+/* Pass v9: the feed was capped at a fixed max-height (398px, set to
+   roughly match the Overdue panel's table height) regardless of how
+   tall the panel actually stretched to in the grid, leaving dead
+   space below the last card whenever the panel ended up taller than
+   that fixed cap. Letting it flex-grow to fill the panel instead --
+   min-height:0 is needed so a flex child with overflow:auto sizes to
+   the *available* space rather than its content's natural height. */
+.live-activity-feed {
+    max-height: none !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+}
+
+/* Pass v10: v9 overcorrected. Removing the cap entirely let the feed's
+   full 10-item content height become its natural size, and since
+   nothing else in the grid row has an explicit height, that made the
+   whole row (both panels, via the default grid stretch) balloon to
+   match it -- so Overdue & Fines grew a big empty gap of its own
+   instead. Putting a fixed cap back, but larger than the old 398px:
+   Overdue's panel has an extra ~80px of content above its table (the
+   four stat mini-cards + their margin) that Live Kiosk Activity's
+   panel doesn't have, which is what caused the original dead-space
+   gap in v8. Padding the feed's cap by that same amount should let
+   both panels land at the same natural height without either one
+   needing the grid to stretch it. */
+.live-activity-feed {
+    max-height: 480px !important;
+}
+
+/* Pass v12: "Top Search Keywords" / "Top 10 Borrowed Books" -- premium
+   + accuracy pass.
+
+   Accuracy check first: the bar-width math (assets/javascript/
+   admin_dashboard.js renderHorizontalBars) scales each bar to
+   value/max, so ties get identical lengths and the ranking is already
+   faithful to the numbers -- nothing to fix there.
+
+   What WAS still wrong: both panels' own backgrounds were leftover
+   from the old dark-green theme (rgba(26,93,67,...) / rgba(19,74,53,
+   ...)), never touched by any earlier pass, which is why they read a
+   little duller/muddier than every other panel that's already on the
+   blue base. Rather than flattening them to plain blue, keeping the
+   gold-for-search / green-for-borrowed identity (it's used
+   consistently -- the smart chips and insight callouts are already
+   colored this way in both themes) but moving the panel's own
+   "material" onto the same blue base + radial highlight + top accent
+   bar recipe every other premium card on this dashboard now uses, so
+   they read as the same family of card with a category tint instead
+   of a different, older style of card.
+
+   Also applying the dataviz mark spec for a ranked bar list: a bar
+   grows from a single baseline, so only the growing (right) end gets
+   a rounded cap -- square at the baseline, not a full pill on both
+   ends. Neutralized the track/label/value colors off their leftover
+   pale-green tint (text should never carry the series color; it was
+   already neutral-ish, just green-neutral instead of true neutral) so
+   they read cleanly against either panel's tint. Added a faint glow
+   on the fill matching each panel's accent for a bit more depth. */
+.search-keywords-panel {
+    background:
+        radial-gradient(120% 70% at 85% -15%, rgba(255, 216, 108, 0.18) 0%, rgba(255, 216, 108, 0) 55%),
+        linear-gradient(165deg, rgba(63, 124, 194, 0.16) 0%, rgba(28, 69, 115, 0.13) 55%, rgba(13, 36, 64, 0.17) 100%) !important;
+    border: 1px solid rgba(232, 185, 63, 0.3) !important;
+    border-top: 3px solid rgba(232, 185, 63, 0.65) !important;
+    box-shadow:
+        0 18px 36px rgba(4, 14, 28, 0.29),
+        0 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+.borrowed-books-panel {
+    background:
+        radial-gradient(120% 70% at 85% -15%, rgba(63, 207, 142, 0.18) 0%, rgba(63, 207, 142, 0) 55%),
+        linear-gradient(165deg, rgba(63, 124, 194, 0.16) 0%, rgba(28, 69, 115, 0.13) 55%, rgba(13, 36, 64, 0.17) 100%) !important;
+    border: 1px solid rgba(63, 207, 142, 0.3) !important;
+    border-top: 3px solid rgba(63, 207, 142, 0.65) !important;
+    box-shadow:
+        0 18px 36px rgba(4, 14, 28, 0.29),
+        0 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+.hbar-track {
+    border-radius: 0 4px 4px 0 !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.hbar-fill {
+    border-radius: 0 4px 4px 0 !important;
+}
+
+.hbar-label,
+.hbar-value {
+    color: #eef2f7 !important;
+}
+
+.hbar-fill.search {
+    filter: drop-shadow(0 0 4px rgba(232, 185, 63, 0.35));
+}
+
+.hbar-fill.borrow {
+    filter: drop-shadow(0 0 4px rgba(63, 207, 142, 0.3));
+}
+
+/* Pass v13: v12 fixed the real structural issues (leftover-green panel
+   material, bar mark-shape, text carrying the series color) but leaned
+   on the dataviz skill's "thin marks / muted fills" guidance harder
+   than this dashboard's established style wants -- flattening both
+   panels onto the same blue-navy-dominant base as every other card
+   made them blend into the row instead of standing out, which read as
+   "dark and not lively." Keeping every v12 structural fix (bar shape,
+   neutral text, glow) but making gold/green the DOMINANT tone of each
+   panel's own material instead of a subtle accent over blue, and
+   richening the bars/glow/text to match. Later in the cascade than
+   v12 with matching selectors + !important, so this wins over it. */
+.search-keywords-panel {
+    background:
+        radial-gradient(120% 70% at 85% -15%, rgba(255, 216, 108, 0.32) 0%, rgba(255, 216, 108, 0) 60%),
+        linear-gradient(165deg, rgba(214, 165, 45, 0.28) 0%, rgba(120, 88, 24, 0.3) 45%, rgba(13, 36, 64, 0.22) 100%) !important;
+    border: 1px solid rgba(232, 185, 63, 0.42) !important;
+    border-top: 3px solid rgba(232, 185, 63, 0.8) !important;
+    box-shadow:
+        0 18px 36px rgba(4, 14, 28, 0.29),
+        0 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+.borrowed-books-panel {
+    background:
+        radial-gradient(120% 70% at 85% -15%, rgba(88, 227, 160, 0.32) 0%, rgba(88, 227, 160, 0) 60%),
+        linear-gradient(165deg, rgba(58, 173, 116, 0.28) 0%, rgba(24, 92, 62, 0.3) 45%, rgba(13, 36, 64, 0.22) 100%) !important;
+    border: 1px solid rgba(63, 207, 142, 0.42) !important;
+    border-top: 3px solid rgba(63, 207, 142, 0.8) !important;
+    box-shadow:
+        0 18px 36px rgba(4, 14, 28, 0.29),
+        0 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+.hbar-track {
+    height: 10px !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.hbar-track.search .hbar-fill.search,
+.hbar-fill.search {
+    background: linear-gradient(90deg, #ffe08a 0%, #f0c04a 100%) !important;
+}
+
+.hbar-track.borrow .hbar-fill.borrow,
+.hbar-fill.borrow {
+    background: linear-gradient(90deg, #7fe8b3 0%, #34b579 100%) !important;
+}
+
+.hbar-label,
+.hbar-value {
+    color: #ffffff !important;
+}
+
+.hbar-fill.search {
+    filter: drop-shadow(0 0 6px rgba(255, 216, 108, 0.6)) !important;
+}
+
+.hbar-fill.borrow {
+    filter: drop-shadow(0 0 6px rgba(88, 227, 160, 0.55)) !important;
+}
+
+/* Pass v14: the other four analytics panels (Search Trends, Borrow Trend,
+   Books per Course Popularity, Course Borrowing Activity) were still on
+   the plain .glass-card base -- no radial highlight, no top accent, no
+   glow on their marks -- so next to the v13 panels they read flat and
+   dull. Giving each the same "premium material" recipe, colored by the
+   same family its companion panel/chip already uses (gold = search,
+   green = borrow), and richening the marks themselves (line glow +
+   gradient area fill in the JS, stacked-segment gradients, the neutral
+   .course bars) to match. */
+.search-trend-panel {
+    background:
+        radial-gradient(120% 70% at 85% -15%, rgba(255, 216, 108, 0.32) 0%, rgba(255, 216, 108, 0) 60%),
+        linear-gradient(165deg, rgba(214, 165, 45, 0.28) 0%, rgba(120, 88, 24, 0.3) 45%, rgba(13, 36, 64, 0.22) 100%) !important;
+    border: 1px solid rgba(232, 185, 63, 0.42) !important;
+    border-top: 3px solid rgba(232, 185, 63, 0.8) !important;
+    box-shadow:
+        0 18px 36px rgba(4, 14, 28, 0.29),
+        0 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+.borrow-trend-panel {
+    background:
+        radial-gradient(120% 70% at 85% -15%, rgba(88, 227, 160, 0.32) 0%, rgba(88, 227, 160, 0) 60%),
+        linear-gradient(165deg, rgba(58, 173, 116, 0.28) 0%, rgba(24, 92, 62, 0.3) 45%, rgba(13, 36, 64, 0.22) 100%) !important;
+    border: 1px solid rgba(63, 207, 142, 0.42) !important;
+    border-top: 3px solid rgba(63, 207, 142, 0.8) !important;
+    box-shadow:
+        0 18px 36px rgba(4, 14, 28, 0.29),
+        0 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+/* Course panels are dual/neutral (popularity mixes the green+gold
+   legend, activity is its own blue "course" family) so they keep the
+   same blue premium base every other non-category panel on this
+   dashboard uses (Live Kiosk Activity, Overdue & Fines), just brought
+   up to the same intensity as v13/v14's gold and green panels. */
+.course-popularity-panel,
+.course-activity-panel {
+    background:
+        radial-gradient(120% 70% at 85% -15%, rgba(110, 175, 230, 0.24) 0%, rgba(110, 175, 230, 0) 55%),
+        linear-gradient(165deg, rgba(63, 124, 194, 0.2) 0%, rgba(28, 69, 115, 0.16) 55%, rgba(13, 36, 64, 0.19) 100%) !important;
+    border: 1px solid rgba(140, 185, 235, 0.36) !important;
+    box-shadow:
+        0 18px 36px rgba(4, 14, 28, 0.29),
+        0 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+.course-popularity-panel {
+    border-top: 3px solid rgba(63, 207, 142, 0.55) !important;
+    border-image: linear-gradient(90deg, rgba(63, 207, 142, 0.8) 0%, rgba(232, 185, 63, 0.8) 100%) 1 !important;
+}
+
+.course-activity-panel {
+    border-top: 3px solid rgba(140, 185, 235, 0.75) !important;
+}
+
+/* Stacked bars (Books per Course Popularity): flat solid fills read dull
+   next to the gradient+glow hbar treatment -- matching those same
+   gradients here so "Borrowed" and "Remaining" carry the same premium
+   mark language across both chart types. */
+.stacked-dot.borrowed,
+.stacked-segment.borrowed {
+    background: linear-gradient(90deg, #7fe8b3 0%, #34b579 100%) !important;
+}
+
+.stacked-dot.remaining,
+.stacked-segment.remaining {
+    background: linear-gradient(90deg, #ffe08a 0%, #f0c04a 100%) !important;
+}
+
+.stacked-segment.borrowed {
+    filter: drop-shadow(0 0 4px rgba(88, 227, 160, 0.45)) !important;
+}
+
+.stacked-segment.remaining {
+    filter: drop-shadow(0 0 4px rgba(255, 216, 108, 0.5)) !important;
+}
+
+.stacked-track {
+    background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.stacked-label,
+.stacked-value,
+.stacked-legend-item {
+    color: #ffffff !important;
+}
+
+/* Course Borrowing Activity bars were still the original pale, flat
+   blue with no glow -- richening to match the vividness of the
+   search/borrow bars. */
+.hbar-track.course .hbar-fill.course,
+.hbar-fill.course {
+    background: linear-gradient(90deg, #8fdcff 0%, #379fe0 100%) !important;
+}
+
+.hbar-fill.course {
+    filter: drop-shadow(0 0 6px rgba(94, 196, 240, 0.55)) !important;
+}
+
+/* Pass v15: "Overdue & Fines" and "AI Recommendation Output" were the
+   last two panels still on flat/leftover backgrounds -- Overdue never
+   got a dedicated background rule at all (riding on plain .glass-card,
+   unlike its row-mate Live Kiosk Activity), and Recommendation was
+   still on the same old dark-green leftover gradient the other panels
+   had before v12/v13. */
+.overdue-books-panel {
+    background:
+        radial-gradient(120% 70% at 85% -15%, rgba(110, 175, 230, 0.24) 0%, rgba(110, 175, 230, 0) 55%),
+        linear-gradient(165deg, rgba(63, 124, 194, 0.2) 0%, rgba(28, 69, 115, 0.16) 55%, rgba(13, 36, 64, 0.19) 100%) !important;
+    border: 1px solid rgba(140, 185, 235, 0.36) !important;
+    border-top: 3px solid rgba(140, 185, 235, 0.75) !important;
+    box-shadow:
+        0 18px 36px rgba(4, 14, 28, 0.29),
+        0 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+/* The four mini stat cards above the table were still the same old
+   green leftover as the panel used to be -- moving them onto the blue
+   family so they read as part of the same card, with the "7+ Days
+   Late" alert card kept gold/amber since that one is meant to stand
+   out as a warning. */
+.overdue-summary-card {
+    border: 1px solid rgba(140, 185, 235, 0.32) !important;
+    background: rgba(63, 124, 194, 0.14) !important;
+}
+
+.overdue-summary-card span {
+    color: #b9d3ea !important;
+}
+
+.overdue-summary-card strong {
+    color: #ffffff !important;
+}
+
+.overdue-summary-card-alert {
+    border-color: rgba(232, 185, 63, 0.55) !important;
+    background: rgba(232, 185, 63, 0.16) !important;
+}
+
+/* Recommendation Output panel: same gold family as its kicker/pulse-dot/
+   engine chip already use, so the panel material matches its own
+   header instead of the old green leftover fighting it. */
+.recommendation-panel {
+    background:
+        radial-gradient(120% 70% at 85% -15%, rgba(255, 216, 108, 0.28) 0%, rgba(255, 216, 108, 0) 60%),
+        linear-gradient(165deg, rgba(214, 165, 45, 0.22) 0%, rgba(120, 88, 24, 0.24) 45%, rgba(13, 36, 64, 0.2) 100%) !important;
+    border: 1px solid rgba(232, 185, 63, 0.36) !important;
+    border-top: 3px solid rgba(232, 185, 63, 0.7) !important;
+    box-shadow:
+        0 18px 36px rgba(4, 14, 28, 0.29),
+        0 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+/* The recommendation cards were an almost-invisible pale green wash at
+   6-10% opacity -- against the richer panel background above they'd
+   disappear entirely, so giving them real card weight (dark, defined
+   edge) lets the gold/green confidence borders still do the semantic
+   work without the card itself vanishing. */
+.recommendation-card {
+    background: linear-gradient(180deg, rgba(10, 22, 38, 0.4) 0%, rgba(10, 22, 38, 0.55) 100%) !important;
+    border: 1px solid rgba(232, 185, 63, 0.22) !important;
+}
+
+.recommendation-card--high {
+    border-color: rgba(255, 217, 112, 0.6) !important;
+}
+
+.recommendation-card--medium {
+    border-color: rgba(169, 213, 115, 0.5) !important;
+}
+
+.recommendation-signal-track {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.recommendation-signal-track > span {
+    filter: drop-shadow(0 0 5px rgba(242, 201, 76, 0.5));
+}
+
+.recommendation-title {
+    color: #ffffff !important;
+}
+
+/* Pass v17: stat-card / filter-chip rows across the whole admin side
+   (dashboard overview, Borrow Records, Manage Books, Manage Users,
+   Audit Log, Borrower History). Two real issues:
+
+   1) Dead space after the last card on some pages. .stats-grid used
+      auto-fill (the one holdout -- every other grid in this file
+      already uses auto-fit). auto-fill reserves empty column tracks
+      for however many WOULD fit the container width even when there's
+      no card to put in them, so a 5- or 6-card row can leave a blank
+      last "slot" instead of the existing cards stretching to fill the
+      row. auto-fit collapses those empty tracks and lets the real
+      cards expand into the space instead.
+
+   2) No icons, flat cards. Added a small icon badge (reusing the same
+      inline-SVG convention the sidebar nav icons already use, via
+      admin_icon()/stat_chip_meta() in layout_top.php) beside every
+      card's title, and gave the cards themselves the same "material"
+      (radial highlight + gradient + border) every other card on this
+      dashboard has by now, instead of the plain flat glass base. */
+.stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+}
+
+.stat-card {
+    background:
+        radial-gradient(140% 120% at 15% -20%, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 55%),
+        linear-gradient(160deg, rgba(63, 124, 194, 0.22) 0%, rgba(28, 69, 115, 0.17) 60%, rgba(13, 36, 64, 0.2) 100%) !important;
+    border: 1px solid rgba(140, 185, 235, 0.28) !important;
+    box-shadow:
+        0 10px 22px rgba(4, 14, 28, 0.21),
+        0 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+.borrow-status-chips .borrow-chip.is-active {
+    border-color: rgba(242, 201, 76, 0.85) !important;
+    box-shadow:
+        0 0 0 1px rgba(242, 201, 76, 0.5) inset,
+        0 0 16px rgba(242, 201, 76, 0.28) !important;
+}
+
+.metric-head-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.borrow-status-chips .borrow-chip .metric-head-row {
+    margin-bottom: 10px;
+}
+
+.borrow-status-chips .borrow-chip h3 {
+    margin: 0;
+}
+
+/* No container box -- just the glyph, colored to match its semantic
+   accent, sitting directly on the card. */
+.metric-icon-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.metric-icon-badge svg {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+
+.metric-icon-badge svg * {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.metric-icon-badge svg [fill="currentColor"] {
+    fill: currentColor !important;
+    stroke: none !important;
+}
+
+/* Same 4-color semantic story used everywhere else on this dashboard:
+   blue = neutral count (the default), green = positive/healthy, gold =
+   needs attention, red = reserved for "missing" only. */
+.metric-icon-badge--blue {
+    color: #7fb8ec;
+}
+
+.metric-icon-badge--green {
+    color: #6fe0a8;
+}
+
+.metric-icon-badge--gold {
+    color: #f0cd69;
+}
+
+.metric-icon-badge--red {
+    color: #e88f80;
+}
+
+/* The pale/glow-friendly dark-theme icon tints above are too low-
+   contrast on light theme's white cards -- deepening each one to a
+   readable shade of the same hue. */
+[data-theme="light"] .metric-icon-badge--blue {
+    color: #2b6dc5;
+}
+
+[data-theme="light"] .metric-icon-badge--green {
+    color: #1f8f57;
+}
+
+[data-theme="light"] .metric-icon-badge--gold {
+    color: #a9790a;
+}
+
+[data-theme="light"] .metric-icon-badge--red {
+    color: #c94a3a;
+}
+
+/* Pass v19: "match ALL scroll bar with the theme". Only three elements
+   (.live-activity-feed, .overdue-table-wrap, .manage-users-chip-row --
+   recolored above to match) had ever gotten a themed scrollbar; every
+   other scrollable spot -- the page/window scrollbar itself, every
+   table wrapper, modals, chart shells, filter panels, and anything
+   added later that scrolls -- was left on the browser's default gray
+   scrollbar, which is exactly the mismatch in the screenshot.
+
+   html { scrollbar-color } cascades to every scrollable descendant in
+   Firefox, and *::-webkit-scrollbar reaches every element in Chrome/
+   Edge/Safari without having to list each container individually, so
+   this covers the whole app (both themes) instead of one element at a
+   time. */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(140, 185, 235, 0.45) #21447a;
+}
+
+*::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: rgba(140, 185, 235, 0.45);
+    border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: rgba(140, 185, 235, 0.65);
+}
+
+*::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/* The page/window scrollbar's track has no element box of its own behind
+   it (it's the viewport gutter), so a "transparent" track there just
+   shows the browser's default white instead of compositing with the
+   page -- unlike every other scrollbar in the app, which sits inside a
+   real panel/table box and blends with that box's own background just
+   fine on "transparent". Giving only the root scrollbar's track a flat
+   fill matching the app's main dark background fixes that one case.
+   Pass v40 follow-up: this was still the pre-lightening dark navy
+   (#0d2440) -- a hardcoded hex literal, not one of the rgba() dark
+   tokens the site-wide lightening pass could catch -- so the window's
+   own scrollbar gutter stayed dark while everything else lightened.
+   Updated to match body's new (lighter) darkest stop. */
+html::-webkit-scrollbar-track {
+    background: #21447a;
+}
+
+html[data-theme="light"] {
+    scrollbar-color: rgba(44, 84, 136, 0.35) #dde8f6;
+}
+
+html[data-theme="light"]::-webkit-scrollbar-track {
+    background: #dde8f6;
+}
+
+html[data-theme="light"] *::-webkit-scrollbar-thumb {
+    background: rgba(44, 84, 136, 0.35);
+}
+
+html[data-theme="light"] *::-webkit-scrollbar-thumb:hover {
+    background: rgba(44, 84, 136, 0.55);
+}
+
+/* Pass v20: filter/search bars (Borrow Records, Manage Books, Manage
+   Users, Audit Log). Two real bugs plus a straight richening:
+
+   1) Manage Books' Reset link used .btn-status.activate -- the green
+      "Active" status-toggle pill class, not the reset button at all --
+      so it never got the blue reset treatment every other page has.
+   2) Audit Log's Reset link carried an extra .archive-reset-btn class
+      whose own !important rule (higher specificity as "a.archive-
+      reset-btn") was beating .filter-reset-btn's blue override, so it
+      silently stayed on the old green. Both fixed in the markup
+      (manage_books.php / archived_history.php) to just use
+      .filter-reset-btn like Borrow Records and Manage Users already do.
+
+   3) The input/select field itself was still the old pale-green glass
+      fill (rgba(237,248,242,...)) left over from before the blue
+      conversion, with no focus feedback at all -- richening it to the
+      same blue-glass material as everything else, with a visible
+      focus ring, and giving Apply a gradient+glow instead of a flat
+      fill so the whole bar reads as one deliberate, premium unit
+      instead of a plain HTML form. */
+.filters-inline input,
+.filters-inline select,
+.form-grid input,
+.form-grid select {
+    border: 1px solid rgba(140, 185, 235, 0.3) !important;
+    background: rgba(63, 124, 194, 0.15) !important;
+    color: #eaf4ff !important;
+    border-radius: 12px !important;
+    padding: 11px 14px !important;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.filters-inline input:focus,
+.filters-inline select:focus,
+.form-grid input:focus,
+.form-grid select:focus {
+    outline: none;
+    border-color: rgba(140, 185, 235, 0.65) !important;
+    background: rgba(63, 124, 194, 0.24) !important;
+    box-shadow: 0 0 0 3px rgba(63, 124, 194, 0.28);
+}
+
+.filters-inline input::placeholder,
+.form-grid input::placeholder {
+    color: #9fb6d4 !important;
+}
+
+/* The native date-picker calendar glyph is browser chrome and always
+   renders near-black -- inverting it so it reads on the dark field
+   instead of sitting there like an unstyled leftover. */
+.filters-inline input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.85);
+    cursor: pointer;
+    opacity: 0.85;
+}
+
+.filters-inline input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+.btn-primary,
+.filters-inline button {
+    background: linear-gradient(160deg, #4d8ad4 0%, #1c4573 100%) !important;
+    border: 1px solid rgba(140, 185, 235, 0.4) !important;
+    box-shadow: 0 6px 16px rgba(13, 36, 64, 0.22) !important;
+    transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
+}
+
+.btn-primary:hover,
+.filters-inline button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(13, 36, 64, 0.26) !important;
+    filter: brightness(1.06);
+}
+
+.btn-primary:active,
+.filters-inline button:active {
+    transform: translateY(0);
+}
+
+.filter-reset-btn {
+    background: rgba(63, 124, 194, 0.14) !important;
+    border: 1px solid rgba(140, 185, 235, 0.4) !important;
+    color: #dcebfa !important;
+    transition: transform 0.14s ease, background 0.14s ease, border-color 0.14s ease;
+}
+
+.filter-reset-btn:hover {
+    background: rgba(63, 124, 194, 0.24) !important;
+    border-color: rgba(140, 185, 235, 0.6) !important;
+    transform: translateY(-1px);
+    filter: none;
+}
+
+/* Pass v21: two follow-ups on the search bars --
+   1) "i dont like that its in a container the whole row": the bar was
+      sitting inside a .panel.glass-card box, so it read as a boxed
+      form floating on the page rather than a search bar that belongs
+      to it. Dropped the panel/glass-card wrapper (swapped to a plain
+      .filters-bar-panel that keeps only the spacing, no fill/border/
+      shadow) on the four pages with a text search bar, so the row
+      sits directly on the page background.
+   2) "modern": a boxed rectangular input with a separate rectangular
+      Apply/Reset pair reads more like a 2010s admin form than a search
+      bar. Moved to the pattern most current apps use instead -- a
+      full pill-shaped field with the search icon inside it, pill
+      buttons, and Apply/Reset as a clear filled/ghost pair instead of
+      two same-weight boxes. */
+.filters-bar-panel {
+    margin-bottom: 16px;
+}
+
+.filters-inline {
+    align-items: center;
+}
+
+.search-field-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1 1 320px;
+    min-width: 220px;
+}
+
+.search-field-wrap input {
+    width: 100%;
+}
+
+.filters-search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    color: #86aed8;
+    pointer-events: none;
+}
+
+.filters-search-icon svg {
+    width: 17px;
+    height: 17px;
+    display: block;
+}
+
+.filters-search-icon svg * {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.search-field-wrap input,
+.filters-inline input[type="date"] {
+    border-radius: 999px !important;
+}
+
+.search-field-wrap input {
+    padding-left: 42px !important;
+}
+
+.btn-primary,
+.filters-inline button,
+.filter-reset-btn {
+    border-radius: 999px !important;
+    padding: 10px 20px !important;
+}
+
+/* Reset drops to a true ghost button -- no fill -- so Apply (filled,
+   gradient) reads as the one primary action and Reset as the quieter
+   secondary one, instead of two equally-weighted boxes side by side. */
+.filter-reset-btn {
+    background: transparent !important;
+    border: 1px solid rgba(140, 185, 235, 0.32) !important;
+    color: #a9c8e8 !important;
+    box-shadow: none !important;
+}
+
+.filter-reset-btn:hover {
+    background: rgba(140, 185, 235, 0.12) !important;
+    border-color: rgba(140, 185, 235, 0.55) !important;
+    color: #dcebfa !important;
+}
+
+[data-theme="light"] .filters-search-icon {
+    color: #5f80ad;
+}
+
+[data-theme="light"] .filter-reset-btn {
+    background: transparent !important;
+    border: 1px solid rgba(63, 124, 194, 0.35) !important;
+    color: #2c5488 !important;
+}
+
+[data-theme="light"] .filter-reset-btn:hover {
+    background: rgba(63, 124, 194, 0.1) !important;
+    color: #1c4573 !important;
+}
+
+/* ============================================================
+   Pass v22: Data tables premium/modern/organized
+   ------------------------------------------------------------
+   Request: "improve those too, make it looking premiun, modern
+   and organized" for the Borrow Records, Manage Books, Manage
+   Users and Audit Log data tables.
+
+   Base tbody row background/divider colors were still green
+   leftovers (fixed directly above, in .data-table). This block
+   adds: rounded/gradient table headers, row hover feedback (kept
+   per-table and scoped to avoid the interleaved hidden detail
+   rows in Borrow Records / Manage Books miscounting), soft pill
+   badges for status + audit-log action text (using each status's
+   own already-established color, just adding a tinted background
+   + border instead of bare colored text), and hover/press feedback
+   on the action icon buttons, which had none before. */
+
+.data-table thead tr:first-child th:first-child {
+    border-top-left-radius: 10px;
+}
+
+.data-table thead tr:first-child th:last-child {
+    border-top-right-radius: 10px;
+}
+
+.borrow-table thead th,
+.manage-users-table thead th,
+.archive-table thead th {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* Row hover (dark default). Scoped per table + excluding the
+   hidden detail/copy-detail rows so :nth-child-style mistakes
+   can't happen -- those interleaved rows already have their own
+   dedicated background rules. */
+.borrow-table tbody tr.borrow-row,
+.manage-books-table tbody tr:not(.book-copy-details-row),
+.manage-users-table tbody tr,
+.archive-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.borrow-table tbody tr.borrow-row:hover,
+.manage-books-table tbody tr:not(.book-copy-details-row):hover,
+.manage-users-table tbody tr:hover,
+.archive-table tbody tr:hover {
+    background: rgba(140, 185, 235, 0.12);
+}
+
+[data-theme="light"] .borrow-table tbody tr.borrow-row:hover,
+[data-theme="light"] .manage-books-table tbody tr:not(.book-copy-details-row):hover,
+[data-theme="light"] .manage-users-table tbody tr:hover,
+[data-theme="light"] .archive-table tbody tr:hover {
+    background: rgba(63, 124, 194, 0.12) !important;
+}
+
+/* Action icon buttons: none of these had hover/press feedback. */
+.borrow-action-icon-btn,
+.manage-book-icon-btn,
+.user-action-icon-btn {
+    transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.borrow-action-icon-btn:hover,
+.manage-book-icon-btn:hover,
+.user-action-icon-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.1);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.22);
+}
+
+.borrow-action-icon-btn:active,
+.manage-book-icon-btn:active,
+.user-action-icon-btn:active {
+    transform: translateY(0);
+    filter: brightness(0.95);
+}
+
+.book-copy-toggle-btn {
+    transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.book-copy-toggle-btn:hover {
+    filter: brightness(1.12);
+    transform: translateY(-1px);
+}
+
+/* Status text -> soft pill badges (Borrow Records + Manage Users),
+   reusing each status's already-established color as both the
+   pill tint and border, dark theme values. */
+.borrow-record-status-text,
+.user-status-text {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+}
+
+.borrow-record-status-borrowed { background: rgba(123, 240, 176, 0.16); border-color: rgba(123, 240, 176, 0.4); }
+.borrow-record-status-returned { background: rgba(121, 184, 255, 0.16); border-color: rgba(121, 184, 255, 0.4); }
+.borrow-record-status-missing { background: rgba(255, 190, 99, 0.16); border-color: rgba(255, 190, 99, 0.4); }
+.borrow-record-status-overdue { background: rgba(255, 127, 137, 0.16); border-color: rgba(255, 127, 137, 0.4); }
+
+.user-status-active { background: rgba(137, 242, 182, 0.16); border-color: rgba(137, 242, 182, 0.4); }
+.user-status-inactive { background: rgba(255, 152, 161, 0.16); border-color: rgba(255, 152, 161, 0.4); }
+
+/* Manage Books status badge -- re-enable a pill just for this
+   table's .badge (an earlier pass flattened .manage-books-table
+   .badge to bare text; matching that same 2-class selector with
+   one more class here wins outright without needing !important). */
+.manage-books-table .badge.status-active,
+.manage-books-table .badge.status-inactive {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 13px;
+}
+
+.manage-books-table .badge.status-active { background: rgba(137, 242, 182, 0.16); border-color: rgba(137, 242, 182, 0.4); }
+.manage-books-table .badge.status-inactive { background: rgba(255, 152, 161, 0.16); border-color: rgba(255, 152, 161, 0.4); }
+
+/* Audit Log action text -> same pill treatment. "Updated" had no
+   dedicated color before (inherited plain text); giving it a soft
+   informational blue tint instead of leaving it unstyled. */
+.archive-action-text {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+}
+
+.archive-action-added { background: rgba(116, 255, 152, 0.16); border-color: rgba(116, 255, 152, 0.4); }
+.archive-action-deleted { background: rgba(255, 93, 103, 0.16); border-color: rgba(255, 93, 103, 0.4); }
+.archive-action-updated {
+    color: #cfe3f7;
+    background: rgba(121, 184, 255, 0.14);
+    border-color: rgba(121, 184, 255, 0.35);
+}
+
+/* Light theme: pill backgrounds matched to each status's actual
+   winning light-theme text color (borrowed/returned swap hue vs
+   dark theme -- see the !important color rules earlier in the
+   file -- so the tint has to follow suit, not just reuse dark's). */
+[data-theme="light"] .borrow-record-status-borrowed {
+    background: rgba(38, 111, 77, 0.12) !important;
+    border-color: rgba(38, 111, 77, 0.32) !important;
+}
+
+[data-theme="light"] .borrow-record-status-returned,
+[data-theme="light"] .manage-books-table .badge.status-active,
+[data-theme="light"] .user-status-active {
+    background: rgba(29, 104, 149, 0.12) !important;
+    border-color: rgba(29, 104, 149, 0.32) !important;
+}
+
+[data-theme="light"] .borrow-record-status-missing {
+    background: rgba(154, 101, 0, 0.12) !important;
+    border-color: rgba(154, 101, 0, 0.32) !important;
+}
+
+[data-theme="light"] .borrow-record-status-overdue,
+[data-theme="light"] .manage-books-table .badge.status-inactive,
+[data-theme="light"] .user-status-inactive {
+    background: rgba(181, 47, 58, 0.12) !important;
+    border-color: rgba(181, 47, 58, 0.32) !important;
+}
+
+[data-theme="light"] .archive-action-updated {
+    color: #2c5488 !important;
+}
+
+/* ============================================================
+   Pass v23: Confirmation modals for every action button
+   ------------------------------------------------------------
+   "make the action button have confirmation pop out so they can
+   confirm every process" -- Borrow Records (mark returned/missing)
+   and Manage Users (activate/deactivate) had none at all. Manage
+   Books (delete) and Audit Log (retrieve) already had one each,
+   but shared old CSS that was a leftover-green cancel button plus
+   a real semantic bug: the Retrieve confirm button was styled
+   with the same flat red as Delete, even though retrieving a book
+   is a positive/restorative action, not a destructive one.
+
+   This introduces one shared, tone-based system --
+   .confirm-modal-card/-header/-icon/-note/-actions/-cancel/-confirm,
+   with .is-positive / .is-warning / .is-danger modifiers on the
+   icon + confirm button -- and layers it onto all four modals
+   (old and new) so every confirmation looks and behaves the same
+   way, colored by what the action actually does:
+     Mark Returned  -> positive   Activate user  -> positive
+     Retrieve book  -> positive   Mark Missing   -> warning
+     Deactivate user -> danger    Delete book    -> danger
+   The two existing modals keep their original JS-hook classes
+   (.confirm-delete-*, .archive-confirm-*) untouched so nothing
+   breaks; the new generic classes are added alongside them. */
+
+/* Pass v46: "make these look premium, organized and modern" -- the
+   confirm dialogs (Deactivate User, Mark Returned, Mark Missing,
+   Retrieve Book, Delete Book) already had the Pass v24 tone system
+   and picked up the brighter Pass v45 card material for free via the
+   shared .overlay-card class, but the icon was still a small flat
+   circle, the note was bare unstructured text, and the actions row
+   ran straight into it with no separation. Upgraded the icon to the
+   same gradient-badge + ring-shadow recipe as .modal-icon (scaled
+   down, tone-colored) with a one-shot pop-in, turned the note into a
+   bordered callout, and added a divider above the buttons so the
+   dialog reads as distinct header / body / actions sections. */
+
+/* Pass v47: "make the cancel button an x button at the upper right
+   corner and justify the infos in the middle" -- swaps the pill
+   Cancel for the same circular .icon-close ghost button used on the
+   Add Book/Add User modals (top-right, reusing its id so the existing
+   cancel JS keeps working untouched), and re-centers the icon/title/
+   text/note stack instead of the old left-aligned icon-beside-text
+   row, for a calmer, more deliberate confirmation-dialog look. */
+.confirm-modal-card {
+    width: min(520px, 92vw);
+    border-radius: 16px;
+    padding: 30px 24px 22px;
+    position: relative;
+}
+
+.confirm-modal-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+}
+
+.confirm-modal-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.confirm-modal-header h2 {
+    margin: 0 0 3px;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+}
+
+@keyframes confirmIconPop {
+    0% {
+        transform: scale(0.4);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.12);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.confirm-modal-icon {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 800;
+    margin-top: 1px;
+    border: 1px solid transparent;
+    animation: confirmIconPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.confirm-modal-note {
+    margin: 10px auto 0;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(63, 124, 194, 0.1);
+    border: 1px solid rgba(140, 185, 235, 0.22);
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: #cfe3f7;
+    text-align: center;
+}
+
+.confirm-modal-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(140, 185, 235, 0.16);
+}
+
+.confirm-modal-actions .confirm-modal-confirm {
+    min-width: 150px;
+}
+
+.confirm-modal-cancel,
+.confirm-modal-confirm {
+    min-width: 100px;
+    height: 44px;
+    padding: 0 18px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.confirm-modal-cancel:hover,
+.confirm-modal-confirm:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+}
+
+.confirm-modal-cancel:active,
+.confirm-modal-confirm:active {
+    transform: translateY(0);
+    filter: brightness(0.96);
+}
+
+/* Cancel is always the same neutral ghost pill, whatever the
+   action's tone is. Also re-colors the two pre-existing shared
+   selectors (previously a flat mint-green leftover). */
+.archive-confirm-cancel,
+.confirm-delete-cancel,
+.confirm-modal-cancel {
+    border: 1px solid rgba(140, 185, 235, 0.35);
+    background: transparent;
+    color: #cfe3f7;
+    font-weight: 800;
+}
+
+.archive-confirm-cancel:hover,
+.confirm-delete-cancel:hover,
+.confirm-modal-cancel:hover {
+    background: rgba(140, 185, 235, 0.12);
+}
+
+/* Retrieve's confirm button no longer rides on the flat red rule
+   meant for Delete -- it gets its own tone below via .is-positive. */
+.archive-confirm-submit {
+    background: none;
+}
+
+.confirm-modal-icon.is-positive,
+.confirm-modal-confirm.is-positive {
+    color: #ffffff;
+}
+
+.confirm-modal-icon.is-positive {
+    background: linear-gradient(160deg, rgba(63, 207, 142, 0.4) 0%, rgba(31, 159, 104, 0.24) 100%);
+    border-color: rgba(63, 207, 142, 0.55);
+    box-shadow: 0 0 0 6px rgba(63, 207, 142, 0.12), 0 6px 16px rgba(31, 159, 104, 0.28);
+    color: #eafff4;
+}
+
+.confirm-modal-confirm.is-positive {
+    border: 1px solid rgba(63, 207, 142, 0.5);
+    background: linear-gradient(180deg, #3fcf8e 0%, #1f9f68 100%);
+    box-shadow: 0 6px 18px rgba(43, 179, 116, 0.36);
+}
+
+.confirm-modal-icon.is-warning {
+    background: linear-gradient(160deg, rgba(240, 207, 102, 0.42) 0%, rgba(221, 185, 69, 0.24) 100%);
+    border-color: rgba(246, 210, 94, 0.55);
+    box-shadow: 0 0 0 6px rgba(240, 207, 102, 0.12), 0 6px 16px rgba(221, 185, 69, 0.26);
+    color: #fff3d6;
+}
+
+.confirm-modal-confirm.is-warning {
+    border: 1px solid rgba(246, 210, 94, 0.5);
+    background: linear-gradient(180deg, #f0cf66 0%, #ddb945 100%);
+    color: #4c3c07;
+    box-shadow: 0 6px 18px rgba(221, 185, 69, 0.34);
+}
+
+.confirm-modal-icon.is-danger,
+.confirm-delete-icon {
+    background: linear-gradient(160deg, rgba(255, 98, 98, 0.42) 0%, rgba(197, 54, 54, 0.26) 100%);
+    border-color: rgba(255, 98, 98, 0.55);
+    box-shadow: 0 0 0 6px rgba(255, 98, 98, 0.12), 0 6px 16px rgba(197, 54, 54, 0.28);
+    color: #ffe1e1;
+}
+
+.confirm-modal-confirm.is-danger {
+    border: 1px solid #c93636;
+    background: linear-gradient(180deg, #ff6262 0%, #e54444 100%);
+    color: #ffffff;
+    box-shadow: 0 6px 18px rgba(229, 68, 68, 0.36);
+}
+
+[data-theme="light"] .confirm-modal-note {
+    background: rgba(63, 124, 194, 0.08);
+    border-color: rgba(63, 124, 194, 0.22);
+    color: #345170;
+}
+
+[data-theme="light"] .confirm-modal-actions {
+    border-top-color: rgba(63, 124, 194, 0.18);
+}
+
+[data-theme="light"] .archive-confirm-cancel,
+[data-theme="light"] .confirm-delete-cancel,
+[data-theme="light"] .confirm-modal-cancel {
+    border-color: rgba(63, 124, 194, 0.35);
+    color: #2c5488;
+}
+
+[data-theme="light"] .archive-confirm-cancel:hover,
+[data-theme="light"] .confirm-delete-cancel:hover,
+[data-theme="light"] .confirm-modal-cancel:hover {
+    background: rgba(63, 124, 194, 0.1);
+}
+
+/* ============================================================
+   Pass v24: Borrower History back-arrow heading link
+   ------------------------------------------------------------
+   "put an arrow beside the borrower history to go back to the
+   users page and then remove the back to users button there" --
+   dropping the separate top-right "Back to Users" pill in favor
+   of a small round back-arrow button sitting right beside the
+   <h1>, same icon-link pattern already used for .panel-link-btn. */
+.borrower-history-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.borrower-history-back-link {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid rgba(140, 185, 235, 0.4);
+    background: rgba(140, 185, 235, 0.1);
+    color: #dcebfa;
+    text-decoration: none;
+    transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.borrower-history-back-link svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    display: block;
+}
+
+.borrower-history-back-link svg * {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.borrower-history-back-link:hover {
+    border-color: rgba(140, 185, 235, 0.75);
+    background: rgba(140, 185, 235, 0.22);
+    color: #ffffff;
+    transform: translateX(-2px);
+    box-shadow: 0 4px 12px rgba(63, 124, 194, 0.28);
+}
+
+.borrower-history-back-link:active {
+    transform: translateX(-1px);
+    filter: brightness(0.96);
+}
+
+[data-theme="light"] .borrower-history-back-link {
+    background: rgba(63, 124, 194, 0.08);
+    border-color: rgba(63, 124, 194, 0.32);
+    color: #1c4573;
+}
+
+[data-theme="light"] .borrower-history-back-link:hover {
+    background: rgba(63, 124, 194, 0.16);
+    border-color: rgba(63, 124, 194, 0.5);
+    color: #14345c;
+}
+
+/* ============================================================
+   Pass v25: Current Loans / Missing Books / Full Borrow History --
+   premium panels + dead space fix
+   ------------------------------------------------------------
+   "make that look premium and modern and remove the deadspace
+   after the current loans and missing books container before the
+   full borrow history". Two real issues:
+
+   1) Dead space before Full Borrow History: the two-panel row
+      (.dashboard-chart-grid.borrower-history-grid) already carries
+      its own margin-bottom, but each .panel child ALSO carries its
+      own margin-bottom -- a grid item's bottom margin still extends
+      the row's rendered height, so the two margins stacked instead
+      of collapsing, doubling the gap before the next section. Zeroed
+      the child panels' margin-bottom inside this grid so the row's
+      own margin is the only spacer.
+
+   2) Dead space inside Missing Books: the grid row height-matches
+      both panels to the taller one (Current Loans, 3 rows), so on a
+      borrower with no missing books the single empty-state message
+      sat at the top of the card with a large blank rectangle below
+      it. Made the panel a column flexbox so its table area fills
+      the remaining height, and centered the empty-state row inside
+      that space instead of leaving it stranded at the top.
+
+   Also gave all three panels the same "premium material" (radial
+   highlight + gradient + accent top border + layered shadow) every
+   other panel on the dashboard already uses, instead of the plain
+   flat .glass-card base -- light theme keeps riding the existing
+   generic light-panel override, same as those other panels. */
+.borrower-history-panel {
+    background:
+        radial-gradient(120% 70% at 85% -15%, rgba(110, 175, 230, 0.24) 0%, rgba(110, 175, 230, 0) 55%),
+        linear-gradient(165deg, rgba(63, 124, 194, 0.2) 0%, rgba(28, 69, 115, 0.16) 55%, rgba(13, 36, 64, 0.19) 100%) !important;
+    border: 1px solid rgba(140, 185, 235, 0.36) !important;
+    border-top: 3px solid rgba(140, 185, 235, 0.75) !important;
+    box-shadow:
+        0 18px 36px rgba(4, 14, 28, 0.21),
+        0 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+.borrower-history-grid .borrower-history-panel {
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.borrower-history-grid .borrower-history-table-wrap {
+    flex: 1;
+}
+
+.borrower-history-grid .borrower-history-table-wrap table {
+    height: 100%;
+}
+
+.borrower-history-grid .dashboard-empty-cell {
+    vertical-align: middle;
+    padding: 30px 16px !important;
+}
+
+/* ============================================================
+   Pass v26: Data table panels -- same premium material as
+   Borrower History
+   ------------------------------------------------------------
+   "can u do the same to these" -- the outer <section class="panel
+   glass-card"> wrapping each of the 4 main data tables (Manage
+   Users, Borrow Records, Audit Log, Manage Books) was still riding
+   the plain flat .glass-card base with no accent, unlike every
+   other panel this thread has already upgraded (dashboard charts,
+   Borrower History). New shared .data-table-panel hook added to
+   all four pages' wrapping <section>, given the same radial
+   highlight + gradient + accent top border + layered shadow recipe
+   -- light theme again rides the existing generic light-panel
+   override, same as the other premium panels. */
+.data-table-panel {
+    background:
+        radial-gradient(120% 70% at 85% -15%, rgba(110, 175, 230, 0.24) 0%, rgba(110, 175, 230, 0) 55%),
+        linear-gradient(165deg, rgba(63, 124, 194, 0.2) 0%, rgba(28, 69, 115, 0.16) 55%, rgba(13, 36, 64, 0.19) 100%) !important;
+    border: 1px solid rgba(140, 185, 235, 0.36) !important;
+    border-top: 3px solid rgba(140, 185, 235, 0.75) !important;
+    box-shadow:
+        0 18px 36px rgba(4, 14, 28, 0.21),
+        0 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+/* ============================================================
+   Pass v27: Expandable row detail panels -- match the theme
+   ------------------------------------------------------------
+   "improve these too and match the theme" -- both expandable-row
+   detail panels (Borrow Records' ISBN/Accession/User ID/Copy ID/
+   Created At strip, and Manage Books' per-book copy list) were
+   still on the pre-blue dark-green leftover background/border
+   colors (direct fixes above), had no header/row treatment at all
+   (the copy list's <table> never carried the shared .data-table
+   class, so none of Pass v22's gradient header or pill badges ever
+   reached it), and Copy Status/Borrow Status text was on the wrong
+   side of the app's established borrowed=green / available
+   (returned)=blue color family -- dark mode still had them swapped
+   (blue for "Borrowed", green for "Available") while the light-
+   theme override for the same classes already had it right,
+   meaning dark mode was the stale half. Direct edits above fixed
+   the base colors; this block adds the pill-badge treatment, a
+   gradient table header, and a proper "info card" layout for the
+   detail grid instead of plain inline label/value text. */
+
+/* Borrow Records detail strip: each field becomes its own small
+   card (uppercase meta label above, bold value below) instead of
+   bare "Label: value" text sitting directly on the row background. */
+.borrow-detail-grid {
+    padding: 12px;
+    gap: 10px 14px;
+}
+
+.borrow-detail-grid > div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(140, 185, 235, 0.08);
+    border: 1px solid rgba(140, 185, 235, 0.18);
+}
+
+.borrow-detail-grid span {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #eaf3fc;
+    word-break: break-word;
+}
+
+[data-theme="light"] .borrow-detail-grid > div {
+    background: rgba(63, 124, 194, 0.06) !important;
+    border-color: rgba(63, 124, 194, 0.2) !important;
+}
+
+[data-theme="light"] .borrow-detail-grid span {
+    color: #1c4573 !important;
+}
+
+/* Manage Books copy list: gradient header + rounded top corners,
+   matching every other data table's header treatment. */
+.copy-detail-table thead th {
+    background: linear-gradient(180deg, rgba(77, 138, 212, 0.32) 0%, rgba(41, 80, 130, 0.28) 100%);
+    color: #eaf3fc;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 9px 9px;
+}
+
+.copy-detail-table thead tr:first-child th:first-child {
+    border-top-left-radius: 8px;
+}
+
+.copy-detail-table thead tr:first-child th:last-child {
+    border-top-right-radius: 8px;
+}
+
+.copy-detail-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.copy-detail-table tbody tr:hover {
+    background: rgba(140, 185, 235, 0.1);
+}
+
+[data-theme="light"] .copy-detail-table tbody tr:hover {
+    background: rgba(63, 124, 194, 0.1) !important;
+}
+
+/* Copy Status / Borrow Status -> soft pill badges, same recipe as
+   .borrow-record-status-* everywhere else. */
+.copy-detail-status-available,
+.copy-detail-status-borrowed,
+.copy-detail-status-overdue,
+.copy-detail-status-missing,
+.copy-detail-muted {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 11.5px;
+}
+
+.copy-detail-status-borrowed { background: rgba(123, 240, 176, 0.16); border-color: rgba(123, 240, 176, 0.4); }
+.copy-detail-status-available { background: rgba(121, 184, 255, 0.16); border-color: rgba(121, 184, 255, 0.4); }
+.copy-detail-status-missing { background: rgba(255, 190, 99, 0.16); border-color: rgba(255, 190, 99, 0.4); }
+.copy-detail-status-overdue { background: rgba(255, 127, 137, 0.16); border-color: rgba(255, 127, 137, 0.4); }
+.copy-detail-muted { background: rgba(140, 185, 235, 0.08); border-color: rgba(140, 185, 235, 0.22); }
+
+[data-theme="light"] .copy-detail-status-borrowed {
+    background: rgba(38, 111, 77, 0.12) !important;
+    border-color: rgba(38, 111, 77, 0.32) !important;
+}
+
+[data-theme="light"] .copy-detail-status-available {
+    background: rgba(29, 104, 149, 0.12) !important;
+    border-color: rgba(29, 104, 149, 0.32) !important;
+}
+
+[data-theme="light"] .copy-detail-status-missing {
+    background: rgba(154, 101, 0, 0.12) !important;
+    border-color: rgba(154, 101, 0, 0.32) !important;
+}
+
+[data-theme="light"] .copy-detail-status-overdue {
+    background: rgba(181, 47, 58, 0.12) !important;
+    border-color: rgba(181, 47, 58, 0.32) !important;
+}
+
+[data-theme="light"] .copy-detail-muted {
+    background: rgba(63, 124, 194, 0.06) !important;
+    border-color: rgba(63, 124, 194, 0.2) !important;
+}
+
+/* ============================================================
+   Pass v28: Page title icon
+   ------------------------------------------------------------
+   "also add an icon to the page name every page too" -- every
+   top-level page's <h1> (Dashboard, Borrow Records, Reports,
+   Manage Books, Manage Users, Audit Log, Data Export) gets a small
+   icon badge before its title, reusing the exact same icon key
+   each page's sidebar nav link already uses (admin_icon('dashboard'
+   /'borrow'/'reports'/'books'/'users'/'archives'/'export')) so the
+   nav and the page heading always agree. Badge styling reuses the
+   same "glowing gradient tile" recipe as the Borrower History
+   avatar, just sized down for sitting beside a 30px heading. */
+.page-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    background: linear-gradient(160deg, rgba(140, 185, 235, 0.4) 0%, rgba(63, 124, 194, 0.3) 100%);
+    border: 1px solid rgba(140, 185, 235, 0.5);
+    color: #ffffff;
+    box-shadow: 0 10px 22px rgba(63, 124, 194, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+}
+
+.page-icon svg {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+
+.page-icon svg * {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+[data-theme="light"] .page-icon {
+    background: linear-gradient(160deg, #ffffff 0%, #eaf1fb 100%);
+    border-color: rgba(63, 124, 194, 0.3);
+    color: #1c4573;
+}
+
+/* ============================================================
+   Pass v29: Reports page -- premium + organized, match the theme
+   ------------------------------------------------------------
+   "improve and organized this page, make it look premium and
+   match the other pages" -- Reports had never gotten the blue-
+   theme pass the rest of the admin has, and had two real button
+   bugs: "Print Report" and "Download PDF" both carried the same
+   .btn-status.activate mistake this thread has fixed elsewhere
+   (a status-toggle pill class stretched onto unrelated buttons),
+   which is why they rendered as a flat pale/green pill instead of
+   matching Generate/Download/Reset. Direct edits above fixed the
+   remaining green leftovers (field labels, dropdown arrows, card
+   description text). This block: gives Print Report a proper
+   ghost-blue secondary style (was riding the leftover status
+   class), gives Quick Reports' Download PDF its own solid-green
+   "get this file" treatment distinct from the ghost View button,
+   adds hover/press feedback to every report button (none had any),
+   and extends the same premium panel material used everywhere else
+   (.data-table-panel, already used on Borrower History + the 4
+   main tables) to the custom-report form, the 6 quick-report
+   cards, and the 3 trend panels -- which also surfaced the exact
+   same matched-row-height dead-space bug as Borrower History's
+   chip row: an empty trend table sat top-aligned in a panel
+   stretched to match its taller neighbor. Same fix here: the panel
+   becomes a column flexbox so its table fills the space, and the
+   empty-state row centers in it instead of leaving a blank gap. */
+.reports-mini-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.reports-mini-table tbody tr:hover {
+    background: rgba(140, 185, 235, 0.1);
+}
+
+[data-theme="light"] .reports-mini-table tbody tr:hover {
+    background: rgba(63, 124, 194, 0.1) !important;
+}
+
+.reports-quick-card {
+    padding: 16px;
+}
+
+.reports-trend-grid .data-table-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.reports-trend-grid .table-wrap {
+    flex: 1;
+}
+
+.reports-trend-grid .table-wrap table {
+    height: 100%;
+}
+
+.reports-trend-grid .dashboard-empty-cell {
+    vertical-align: middle;
+    padding: 30px 16px !important;
+}
+
+/* ============================================================
+   Pass v30: Data Export page -- match the theme
+   ------------------------------------------------------------
+   "the data export page too" -- same green leftovers as Reports
+   had (the CSV-notes strip's heading/body text and its "Generated
+   on download" pill), and none of its three panels (the notes
+   strip, the 5 export cards, the "What Each Export Includes"
+   table) had the premium material the rest of the admin now has.
+   Direct edits above fixed the leftover colors; .data-table-panel
+   added to all three in the markup reuses the same recipe already
+   proven on Reports/Borrower History/the 4 main tables. Row hover
+   added to the includes table to match every other data table --
+   it already had Pass v22's gradient header via the shared
+   .data-table class, just never got the hover treatment because
+   that was scoped to the 4 original table classes only. */
+.export-center-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.export-center-table tbody tr:hover {
+    background: rgba(140, 185, 235, 0.12);
+}
+
+[data-theme="light"] .export-center-table tbody tr:hover {
+    background: rgba(63, 124, 194, 0.12) !important;
+}
+
+/* ------------------------------------------------------------
+   Pass v31: Live Kiosk Activity -- "make this more lively"
+   ------------------------------------------------------------
+   The dashboard's Live Kiosk Activity panel had no live indicator
+   at all in dark mode (the theme shown in the request's screenshot)
+   -- just a plain "Live Kiosk Activity" heading with a static feed
+   below it. Light mode had a small dot before the heading, but it
+   was static (no animation) via a ::before pseudo-element, so it
+   never actually looked "live" in either theme.
+
+   The app already has a proven animated pulsing-dot pattern used
+   on the AI Recommendation panel (.ai-pulse-dot + @keyframes
+   aiPulse), so this reuses that same rhythm/timing here instead of
+   inventing a new one, applied consistently across both themes via
+   the existing ::before hook rather than new markup. A dedicated
+   light-theme keyframe (aiPulseLight) is used so the pulse ring
+   color matches light mode's gold (#e0b53d) instead of dark mode's
+   brighter yellow (#ffd34f) -- same motion, theme-correct color.
+   Base rule below is unscoped so it applies to dark mode by
+   default; the light-theme override wins on specificity ties via
+   later source order, same as the rest of this file's convention. */
+.live-activity-panel .panel-head h2 {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Pass v52: "make that live animation circle green" -- was riding
+   the shared gold aiPulse/aiPulseLight keyframes, which the AI
+   Recommendation panel's own dot (.ai-pulse-dot) also uses -- can't
+   just recolor those in place without turning that one green too.
+   Split off dedicated liveActivityPulse/-Light keyframes (green,
+   matching the site's positive-tone mint family) so this dot and the
+   AI one can each keep their own color. */
+.live-activity-panel .panel-head h2::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #3fcf8e;
+    box-shadow: 0 0 0 0 rgba(63, 207, 142, 0.55);
+    flex-shrink: 0;
+    animation: liveActivityPulse 1.8s ease-out infinite;
+}
+
+[data-theme="light"] .live-activity-panel .panel-head h2::before {
+    background: #1f8f57;
+    box-shadow: 0 0 0 0 rgba(31, 143, 87, 0.5);
+    animation: liveActivityPulseLight 1.8s ease-out infinite;
+}
+
+@keyframes liveActivityPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(63, 207, 142, 0.55);
+    }
+    70% {
+        box-shadow: 0 0 0 7px rgba(63, 207, 142, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(63, 207, 142, 0);
+    }
+}
+
+@keyframes liveActivityPulseLight {
+    0% {
+        box-shadow: 0 0 0 0 rgba(31, 143, 87, 0.5);
+    }
+    70% {
+        box-shadow: 0 0 0 7px rgba(31, 143, 87, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(31, 143, 87, 0);
+    }
+}
+
+/* ------------------------------------------------------------
+   Pass v33: "Welcome, Name!" badge -- premium, modern, lively
+   ------------------------------------------------------------
+   This was still the plain, pre-theme .welcome pill -- flat
+   var(--glass) fill, plain 1px border, no icon, no depth -- the
+   last untouched leftover from before this whole thread's premium
+   pass. Markup in dashboard.php now wraps a small gradient icon
+   badge (reusing the .page-icon/.borrower-avatar recipe, scaled
+   down to a circle) plus a text span with the name bolded/
+   highlighted, instead of one flat text node.
+
+   "Lively": the badge fades/slides in once on page load, and the
+   icon badge carries a soft pulsing glow ring (same aiPulse-style
+   rhythm as the Live Kiosk Activity dot and AI Recommendation
+   panel) so it stays quietly animated rather than static, without
+   being as attention-grabbing as a hard blinking dot. */
+.welcome {
+    background:
+        radial-gradient(120% 120% at 12% -25%, rgba(140, 185, 235, 0.22) 0%, rgba(140, 185, 235, 0) 60%),
+        linear-gradient(135deg, rgba(63, 124, 194, 0.22) 0%, rgba(28, 69, 115, 0.17) 100%) !important;
+    border: 1px solid rgba(140, 185, 235, 0.4) !important;
+    border-radius: 999px !important;
+    padding: 6px 18px 6px 6px !important;
+    box-shadow:
+        0 10px 22px rgba(63, 124, 194, 0.22),
+        0 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+    animation: welcomeIn 0.5s ease !important;
+}
+
+@keyframes welcomeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.welcome-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    background: linear-gradient(160deg, rgba(140, 185, 235, 0.55) 0%, rgba(63, 124, 194, 0.45) 100%);
+    border: 1px solid rgba(140, 185, 235, 0.55);
+    color: #ffffff;
+    box-shadow: 0 0 0 0 rgba(110, 175, 230, 0.55);
+    animation: welcomePulse 2.4s ease-out infinite;
+}
+
+.welcome-icon svg {
+    width: 15px;
+    height: 15px;
+    display: block;
+}
+
+.welcome-icon svg * {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+@keyframes welcomePulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(110, 175, 230, 0.55);
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(110, 175, 230, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(110, 175, 230, 0);
+    }
+}
+
+.welcome-text {
+    color: #b9cee2;
+    font-weight: 600;
+}
+
+.welcome-text strong {
+    color: #ffffff;
+    font-weight: 800;
+}
+
+[data-theme="light"] .welcome {
+    background: linear-gradient(135deg, #ffffff 0%, #eaf1fb 100%) !important;
+    border-color: rgba(63, 124, 194, 0.32) !important;
+    box-shadow:
+        0 10px 22px rgba(20, 40, 70, 0.1),
+        0 1px 0 rgba(255, 255, 255, 0.6) inset !important;
+}
+
+[data-theme="light"] .welcome-icon {
+    background: linear-gradient(160deg, #ffffff 0%, #dce9fb 100%) !important;
+    border-color: rgba(63, 124, 194, 0.38) !important;
+    color: #1c4573 !important;
+    box-shadow: 0 0 0 0 rgba(63, 124, 194, 0.45) !important;
+    animation: welcomePulseLight 2.4s ease-out infinite !important;
+}
+
+[data-theme="light"] .welcome-text {
+    color: #4a6378 !important;
+}
+
+[data-theme="light"] .welcome-text strong {
+    color: #1c4573 !important;
+}
+
+@keyframes welcomePulseLight {
+    0% {
+        box-shadow: 0 0 0 0 rgba(63, 124, 194, 0.45);
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(63, 124, 194, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(63, 124, 194, 0);
+    }
+}
+
+/* Pass v35: "all the dropdowns too" -- light-theme dropdown-list
+   colors to go with the dark-theme fix above (select option /
+   select option:checked). No light-theme option styling existed at
+   all before this, so light mode's dropdowns had the exact same
+   plain-gray-list problem. */
+[data-theme="light"] select option {
+    color: #1c4573 !important;
+    background: #ffffff !important;
+}
+
+[data-theme="light"] select option:checked,
+[data-theme="light"] select option:hover {
+    color: #ffffff !important;
+    background: #3f7cc2 !important;
+}
+
+/* ============================================================
+   Pass v38: Sidebar Navigation -- premium, modern, lively
+   ------------------------------------------------------------
+   "can u make that look premium too and lively and modern" -- the
+   sidebar was still riding the bare .glass-card fallback (a flat
+   translucent overlay with no gradient/depth of its own), nav-link
+   hover/active only swapped a flat overlay tint with no icon
+   treatment, and the active/hover icon background was still literal
+   leftover mint-green (rgba(234, 246, 238, ...)) from before this
+   whole engagement's blue conversion -- the same "half-migrated"
+   pattern already found and fixed several times elsewhere (copy-
+   detail status pills, Print Report/Download PDF buttons, etc).
+
+   Gives the sidebar its own premium material (the same radial-
+   highlight + gradient + border + shadow recipe as .data-table-panel
+   and the dashboard panels), turns each nav icon into its own tinted
+   chip that fills solid blue on hover and gets a gradient badge when
+   active, and adds a glowing left accent bar to the active item.
+   "Lively" is a slow ambient "breathing" glow behind the school logo
+   rather than anything that blinks on load -- the sidebar re-renders
+   on every page navigation (full PHP page loads, not an SPA), so a
+   one-shot entrance animation would read as flicker, not liveliness.
+   The role label ("Librarian") becomes a small pill badge instead of
+   plain text, matching the badge language already used on Reports/
+   Data Export. Hover/active backgrounds intentionally avoid
+   !important so the existing higher-specificity gold hover on
+   "Go back to kiosk" / "Logout" (which also carry the base .nav-link
+   class) keeps winning untouched. */
+.sidebar {
+    /* Lightened in Pass v39 -- this was compounding on top of body's
+       own darkening right below it, making the sidebar read darker
+       than everything else on the page. */
+    background:
+        radial-gradient(140% 55% at 50% -12%, rgba(140, 185, 235, 0.22) 0%, rgba(140, 185, 235, 0) 55%),
+        linear-gradient(180deg, rgba(63, 124, 194, 0.13) 0%, rgba(28, 69, 115, 0.08) 45%, rgba(13, 36, 64, 0.09) 100%) !important;
+    border: 1px solid rgba(140, 185, 235, 0.28) !important;
+    box-shadow:
+        0 16px 32px rgba(4, 14, 28, 0.2),
+        0 1px 0 rgba(255, 255, 255, 0.06) inset !important;
+}
+
+@keyframes sidebarLogoGlow {
+    0%, 100% {
+        box-shadow: 0 0 0 4px rgba(140, 185, 235, 0.12), 0 10px 24px rgba(20, 60, 110, 0.35);
+    }
+    50% {
+        box-shadow: 0 0 0 7px rgba(140, 185, 235, 0.24), 0 10px 28px rgba(20, 60, 110, 0.48);
+    }
+}
+
+.sidebar-logo {
+    animation: sidebarLogoGlow 4s ease-in-out infinite;
+}
+
+.sidebar p {
+    display: inline-block;
+    margin-top: 8px !important;
+    padding: 3px 12px;
+    border-radius: 999px;
+    background: rgba(63, 124, 194, 0.16);
+    border: 1px solid rgba(140, 185, 235, 0.3);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 10.5px;
+}
+
+.theme-toggle-btn {
+    background: rgba(63, 124, 194, 0.15) !important;
+    border-color: rgba(140, 185, 235, 0.3) !important;
+}
+
+.nav-link {
+    position: relative;
+    transition: background 0.2s ease, transform 0.18s ease, box-shadow 0.2s ease;
+}
+
+.nav-link:hover {
+    background: rgba(63, 124, 194, 0.16);
+    transform: translateX(3px);
+}
+
+.nav-link.active {
+    background: linear-gradient(135deg, rgba(63, 124, 194, 0.34) 0%, rgba(28, 69, 115, 0.18) 100%);
+    box-shadow:
+        0 6px 18px rgba(10, 30, 56, 0.35),
+        0 0 0 1px rgba(140, 185, 235, 0.22) inset;
+}
+
+.nav-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: linear-gradient(180deg, #8cb9eb 0%, #3f7cc2 100%);
+    box-shadow: 0 0 10px rgba(140, 185, 235, 0.6);
+}
+
+.nav-icon {
+    background: rgba(140, 185, 235, 0.08);
+    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+
+.nav-link:hover .nav-icon {
+    background: rgba(140, 185, 235, 0.24);
+    transform: scale(1.06);
+}
+
+.nav-link.active .nav-icon {
+    background: linear-gradient(160deg, rgba(140, 185, 235, 0.6) 0%, rgba(63, 124, 194, 0.5) 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(63, 124, 194, 0.4);
+}
+
+.logout-btn,
+.nav-link-kiosk {
+    transition: background 0.2s ease, transform 0.18s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-footer .nav-link-kiosk:hover,
+.sidebar-footer .logout-btn:hover {
+    transform: translateX(3px);
+    box-shadow: 0 8px 20px rgba(228, 187, 23, 0.28);
+}
+
+[data-theme="light"] .sidebar {
+    box-shadow:
+        0 14px 32px rgba(20, 40, 70, 0.12),
+        0 1px 0 rgba(255, 255, 255, 0.6) inset !important;
+}
+
+[data-theme="light"] .sidebar p {
+    background: rgba(63, 124, 194, 0.1);
+    border-color: rgba(63, 124, 194, 0.25);
+}
+
+[data-theme="light"] .nav-icon {
+    background: rgba(63, 124, 194, 0.06);
+}
+
+[data-theme="light"] .nav-link:hover .nav-icon {
+    background: rgba(63, 124, 194, 0.22);
+    color: #1c4573;
+}
+
+[data-theme="light"] .nav-link.active .nav-icon {
+    background: linear-gradient(160deg, #ffffff 0%, #dce9fb 100%);
+    color: #1c4573;
+    box-shadow: 0 4px 12px rgba(63, 124, 194, 0.25);
+}
+
+[data-theme="light"] .nav-link.active::before {
+    background: linear-gradient(180deg, #8cb9eb 0%, #3f7cc2 100%);
+    box-shadow: 0 0 8px rgba(63, 124, 194, 0.4);
+}
+
+/* ============================================================
+   Pass v41: Add Book / Add User modals -- premium, modern
+   ------------------------------------------------------------
+   "improve this, make it look premium and modern" -- both modals
+   (and every other .overlay-card in the app: Edit Book, Edit User,
+   the delete/status confirm dialogs -- this is a shared class, so
+   they all pick this up too) were still the plain .glass-card
+   fallback with no gradient/depth, a bare "x" glyph for close, and
+   no icon on the title, unlike every page panel this engagement has
+   already upgraded. Gives the card the same premium material recipe
+   as .data-table-panel, a title icon badge (markup in manage_books.
+   php/manage_users.php only, for Add Book/Add User specifically, per
+   the request), a proper circular ghost close button that turns red
+   on hover instead of a plain glyph, a light backdrop blur behind the
+   dialog, and a quick scale/fade-in on open for a touch of life.
+   CSS animations restart automatically each time an element goes
+   from a display:none ancestor back to rendered, so this replays
+   every time .overlay-modal toggles .show -- no JS changes needed. */
+.overlay-modal {
+    backdrop-filter: blur(4px);
+}
+
+@keyframes modalCardIn {
+    0% {
+        opacity: 0;
+        transform: translateY(10px) scale(0.97);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Pass v43: "looks too dark" -- the card's own gradient still
+   anchored to the same very dark navy family (rgba(13, 36, 64) /
+   rgba(28, 69, 115)) as everything else did before the site-wide
+   lightening, and the full-screen backdrop behind it (a separate
+   rgba(8, 20, 38) token the earlier pass never touched, now also
+   blurred) was compounding it further. Switched the card gradient to
+   the lighter mid-blue family instead of just reducing alpha on the
+   dark one, and lightened the backdrop the same way. Same change
+   applied to the shared input/select fill below, since those are
+   what actually sit inside the card and were the densest-looking
+   part of it. */
+/* Pass v45: backdrop is now intentionally dark (Pass v44, for depth
+   contrast), so the card itself needs a brighter, more opaque fill to
+   still read as "light" sitting on top of it -- alpha pushed up well
+   past the v43 values instead of relying on a dark backdrop that no
+   longer matches. */
+.overlay-card {
+    background:
+        radial-gradient(120% 70% at 85% -15%, rgba(180, 210, 245, 0.55) 0%, rgba(180, 210, 245, 0) 60%),
+        linear-gradient(165deg, rgba(140, 185, 235, 0.5) 0%, rgba(94, 155, 214, 0.42) 55%, rgba(63, 124, 194, 0.38) 100%) !important;
+    border: 1px solid rgba(180, 210, 245, 0.45) !important;
+    border-top: 3px solid rgba(180, 210, 245, 0.85) !important;
+    box-shadow:
+        0 24px 50px rgba(10, 20, 40, 0.35),
+        0 1px 0 rgba(255, 255, 255, 0.08) inset !important;
+    animation: modalCardIn 0.2s ease;
+}
+
+.overlay-card .panel-head {
+    margin-bottom: 14px;
+}
+
+.overlay-card .panel-head h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Pass v50: "add icon to this too" -- Overdue & Fines gets the same
+   gradient icon-badge treatment as the page <h1> titles and modal
+   headers (.panel-icon reuses that exact recipe, just introduced
+   under its own name since this is a card heading rather than a page
+   title or a modal), using the same clock icon the "Overdue" stat
+   chip already uses elsewhere so the metaphor stays consistent.
+
+   Pass v51: "all the modal/containers or titles in the dashboard
+   too" -- same .panel-icon badge extended to every other card title
+   on the dashboard (Live Kiosk Activity already had its own
+   inline-flex + pulsing-dot rule from an earlier pass, so that one is
+   left alone and just gets the icon span added in markup; everything
+   else here needed the flex-row layout turned on first). Added a new
+   'sparkles' glyph to admin_icon() for AI Recommendation Output,
+   since none of the existing icons fit "AI" and everything else on
+   this page reuses an existing one (kiosk/search/list/book-open/
+   swap/layers/activity) the same way Pass v28 established for page
+   titles. */
+.overdue-books-panel .panel-head h2,
+.search-trend-panel .panel-head h2,
+.search-keywords-panel .panel-head h2,
+.borrowed-books-panel .panel-head h2,
+.borrow-trend-panel .panel-head h2,
+.course-popularity-panel .panel-head h2,
+.course-activity-panel .panel-head h2,
+.recommendation-panel .panel-head h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.panel-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    background: linear-gradient(160deg, rgba(140, 185, 235, 0.4) 0%, rgba(63, 124, 194, 0.3) 100%);
+    border: 1px solid rgba(140, 185, 235, 0.5);
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(63, 124, 194, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+}
+
+.panel-icon svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+}
+
+.panel-icon svg * {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+[data-theme="light"] .panel-icon {
+    background: linear-gradient(160deg, #ffffff 0%, #eaf1fb 100%);
+    border-color: rgba(63, 124, 194, 0.3);
+    color: #1c4573;
+}
+
+.modal-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    background: linear-gradient(160deg, rgba(140, 185, 235, 0.4) 0%, rgba(63, 124, 194, 0.3) 100%);
+    border: 1px solid rgba(140, 185, 235, 0.5);
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(63, 124, 194, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+}
+
+.modal-icon svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+}
+
+.modal-icon svg * {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.icon-close {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    font-size: 20px;
+    line-height: 1;
+    border-radius: 999px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(140, 185, 235, 0.3);
+    background: rgba(63, 124, 194, 0.12);
+    transition: background 0.18s ease, transform 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.icon-close:hover {
+    background: rgba(224, 90, 90, 0.18);
+    border-color: rgba(224, 90, 90, 0.45);
+    color: #ffb4b4;
+    transform: rotate(90deg);
+}
+
+[data-theme="light"] .overlay-card {
+    box-shadow:
+        0 20px 40px rgba(20, 40, 70, 0.14),
+        0 1px 0 rgba(255, 255, 255, 0.6) inset !important;
+}
+
+[data-theme="light"] .modal-icon {
+    background: linear-gradient(160deg, #ffffff 0%, #eaf1fb 100%);
+    border-color: rgba(63, 124, 194, 0.3);
+    color: #1c4573;
+}
+
+[data-theme="light"] .icon-close {
+    background: rgba(63, 124, 194, 0.1);
+    border-color: rgba(63, 124, 194, 0.25);
+}
+
+[data-theme="light"] .icon-close:hover {
+    background: rgba(224, 90, 90, 0.14) !important;
+    border-color: rgba(224, 90, 90, 0.35) !important;
+    color: #b3232c !important;
+    border-radius: 999px !important;
+}
+
+/* ============================================================
+   Pass v42: "still dont like it, make it more lively and modern,
+   also the dropdown improve it, it looks static specially the
+   dropdown icon"
+   ------------------------------------------------------------
+   Root cause of the "static" dropdown: the custom chevron (the
+   Reports page's arrow, background-image + appearance:none) was
+   only ever scoped to .reports-custom-form select. Every other
+   select in the app -- including every dropdown in these two
+   modals -- was still rendering the browser's own plain, unstyled,
+   flat native arrow, which is exactly why it read as generic/dead
+   next to the rest of this premium theme. Made the custom arrow
+   universal (every <select>, both themes) instead of Reports-only,
+   and gave it real interaction feedback a native arrow can't have
+   on its own: it brightens and nudges inward on hover/focus with a
+   smooth transition, so opening a dropdown now visibly responds
+   instead of just silently popping a plain list.
+
+   Rest of the "lively/modern" pass: the modal's title icon badge
+   now carries a slow ambient glow pulse (same idea as the Live
+   Kiosk Activity dot / dashboard icons already established
+   elsewhere), the submit button gets a "+" icon instead of bare
+   text, and the Accession Numbers block gets a top divider so the
+   form reads as two considered sections instead of one long list. */
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 40px !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23cfe3f7' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 16px;
+    transition: background-position 0.18s ease, filter 0.18s ease, border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+}
+
+select:hover {
+    filter: brightness(1.2);
+}
+
+select:focus {
+    background-position: right 11px center;
+    filter: brightness(1.32);
+}
+
+[data-theme="light"] select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231c4573' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");
+}
+
+@keyframes modalIconPulse {
+    0%, 100% {
+        box-shadow:
+            0 8px 18px rgba(63, 124, 194, 0.3),
+            0 0 0 0 rgba(140, 185, 235, 0.35),
+            0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    }
+    50% {
+        box-shadow:
+            0 8px 18px rgba(63, 124, 194, 0.42),
+            0 0 0 5px rgba(140, 185, 235, 0.12),
+            0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    }
+}
+
+.modal-icon {
+    animation: modalIconPulse 2.6s ease-in-out infinite;
+}
+
+.modal-submit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.modal-submit-icon {
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.modal-submit-icon svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.book-accession-block {
+    border-top: 1px solid rgba(140, 185, 235, 0.18);
+    padding-top: 12px !important;
+    margin-top: 8px !important;
+}
+
+[data-theme="light"] .book-accession-block {
+    border-top-color: rgba(63, 124, 194, 0.2);
 }

@@ -138,10 +138,12 @@ $backHref = 'manage_users.php';
 
 <div class="page-top borrower-history-top">
     <div>
-        <h1>Borrower History</h1>
+        <h1 class="borrower-history-heading">
+            <a href="<?= htmlspecialchars($backHref) ?>" class="borrower-history-back-link" aria-label="Back to Users" title="Back to Users"><?= admin_icon('arrow-left') ?></a>
+            Borrower History
+        </h1>
         <p class="page-subtitle">Complete borrowing record, current loans, overdue items, missing books, and fine totals.</p>
     </div>
-    <a href="<?= htmlspecialchars($backHref) ?>" class="filter-reset-btn">Back to Users</a>
 </div>
 
 <?php if ($userId <= 0 || !is_array($user)): ?>
@@ -151,7 +153,7 @@ $backHref = 'manage_users.php';
         <a href="manage_users.php" class="btn-primary borrower-history-cta">Open Manage Users</a>
     </section>
 <?php else: ?>
-    <section class="panel glass-card borrower-profile-panel">
+    <section class="borrower-profile-panel">
         <div class="borrower-profile-main">
             <div class="borrower-avatar" aria-hidden="true"><?= htmlspecialchars(strtoupper(substr($borrowerName, 0, 1))) ?></div>
             <div>
@@ -160,23 +162,34 @@ $backHref = 'manage_users.php';
                     <span><?= htmlspecialchars((string)($user['user_number'] ?? '-')) ?></span>
                     <span><?= htmlspecialchars(ucfirst((string)($user['role'] ?? 'user'))) ?></span>
                     <span><?= htmlspecialchars((string)($user['program_name'] ?? 'General Collection')) ?></span>
-                    <span><?= htmlspecialchars(ucfirst((string)($user['status'] ?? 'active'))) ?></span>
+                    <span class="<?= strtolower((string)($user['status'] ?? 'active')) === 'active' ? 'is-active' : 'is-inactive' ?>"><?= htmlspecialchars(ucfirst((string)($user['status'] ?? 'active'))) ?></span>
                 </div>
                 <p><?= htmlspecialchars((string)($user['email'] ?? 'No email recorded')) ?></p>
             </div>
         </div>
         <div class="borrower-profile-actions">
-            <a class="panel-link-btn" href="borrow_records.php?search=<?= urlencode((string)($user['user_number'] ?? $borrowerName)) ?>">Open Records</a>
-            <a class="panel-link-btn" href="manage_users.php?edit_user=<?= (int)$userId ?>">Edit User</a>
+            <a class="panel-link-btn" href="borrow_records.php?search=<?= urlencode((string)($user['user_number'] ?? $borrowerName)) ?>"><?= admin_icon('book-open') ?>Open Records</a>
+            <a class="panel-link-btn" href="manage_users.php?edit_user=<?= (int)$userId ?>"><?= admin_icon('edit') ?>Edit User</a>
         </div>
     </section>
 
     <section class="stats-grid borrow-status-chips borrower-history-chips">
-        <article class="stat-card glass-card borrow-chip"><h3>Total Records</h3><p class="value"><?= number_format((int)$totals['all_records']) ?></p></article>
-        <article class="stat-card glass-card borrow-chip"><h3>Current Loans</h3><p class="value"><?= number_format((int)$totals['active_records']) ?></p></article>
-        <article class="stat-card glass-card borrow-chip"><h3>Overdue</h3><p class="value"><?= number_format((int)$totals['overdue_records']) ?></p></article>
-        <article class="stat-card glass-card borrow-chip"><h3>Missing</h3><p class="value"><?= number_format((int)$totals['missing_records']) ?></p></article>
-        <article class="stat-card glass-card borrow-chip"><h3>Active Fine</h3><p class="value">PHP <?= number_format((float)$totals['unpaid_active_fine'], 2) ?></p></article>
+        <?php foreach ([
+            ['title' => 'Total Records', 'value' => number_format((int)$totals['all_records'])],
+            ['title' => 'Current Loans', 'value' => number_format((int)$totals['active_records'])],
+            ['title' => 'Overdue', 'value' => number_format((int)$totals['overdue_records'])],
+            ['title' => 'Missing', 'value' => number_format((int)$totals['missing_records'])],
+            ['title' => 'Active Fine', 'value' => 'PHP ' . number_format((float)$totals['unpaid_active_fine'], 2)],
+        ] as $historyChip): ?>
+            <?php $chipMeta = stat_chip_meta($historyChip['title']); ?>
+            <article class="stat-card glass-card borrow-chip<?= $historyChip['title'] === 'Active Fine' ? ' stat-card-wide' : '' ?>">
+                <div class="metric-head-row">
+                    <span class="metric-icon-badge metric-icon-badge--<?= htmlspecialchars($chipMeta['accent']) ?>" aria-hidden="true"><?= admin_icon($chipMeta['icon']) ?></span>
+                    <h3><?= htmlspecialchars($historyChip['title']) ?></h3>
+                </div>
+                <p class="value"><?= $historyChip['value'] ?></p>
+            </article>
+        <?php endforeach; ?>
     </section>
 
     <section class="dashboard-chart-grid borrower-history-grid">

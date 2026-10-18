@@ -202,6 +202,28 @@
 
         el.textContent = `${sentence1} ${sentence2}`;
     }
+    function niceAxisTicks(dataMax) {
+        // Picks clean, non-duplicate round numbers for the y-axis instead of
+        // blindly dividing the max into 4 equal parts and rounding each one
+        // (that scheme repeats values like "1, 1, 1, 0" whenever the max is
+        // small, which reads as a broken axis rather than a flat trend).
+        const m = Math.max(1, dataMax);
+        if (m <= 5) {
+            const ticks = [];
+            for (let v = Math.ceil(m); v >= 0; v--) ticks.push(v);
+            return ticks;
+        }
+        const rawStep = m / 4;
+        const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+        const norm = rawStep / mag;
+        const niceNorm = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
+        const step = niceNorm * mag;
+        const top = Math.ceil(m / step) * step;
+        const ticks = [];
+        for (let v = top; v >= 0; v -= step) ticks.push(Math.round(v));
+        return ticks;
+    }
+
     function renderLineChart(el, labels, values, options) {
         if (!el) return;
 
@@ -209,21 +231,60 @@
         labels = safeArray(labels);
         values = safeArray(values).map(v => Number(v || 0));
         const isLightTheme = document.documentElement.getAttribute('data-theme') === 'light';
-        const palette = isLightTheme ? {
-            gridStroke: 'rgba(121,153,136,0.34)',
-            axisLabel: '#5d7f6f',
-            areaFill: 'rgba(218,181,62,0.26)',
-            lineStroke: '#d9ad2f',
-            dotFill: '#f2c94c',
-            dotStroke: '#266447'
-        } : {
-            gridStroke: 'rgba(232,245,237,0.38)',
-            axisLabel: '#e5f3eb',
-            areaFill: 'rgba(242,201,76,0.26)',
-            lineStroke: '#ffd45a',
-            dotFill: '#ffd34f',
-            dotStroke: '#1f5139'
+
+        // 'search' (gold) and 'borrow' (green) match the same category
+        // colors used everywhere else on the dashboard (search-keywords
+        // panel/chip, borrowed-books panel/chip) so a trend chart reads as
+        // the same family as its companion panel instead of both trends
+        // defaulting to the same gold regardless of what they measure.
+        const variant = cfg.variant === 'borrow' ? 'borrow' : 'search';
+        const paletteSets = {
+            search: {
+                light: {
+                    gridStroke: 'rgba(163,133,40,0.3)',
+                    axisLabel: '#8a6a1e',
+                    lineStroke: '#d9ad2f',
+                    dotFill: '#f2c94c',
+                    dotStroke: '#7a5a12',
+                    glow: 'rgba(232,185,63,0.5)',
+                    gradTop: 'rgba(255,216,108,0.55)',
+                    gradBottom: 'rgba(255,216,108,0)'
+                },
+                dark: {
+                    gridStroke: 'rgba(232,245,237,0.22)',
+                    axisLabel: '#f0e0ab',
+                    lineStroke: '#ffd45a',
+                    dotFill: '#ffe08a',
+                    dotStroke: '#7a5a12',
+                    glow: 'rgba(255,216,108,0.6)',
+                    gradTop: 'rgba(255,216,108,0.5)',
+                    gradBottom: 'rgba(255,216,108,0)'
+                }
+            },
+            borrow: {
+                light: {
+                    gridStroke: 'rgba(40,133,90,0.3)',
+                    axisLabel: '#1f6b48',
+                    lineStroke: '#2fa06b',
+                    dotFill: '#4fc98a',
+                    dotStroke: '#0f4a30',
+                    glow: 'rgba(63,207,142,0.5)',
+                    gradTop: 'rgba(88,227,160,0.55)',
+                    gradBottom: 'rgba(88,227,160,0)'
+                },
+                dark: {
+                    gridStroke: 'rgba(232,245,237,0.22)',
+                    axisLabel: '#bdeed3',
+                    lineStroke: '#4fd696',
+                    dotFill: '#7fe8b3',
+                    dotStroke: '#0f4a30',
+                    glow: 'rgba(88,227,160,0.6)',
+                    gradTop: 'rgba(88,227,160,0.5)',
+                    gradBottom: 'rgba(88,227,160,0)'
+                }
+            }
         };
+        const palette = paletteSets[variant][isLightTheme ? 'light' : 'dark'];
 
         if (!labels.length || !values.length) {
             empty(el, cfg.emptyText || 'No trend data yet.');
@@ -236,18 +297,19 @@
         const m = { l: 54, r: 18, t: 18, b: 66 };
         const w = width - m.l - m.r;
         const h = height - m.t - m.b;
-        const max = Math.max(1, ...values);
+        const dataMax = Math.max(1, ...values);
+        const ticks = niceAxisTicks(dataMax);
+        const max = ticks[0];
 
         const xAt = (i) => (n <= 1 ? m.l + w / 2 : m.l + (i * w) / (n - 1));
         const yAt = (v) => m.t + h - (v / max) * h;
 
         let grid = '';
-        for (let i = 0; i <= 4; i++) {
-            const y = m.t + (h / 4) * i;
-            const val = Math.round(max - (max / 4) * i);
+        ticks.forEach((val, i) => {
+            const y = m.t + (h / (ticks.length - 1 || 1)) * i;
             grid += `<line x1="${m.l}" y1="${y}" x2="${width - m.r}" y2="${y}" stroke="${palette.gridStroke}" stroke-width="1"/>`;
             grid += `<text x="${m.l - 10}" y="${y + 4}" text-anchor="end" font-size="11" fill="${palette.axisLabel}">${val}</text>`;
-        }
+        });
 
         const points = values.map((v, i) => ({ x: xAt(i), y: yAt(v), v, l: labels[i] }));
         const line = points.map(p => `${p.x},${p.y}`).join(' ');
@@ -256,19 +318,26 @@
         let xLabels = '';
         let dots = '';
         const skip = n > 9 ? Math.ceil(n / 8) : 1;
+        const gradientId = `trend-grad-${variant}-${Math.random().toString(36).slice(2, 9)}`;
 
         points.forEach((p, i) => {
             if (i % skip === 0 || i === n - 1) {
                 xLabels += `<text x="${p.x}" y="${height - 20}" text-anchor="middle" font-size="12" fill="${palette.axisLabel}">${esc(p.l)}</text>`;
             }
-            dots += `<circle cx="${p.x}" cy="${p.y}" r="5.2" fill="${palette.dotFill}" stroke="${palette.dotStroke}" stroke-width="1.8"/>`;
+            dots += `<circle cx="${p.x}" cy="${p.y}" r="5.4" fill="${palette.dotFill}" stroke="${palette.dotStroke}" stroke-width="1.8"/>`;
         });
 
         const svg = `
             <svg class="trend-svg" viewBox="0 0 ${width} ${height}" style="width:100%;height:290px;display:block;">
+                <defs>
+                    <linearGradient id="${gradientId}" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="${palette.gradTop}"/>
+                        <stop offset="100%" stop-color="${palette.gradBottom}"/>
+                    </linearGradient>
+                </defs>
                 ${grid}
-                <polygon points="${area}" fill="${palette.areaFill}"/>
-                <polyline points="${line}" fill="none" stroke="${palette.lineStroke}" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
+                <polygon points="${area}" fill="url(#${gradientId})"/>
+                <polyline points="${line}" fill="none" stroke="${palette.lineStroke}" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 5px ${palette.glow});"/>
                 ${dots}
                 ${xLabels}
             </svg>
@@ -429,7 +498,7 @@
             document.getElementById('search-trend-chart'),
             safeArray(data.searchTrend?.labels),
             safeArray(data.searchTrend?.values),
-            { emptyText: 'No search trend data yet.' }
+            { emptyText: 'No search trend data yet.', variant: 'search' }
         );
 
         renderTrendInsight(
@@ -465,7 +534,7 @@
             document.getElementById('borrow-trend-chart'),
             safeArray(data.mostBorrowedTrend?.labels),
             safeArray(data.mostBorrowedTrend?.values),
-            { emptyText: 'No borrow trend data yet.' }
+            { emptyText: 'No borrow trend data yet.', variant: 'borrow' }
         );
 
         renderTrendInsight(

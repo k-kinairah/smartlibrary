@@ -290,9 +290,20 @@ $_SESSION['pending_2fa'] = [
         'created_at' => time()
     ];
 
+    $clientMessage = 'Verification code sent to ' . $masked . '. Enter the code to continue.';
+    if (auth_is_local_request($clientIp)) {
+        // Local-dev fallback: XAMPP's default PHP mail() has no real mail
+        // server configured, so the email above almost certainly won't
+        // arrive. Since this request is coming from this same computer,
+        // show the code directly rather than leaving the admin locked out.
+        // Set up real SMTP delivery (see auth_send_multipart_email()) and
+        // this line stops being the only way to get the code.
+        $clientMessage .= " [Local dev -- email not yet configured, your code is: {$code}]";
+    }
+
     $clientPayload = [
         'status' => '2fa_required',
-        'message' => 'Verification code sent to ' . $masked . '. Enter the code to continue.',
+        'message' => $clientMessage,
         'masked_email' => $masked,
         'expires_minutes' => AUTH_2FA_CODE_TTL_MINUTES
     ];

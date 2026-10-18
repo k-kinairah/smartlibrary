@@ -92,18 +92,11 @@ if (!function_exists('smartlib_loan_policy_for_role')) {
 
 if (!function_exists('smartlib_ensure_borrow_renewal_columns')) {
     function smartlib_ensure_borrow_renewal_columns(mysqli $conn): void {
-        $renewCountExists = false;
-        $lastRenewedExists = false;
-
-        $res = $conn->query("SHOW COLUMNS FROM borrow_records LIKE 'renew_count'");
-        if ($res && $res->num_rows > 0) {
-            $renewCountExists = true;
-        }
-
-        $res = $conn->query("SHOW COLUMNS FROM borrow_records LIKE 'last_renewed_at'");
-        if ($res && $res->num_rows > 0) {
-            $lastRenewedExists = true;
-        }
+        // 2026-10-10: hardcoded -- see index.php for why. Both columns are
+        // confirmed present in smartlib_FULL_BACKUP_20261010.sql, so the
+        // ALTER TABLE calls below correctly never run.
+        $renewCountExists = true;
+        $lastRenewedExists = true;
 
         if (!$renewCountExists) {
             $conn->query("ALTER TABLE borrow_records ADD COLUMN renew_count INT NOT NULL DEFAULT 0 AFTER status");

@@ -5,16 +5,35 @@ require 'config/db_connect.php';
 header('Content-Type: application/json; charset=utf-8');
 
 function table_exists(mysqli $conn, string $table): bool {
-    $safe = $conn->real_escape_string($table);
-    $res = $conn->query("SHOW TABLES LIKE '{$safe}'");
-    return $res && $res->num_rows > 0;
+    // 2026-10-10: hardcoded against a known-good table list instead of
+    // querying information_schema. Live SHOW/information_schema lookups
+    // crash this MariaDB build while it's running in InnoDB emergency
+    // recovery mode (innodb_force_recovery=6) -- confirmed via repeated
+    // mysqld crash dumps, including on this exact kind of check. Every
+    // name below is confirmed present in smartlib_FULL_BACKUP_20261010.sql
+    // (taken moments before the corruption). Revert to a live query once
+    // the database has been rebuilt into a fresh data directory.
+    static $knownTables = [
+        'auth_2fa_challenges', 'auth_login_attempts', 'auth_pin_reset_tokens',
+        'books', 'book_categories', 'book_copies', 'book_embeddings',
+        'book_programs', 'borrow_records', 'categories',
+        'due_soon_reminder_logs', 'favorites', 'library_locations',
+        'library_users', 'notifications', 'overdue_reminder_logs',
+        'programs', 'recommendation_events', 'search_logs',
+        'admin_activity_logs',
+    ];
+    return in_array($table, $knownTables, true);
 }
 
 function column_exists(mysqli $conn, string $table, string $column): bool {
-    $safeTable = $conn->real_escape_string($table);
-    $safeCol = $conn->real_escape_string($column);
-    $res = $conn->query("SHOW COLUMNS FROM {$safeTable} LIKE '{$safeCol}'");
-    return $res && $res->num_rows > 0;
+    // 2026-10-10: see table_exists() above -- same reason, same fix.
+    static $knownColumns = [
+        'categories' => ['category_group'],
+        'books' => ['location_id', 'call_number', 'publisher', 'category_id', 'program_id'],
+        'library_locations' => ['class_code'],
+        'borrow_records' => ['renew_count', 'last_renewed_at'],
+    ];
+    return in_array($column, $knownColumns[$table] ?? [], true);
 }
 
 function cover_url(string $cover): string {
@@ -111,6 +130,135 @@ function query_rows(mysqli $conn, string $sql): array {
     }
 
     return $rows;
+}
+
+// --- Semantic (AI embedding) signal -----------------------------------
+// These functions read the "fingerprints" tools/generate_book_embeddings.php
+// stored in book_embeddings (one-time, offline tagging -- see that script
+// and database/ai_semantic_setup.sql). Nothing here calls any external API;
+// this only does local math against numbers that are already in the DB.
+// If book_embeddings doesn't exist yet, every function here is a no-op and
+// scoring falls back to exactly the behavior this file had before.
+
+function ai_embeddings_available(mysqli $conn): bool {
+    static $cached = null;
+    if ($cached === null) {
+        $cached = table_exists($conn, 'book_embeddings');
+    }
+    return $cached;
+}
+
+function cosine_similarity(array $a, array $b): float {
+    $n = min(count($a), count($b));
+    if ($n === 0) {
+        return 0.0;
+    }
+
+    $dot = 0.0;
+    $magA = 0.0;
+    $magB = 0.0;
+    for ($i = 0; $i < $n; $i++) {
+        $dot += $a[$i] * $b[$i];
+        $magA += $a[$i] * $a[$i];
+        $magB += $b[$i] * $b[$i];
+    }
+
+    if ($magA <= 0.0 || $magB <= 0.0) {
+        return 0.0;
+    }
+
+    return $dot / (sqrt($magA) * sqrt($magB));
+}
+
+function load_book_embeddings_by_ids(mysqli $conn, array $bookIds): array {
+    $bookIds = array_values(array_unique(array_filter(array_map('intval', $bookIds), static function ($id): bool {
+        return $id > 0;
+    })));
+
+    if (count($bookIds) === 0) {
+        return [];
+    }
+
+    $placeholders = implode(',', array_fill(0, count($bookIds), '?'));
+    $types = str_repeat('i', count($bookIds));
+
+    $stmt = $conn->prepare("SELECT book_id, embedding FROM book_embeddings WHERE book_id IN ({$placeholders})");
+    if (!$stmt) {
+        return [];
+    }
+
+    $stmt->bind_param($types, ...$bookIds);
+    $stmt->execute();
+    $res = $stmt->get_result();
+
+    $map = [];
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $bookId = (int)($row['book_id'] ?? 0);
+            $vector = json_decode((string)($row['embedding'] ?? '[]'), true);
+            if ($bookId > 0 && is_array($vector) && count($vector) > 0) {
+                $map[$bookId] = array_map('floatval', $vector);
+            }
+        }
+    }
+    $stmt->close();
+
+    return $map;
+}
+
+// Builds one "taste fingerprint" for a student by averaging the embeddings
+// of the books they've actually borrowed (ground truth from borrow_records,
+// not self-reported click events). Returns [] when the student has no
+// borrow history yet or no embeddings are available for it.
+function load_student_embedding_centroid(mysqli $conn, int $userId): array {
+    if ($userId <= 0) {
+        return [];
+    }
+
+    $rows = query_rows(
+        $conn,
+        "SELECT DISTINCT bc.book_id, br.record_id
+         FROM borrow_records br
+         INNER JOIN book_copies bc ON bc.copy_id = br.copy_id
+         WHERE br.user_id = " . (int)$userId . "
+         ORDER BY br.record_id DESC
+         LIMIT 40"
+    );
+
+    $bookIds = [];
+    foreach ($rows as $row) {
+        $bid = (int)($row['book_id'] ?? 0);
+        if ($bid > 0) {
+            $bookIds[] = $bid;
+        }
+    }
+
+    if (count($bookIds) === 0) {
+        return [];
+    }
+
+    $vectors = load_book_embeddings_by_ids($conn, $bookIds);
+    if (count($vectors) === 0) {
+        return [];
+    }
+
+    $dimensions = count(reset($vectors));
+    $centroid = array_fill(0, $dimensions, 0.0);
+
+    foreach ($vectors as $vector) {
+        foreach ($vector as $i => $value) {
+            if ($i < $dimensions) {
+                $centroid[$i] += $value;
+            }
+        }
+    }
+
+    $vectorCount = count($vectors);
+    for ($i = 0; $i < $dimensions; $i++) {
+        $centroid[$i] /= $vectorCount;
+    }
+
+    return $centroid;
 }
 
 function load_recommendation_event_weights(mysqli $conn, int $userId): array {
@@ -216,7 +364,7 @@ function load_recommendation_event_weights(mysqli $conn, int $userId): array {
     return $result;
 }
 
-function rank_rows_with_event_weights(array $rows, array $eventBundle, string $panelKey, bool $isPersonalized): array {
+function rank_rows_with_event_weights(array $rows, array $eventBundle, string $panelKey, bool $isPersonalized, array $semanticByBookId = []): array {
     if (count($rows) === 0) {
         return $rows;
     }
@@ -255,11 +403,22 @@ function rank_rows_with_event_weights(array $rows, array $eventBundle, string $p
         $userPanelWeighted = (float)($user['panel_weighted'] ?? 0);
         $userPanelSpecific = $panelField !== '' ? (float)($user[$panelField] ?? 0) : 0.0;
 
+        // Continuous AI semantic similarity (0..1) between this book and the
+        // student's borrowing taste, from cosine similarity of embedding
+        // vectors. Unlike history_match (an exact category yes/no), this
+        // recognizes books that are conceptually related even when they sit
+        // in a different category -- the actual "AI understands the book"
+        // signal. It's 0 for every row when embeddings haven't been
+        // generated yet or the student has no borrow history, so this is
+        // purely additive and never makes recommendations worse.
+        $semanticScore = (float)($semanticByBookId[$bookId] ?? 0.0);
+
         $score = 0.0;
         $score += $borrowCount * 2.4;
         $score += $topicScore * 2.1;
         $score += $programMatch * 22;
         $score += $historyMatch * 14;
+        $score += $semanticScore * 34;
         $score += $freshness;
         $score += $globalWeighted * 1.7;
         $score += $globalPanelWeighted * 1.05;
@@ -522,9 +681,34 @@ if ($searchLogsEnabled) {
     }
 }
 
+// A book can now be cross-listed under more than one program/category (see
+// database/multi_category_setup.sql and tools/auto_categorize_books.php) --
+// e.g. a research-methods book filed under Criminology but also genuinely
+// relevant to CS students. When those tables exist, a book counts as a
+// program/history match through EITHER its one primary category_id/
+// program_id OR any extra course it's been cross-listed under. When the
+// migration hasn't been run yet, this falls back to exactly the old
+// single-value behavior -- nothing breaks either way.
+$hasMultiCourseTables = table_exists($conn, 'book_programs') && table_exists($conn, 'book_categories');
+
 $courseRows = [];
 if ($isPersonalized) {
     $userIdForSql = (int)$profile['user_id'];
+
+    $recentCategoriesSql = "SELECT DISTINCT b2.category_id
+            FROM borrow_records br2
+            INNER JOIN book_copies bc2 ON bc2.copy_id = br2.copy_id
+            INNER JOIN books b2 ON b2.book_id = bc2.book_id
+            WHERE br2.user_id = {$userIdForSql}
+            ORDER BY br2.record_id DESC
+            LIMIT 30";
+
+    $programMatchExpr = "b.program_id = {$programId}";
+    $historyMatchExpr = "b.category_id IN ({$recentCategoriesSql})";
+    if ($hasMultiCourseTables) {
+        $programMatchExpr .= " OR EXISTS (SELECT 1 FROM book_programs bpx WHERE bpx.book_id = b.book_id AND bpx.program_id = {$programId})";
+        $historyMatchExpr .= " OR EXISTS (SELECT 1 FROM book_categories bcx WHERE bcx.book_id = b.book_id AND bcx.category_id IN ({$recentCategoriesSql}))";
+    }
 
     $courseSql = "SELECT
         b.book_id,
@@ -532,16 +716,8 @@ if ($isPersonalized) {
         b.author,
         b.cover,
         COALESCE(pop.borrow_count, 0) AS borrow_count,
-        CASE WHEN b.program_id = {$programId} THEN 1 ELSE 0 END AS program_match,
-        CASE WHEN b.category_id IN (
-            SELECT DISTINCT b2.category_id
-            FROM borrow_records br2
-            INNER JOIN book_copies bc2 ON bc2.copy_id = br2.copy_id
-            INNER JOIN books b2 ON b2.book_id = bc2.book_id
-            WHERE br2.user_id = {$userIdForSql}
-            ORDER BY br2.record_id DESC
-            LIMIT 30
-        ) THEN 1 ELSE 0 END AS history_match,
+        CASE WHEN {$programMatchExpr} THEN 1 ELSE 0 END AS program_match,
+        CASE WHEN {$historyMatchExpr} THEN 1 ELSE 0 END AS history_match,
         {$genreExpr} AS genre_label,
         DATE(b.created_at) AS created_day
      FROM books b
@@ -552,16 +728,8 @@ if ($isPersonalized) {
         LEFT JOIN borrow_records br ON br.copy_id = bc.copy_id
         GROUP BY bc.book_id
      ) pop ON pop.book_id = b.book_id
-     WHERE b.program_id = {$programId}
-        OR b.category_id IN (
-            SELECT DISTINCT b2.category_id
-            FROM borrow_records br2
-            INNER JOIN book_copies bc2 ON bc2.copy_id = br2.copy_id
-            INNER JOIN books b2 ON b2.book_id = bc2.book_id
-            WHERE br2.user_id = {$userIdForSql}
-            ORDER BY br2.record_id DESC
-            LIMIT 30
-        )
+     WHERE ({$programMatchExpr})
+        OR ({$historyMatchExpr})
      ORDER BY program_match DESC, history_match DESC, borrow_count DESC, b.created_at DESC, b.book_id DESC
      LIMIT 80";
 
@@ -572,7 +740,7 @@ if ($isPersonalized) {
             $conn,
             "SELECT b.book_id, b.title, b.author, b.cover, 0 AS borrow_count, 1 AS program_match, 0 AS history_match, '' AS genre_label, DATE(b.created_at) AS created_day
              FROM books b
-             WHERE b.program_id = {$programId}
+             WHERE {$programMatchExpr}
              ORDER BY b.created_at DESC, b.book_id DESC
              LIMIT 80"
         );
@@ -601,10 +769,37 @@ if ($isPersonalized) {
     );
 }
 
-$popularRows = rank_rows_with_event_weights($popularRows, $recEventBundle, 'most_borrowed', $isPersonalized);
+// Build the semantic similarity map once per request, bounded to only the
+// books already gathered above (a few hundred rows at most) rather than the
+// whole catalog -- this stays fast and light whether the library has 500
+// books or the full ~10k that are still being entered.
+$semanticByBookId = [];
+if (ai_embeddings_available($conn) && $isPersonalized) {
+    $candidateBookIds = [];
+    foreach ([$popularRows, $newArrivalRows, $searchDrivenRows, $courseRows] as $rowSet) {
+        foreach ($rowSet as $row) {
+            $bid = (int)($row['book_id'] ?? 0);
+            if ($bid > 0) {
+                $candidateBookIds[$bid] = true;
+            }
+        }
+    }
 
-$searchDrivenRows = rank_rows_with_event_weights($searchDrivenRows, $recEventBundle, 'most_searched', $isPersonalized);
-$courseRows = rank_rows_with_event_weights($courseRows, $recEventBundle, 'course_highlights', $isPersonalized);
+    if (count($candidateBookIds) > 0) {
+        $studentCentroid = load_student_embedding_centroid($conn, (int)$profile['user_id']);
+        if (count($studentCentroid) > 0) {
+            $candidateEmbeddings = load_book_embeddings_by_ids($conn, array_keys($candidateBookIds));
+            foreach ($candidateEmbeddings as $bid => $vector) {
+                $semanticByBookId[$bid] = cosine_similarity($studentCentroid, $vector);
+            }
+        }
+    }
+}
+
+$popularRows = rank_rows_with_event_weights($popularRows, $recEventBundle, 'most_borrowed', $isPersonalized, $semanticByBookId);
+
+$searchDrivenRows = rank_rows_with_event_weights($searchDrivenRows, $recEventBundle, 'most_searched', $isPersonalized, $semanticByBookId);
+$courseRows = rank_rows_with_event_weights($courseRows, $recEventBundle, 'course_highlights', $isPersonalized, $semanticByBookId);
 
 $usedMostBorrowed = [];
 $mostBorrowedBooks = unique_take($popularRows, 5, $usedMostBorrowed);
@@ -615,21 +810,18 @@ $newArrivalBooks = unique_take($newArrivalRows, 5, $usedNewArrivals);
 if ($isPersonalized) {
     $courseReason = $programName !== '' ? "Matches {$programName}" : 'Matches your course';
     $usedCourse = [];
+    // Only genuine course/program matches go in this panel -- no padding
+    // with generic trending-search or popular-campus books that have
+    // nothing to do with the student's actual program. Backfilling used to
+    // let an unrelated book (e.g. a Nursing title trending in searches)
+    // show up under a "Course-Specific Highlights" / "AI highlights for
+    // <program>" banner, which was misleading even though that book's own
+    // reason text was honestly labeled. With a small catalog this means
+    // the panel may come back with fewer than 5 books, or none at all (in
+    // which case it's dropped from the response entirely below) -- more
+    // honest than padding, and it fills back in naturally as more books
+    // get tagged and cross-linked.
     $courseBooks = unique_take($courseRows, 5, $usedCourse, $courseReason);
-
-    if (count($courseBooks) < 5 && count($searchDrivenRows) > 0) {
-        $courseBooks = array_merge(
-            $courseBooks,
-            unique_take($searchDrivenRows, 5 - count($courseBooks), $usedCourse, 'Trending in current kiosk searches')
-        );
-    }
-
-    if (count($courseBooks) < 5) {
-        $courseBooks = array_merge(
-            $courseBooks,
-            unique_take($popularRows, 5 - count($courseBooks), $usedCourse, 'Campus favorite')
-        );
-    }
 
     $courseSubtitle = $programName !== ''
         ? "AI highlights for {$programName} students"
@@ -668,31 +860,38 @@ if (count($mostSearchedBooks) < 5) {
 }
 
 if ($isPersonalized) {
-    $panels = [
-        [
+    $panels = [];
+
+    // Only show this panel when there are genuine course-relevant books --
+    // an empty or missing panel is more honest than one padded with
+    // unrelated content under a course-specific banner (see the note above
+    // where $courseBooks is built).
+    if (count($courseBooks) > 0) {
+        $panels[] = [
             'key' => 'course_highlights',
             'title' => 'Course-Specific Highlights',
             'subtitle' => $courseSubtitle,
             'books' => $courseBooks
-        ],
-        [
-            'key' => 'most_borrowed',
-            'title' => 'Most Borrowed Books',
-            'subtitle' => 'Popular titles frequently checked out by students',
-            'books' => $mostBorrowedBooks
-        ],
-        [
-            'key' => 'most_searched',
-            'title' => 'Most Searched',
-            'subtitle' => 'Topics and titles students are actively looking for',
-            'books' => $mostSearchedBooks
-        ],
-        [
-            'key' => 'new_arrivals',
-            'title' => 'New Arrivals',
-            'subtitle' => 'Latest books and journals added to our collection',
-            'books' => $newArrivalBooks
-        ]
+        ];
+    }
+
+    $panels[] = [
+        'key' => 'most_borrowed',
+        'title' => 'Most Borrowed Books',
+        'subtitle' => 'Popular titles frequently checked out by students',
+        'books' => $mostBorrowedBooks
+    ];
+    $panels[] = [
+        'key' => 'most_searched',
+        'title' => 'Most Searched',
+        'subtitle' => 'Topics and titles students are actively looking for',
+        'books' => $mostSearchedBooks
+    ];
+    $panels[] = [
+        'key' => 'new_arrivals',
+        'title' => 'New Arrivals',
+        'subtitle' => 'Latest books and journals added to our collection',
+        'books' => $newArrivalBooks
     ];
 } else {
     $panels = [
@@ -719,7 +918,7 @@ if ($isPersonalized) {
 
 echo json_encode([
     'status' => 'success',
-    'engine' => 'local_rules_v3_weighted',
+    'engine' => ai_embeddings_available($conn) ? 'hybrid_semantic_v4' : 'local_rules_v3_weighted',
     'personalized' => $isPersonalized,
     'user_context' => [
         'role' => $profile['role'],
@@ -732,6 +931,8 @@ echo json_encode([
         'recommendation_events_enabled' => $hasRecEvents,
         'recommendation_event_books_global' => (int)($recEventBundle['global_rows'] ?? 0),
         'recommendation_event_books_user' => (int)($recEventBundle['user_rows'] ?? 0),
+        'semantic_embeddings_enabled' => ai_embeddings_available($conn),
+        'semantic_matches_used' => count($semanticByBookId),
         'available_recommendation_books' => count(array_filter($availabilityByBookId, static function ($row): bool { return (int)($row['available'] ?? 0) > 0; }))
     ],
     'panels' => $panels

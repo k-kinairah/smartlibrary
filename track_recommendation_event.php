@@ -11,9 +11,19 @@ function respond(array $payload, int $status = 200): void {
 }
 
 function table_exists(mysqli $conn, string $table): bool {
-    $safe = $conn->real_escape_string($table);
-    $res = $conn->query("SHOW TABLES LIKE '{$safe}'");
-    return $res && $res->num_rows > 0;
+    // 2026-10-10: hardcoded against a known-good table list instead of
+    // querying information_schema -- see index.php for why. Every name
+    // below is confirmed present in smartlib_FULL_BACKUP_20261010.sql.
+    static $knownTables = [
+        'auth_2fa_challenges', 'auth_login_attempts', 'auth_pin_reset_tokens',
+        'books', 'book_categories', 'book_copies', 'book_embeddings',
+        'book_programs', 'borrow_records', 'categories',
+        'due_soon_reminder_logs', 'favorites', 'library_locations',
+        'library_users', 'notifications', 'overdue_reminder_logs',
+        'programs', 'recommendation_events', 'search_logs',
+        'admin_activity_logs',
+    ];
+    return in_array($table, $knownTables, true);
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

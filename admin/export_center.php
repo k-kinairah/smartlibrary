@@ -62,13 +62,13 @@ $exportCards = [
 
 <div class="page-top export-center-top">
     <div>
-        <h1>Data Export</h1>
+        <h1 class="page-heading"><span class="page-icon" aria-hidden="true"><?= admin_icon('export') ?></span>Data Export</h1>
         <p class="page-subtitle">Reports are for summaries. Exports are raw CSV backups for catalog, borrowers, circulation, overdue loans, and missing books.</p>
     </div>
     <a href="reports.php" class="filter-reset-btn">Open Reports</a>
 </div>
 
-<section class="panel glass-card export-center-note">
+<section class="panel glass-card export-center-note data-table-panel">
     <div>
         <h2>CSV data exports</h2>
         <p>Use these raw CSV files for backup snapshots, spreadsheet audits, migration prep, and school library inspections. Password hashes are never included.</p>
@@ -78,7 +78,7 @@ $exportCards = [
 
 <section class="reports-quick export-center-grid">
     <?php foreach ($exportCards as $card): ?>
-        <article class="panel glass-card reports-quick-card export-card">
+        <article class="panel glass-card reports-quick-card export-card data-table-panel">
             <div class="reports-card-icon export-card-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24">
                     <path d="M12 4v10"></path>
@@ -100,7 +100,7 @@ $exportCards = [
     <?php endforeach; ?>
 </section>
 
-<section class="panel glass-card export-center-table-panel">
+<section class="panel glass-card export-center-table-panel data-table-panel">
     <div class="panel-head"><h2>What Each Export Includes</h2></div>
     <div class="table-wrap">
         <table class="data-table export-center-table">

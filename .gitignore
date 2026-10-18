@@ -1,5 +1,6 @@
 .env
 .env.*
+config/ai_config.php
 
 tmp/*
 !tmp/.gitkeep
@@ -18,3 +19,9 @@ vendor/
 
 Thumbs.db
 .DS_Store
+
+config/google_books_config.php
+/smartlib_*.sql
+_test_mail.php
+/_db_*.php
+assets/images/BANTILING*.pdf

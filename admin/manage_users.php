@@ -1,7 +1,17 @@
-<?php require 'layout_top.php'; ?>
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$currentRole = strtolower(trim((string)($_SESSION['role'] ?? '')));
+if (!isset($_SESSION['user_id']) || !in_array($currentRole, ['librarian', 'admin'], true)) {
+    header('Location: ../index.php');
+    exit;
+}
+
 require '../config/db_connect.php';
 require_once '../config/admin_audit.php';
+require_once '../config/csrf.php';
 
 $buildManageUsersUrl = static function (array $params): string {
     $clean = [];
@@ -27,15 +37,7 @@ $normalizeRoleFilter = static function (string $role): string {
 $allowedRoles = ['student', 'faculty', 'librarian', 'admin'];
 $allowedStatusValues = ['active', 'inactive'];
 
-function manage_users_csrf_token(): string {
-    if (empty($_SESSION['manage_users_csrf']) || !is_string($_SESSION['manage_users_csrf'])) {
-        $_SESSION['manage_users_csrf'] = bin2hex(random_bytes(32));
-    }
-
-    return (string)$_SESSION['manage_users_csrf'];
-}
-
-$csrfToken = manage_users_csrf_token();
+$csrfToken = smartlib_csrf_token('manage_users_csrf');
 
 $flash = ['type' => '', 'message' => ''];
 $openEditUserModal = false;
@@ -475,10 +477,12 @@ $openCreateUserModal = $_SERVER['REQUEST_METHOD'] === 'POST'
 if ($openEditUserModal) {
     $openCreateUserModal = false;
 }
+
+require 'layout_top.php';
 ?>
 
 <div class="page-top">
-    <h1>Manage Users</h1>
+    <h1 class="page-heading"><span class="page-icon" aria-hidden="true"><?= admin_icon('users') ?></span>Manage Users</h1>
     <button class="btn-primary" onclick="openUserModal()">+ Add User</button>
 </div>
 
@@ -490,24 +494,31 @@ if ($openEditUserModal) {
 
 <section class="stats-grid borrow-status-chips manage-users-chip-row">
     <?php foreach ($allChipMetrics as $chip): ?>
+        <?php $chipMeta = stat_chip_meta((string)($chip['title'] ?? '')); ?>
         <a href="<?= htmlspecialchars((string)($chip['href'] ?? '')) ?>" class="stat-card glass-card borrow-chip<?= !empty($chip['is_active']) ? ' is-active' : '' ?>">
-            <h3><?= htmlspecialchars((string)($chip['title'] ?? '')) ?></h3>
+            <div class="metric-head-row">
+                <span class="metric-icon-badge metric-icon-badge--<?= htmlspecialchars($chipMeta['accent']) ?>" aria-hidden="true"><?= admin_icon($chipMeta['icon']) ?></span>
+                <h3><?= htmlspecialchars((string)($chip['title'] ?? '')) ?></h3>
+            </div>
             <p class="value"><?= number_format((int)($chip['count'] ?? 0)) ?></p>
         </a>
     <?php endforeach; ?>
 </section>
 
-<section class="panel glass-card">
+<section class="filters-bar-panel">
     <form method="GET" class="filters-inline borrow-filters">
         <input type="hidden" name="status" value="<?= htmlspecialchars($statusFilter) ?>">
         <input type="hidden" name="role" value="<?= htmlspecialchars($roleFilter) ?>">
-        <input type="text" name="search" placeholder="Search name, ID, email" value="<?= htmlspecialchars($search) ?>">
+        <div class="search-field-wrap">
+            <span class="filters-search-icon" aria-hidden="true"><?= admin_icon('search') ?></span>
+            <input type="text" name="search" placeholder="Search name, ID, email" value="<?= htmlspecialchars($search) ?>">
+        </div>
         <button type="submit" class="btn-primary">Apply</button>
         <a href="manage_users.php" class="filter-reset-btn">Reset</a>
     </form>
 </section>
 
-<section class="panel glass-card">
+<section class="panel glass-card data-table-panel">
     <div class="table-wrap">
         <table class="data-table manage-users-table">
             <thead>
@@ -547,6 +558,10 @@ if ($openEditUserModal) {
                                 ? 'user-status-text user-status-active'
                                 : 'user-status-text user-status-inactive';
                             $statusLabel = ucfirst($rowStatus === '' ? 'inactive' : $rowStatus);
+                            $userDisplayName = trim((string)$u['first_name'] . ' ' . (string)$u['last_name']);
+                            if ($userDisplayName === '') {
+                                $userDisplayName = (string)($u['user_number'] ?? 'this user');
+                            }
                         ?>
                         <tr>
                             <td><?= intval($u['user_id']) ?></td>
@@ -569,7 +584,7 @@ if ($openEditUserModal) {
                                         <path d="m12.8 7.2 4.2 4.2"></path>
                                     </svg>
                                 </a>
-                                <form method="POST" class="row-action-form">
+                                <form method="POST" class="row-action-form user-status-confirm-form" data-user-action="<?= $u['status'] === 'active' ? 'deactivate' : 'activate' ?>" data-user-name="<?= htmlspecialchars($userDisplayName) ?>">
                                     <input type="hidden" name="toggle_user_status" value="<?= intval($u['user_id']) ?>">
                                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
                                     <button type="submit" class="btn-status user-toggle-btn user-action-icon-btn <?= $u['status'] === 'active' ? 'deactivate' : 'activate' ?>" aria-label="<?= $u['status'] === 'active' ? 'Deactivate user' : 'Activate user' ?>">
@@ -597,7 +612,7 @@ if ($openEditUserModal) {
 <div class="overlay-modal<?= $openCreateUserModal ? ' show' : '' ?>" id="userModal" aria-hidden="<?= $openCreateUserModal ? 'false' : 'true' ?>">
     <div class="overlay-card glass-card user-modal-card">
         <div class="panel-head">
-            <h2>Add User</h2>
+            <h2><span class="modal-icon" aria-hidden="true"><?= admin_icon('users') ?></span>Add User</h2>
             <button class="icon-close" type="button" onclick="closeUserModal()">&times;</button>
         </div>
 
@@ -623,7 +638,10 @@ if ($openEditUserModal) {
                 <option value="librarian">Librarian</option>
             </select>
 
-            <button type="submit" name="create_user" class="btn-primary form-submit">Create User</button>
+            <button type="submit" name="create_user" class="btn-primary form-submit modal-submit-btn">
+                <span class="modal-submit-icon" aria-hidden="true"><?= admin_icon('plus-circle') ?></span>
+                Create User
+            </button>
         </form>
     </div>
 </div>
@@ -843,6 +861,119 @@ window.addEventListener('click', function (e) {
         closeEditUserModal();
     }
 });
+</script>
+
+<div class="overlay-modal" id="userStatusConfirmModal" aria-hidden="true">
+    <div class="overlay-card glass-card confirm-modal-card" role="dialog" aria-modal="true" aria-labelledby="userStatusConfirmTitle" aria-describedby="userStatusConfirmText">
+        <button type="button" class="icon-close confirm-modal-close" id="userStatusConfirmCancel" aria-label="Cancel">&times;</button>
+        <div class="confirm-modal-header">
+            <span class="confirm-modal-icon" id="userStatusConfirmIcon" aria-hidden="true">!</span>
+            <div>
+                <h2 id="userStatusConfirmTitle">Confirm</h2>
+                <p id="userStatusConfirmText">Apply this change?</p>
+            </div>
+        </div>
+        <p class="confirm-modal-note" id="userStatusConfirmNote"></p>
+        <div class="confirm-modal-actions">
+            <button type="button" class="confirm-modal-confirm" id="userStatusConfirmSubmit">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const modal = document.getElementById('userStatusConfirmModal');
+    const iconEl = document.getElementById('userStatusConfirmIcon');
+    const titleEl = document.getElementById('userStatusConfirmTitle');
+    const textEl = document.getElementById('userStatusConfirmText');
+    const noteEl = document.getElementById('userStatusConfirmNote');
+    const cancelBtn = document.getElementById('userStatusConfirmCancel');
+    const submitBtn = document.getElementById('userStatusConfirmSubmit');
+    if (!modal || !iconEl || !titleEl || !textEl || !noteEl || !cancelBtn || !submitBtn) {
+        return;
+    }
+
+    const TONES = ['is-positive', 'is-warning', 'is-danger'];
+    const COPY = {
+        activate: {
+            title: 'Activate User',
+            icon: String.fromCharCode(0x2713),
+            note: 'The account regains sign-in and borrowing access.',
+            confirmLabel: 'Activate',
+            tone: 'is-positive'
+        },
+        deactivate: {
+            title: 'Deactivate User',
+            icon: '!',
+            note: 'The account loses sign-in and borrowing access until reactivated.',
+            confirmLabel: 'Deactivate',
+            tone: 'is-danger'
+        }
+    };
+
+    let pendingForm = null;
+
+    function setTone(el, tone) {
+        TONES.forEach(function (t) { el.classList.remove(t); });
+        el.classList.add(tone);
+    }
+
+    function closeModal() {
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+        pendingForm = null;
+    }
+
+    document.querySelectorAll('.user-status-confirm-form').forEach(function (formEl) {
+        formEl.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const action = formEl.dataset.userAction === 'deactivate' ? 'deactivate' : 'activate';
+            const copy = COPY[action];
+            const rawName = (formEl.dataset.userName || '').trim();
+            const label = rawName !== '' ? '"' + rawName + '"' : 'this user';
+
+            pendingForm = formEl;
+            titleEl.textContent = copy.title;
+            textEl.textContent = copy.title.replace('User', '') + label + '?';
+            noteEl.textContent = copy.note;
+            iconEl.textContent = copy.icon;
+            setTone(iconEl, copy.tone);
+            submitBtn.textContent = copy.confirmLabel;
+            setTone(submitBtn, copy.tone);
+
+            modal.classList.add('show');
+            modal.setAttribute('aria-hidden', 'false');
+            submitBtn.focus();
+        });
+    });
+
+    cancelBtn.addEventListener('click', closeModal);
+
+    submitBtn.addEventListener('click', function () {
+        if (!pendingForm) {
+            closeModal();
+            return;
+        }
+
+        const formToSubmit = pendingForm;
+        pendingForm = null;
+        closeModal();
+        formToSubmit.submit();
+    });
+
+    window.addEventListener('click', function (event) {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+
+    window.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && modal.classList.contains('show')) {
+            closeModal();
+        }
+    });
+}());
 </script>
 
 <?php require 'layout_bottom.php'; ?>

@@ -7,16 +7,35 @@ function esc(mysqli $conn, string $str): string {
 }
 
 function table_exists(mysqli $conn, string $table): bool {
-    $safe = $conn->real_escape_string($table);
-    $res = $conn->query("SHOW TABLES LIKE '{$safe}'");
-    return $res && $res->num_rows > 0;
+    // 2026-10-10: hardcoded against a known-good table list instead of
+    // querying information_schema. Live SHOW/information_schema lookups
+    // crash this MariaDB build while it's running in InnoDB emergency
+    // recovery mode (innodb_force_recovery=6) -- confirmed via repeated
+    // mysqld crash dumps, including on this exact kind of check. Every
+    // name below is confirmed present in smartlib_FULL_BACKUP_20261010.sql
+    // (taken moments before the corruption). Revert to a live query once
+    // the database has been rebuilt into a fresh data directory.
+    static $knownTables = [
+        'auth_2fa_challenges', 'auth_login_attempts', 'auth_pin_reset_tokens',
+        'books', 'book_categories', 'book_copies', 'book_embeddings',
+        'book_programs', 'borrow_records', 'categories',
+        'due_soon_reminder_logs', 'favorites', 'library_locations',
+        'library_users', 'notifications', 'overdue_reminder_logs',
+        'programs', 'recommendation_events', 'search_logs',
+        'admin_activity_logs',
+    ];
+    return in_array($table, $knownTables, true);
 }
 
 function column_exists(mysqli $conn, string $table, string $column): bool {
-    $safeTable = $conn->real_escape_string($table);
-    $safeColumn = $conn->real_escape_string($column);
-    $res = $conn->query("SHOW COLUMNS FROM `{$safeTable}` LIKE '{$safeColumn}'");
-    return $res && $res->num_rows > 0;
+    // 2026-10-10: see table_exists() above -- same reason, same fix.
+    static $knownColumns = [
+        'categories' => ['category_group'],
+        'books' => ['location_id', 'call_number', 'publisher', 'category_id', 'program_id'],
+        'library_locations' => ['class_code'],
+        'borrow_records' => ['renew_count', 'last_renewed_at'],
+    ];
+    return in_array($column, $knownColumns[$table] ?? [], true);
 }
 
 function normalize_search_term(string $raw): string {
@@ -81,8 +100,7 @@ $yearFromRaw = trim((string)($_GET['year_from'] ?? ''));
 $yearToRaw = trim((string)($_GET['year_to'] ?? ''));
 
 $hasCategoryGroup = false;
-$groupColRes = $conn->query("SHOW COLUMNS FROM categories LIKE 'category_group'");
-if ($groupColRes && $groupColRes->num_rows > 0) {
+if (column_exists($conn, 'categories', 'category_group')) {
     $hasCategoryGroup = true;
 }
 
@@ -204,16 +222,53 @@ $res = mysqli_query($conn, $sql);
 $resultCount = $res ? mysqli_num_rows($res) : 0;
 log_search_query($conn, $search, $resultCount);
 
+// Favorites: precompute the current user's favorited book_ids in one query
+// (instead of one lookup per row) so the heart icon on each card can render
+// pre-filled without an extra round trip. Guarded with table_exists() the
+// same way this file already guards other optional/newer tables, so a
+// database that hasn't run database/favorites_setup.sql yet just renders
+// every heart unfilled instead of a fatal error.
+$favoritedBookIds = [];
+$favoritesEnabled = table_exists($conn, 'favorites');
+$currentUserId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+
+if ($favoritesEnabled && $currentUserId > 0) {
+    $favStmt = $conn->prepare('SELECT book_id FROM favorites WHERE user_id = ?');
+    if ($favStmt) {
+        $favStmt->bind_param('i', $currentUserId);
+        $favStmt->execute();
+        $favRes = $favStmt->get_result();
+        while ($favRow = $favRes->fetch_assoc()) {
+            $favoritedBookIds[(int)$favRow['book_id']] = true;
+        }
+        $favStmt->close();
+    }
+}
+
 if ($res && $resultCount > 0) {
     while ($row = mysqli_fetch_assoc($res)) {
         $cover = !empty($row['cover']) ? 'assets/covers/' . $row['cover'] : 'assets/covers/default.jpg';
         $bookId = (int)($row['book_id'] ?? 0);
         $title = htmlspecialchars((string)($row['title'] ?? 'Untitled'));
         $author = htmlspecialchars((string)($row['author'] ?? 'Unknown Author'));
+        $isFavorited = isset($favoritedBookIds[$bookId]);
+        $heartHtml = '';
+
+        if ($favoritesEnabled) {
+            $favClass = $isFavorited ? ' is-favorited' : '';
+            $favPressed = $isFavorited ? 'true' : 'false';
+            $heartHtml = "
+            <button type='button' class='fav-heart-btn fav-heart-btn-grid{$favClass}' data-book-id='{$bookId}' aria-pressed='{$favPressed}' aria-label='Save to favorites'>
+                <svg class='fav-heart-icon' viewBox='0 0 24 24' aria-hidden='true'>
+                    <path d='M12 20.2s-7.2-4.6-10-9.2C0.3 8 1.4 4.6 4.6 3.5c2.1-0.7 4.3 0 5.6 1.7L12 7l1.8-1.8c1.3-1.7 3.5-2.4 5.6-1.7 3.2 1.1 4.3 4.5 2.6 7.5-2.8 4.6-10 9.2-10 9.2z'></path>
+                </svg>
+            </button>";
+        }
 
         echo "
         <div class='book-card' data-id='{$bookId}'>
             <img class='book-cover' src='{$cover}' alt='Book cover'>
+            {$heartHtml}
             <div class='book-meta'>
                 <div class='book-title'>{$title}</div>
                 <div class='book-subtitle'>{$author}</div>

@@ -1,0 +1,13 @@
+# Defense-in-depth: block direct HTTP access to file types that should
+# never be served, even if one ends up loose in the web root.
+<IfModule mod_authz_core.c>
+    <FilesMatch "\.(sql|bak|backup|zip|log|env)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "\.(sql|bak|backup|zip|log|env)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
