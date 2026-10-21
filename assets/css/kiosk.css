@@ -14153,3 +14153,417 @@ body {
 #search-view .filter-card.filter-core {
   background: linear-gradient(165deg, rgba(52, 108, 165, 0.9) 0%, rgba(35, 88, 140, 0.9) 100%) !important;
 }
+
+/* ============================================================
+   Kiosk Polish v188 (Subject/Genre Chips: Missing Icons)
+   ------------------------------------------------------------
+   v118 gave 8 of the 20 genre chips a line-icon; the other 12
+   (Arts, Education, English, History, Language Studies, Law /
+   Legal Studies, Mathematics, Natural Science, Philosophy,
+   Political Science, Religion, Social Science) were left with no
+   icon at all, so the chip row read as inconsistent -- some pills
+   differentiated at a glance, others not. Filling in the rest
+   using the exact same approach: inline SVG data-URI on ::before
+   (already styled by v118's shared `#search-view .chip::before`
+   rule), same viewBox/stroke/color so every chip now matches. */
+#search-view .chip[data-value="Arts"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eafff2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='5' width='16' height='14' rx='1.6'/%3E%3Cpath d='M5 15.5l4-4.5 3 3L17 9l2 2.5'/%3E%3C/svg%3E");
+}
+
+#search-view .chip[data-value="Education"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eafff2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4.5l9 4.3-9 4.3-9-4.3z'/%3E%3Cpath d='M7 10.8v3.9c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-3.9'/%3E%3C/svg%3E");
+}
+
+#search-view .chip[data-value="English"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eafff2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6.5h16v8.3H10l-3.5 3v-3H4z'/%3E%3C/svg%3E");
+}
+
+#search-view .chip[data-value="History"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eafff2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='13' r='7.3'/%3E%3Cpath d='M12 9.3v4l3 1.9'/%3E%3C/svg%3E");
+}
+
+#search-view .chip[data-value="Language Studies"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eafff2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 6.2h10v6h-3l-2.3 2V12.2h-4.7z'/%3E%3Cpath d='M20.5 10.3h-7v6h4.7v2L20.5 16.3z'/%3E%3C/svg%3E");
+}
+
+#search-view .chip[data-value="Law / Legal Studies"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eafff2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4v15M5 19h14M4 8h16'/%3E%3Ccircle cx='4' cy='11' r='2.1'/%3E%3Ccircle cx='20' cy='11' r='2.1'/%3E%3C/svg%3E");
+}
+
+#search-view .chip[data-value="Mathematics"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eafff2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 13l3 3 4-10'/%3E%3Cpath d='M11 6h8'/%3E%3C/svg%3E");
+}
+
+#search-view .chip[data-value="Natural Science"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eafff2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 5c-7 0-13 5-13 12 7 0 12-5 12-12z'/%3E%3Cpath d='M8 17c3-4 7-7 11-9'/%3E%3C/svg%3E");
+}
+
+#search-view .chip[data-value="Philosophy"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eafff2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 10.4a5 5 0 1 1 10 0c0 2.2-1.3 3.2-2 4.2-.4.6-.5 1.1-.5 1.8h-5c0-.7-.1-1.2-.5-1.8-.7-1-2-2-2-4.2z'/%3E%3Cpath d='M9.3 18.3h5.4M10.3 20.8h3.4'/%3E%3C/svg%3E");
+}
+
+#search-view .chip[data-value="Political Science"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eafff2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 3.5v17'/%3E%3Cpath d='M6 4.5h11l-2.5 3.5L17 11.5H6'/%3E%3C/svg%3E");
+}
+
+#search-view .chip[data-value="Religion"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eafff2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3.5c2 3 3.2 4.8 3.2 7.3a3.2 3.2 0 1 1-6.4 0C8.8 8.3 10 6.5 12 3.5z'/%3E%3Cpath d='M12 13.2v7'/%3E%3C/svg%3E");
+}
+
+#search-view .chip[data-value="Social Science"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eafff2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8.7' cy='8.2' r='2.6'/%3E%3Ccircle cx='16.3' cy='9.3' r='2.1'/%3E%3Cpath d='M3.3 19c0-3.2 2.5-5.3 5.4-5.3s5.4 2.1 5.4 5.3M14.6 19c0-2.4 1.7-4.1 3.9-4.1'/%3E%3C/svg%3E");
+}
+
+/* ============================================================
+   Kiosk Polish v189 (Sign-In Modal: PHINMA Blue, Matching Every
+   Other Surface)
+   ------------------------------------------------------------
+   v80 gave the sign-in modal a dark green/navy "glass" theme back
+   when the rest of the kiosk was still green too. Since then,
+   v163/v165/v172/v175/v176/v177 moved the header dock, search
+   view, account dropdown, genre/year toggle and year filters all
+   over to the one true "PHINMA Blue" family documented in v163
+   (panel: #2c60a0 / #1c4573 / #0d2a46, border rgba(140,185,235,.55),
+   glow rgba(58,122,200,.4) -- the same 3-stop blue as
+   #search-view .btn-login and #book-modal .find-book-btn's v163
+   revision). The sign-in modal never got that update and was the
+   last green surface left, clashing with the header's blue Sign
+   In button that opens it. Re-skins the panel + every inner
+   control to the same blue family -- colors/gradients/shadows
+   only, no layout or structure touched. */
+#account-modal .account-modal-panel {
+  background:
+    radial-gradient(130% 160% at 12% -8%, rgba(63, 124, 194, 0.35) 0%, rgba(13, 42, 70, 0) 55%),
+    linear-gradient(165deg, #2c60a0 0%, #1c4573 55%, #0d2a46 100%) !important;
+  border: 1px solid rgba(140, 185, 235, 0.55) !important;
+  box-shadow:
+    0 30px 64px rgba(2, 10, 20, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 0 30px rgba(58, 122, 200, 0.28) !important;
+}
+
+#account-modal .close-btn {
+  color: #eaf1ff !important;
+}
+
+#account-modal .modal-title {
+  color: #eef5ff !important;
+}
+
+#account-modal .modal-subtitle {
+  color: #b9d4f0 !important;
+}
+
+#account-modal .account-form > label {
+  color: #bcd4ef !important;
+}
+
+#account-modal .account-type-select strong {
+  color: #f2f8ff !important;
+}
+
+#account-modal .account-type-select .muted-sub {
+  color: #9fc2e6 !important;
+}
+
+#account-modal .account-type-leading-icon,
+#account-modal .chev-circle {
+  color: #dcebfc !important;
+}
+
+#account-modal .chev {
+  color: #dcebfc !important;
+}
+
+#account-modal .account-type-menu {
+  background: linear-gradient(180deg, rgba(28, 56, 88, 0.99) 0%, rgba(13, 42, 70, 0.99) 100%) !important;
+}
+
+#account-modal .account-type-option,
+#account-modal .account-type-option .option-title {
+  color: #e9f2ff !important;
+}
+
+#account-modal .account-type-option .option-sub {
+  color: #9fc2e6 !important;
+}
+
+#account-modal .account-type-option.active {
+  background: rgba(63, 124, 194, 0.3) !important;
+  border: 1px solid rgba(140, 185, 235, 0.55) !important;
+  color: #eaf1ff !important;
+}
+
+#account-modal .floating-label {
+  color: rgba(190, 212, 240, 0.78) !important;
+}
+
+#account-modal .floating-field-icon {
+  color: rgba(190, 212, 240, 0.82) !important;
+}
+
+#account-modal .floating-field input:focus {
+  border-color: rgba(100, 165, 225, 0.65) !important;
+  box-shadow: 0 0 0 3px rgba(63, 124, 194, 0.26),
+    0 5px 14px rgba(2, 10, 20, 0.3) !important;
+}
+
+#account-modal .floating-field:focus-within .floating-field-icon {
+  color: rgba(220, 235, 252, 1) !important;
+}
+
+#account-modal .primary-btn {
+  background: linear-gradient(180deg, #4f8ed1 0%, #2c60a0 30%, #1c4573 65%, #103456 100%) !important;
+  border: 1px solid rgba(160, 200, 240, 0.5) !important;
+  box-shadow:
+    0 18px 34px rgba(4, 16, 30, 0.42),
+    0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 -14px 22px rgba(0, 0, 0, 0.14) inset,
+    0 0 22px rgba(58, 122, 200, 0.4) !important;
+}
+
+#account-modal .primary-btn:hover {
+  box-shadow:
+    0 22px 40px rgba(4, 16, 30, 0.5),
+    0 1px 0 rgba(255, 255, 255, 0.46) inset,
+    0 -14px 22px rgba(0, 0, 0, 0.14) inset,
+    0 0 30px rgba(58, 122, 200, 0.52) !important;
+}
+
+#account-modal .signin-text-btn {
+  color: #9fc8f2 !important;
+}
+
+#account-modal .signin-text-btn:hover {
+  color: #cfe6ff !important;
+}
+
+
+
+
+/* Kiosk Polish v190 (Typing Placeholder: Blinking Caret)
+   Companion to filters.js's Kiosk Polish v160. The rotating placeholder
+   phrases in both search bars (#discover-search-input on the homepage,
+   #advanced-search-input on the search view) type and delete character by
+   character through the native `placeholder` attribute, which has no
+   built-in cursor -- caught mid-cycle (e.g. the "Loo" of "Look up a book
+   number or keyword...") it can read as stray leftover text rather than an
+   animation in progress. v160 adds a synthetic caret element (a
+   `<span class="typing-caret">`, one per input) and this styles it: a thin
+   vertical bar in the same soft mint already used for both search icons
+   (#bfe6cf -- .advanced-search-icon and the discover bar's baked-in SVG
+   stroke both converged on this exact color in v141's "same icon
+   language" pass), solid while the phrase is actively being typed or
+   deleted and blinking only while paused after a phrase finishes -- the
+   same distinction a real text cursor makes between moving and waiting.
+   One shared style for both bars since they're already deliberately
+   styled as the same control carrying through the view transition (v141).
+
+   Appended to <body> and positioned in document coordinates by v160's JS,
+   not nested inside the input's own wrapper -- #advanced-search-input's
+   wrapper (.top-search-card) has an ID-qualified rule
+   (#search-view .search-filters-top .top-search-card > * { position:
+   relative; ... }) that would otherwise outrank this class's
+   `position: absolute` and silently turn the caret into a stray flex
+   item. z-index: 20 only needs to clear ordinary page content sitting in
+   the root stacking context (the search header's own 5000 context is a
+   separate layer the caret never needs to beat, since they don't overlap
+   on screen); top/left are set to 0 here purely as a pre-JS fallback.
+
+   prefers-reduced-motion gets the same treatment as the rest of this
+   file's motion (v110, v141, etc.): the blink animation is dropped, but
+   the caret stays visible at a fixed, slightly dimmer opacity rather than
+   disappearing, so the typing is still legible without relying on a
+   flicker to read it. */
+
+.typing-caret {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  border-radius: 1px;
+  background: #bfe6cf;
+  box-shadow: 0 0 6px rgba(191, 230, 207, 0.6);
+  pointer-events: none;
+  z-index: 20;
+  opacity: 1;
+}
+
+.typing-caret.is-paused {
+  animation: kiosk-typing-caret-blink 1s step-end infinite;
+}
+
+@keyframes kiosk-typing-caret-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typing-caret.is-paused {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+
+
+
+/* Kiosk Polish v191 (My Books / My Favorites: True PHINMA Blue)
+   Direct ask: "My Favorites" and "My Books" (same modal, #my-books-modal,
+   just swapped by mode -- see filters.js openMyBooks()) should match the
+   current theme. They already went through a blue pass once (v165,
+   following the account dropdown's v163 blue-up), but v165 reused a
+   separate navy it had used before -- rgba(17,31,64)/rgba(28,69,115)/
+   rgba(19,45,78)/rgba(9,24,43) -- rather than the specific family v163
+   itself named "True PHINMA Blue" after sampling it directly from the
+   brand surfaces (Sign In button, Find This Book): the documented 3-stop
+   #2c60a0 / #1c4573 / #0d2a46 diagonal, border rgba(140,185,235,0.55),
+   glow rgba(58,122,200,0.4) -- same recipe the account dropdown (v163)
+   and this session's sign-in-modal retheme (v189) both use. Next to
+   those two, this modal's older navy reads a shade duller/darker and
+   noticeably lacks their outer blue glow, which is most of why it still
+   looked slightly "off" even though it was technically already blue.
+
+   This block only swaps colors to the exact flagship values -- no
+   layout/spacing changes from v150/v151/v159/v161/v165/v167. Three
+   groups, appended last so they win the cascade over v165's close-but-
+   not-quite navy without needing to hunt down every prior declaration:
+   1) Panel background/border/box-shadow -> the literal flagship recipe
+      (adds the glow v165's version never had).
+   2) Every near-white heading (title, account-head h4, section-head h5,
+      book-meta h4) -> #eef5ff, matching the sign-in modal's own title.
+   3) Every muted/secondary text color (subtitle, kicker, section-head
+      span, book-author, book-details, due-note, pager-info, favorite-
+      saved label, empty/loading state) -> the same two-tier pale-blue
+      pairing (#b9d4f0 / #eaf1ff / #9fc2e6) already used for the sign-in
+      modal's own labels and muted text, replacing the old rgba(220,
+      234,250,x) family with the documented hex values directly.
+
+   Left untouched on purpose, matching v165's own documented reasoning:
+   the overdue/missing status pills and due-note colors, the head-premium
+   avatar/kicker chips (id/role/program/fine -- a deliberate multi-color
+   badge system, not this modal's base theme), and the My Books/My
+   Favorites heading-icon badges (v167: gold and red/pink by design, so
+   two solid-blue badges don't read as redundant against an already-blue
+   panel). */
+
+#my-books-modal .my-books-modal-panel {
+  background:
+    radial-gradient(130% 160% at 12% -8%, rgba(63, 124, 194, 0.35) 0%, rgba(13, 42, 70, 0) 55%),
+    linear-gradient(165deg, #2c60a0 0%, #1c4573 55%, #0d2a46 100%) !important;
+  border: 1px solid rgba(140, 185, 235, 0.55) !important;
+  box-shadow:
+    0 30px 64px rgba(2, 10, 20, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 0 30px rgba(58, 122, 200, 0.28) !important;
+}
+
+@media (max-width: 760px) {
+  #my-books-modal .my-books-modal-panel {
+    background:
+      radial-gradient(130% 160% at 12% -8%, rgba(63, 124, 194, 0.35) 0%, rgba(13, 42, 70, 0) 55%),
+      linear-gradient(165deg, #2c60a0 0%, #1c4573 55%, #0d2a46 100%) !important;
+  }
+}
+
+#my-books-modal .my-books-title {
+  color: #eef5ff !important;
+}
+
+#my-books-modal .my-books-subtitle {
+  color: #b9d4f0 !important;
+}
+
+#my-books-modal #close-my-books-modal.close-btn {
+  color: #eaf1ff !important;
+}
+
+#my-books-modal .my-account-kicker {
+  color: #b9d4f0 !important;
+}
+
+#my-books-modal .my-account-head h4 {
+  color: #eef5ff !important;
+}
+
+#my-books-modal .my-account-section-head h5 {
+  color: #eef5ff !important;
+}
+
+#my-books-modal .my-account-section-head span {
+  color: #b9d4f0 !important;
+}
+
+#my-books-modal .my-book-meta h4 {
+  color: #eef5ff !important;
+}
+
+#my-books-modal .my-book-author {
+  color: #b9d4f0 !important;
+}
+
+#my-books-modal .my-book-details {
+  color: #eaf1ff !important;
+}
+
+#my-books-modal .my-book-due-note {
+  color: #9fc2e6 !important;
+}
+
+#my-books-modal .my-book-actions small {
+  color: #b9d4f0 !important;
+}
+
+#my-books-modal .my-books-pager-info {
+  color: #b9d4f0 !important;
+}
+
+.favorite-saved-label {
+  color: #b9d4f0 !important;
+}
+
+#my-books-modal .my-books-empty,
+#my-books-modal .my-books-loading {
+  color: #eaf1ff !important;
+}
+
+
+
+/* Kiosk Polish v192 (Book Location Guide: PHINMA Yellow)
+   Direct ask: the "How to Find This Book" guide icon and the 1-2-3 step
+   circles in the Book Location modal (#location-modal .loc-guide-icon /
+   .loc-step span) were still on the deep green (#1a7f50/#146b43/#105b38)
+   that v123 established as this kiosk's old "premium" accent, back before
+   the kiosk settled on its two real recurring accents: PHINMA Blue for
+   most surfaces (v163 onward) and PHINMA Yellow -- #ffde5c/#ffd400/#e8bd00,
+   sampled from the actual PHINMA logo's brand stripe -- for the handful of
+   surfaces deliberately meant to stand out against the blue (Active
+   Filters pill and selected genre chip from v135/v136, the Clear button
+   from v142, the book-details Check Out button from v152). This green was
+   the one circular badge left over from before that split happened.
+
+   Swaps both to the same PHINMA Yellow gradient/glow already used
+   everywhere else that accent appears, and switches their icon/number
+   color from white to the same warm dark-brown (#2f2815) those other
+   yellow surfaces use instead -- white reads as washed-out on a fill this
+   bright, the exact reason v135/v152 and friends made the same swap.
+   Also moves .loc-guide-card's own soft outer glow from the old green
+   tint to a matching yellow one, so the glow reads as coming from the
+   icon it surrounds rather than a leftover of the old color. */
+
+#location-modal .loc-guide-icon,
+#location-modal .loc-step span {
+  background: linear-gradient(135deg, #ffde5c 0%, #ffd400 55%, #e8bd00 100%) !important;
+  color: #2f2815 !important;
+}
+
+#location-modal .loc-guide-icon {
+  box-shadow: 0 4px 12px rgba(120, 90, 0, 0.4) !important;
+}
+
+#location-modal .loc-guide-card {
+  box-shadow: 0 8px 18px rgba(2, 16, 11, 0.3),
+    0 0 16px rgba(255, 212, 0, 0.22) !important;
+}

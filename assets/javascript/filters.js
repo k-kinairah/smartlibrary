@@ -200,6 +200,43 @@ document.addEventListener("DOMContentLoaded", () => {
         highlightActiveSuggestion();
     };
 
+    // Kiosk Polish v160 (Typing Placeholder: Blinking Caret)
+    // attachTypingPlaceholder (v57, extended v138/v139) types rotating
+    // phrases into the search bars' native `placeholder` attribute, which
+    // reads fine once a few characters are in, but has no visual tell that
+    // it IS mid-type -- text just appears/disappears with no cursor, so a
+    // glance at the kiosk mid-cycle (e.g. the "Loo" of "Look up a book
+    // number or keyword...") can look like stray leftover text rather than
+    // an animation in progress. A real <input> caret can't help here since
+    // the box is empty (no value, only placeholder), so this adds a
+    // synthetic one: a small span positioned over the input, repositioned
+    // on every simulated keystroke by measuring the current substring with
+    // a scratch <canvas> 2D context using the input's own live computed
+    // font, so it tracks the font-size's clamp()'d responsive changes
+    // without any hardcoded widths. It stays solid while characters are
+    // being added or removed and only blinks (.is-paused, styled in
+    // kiosk.css's companion v190) during the hold after a phrase finishes
+    // typing -- the same distinction a real text cursor makes between
+    // moving and waiting. It hides the instant there's real typed text,
+    // same as the placeholder itself.
+    //
+    // The caret is appended to <body> and positioned in document
+    // coordinates (getBoundingClientRect() + window.scrollX/Y), not as a
+    // child of the input's own wrapper. First attempt did append it inside
+    // the wrapper with `position: absolute`, which looked right in
+    // isolation but broke specifically on #advanced-search-input: its
+    // wrapper (.top-search-card) carries
+    // "#search-view .search-filters-top .top-search-card > * { position:
+    // relative; z-index: 1; }" from an earlier pass (an ID-qualified
+    // selector), which outranks a plain .typing-caret class rule and
+    // silently flipped `position: absolute` back to `relative` on the
+    // caret the instant it became a child of that card -- turning it into
+    // a stray flex item offset hundreds of pixels past the end of the bar
+    // instead of an overlay. Anchoring to <body> in document coordinates
+    // sidesteps that card's cascade entirely (verified against the live
+    // page: confirmed broken inside the wrapper, confirmed correct once
+    // moved to body-anchored coordinates) and also means no element needs
+    // position:relative set on it for this to work.
     function attachTypingPlaceholder(input, phrases, config = {}) {
         if (!input || !Array.isArray(phrases) || phrases.length === 0) return;
 
@@ -213,10 +250,54 @@ document.addEventListener("DOMContentLoaded", () => {
         let deleting = false;
         let timerId = null;
 
+        let caret = null;
+        let measureCtx = null;
+
+        const measureWidth = (text) => {
+            if (!measureCtx) {
+                measureCtx = document.createElement("canvas").getContext("2d");
+            }
+            const cs = getComputedStyle(input);
+            measureCtx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+            return measureCtx.measureText(text).width;
+        };
+
+        const ensureCaret = () => {
+            if (caret) return;
+            caret = document.createElement("span");
+            caret.className = "typing-caret";
+            caret.setAttribute("aria-hidden", "true");
+            document.body.appendChild(caret);
+        };
+
+        const positionCaret = (text) => {
+            if (!caret) return;
+            const inputRect = input.getBoundingClientRect();
+            const paddingLeft = parseFloat(getComputedStyle(input).paddingLeft) || 0;
+            const left = inputRect.left + window.scrollX + paddingLeft + measureWidth(text);
+            const top = inputRect.top + window.scrollY;
+            caret.style.left = `${Math.max(0, left)}px`;
+            caret.style.top = `${top}px`;
+            caret.style.height = `${inputRect.height}px`;
+        };
+
+        const showCaret = (text, paused) => {
+            ensureCaret();
+            if (!caret) return;
+            caret.style.display = "";
+            caret.classList.toggle("is-paused", !!paused);
+            positionCaret(text);
+        };
+
+        const hideCaret = () => {
+            if (caret) caret.style.display = "none";
+        };
+
         const tick = () => {
             const activeValue = (input.value || "").trim();
             if (activeValue !== "") {
                 input.setAttribute("placeholder", "");
+                hideCaret();
                 timerId = null;
                 return;
             }
@@ -225,20 +306,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (!deleting) {
                 charIndex = Math.min(charIndex + 1, phrase.length);
-                input.setAttribute("placeholder", phrase.slice(0, charIndex));
+                const shown = phrase.slice(0, charIndex);
+                input.setAttribute("placeholder", shown);
 
                 if (charIndex >= phrase.length) {
                     deleting = true;
+                    showCaret(shown, true);
                     timerId = window.setTimeout(tick, phrasePause);
                     return;
                 }
 
+                showCaret(shown, false);
                 timerId = window.setTimeout(tick, typeDelay + Math.floor(Math.random() * 30));
                 return;
             }
 
             charIndex = Math.max(charIndex - 1, 0);
-            input.setAttribute("placeholder", phrase.slice(0, charIndex));
+            const shown = phrase.slice(0, charIndex);
+            input.setAttribute("placeholder", shown);
+            showCaret(shown, false);
 
             if (charIndex === 0) {
                 deleting = false;
@@ -264,6 +350,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             input.setAttribute("placeholder", "");
+            hideCaret();
         });
 
         input.addEventListener("blur", () => {
@@ -272,22 +359,50 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
+        window.addEventListener("resize", () => {
+            if (caret && caret.style.display !== "none") {
+                positionCaret(phrases[phraseIndex] ? phrases[phraseIndex].slice(0, charIndex) : "");
+            }
+        });
+
         ensureRunning();
     }
 
+    // Kiosk Polish v161 (Typing Placeholder: Content Refresh)
+    // The original phrase lists (v57) leaned on generic instructional
+    // copy -- "Search the shelves by author name...", "Try: Criminology,
+    // Marketing, or Psychology..." -- which reads like UI help text rather
+    // than something a student would actually be looking for. Rewritten to
+    // sound like real reasons someone taps into this search: a thesis/
+    // research reference, required reading for a class, a specific author
+    // or subject, matched against this catalog's real subject taxonomy
+    // (the same 20 genre names behind the filter chips -- Health &
+    // Nursing, Criminology & Public Safety, Business & Management, etc.,
+    // shortened here the same casual way the old copy already did for
+    // "nursing"/"cybercrime") and two real, currently-popular titles/
+    // authors confirmed live on the homepage's own "Most Borrowed"/"Most
+    // Searched" panels (Earl Babbie's "Research Methods in the Social
+    // Sciences", Thomas H. Cormen's "Introduction to Algorithms") rather
+    // than invented examples. The discover bar also now mentions the
+    // catalog's real size (2,000+ books) instead of a vague "our library".
+    // Still five and six phrases respectively (plus one net-new each) --
+    // only the wording changed, none of attachTypingPlaceholder's timing
+    // or caret logic (v160) was touched.
     attachTypingPlaceholder(discoverSearchInput, [
         "Find a book you will actually finish...",
         "Search our library by title or author...",
-        "Try a topic like business, nursing, or cybercrime...",
-        "Discover your next favorite read..."
+        "Explore subjects like Nursing, Criminology, or Business...",
+        "Discover your next favorite read...",
+        "Search over 2,000 books in seconds..."
     ]);
 
     attachTypingPlaceholder(advancedSearchInput, [
         "Find a title in seconds...",
-        "Search the shelves by author name...",
         "Look up a book number or keyword...",
-        "Try: Criminology, Marketing, or Psychology...",
-        "Search our library like a librarian..."
+        "Search by subject, like Nursing or Criminology...",
+        "Need sources for your thesis? Try research methods...",
+        "Search by author, like Earl Babbie or Thomas Cormen...",
+        "Looking for required reading? Just search the title..."
     ]);
 
     // Kiosk Polish v138 (Discover <-> Search: Fade+Slide View Transition)

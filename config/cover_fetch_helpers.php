@@ -283,8 +283,29 @@ function fbc_google_cover_url_variants(string $url): array {
 }
 
 /**
- * Prints Google's actual HTTP status + response body to STDERR, once per run
- * (not once per book), the first time a 429/403 is hit. This is diagnostic
+ * Writes a diagnostic line to STDERR when running under the CLI SAPI (the
+ * only SAPI where the STDERR constant actually exists), or to the PHP error
+ * log otherwise. These fbc_try_google_* functions are called both from the
+ * CLI nightly job (tools/fetch_book_covers.php) and from HTTP requests --
+ * admin/manage_books.php's single-book "fetch cover now" / "re-fetch cover"
+ * actions, and (reusing these same Google-quota helpers)
+ * tools/fetch_book_descriptions.php's HTTP-driven equivalent. Writing to
+ * STDERR unconditionally used to throw "Undefined constant STDERR" and fatal
+ * the whole request the first time a web-triggered call actually hit a
+ * 429/403 and reached this logging path -- this guard fixes that for every
+ * caller, not just the one that happened to hit it first.
+ */
+function fbc_log_line(string $msg): void {
+    if (defined('STDERR')) {
+        fwrite(STDERR, $msg);
+    } else {
+        error_log(rtrim($msg, "\r\n"));
+    }
+}
+
+/**
+ * Prints Google's actual HTTP status + response body, once per run (not
+ * once per book), the first time a 429/403 is hit. This is diagnostic
  * only -- it exists to tell apart a transient burst-rate 429 (slow down and
  * retry later) from a hard 403 (e.g. "API key required", a policy change, or
  * a block) that no amount of waiting will fix. Safe to remove once the real
@@ -296,8 +317,8 @@ function fbc_log_google_diagnostic_once(int $status, string $body, string $url):
         return;
     }
     $printed = true;
-    fwrite(STDERR, PHP_EOL . '  [diagnostic] Google Books returned HTTP ' . $status . ' for: ' . $url . PHP_EOL);
-    fwrite(STDERR, '  [diagnostic] Response body (first 500 chars): ' . substr($body, 0, 500) . PHP_EOL . PHP_EOL);
+    fbc_log_line(PHP_EOL . '  [diagnostic] Google Books returned HTTP ' . $status . ' for: ' . $url . PHP_EOL);
+    fbc_log_line('  [diagnostic] Response body (first 500 chars): ' . substr($body, 0, 500) . PHP_EOL . PHP_EOL);
 }
 
 /** Prints once: a Google Books request that failed at the connection level (DNS,
@@ -310,8 +331,8 @@ function fbc_log_google_connection_error_once(int $curlErrno, string $curlError,
         return;
     }
     $printed = true;
-    fwrite(STDERR, PHP_EOL . '  [diagnostic] Google Books request FAILED to connect (curl errno ' . $curlErrno . '): ' . $curlError . PHP_EOL);
-    fwrite(STDERR, '  [diagnostic] URL: ' . $url . PHP_EOL . PHP_EOL);
+    fbc_log_line(PHP_EOL . '  [diagnostic] Google Books request FAILED to connect (curl errno ' . $curlErrno . '): ' . $curlError . PHP_EOL);
+    fbc_log_line('  [diagnostic] URL: ' . $url . PHP_EOL . PHP_EOL);
 }
 
 // How long to stop bothering Google after a 429/403, before trying it again.
@@ -383,10 +404,10 @@ function fbc_log_google_daily_quota_once(int $resetAtUnix): void {
     $printed = true;
     $pacific = (new DateTime('@' . $resetAtUnix))->setTimezone(new DateTimeZone('America/Los_Angeles'));
     $utc = (new DateTime('@' . $resetAtUnix))->setTimezone(new DateTimeZone('UTC'));
-    fwrite(STDERR, PHP_EOL . "  [diagnostic] Google says the DAY's quota is exhausted (not a short burst limit) --" . PHP_EOL);
-    fwrite(STDERR, '  retrying sooner will not help. Resets daily at midnight Pacific Time: ' . $pacific->format('Y-m-d H:i T') . ' (' . $utc->format('Y-m-d H:i T') . ').' . PHP_EOL);
-    fwrite(STDERR, '  Google Books will be skipped for free (no HTTP calls) until then -- re-run after that time' . PHP_EOL);
-    fwrite(STDERR, '  to pick up any books still missing a cover.' . PHP_EOL . PHP_EOL);
+    fbc_log_line(PHP_EOL . "  [diagnostic] Google says the DAY's quota is exhausted (not a short burst limit) --" . PHP_EOL);
+    fbc_log_line('  retrying sooner will not help. Resets daily at midnight Pacific Time: ' . $pacific->format('Y-m-d H:i T') . ' (' . $utc->format('Y-m-d H:i T') . ').' . PHP_EOL);
+    fbc_log_line('  Google Books will be skipped for free (no HTTP calls) until then -- re-run after that time' . PHP_EOL);
+    fbc_log_line('  to pick up any books still missing a cover.' . PHP_EOL . PHP_EOL);
 }
 
 /** Try a Google Books ISBN lookup. Returns image bytes+ext, ['no_cover_for_match'=>true,...], ['rate_limited'=>true], or null. */
