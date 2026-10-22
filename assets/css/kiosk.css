@@ -14668,3 +14668,62 @@ body {
     transition: none;
   }
 }
+
+/* Search Results heading: same label style as "Active filters:"
+   "Search Results" was styled as a headline (26px with a mint glow and a
+   20px glowing icon from v133), so it competed with the view's real
+   headline ("Find What You're Looking For") instead of labelling the grid.
+   Its row has the same structure as the Active filters row in the card
+   above (icon + bold label on the left, a small pill on the right), so it
+   now uses that label's exact treatment: 16px/700, the same mint (#bfe6cf),
+   no glow, a 15px stroke icon at 0.9 opacity and a 7px gap. Only the glyph
+   differs (magnifier instead of funnel). */
+#search-view .results-head .section-title {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  letter-spacing: normal !important;
+  color: #bfe6cf !important;
+  text-shadow: none !important;
+  gap: 7px !important;
+}
+
+#search-view .results-head .section-title::before {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23bfe6cf' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='M20 20l-4.6-4.6'/%3E%3C/svg%3E");
+  filter: none;
+  opacity: 0.9;
+}
+
+/* Result count as plain status text, not a pill
+   The v132 pill (rounded, bordered, tinted) looked like every clickable
+   thing in this view (genre chips, Clear, the year tabs), so a static count
+   read as a control. It's now plain muted text, still right-aligned
+   opposite the "Search Results" label, in the same muted mint as the
+   view's other secondary labels (#9cceb2, the filter-label color). */
+#search-view #results-count {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: normal !important;
+  color: #9cceb2 !important;
+  text-shadow: none !important;
+}
+
+/* Zero-results message ("No books found." from fetch_books.php)
+   It had no class and inherited a dark text color from the old light
+   theme, so on the dark search background it was nearly invisible. Same
+   muted-mint secondary-text treatment as the result count beside the
+   heading, spanning the full grid row. */
+#search-view .book-grid .no-results {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 10px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #9cceb2;
+}

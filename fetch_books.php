@@ -276,6 +276,6 @@ if ($res && $resultCount > 0) {
         </div>";
     }
 } else {
-    echo "<p style='padding:10px;'>No books found.</p>";
+    echo "<p class='no-results'>No books found.</p>";
 }
 ?>

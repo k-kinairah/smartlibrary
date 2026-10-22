@@ -654,11 +654,18 @@ document.addEventListener("DOMContentLoaded", () => {
     function updateResultCount() {
         if (!resultsCount || !bookGrid) return;
         const found = bookGrid.querySelectorAll(".book-card").length;
+        const isFiltered = buildParams().toString() !== "";
+        const fmt = n => n.toLocaleString("en-US");
 
-        if (totalBooks > 0) {
-            resultsCount.textContent = `Found ${found} of ${totalBooks} books`;
+        // "2,031 books" when nothing is filtered (an "X of X" count is just
+        // noise), "188 of 2,031 books" when a search/genre/year narrows it,
+        // and "No matches" for an empty result.
+        if (found === 0 && isFiltered) {
+            resultsCount.textContent = "No matches";
+        } else if (isFiltered && totalBooks > 0) {
+            resultsCount.textContent = `${fmt(found)} of ${fmt(totalBooks)} books`;
         } else {
-            resultsCount.textContent = `Found ${found} books`;
+            resultsCount.textContent = `${fmt(found)} ${found === 1 ? "book" : "books"}`;
         }
     }
 
