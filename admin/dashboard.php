@@ -690,59 +690,61 @@ if ($coursePopularityRes && $coursePopularityRes->num_rows > 0) {
 // had no way to tell. Keep this panel's copy honest about being a simple
 // circulation-leaders stat, not a recommendation engine.
 $recommendationCards = [];
-if (!empty($courseLabels)) {
-    $courseBestBookRes = safe_query(
-        $conn,
-        "
-        SELECT
-            p.program_name,
-            COALESCE(b.title, '') AS title,
-            COUNT(br.record_id) AS borrow_count,
-            MAX(COALESCE(br.date_borrowed, DATE(br.created_at))) AS last_borrow,
-            MAX(b.created_at) AS latest_added
-        FROM programs p
-        INNER JOIN books b ON b.program_id = p.program_id
-        LEFT JOIN book_copies bc ON bc.book_id = b.book_id
-        LEFT JOIN borrow_records br ON br.copy_id = bc.copy_id
-        GROUP BY p.program_id, p.program_name, b.book_id, b.title
-        ORDER BY p.program_name ASC, borrow_count DESC, last_borrow DESC, latest_added DESC, b.title ASC
-        "
-    );
+// Per-book borrow counts for every program with at least one checkout.
+// Accuracy notes: titles that share the top count are reported as a tie
+// rather than one being silently picked as "the" leader; programs with
+// no borrows get no card (a 0-borrow "top pick" means nothing); every
+// active program is shown instead of stopping at six; and each card
+// carries the program's total so "4 borrows" has context. Program
+// membership is the book's primary program (books.program_id), the same
+// basis as the Course Popularity / Activity charts above.
+$courseBestBookRes = safe_query(
+    $conn,
+    "
+    SELECT
+        p.program_name,
+        b.book_id,
+        COALESCE(b.title, '') AS title,
+        COUNT(br.record_id) AS borrow_count,
+        MAX(COALESCE(br.date_borrowed, DATE(br.created_at))) AS last_borrow
+    FROM programs p
+    INNER JOIN books b ON b.program_id = p.program_id
+    INNER JOIN book_copies bc ON bc.book_id = b.book_id
+    INNER JOIN borrow_records br ON br.copy_id = bc.copy_id
+    GROUP BY p.program_id, p.program_name, b.book_id, b.title
+    ORDER BY p.program_name ASC, borrow_count DESC, last_borrow DESC, b.title ASC
+    "
+);
 
-    $bestByProgram = [];
-    if ($courseBestBookRes && $courseBestBookRes->num_rows > 0) {
-        while ($row = $courseBestBookRes->fetch_assoc()) {
-            $program = trim((string)($row['program_name'] ?? ''));
-            $title = trim((string)($row['title'] ?? ''));
-            if ($program === '' || $title === '' || isset($bestByProgram[$program])) {
-                continue;
-            }
-
-            $bestByProgram[$program] = [
-                'title' => $title,
-                'borrow_count' => (int)($row['borrow_count'] ?? 0)
-            ];
-        }
-    }
-
-    for ($i = 0; $i < count($courseLabels); $i++) {
-        $program = $courseLabels[$i];
-        if (!isset($bestByProgram[$program])) {
+$programBooks = [];
+if ($courseBestBookRes && $courseBestBookRes->num_rows > 0) {
+    while ($row = $courseBestBookRes->fetch_assoc()) {
+        $program = trim((string)($row['program_name'] ?? ''));
+        $title = trim((string)($row['title'] ?? ''));
+        $count = (int)($row['borrow_count'] ?? 0);
+        if ($program === '' || $title === '' || $count <= 0) {
             continue;
         }
-
-        $bookInfo = $bestByProgram[$program];
-        $recommendationCards[] = [
-            'program_name' => $program,
-            'title' => (string)$bookInfo['title'],
-            'borrow_count' => (int)$bookInfo['borrow_count']
-        ];
-
-        if (count($recommendationCards) >= 6) {
-            break;
-        }
+        $programBooks[$program][] = ['title' => $title, 'borrow_count' => $count];
     }
 }
+
+foreach ($programBooks as $program => $books) {
+    $topCount = $books[0]['borrow_count'];
+    $leaders = array_values(array_filter($books, fn($bk) => $bk['borrow_count'] === $topCount));
+    $recommendationCards[] = [
+        'program_name' => $program,
+        'title' => (string)$leaders[0]['title'],
+        'borrow_count' => $topCount,
+        'tied_titles' => array_map(fn($bk) => (string)$bk['title'], array_slice($leaders, 1)),
+        'program_borrows' => array_sum(array_column($books, 'borrow_count')),
+        'titles_borrowed' => count($books)
+    ];
+}
+
+usort($recommendationCards, fn($x, $y) => $y['program_borrows'] <=> $x['program_borrows']
+    ?: $y['borrow_count'] <=> $x['borrow_count']
+    ?: strcmp($x['program_name'], $y['program_name']));
 
 if (empty($recommendationCards) && !empty($mostBorrowedRows)) {
     foreach (array_slice($mostBorrowedRows, 0, 4) as $row) {
@@ -1020,7 +1022,7 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
             <div class="panel-head">
                 <div>
                     <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('layers') ?></span>Books per Course Popularity</h2>
-                    <p class="panel-sub">Stacked bar chart: borrowed titles vs not-yet-borrowed titles per course</p>
+                    <p class="panel-sub">Titles per course (bar length) and how many have been borrowed at least once</p>
                 </div>
             </div>
             <div id="course-popularity-stacked-chart" class="chart-shell"></div>
@@ -1042,22 +1044,43 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
         <div>
             <div class="recommendation-kicker">Circulation Leaders</div>
             <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('books') ?></span>Top Borrowed Book per Program</h2>
-            <p class="panel-sub">The single most-borrowed title in each active program, by all-time checkout count</p>
+            <p class="panel-sub">The most-borrowed title in each program with checkouts, by all-time borrow count (ties shown)</p>
         </div>
         <div class="recommendation-chip">Basis: All-Time Borrow Count</div>
     </div>
 
-    <div class="recommendation-grid">
+    <div class="recommendation-grid" style="--rec-cols: <?= count($recommendationCards) <= 4 ? max(1, count($recommendationCards)) : (count($recommendationCards) <= 6 ? 3 : 4) ?>;">
         <?php if (!empty($recommendationCards)): ?>
             <?php foreach ($recommendationCards as $card): ?>
-                <?php $borrowCount = (int)($card['borrow_count'] ?? 0); ?>
-                <article class="recommendation-card">
-                    <div class="recommendation-card-top">
-                        <div class="recommendation-course">Top pick in <?= htmlspecialchars($card['program_name']) ?></div>
+                <?php
+                    $borrowCount = (int)($card['borrow_count'] ?? 0);
+                    $programBorrows = (int)($card['program_borrows'] ?? 0);
+                    $tiedTitles = (array)($card['tied_titles'] ?? []);
+                    $tieCount = count($tiedTitles);
+                    $sharePct = $programBorrows > 0 ? (int)round($borrowCount / $programBorrows * 100) : 0;
+                ?>
+                <article class="recommendation-card<?= $tieCount > 0 ? ' is-tied' : '' ?>">
+                    <div class="recommendation-course"><?= htmlspecialchars($card['program_name']) ?></div>
+                    <div class="recommendation-title" title="<?= htmlspecialchars($card['title']) ?>"><?= htmlspecialchars($card['title']) ?></div>
+                    <?php if ($tieCount > 0): ?>
+                        <div class="recommendation-tie" title="<?= htmlspecialchars('Also ' . number_format($borrowCount) . ' borrow' . ($borrowCount === 1 ? '' : 's') . ': ' . implode('; ', $tiedTitles)) ?>">
+                            Tied with <?= $tieCount ?> other title<?= $tieCount === 1 ? '' : 's' ?>:
+                            <span><?= htmlspecialchars(implode(' · ', $tiedTitles)) ?></span>
+                        </div>
+                    <?php endif; ?>
+                    <div class="recommendation-stats">
+                        <div class="recommendation-count"><strong><?= number_format($borrowCount) ?></strong> borrow<?= $borrowCount === 1 ? '' : 's' ?></div>
+                        <?php if ($programBorrows > 0): ?>
+                            <div class="recommendation-share">
+                                <?php if ($programBorrows === 1): ?>
+                                    Only borrow in this program so far
+                                <?php else: ?>
+                                    <?= $sharePct ?>% of <?= number_format($programBorrows) ?> program borrows
+                                <?php endif; ?>
+                            </div>
+                            <div class="recommendation-share-bar" aria-hidden="true"><span style="width: <?= $sharePct ?>%;"></span></div>
+                        <?php endif; ?>
                     </div>
-                    <div class="recommendation-title"><?= htmlspecialchars($card['title']) ?></div>
-                    <div class="recommendation-reason">The most-borrowed title in this program, all-time.</div>
-                    <div class="recommendation-meta"><?= number_format($borrowCount) ?> total borrow<?= $borrowCount === 1 ? '' : 's' ?></div>
                 </article>
             <?php endforeach; ?>
         <?php else: ?>

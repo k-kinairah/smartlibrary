@@ -1464,10 +1464,7 @@ require 'layout_top.php';
                                     class="btn-status user-pin-btn user-action-icon-btn"
                                     href="?edit=<?= $bookId ?>"
                                     aria-label="Update book">
-                                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                                        <path d="M4 20h4.2l9.7-9.7-4.2-4.2L4 15.8V20Z"></path>
-                                        <path d="m12.8 7.2 4.2 4.2"></path>
-                                    </svg>
+                                    <?= admin_icon('square-pen') ?>
                                 </a>
                                 <form method="POST" class="row-action-form delete-book-form" data-book-title="<?= htmlspecialchars((string)($row['title'] ?? 'Book')) ?>">
                                     <input type="hidden" name="delete_book" value="1">
@@ -1477,13 +1474,7 @@ require 'layout_top.php';
                                         type="submit"
                                         class="manage-book-icon-btn delete"
                                         aria-label="Delete book">
-                                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                                            <path d="M4 7h16"></path>
-                                            <path d="M9 7V5h6v2"></path>
-                                            <path d="M7.6 7l.8 12h7.2l.8-12"></path>
-                                            <path d="M10 11v5"></path>
-                                            <path d="M14 11v5"></path>
-                                        </svg>
+                                        <?= admin_icon('trash-2') ?>
                                     </button>
                                 </form>
                             </td>
@@ -1690,7 +1681,7 @@ require 'layout_top.php';
 <div class="overlay-modal show" id="editBookModal" aria-hidden="false">
     <div class="overlay-card glass-card edit-book-modal-card">
         <div class="panel-head">
-            <h2>Edit Book</h2>
+            <h2><span class="modal-icon" aria-hidden="true"><?= admin_icon('edit') ?></span>Edit Book</h2>
             <a class="icon-close" href="manage_books.php" aria-label="Close">&times;</a>
         </div>
 
@@ -1699,141 +1690,194 @@ require 'layout_top.php';
             $editBookIdForCover = (int)($editForm['book_id'] ?? 0);
             $editCoverIsExcluded = array_key_exists($editBookIdForCover, EXCLUDED_BOOK_IDS);
         ?>
-        <style>
-            .book-cover-panel { display: flex; gap: 16px; align-items: flex-start; padding: 10px 2px 14px; border-bottom: 1px solid rgba(201, 224, 210, 0.2); margin-bottom: 10px; flex-wrap: wrap; }
-            .book-cover-preview { flex: 0 0 auto; width: 110px; }
-            .book-cover-thumb-img { width: 110px; height: 160px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(201, 224, 210, 0.3); display: block; }
-            .book-cover-thumb-placeholder { width: 110px; height: 160px; border-radius: 8px; border: 1px dashed rgba(201, 224, 210, 0.4); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 12px; opacity: 0.75; padding: 6px; }
-            .book-cover-actions { flex: 1 1 220px; display: flex; flex-direction: column; gap: 8px; min-width: 200px; }
-            .book-cover-mini-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0; }
-            .book-cover-mini-form input[type="file"] { max-width: 180px; font-size: 12px; }
-            .book-cover-flash { margin: 0; padding: 6px 10px; border-radius: 8px; font-size: 13px; font-weight: 600; }
-            .book-cover-flash-success { background: rgba(68, 148, 96, 0.2); color: #e7fff0; border: 1px solid rgba(84, 188, 123, 0.45); }
-            .book-cover-flash-error { background: rgba(150, 57, 57, 0.22); color: #ffe6e6; border: 1px solid rgba(233, 113, 113, 0.45); }
-            .book-cover-caution { margin: 0; padding: 6px 10px; border-radius: 8px; font-size: 12px; background: rgba(214, 171, 58, 0.18); border: 1px solid rgba(214, 171, 58, 0.4); color: #ffe9b3; }
-        </style>
-        <div class="book-cover-panel">
-            <div class="book-cover-preview">
-                <?php if ($editCoverFilename !== ''): ?>
-                    <img src="../assets/covers/<?= htmlspecialchars($editCoverFilename) ?>?v=<?= time() ?>" alt="Current cover for this book" class="book-cover-thumb-img">
-                <?php else: ?>
-                    <div class="book-cover-thumb-placeholder">No cover yet</div>
-                <?php endif; ?>
-            </div>
+        <!-- Cover actions are their own POST forms; HTML can't nest forms, so
+             their visible controls live in the Cover section below and attach
+             back to these through the form="" attribute. -->
+        <form method="POST" id="editCoverUploadForm" enctype="multipart/form-data" hidden>
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+            <input type="hidden" name="book_id" value="<?= $editBookIdForCover ?>">
+        </form>
+        <form method="POST" id="editCoverRefetchForm" hidden onsubmit="return confirm('Look for a new cover for this book? This will replace the current cover if a match is found.');">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+            <input type="hidden" name="book_id" value="<?= $editBookIdForCover ?>">
+        </form>
+        <?php if ($editCoverFilename !== ''): ?>
+            <form method="POST" id="editCoverClearForm" hidden onsubmit="return confirm(&quot;Clear this book's cover? The nightly job will try to find a replacement automatically.&quot;);">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                <input type="hidden" name="book_id" value="<?= $editBookIdForCover ?>">
+            </form>
+        <?php endif; ?>
 
-            <div class="book-cover-actions">
-                <?php if (($coverFlash['message'] ?? '') !== ''): ?>
-                    <p class="book-cover-flash book-cover-flash-<?= ($coverFlash['status'] ?? '') === 'ok' ? 'success' : 'error' ?>">
-                        <?= htmlspecialchars((string)$coverFlash['message']) ?>
-                    </p>
-                <?php endif; ?>
-
-                <?php if ($editCoverIsExcluded): ?>
-                    <p class="book-cover-caution">Heads up: automated lookups have returned the wrong image for this book before. Check any re-fetched result carefully, or upload the correct cover yourself.</p>
-                <?php endif; ?>
-
-                <form method="POST" class="book-cover-mini-form" enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
-                    <input type="hidden" name="book_id" value="<?= $editBookIdForCover ?>">
-                    <input type="file" name="cover_image" accept="image/jpeg,image/png" required>
-                    <button type="submit" name="upload_cover" class="btn-status">Upload cover</button>
-                </form>
-
-                <form method="POST" class="book-cover-mini-form" onsubmit="return confirm('Look for a new cover for this book? This will replace the current cover if a match is found.');">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
-                    <input type="hidden" name="book_id" value="<?= $editBookIdForCover ?>">
-                    <button type="submit" name="refetch_cover" class="btn-status">Re-fetch cover</button>
-                </form>
-
-                <?php if ($editCoverFilename !== ''): ?>
-                    <form method="POST" class="book-cover-mini-form" onsubmit="return confirm(&quot;Clear this book's cover? The nightly job will try to find a replacement automatically.&quot;);">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
-                        <input type="hidden" name="book_id" value="<?= $editBookIdForCover ?>">
-                        <button type="submit" name="clear_cover" class="btn-status deactivate">Clear cover</button>
-                    </form>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <form method="POST" class="form-grid book-form-grid edit-book-form-grid">
+        <form method="POST" class="form-grid edit-book-layout">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
             <input type="hidden" name="book_id" value="<?= intval($editForm['book_id'] ?? 0) ?>">
             <input type="hidden" id="editCurrentCopyCount" value="<?= intval($editCopyTotal) ?>">
 
-            <div class="book-form-col book-form-col-inputs">
-                <input type="text" name="title" placeholder="Title" required value="<?= htmlspecialchars((string)($editForm['title'] ?? '')) ?>">
-                <input type="text" name="isbn" placeholder="ISBN" value="<?= htmlspecialchars((string)($editForm['isbn'] ?? '')) ?>">
-                <input type="text" name="author" placeholder="Author" value="<?= htmlspecialchars((string)($editForm['author'] ?? '')) ?>">
-                <input type="text" name="publisher" placeholder="Publisher" value="<?= htmlspecialchars((string)($editForm['publisher'] ?? '')) ?>">
-                <input type="number" name="year_published" placeholder="Year" min="1900" max="2100" value="<?= htmlspecialchars((string)($editForm['year_published'] ?? '')) ?>">
-                <input type="text" name="call_number" placeholder="Call Number" required value="<?= htmlspecialchars((string)($editForm['call_number'] ?? '')) ?>">
-            </div>
+            <section class="edit-book-section edit-book-section-cover">
+                <h3 class="edit-book-section-title">Cover</h3>
+                <div class="book-cover-preview">
+                    <?php if ($editCoverFilename !== ''): ?>
+                        <img src="../assets/covers/<?= htmlspecialchars($editCoverFilename) ?>?v=<?= time() ?>" alt="Current cover for this book" class="book-cover-thumb-img">
+                    <?php else: ?>
+                        <div class="book-cover-thumb-placeholder">No cover yet</div>
+                    <?php endif; ?>
+                </div>
 
-            <div class="book-form-col book-form-col-selects">
-                <select name="category_id">
-                    <option value="">Select Category</option>
-                    <?php foreach ($categoryOptions as $categoryOption): ?>
-                        <?php $cid = (int)($categoryOption['category_id'] ?? 0); ?>
-                        <option value="<?= $cid ?>" <?= (int)($editForm['category_id'] ?? 0) === $cid ? 'selected' : '' ?>><?= htmlspecialchars((string)($categoryOption['category_name'] ?? '')) ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <div class="book-cover-actions">
+                    <?php if (($coverFlash['message'] ?? '') !== ''): ?>
+                        <p class="book-cover-flash book-cover-flash-<?= ($coverFlash['status'] ?? '') === 'ok' ? 'success' : 'error' ?>">
+                            <?= htmlspecialchars((string)$coverFlash['message']) ?>
+                        </p>
+                    <?php endif; ?>
 
-                <select name="program_id">
-                    <option value="">Select Program</option>
-                    <?php foreach ($programOptions as $programOption): ?>
-                        <?php $pid = (int)($programOption['program_id'] ?? 0); ?>
-                        <option value="<?= $pid ?>" <?= (int)($editForm['program_id'] ?? 0) === $pid ? 'selected' : '' ?>><?= htmlspecialchars((string)($programOption['program_name'] ?? '')) ?></option>
-                    <?php endforeach; ?>
-                </select>
+                    <?php if ($editCoverIsExcluded): ?>
+                        <p class="book-cover-caution">Heads up: automated lookups have returned the wrong image for this book before. Check any re-fetched result carefully, or upload the correct cover yourself.</p>
+                    <?php endif; ?>
 
-                <select name="location_section" required>
-                    <option value="">Select Section</option>
-                    <?php foreach ($librarySections as $sec): ?>
-                        <option value="<?= htmlspecialchars($sec) ?>" <?= ((string)($editForm['location_section'] ?? '') === (string)$sec) ? 'selected' : '' ?>><?= htmlspecialchars($sec) ?></option>
-                    <?php endforeach; ?>
-                </select>
+                    <label class="book-cover-drop" id="editCoverDrop">
+                        <input type="file" name="cover_image" form="editCoverUploadForm" class="book-cover-file" id="editCoverFileInput" accept="image/jpeg,image/png" required aria-label="Cover image file">
+                        <span class="book-cover-drop-icon" aria-hidden="true"><?= admin_icon('image') ?></span>
+                        <span class="book-cover-drop-text">
+                            <strong id="editCoverFileName">Choose an image</strong>
+                            <small id="editCoverFileHint">JPG/PNG &middot; or drop here</small>
+                        </span>
+                    </label>
+                    <button type="submit" name="upload_cover" form="editCoverUploadForm" class="filter-reset-btn book-cover-btn book-cover-btn-upload"><span class="book-cover-btn-icon" aria-hidden="true"><?= admin_icon('upload') ?></span>Upload cover</button>
+                    <button type="submit" name="refetch_cover" form="editCoverRefetchForm" class="filter-reset-btn book-cover-btn book-cover-btn-refetch"><span class="book-cover-btn-icon" aria-hidden="true"><?= admin_icon('refresh') ?></span>Re-fetch cover</button>
+                    <?php if ($editCoverFilename !== ''): ?>
+                        <button type="submit" name="clear_cover" form="editCoverClearForm" class="filter-reset-btn book-cover-btn book-cover-btn-danger"><span class="book-cover-btn-icon" aria-hidden="true"><?= admin_icon('trash') ?></span>Clear cover</button>
+                    <?php endif; ?>
+                </div>
+            </section>
 
-                <select name="location_class" required>
-                    <option value="">Select Class Letter</option>
-                    <?php foreach ($libraryClassLabels as $classCode => $classLabel): ?>
-                        <option value="<?= htmlspecialchars($classCode) ?>" <?= ((string)($editForm['location_class'] ?? '') === (string)$classCode) ? 'selected' : '' ?>><?= htmlspecialchars($classLabel) ?></option>
-                    <?php endforeach; ?>
-                </select>
+            <section class="edit-book-section edit-book-section-details">
+                <h3 class="edit-book-section-title">Book Details</h3>
+                <div class="edit-field-grid">
+                    <label class="edit-field edit-field-wide">
+                        <span class="edit-field-label">Title</span>
+                        <input type="text" name="title" placeholder="Title" required value="<?= htmlspecialchars((string)($editForm['title'] ?? '')) ?>">
+                    </label>
+                    <label class="edit-field edit-field-half">
+                        <span class="edit-field-label">Author</span>
+                        <input type="text" name="author" placeholder="Author" value="<?= htmlspecialchars((string)($editForm['author'] ?? '')) ?>">
+                    </label>
+                    <label class="edit-field edit-field-half">
+                        <span class="edit-field-label">Publisher</span>
+                        <input type="text" name="publisher" placeholder="Publisher" value="<?= htmlspecialchars((string)($editForm['publisher'] ?? '')) ?>">
+                    </label>
+                    <label class="edit-field">
+                        <span class="edit-field-label">ISBN</span>
+                        <input type="text" name="isbn" placeholder="ISBN" value="<?= htmlspecialchars((string)($editForm['isbn'] ?? '')) ?>">
+                    </label>
+                    <label class="edit-field">
+                        <span class="edit-field-label">Year</span>
+                        <input type="number" name="year_published" placeholder="Year" min="1900" max="2100" value="<?= htmlspecialchars((string)($editForm['year_published'] ?? '')) ?>">
+                    </label>
+                    <label class="edit-field">
+                        <span class="edit-field-label">Call Number</span>
+                        <input type="text" name="call_number" placeholder="Call Number" required value="<?= htmlspecialchars((string)($editForm['call_number'] ?? '')) ?>">
+                    </label>
+                </div>
+            </section>
 
-                <select name="location_shelf" required>
-                    <option value="">Select Shelf Code</option>
-                    <?php foreach ($shelfOptions as $shelf): ?>
-                        <option value="<?= htmlspecialchars($shelf) ?>" <?= ((string)($editForm['location_shelf'] ?? '') === (string)$shelf) ? 'selected' : '' ?>><?= htmlspecialchars($shelf) ?></option>
-                    <?php endforeach; ?>
-                </select>
+            <section class="edit-book-section edit-book-section-classification">
+                <h3 class="edit-book-section-title">Classification &amp; Location</h3>
+                <div class="edit-field-grid">
+                    <label class="edit-field">
+                        <span class="edit-field-label">Category</span>
+                        <select name="category_id">
+                            <option value="">Select Category</option>
+                            <?php foreach ($categoryOptions as $categoryOption): ?>
+                                <?php $cid = (int)($categoryOption['category_id'] ?? 0); ?>
+                                <option value="<?= $cid ?>" <?= (int)($editForm['category_id'] ?? 0) === $cid ? 'selected' : '' ?>><?= htmlspecialchars((string)($categoryOption['category_name'] ?? '')) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
 
-                <select name="location_row" required>
-                    <option value="">Select Row</option>
-                    <?php foreach ($rowOptions as $rowOpt): ?>
-                        <option value="<?= htmlspecialchars($rowOpt) ?>" <?= ((string)($editForm['location_row'] ?? '') === (string)$rowOpt) ? 'selected' : '' ?>><?= htmlspecialchars($rowOpt) ?></option>
-                    <?php endforeach; ?>
-                </select>
+                    <label class="edit-field">
+                        <span class="edit-field-label">Program</span>
+                        <select name="program_id">
+                            <option value="">Select Program</option>
+                            <?php foreach ($programOptions as $programOption): ?>
+                                <?php $pid = (int)($programOption['program_id'] ?? 0); ?>
+                                <option value="<?= $pid ?>" <?= (int)($editForm['program_id'] ?? 0) === $pid ? 'selected' : '' ?>><?= htmlspecialchars((string)($programOption['program_name'] ?? '')) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                </div>
 
-                <select name="location_position" required>
-                    <option value="">Select Position</option>
-                    <?php foreach ($positionOptions as $pos): ?>
-                        <option value="<?= htmlspecialchars($pos) ?>" <?= ((string)($editForm['location_position'] ?? '') === (string)$pos) ? 'selected' : '' ?>><?= htmlspecialchars($pos) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+                <fieldset class="edit-location-group">
+                    <legend class="edit-location-legend">Location</legend>
+                    <div class="edit-field-grid">
+                        <label class="edit-field edit-field-wide">
+                            <span class="edit-field-label">Section</span>
+                            <select name="location_section" required>
+                                <option value="">Select Section</option>
+                                <?php foreach ($librarySections as $sec): ?>
+                                    <option value="<?= htmlspecialchars($sec) ?>" <?= ((string)($editForm['location_section'] ?? '') === (string)$sec) ? 'selected' : '' ?>><?= htmlspecialchars($sec) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
 
-            <div class="book-form-col book-form-col-copies">
-                <input
-                    type="text"
-                    name="copy_count"
-                    id="editCopyCountInput"
-                    placeholder="Number of Copies"
-                    inputmode="numeric"
-                    autocomplete="off"
-                    required
-                    value="<?= htmlspecialchars((string)($editForm['copy_count'] ?? '')) ?>">
+                        <label class="edit-field">
+                            <span class="edit-field-label">Class Letter</span>
+                            <select name="location_class" required>
+                                <option value="">Select Class Letter</option>
+                                <?php foreach ($libraryClassLabels as $classCode => $classLabel): ?>
+                                    <option value="<?= htmlspecialchars($classCode) ?>" <?= ((string)($editForm['location_class'] ?? '') === (string)$classCode) ? 'selected' : '' ?>><?= htmlspecialchars($classLabel) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
 
-                <div class="book-accession-block">
+                        <label class="edit-field">
+                            <span class="edit-field-label">Shelf Code</span>
+                            <select name="location_shelf" required>
+                                <option value="">Select Shelf Code</option>
+                                <?php foreach ($shelfOptions as $shelf): ?>
+                                    <option value="<?= htmlspecialchars($shelf) ?>" <?= ((string)($editForm['location_shelf'] ?? '') === (string)$shelf) ? 'selected' : '' ?>><?= htmlspecialchars($shelf) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
+
+                        <label class="edit-field">
+                            <span class="edit-field-label">Row</span>
+                            <select name="location_row" required>
+                                <option value="">Select Row</option>
+                                <?php foreach ($rowOptions as $rowOpt): ?>
+                                    <option value="<?= htmlspecialchars($rowOpt) ?>" <?= ((string)($editForm['location_row'] ?? '') === (string)$rowOpt) ? 'selected' : '' ?>><?= htmlspecialchars($rowOpt) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
+
+                        <label class="edit-field">
+                            <span class="edit-field-label">Shelf Level</span>
+                            <select name="location_position" required>
+                                <option value="">Select Position</option>
+                                <?php foreach ($positionOptions as $pos): ?>
+                                    <option value="<?= htmlspecialchars($pos) ?>" <?= ((string)($editForm['location_position'] ?? '') === (string)$pos) ? 'selected' : '' ?>><?= htmlspecialchars($pos) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
+                    </div>
+                </fieldset>
+            </section>
+
+            <section class="edit-book-section edit-book-section-copies">
+                <h3 class="edit-book-section-title">Copies</h3>
+                <label class="edit-field edit-field-copy-count">
+                    <span class="edit-field-label">Number of Copies</span>
+                    <input
+                        type="text"
+                        name="copy_count"
+                        id="editCopyCountInput"
+                        placeholder="Number of Copies"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        required
+                        value="<?= htmlspecialchars((string)($editForm['copy_count'] ?? '')) ?>">
+                </label>
+
+                <div class="book-accession-block edit-accession-panel">
                     <div class="book-accession-head">
                         <strong>Current Copy Accessions</strong>
                         <span class="book-accession-hint">
@@ -1871,7 +1915,7 @@ require 'layout_top.php';
                     </div>
                 </div>
 
-                <div class="book-accession-block">
+                <div class="book-accession-block edit-accession-panel">
                     <div class="book-accession-head">
                         <strong>New Copy Accessions</strong>
                         <span class="book-accession-hint" id="editCopyAdjustmentHint">
@@ -1885,7 +1929,7 @@ require 'layout_top.php';
                         <?php endfor; ?>
                     </div>
                 </div>
-            </div>
+            </section>
 
             <button type="submit" name="update_book" class="btn-primary form-submit">Save Changes</button>
         </form>
@@ -1910,7 +1954,7 @@ require 'layout_top.php';
     </div>
 </div>
 
-<script src="../assets/javascript/manage_books_admin.js"></script>
+<script src="../assets/javascript/manage_books_admin.js?v=<?= @filemtime(__DIR__ . '/../assets/javascript/manage_books_admin.js') ?: time() ?>"></script>
 
 <?php require 'layout_bottom.php'; ?>
 

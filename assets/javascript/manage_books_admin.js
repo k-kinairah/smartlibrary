@@ -153,6 +153,36 @@ if (editCopyCountInput && editNewAccessionInputsWrap) {
     });
     renderEditNewAccessionInputs();
 }
+// Edit Book cover picker: show the chosen file's name in the drop zone and
+// highlight it while a file is dragged over (the transparent native input
+// covers the zone, so the browser handles the click and the drop itself).
+const editCoverFileInput = document.getElementById('editCoverFileInput');
+const editCoverDrop = document.getElementById('editCoverDrop');
+const editCoverFileName = document.getElementById('editCoverFileName');
+const editCoverFileHint = document.getElementById('editCoverFileHint');
+if (editCoverFileInput && editCoverDrop && editCoverFileName) {
+    const defaultCoverLabel = editCoverFileName.textContent;
+    const defaultCoverHint = editCoverFileHint ? editCoverFileHint.textContent : '';
+    editCoverFileInput.addEventListener('change', function () {
+        const file = editCoverFileInput.files && editCoverFileInput.files[0];
+        editCoverFileName.textContent = file ? file.name : defaultCoverLabel;
+        if (editCoverFileHint) {
+            editCoverFileHint.textContent = file ? 'Ready · click to change' : defaultCoverHint;
+        }
+        editCoverDrop.classList.toggle('has-file', !!file);
+    });
+    ['dragenter', 'dragover'].forEach(function (evt) {
+        editCoverFileInput.addEventListener(evt, function () {
+            editCoverDrop.classList.add('is-dragging');
+        });
+    });
+    ['dragleave', 'drop'].forEach(function (evt) {
+        editCoverFileInput.addEventListener(evt, function () {
+            editCoverDrop.classList.remove('is-dragging');
+        });
+    });
+}
+
 document.querySelectorAll('.book-copy-toggle-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
         const rowId = btn.getAttribute('data-target');

@@ -8426,3 +8426,1915 @@ select:focus {
 [data-theme="light"] .book-accession-block {
     border-top-color: rgba(63, 124, 194, 0.2);
 }
+
+/* ============================================================
+   Pass v52: Edit Book modal -- labelled, sectioned layout
+   ------------------------------------------------------------
+   The Edit Book form was one flat 3-column wall of unlabelled
+   boxes: no field captions, the five shelf-location selects read
+   as unrelated fields, the cover buttons mixed squared .btn-status
+   chips with a pink pill, the accession lists sat as loose text,
+   and the cover strip left dead space beside a tall form. Markup
+   now groups fields into four sections (Cover, Book Details,
+   Classification & Location, Copies) on a 12-column grid, each
+   section using the same gradient + accent-top-border recipe as
+   .data-table-panel; field captions reuse the Reports
+   .reports-field-group label recipe; cover actions all ride the
+   .filter-reset-btn ghost pill with a red variant for Clear cover;
+   copy status chips follow the .badge.status-* pill and the app's
+   borrowed=green / available=blue color family. The cover rules
+   that used to live in an inline <style> in manage_books.php moved
+   here. Presentation only -- field names/ids are unchanged. */
+.edit-book-modal-card {
+    width: min(1180px, 96vw);
+}
+
+.edit-book-layout {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 14px;
+    align-items: stretch;
+}
+
+.edit-book-section {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 16px 16px;
+    border-radius: 14px;
+    background:
+        radial-gradient(120% 70% at 85% -15%, rgba(110, 175, 230, 0.24) 0%, rgba(110, 175, 230, 0) 55%),
+        linear-gradient(165deg, rgba(63, 124, 194, 0.2) 0%, rgba(28, 69, 115, 0.16) 55%, rgba(13, 36, 64, 0.19) 100%);
+    border: 1px solid rgba(140, 185, 235, 0.36);
+    border-top: 3px solid rgba(140, 185, 235, 0.75);
+    box-shadow:
+        0 12px 26px rgba(4, 14, 28, 0.16),
+        0 1px 0 rgba(255, 255, 255, 0.05) inset;
+}
+
+.edit-book-section-cover { grid-column: span 4; }
+.edit-book-section-details { grid-column: span 8; }
+.edit-book-section-classification { grid-column: span 6; }
+.edit-book-section-copies { grid-column: span 6; }
+
+.edit-book-section-title {
+    margin: 0;
+    font-size: 12.5px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #dcebfa;
+}
+
+.edit-field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 12px;
+}
+
+.edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.edit-field-wide {
+    grid-column: 1 / -1;
+}
+
+.edit-field-label {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: #a9c8e8;
+}
+
+.edit-book-layout .edit-field input,
+.edit-book-layout .edit-field select {
+    width: 100%;
+    min-height: 42px;
+}
+
+/* Book Details: Title full width, Author + Publisher, then the three
+   short identifiers (ISBN / Year / Call Number) on one row. */
+.edit-book-section-details .edit-field-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.edit-book-section-details .edit-field { grid-column: span 2; }
+.edit-book-section-details .edit-field-half { grid-column: span 3; }
+.edit-book-section-details .edit-field-wide { grid-column: 1 / -1; }
+
+/* Location: one nested card so Section / Class / Shelf / Row / Level
+   read as a single connected address rather than five loose fields. */
+.edit-location-group {
+    margin: 0;
+    min-width: 0;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(140, 185, 235, 0.08);
+    border: 1px solid rgba(140, 185, 235, 0.22);
+}
+
+.edit-location-legend {
+    float: left;
+    width: 100%;
+    padding: 0;
+    margin: 0 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #dcebfa;
+}
+
+.edit-location-legend::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(140, 185, 235, 0.85);
+    box-shadow: 0 0 0 3px rgba(140, 185, 235, 0.18);
+}
+
+.edit-location-group .edit-field-grid {
+    clear: both;
+}
+
+/* Cover: image beside a stack of same-size actions. */
+.edit-book-section-cover {
+    display: grid;
+    grid-template-columns: 132px minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    gap: 12px 14px;
+}
+
+.edit-book-section-cover .edit-book-section-title {
+    grid-column: 1 / -1;
+}
+
+.book-cover-preview {
+    width: 132px;
+}
+
+.book-cover-thumb-img,
+.book-cover-thumb-placeholder {
+    width: 132px;
+    height: 194px;
+    border-radius: 10px;
+    display: block;
+}
+
+.book-cover-thumb-img {
+    object-fit: cover;
+    border: 1px solid rgba(140, 185, 235, 0.4);
+    box-shadow: 0 10px 22px rgba(4, 14, 28, 0.28);
+}
+
+.book-cover-thumb-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 6px;
+    font-size: 12px;
+    color: #a9c8e8;
+    border: 1px dashed rgba(140, 185, 235, 0.45);
+    background: rgba(140, 185, 235, 0.06);
+}
+
+.book-cover-actions {
+    min-width: 0;
+    max-width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Cover picker: a dashed drop zone instead of the bare native
+   "Choose File / No file chosen" control. The real <input type=file>
+   is stretched transparent over the whole zone, so clicking anywhere
+   opens the picker and dropping a file on it works natively; JS only
+   swaps in the chosen file's name. Turns green once a file is picked,
+   which also promotes Upload cover to the filled primary style. */
+.book-cover-drop {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 58px;
+    padding: 9px 12px;
+    border-radius: 12px;
+    border: 1.5px dashed rgba(140, 185, 235, 0.5);
+    background: rgba(140, 185, 235, 0.07);
+    cursor: pointer;
+    transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.book-cover-drop:hover,
+.book-cover-drop:focus-within,
+.book-cover-drop.is-dragging {
+    border-color: rgba(140, 185, 235, 0.9);
+    background: rgba(140, 185, 235, 0.15);
+    box-shadow: 0 0 0 3px rgba(140, 185, 235, 0.16);
+}
+
+.book-cover-drop.has-file {
+    border-style: solid;
+    border-color: rgba(123, 240, 176, 0.55);
+    background: rgba(123, 240, 176, 0.1);
+}
+
+.edit-book-layout .book-cover-drop .book-cover-file {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.book-cover-drop-icon {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: linear-gradient(160deg, rgba(140, 185, 235, 0.4) 0%, rgba(63, 124, 194, 0.3) 100%);
+    border: 1px solid rgba(140, 185, 235, 0.5);
+    color: #ffffff;
+    transition: transform 0.16s ease;
+}
+
+.book-cover-drop:hover .book-cover-drop-icon,
+.book-cover-drop.is-dragging .book-cover-drop-icon {
+    transform: translateY(-1px) scale(1.05);
+}
+
+.book-cover-drop.has-file .book-cover-drop-icon {
+    background: rgba(123, 240, 176, 0.2);
+    border-color: rgba(123, 240, 176, 0.55);
+    color: #c9f8de;
+}
+
+.book-cover-drop-icon svg,
+.book-cover-btn-icon svg {
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.book-cover-drop-icon svg {
+    width: 17px;
+    height: 17px;
+}
+
+.book-cover-drop-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    pointer-events: none;
+}
+
+.book-cover-drop-text strong {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #eaf3fc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.book-cover-drop-text small {
+    font-size: 11px;
+    color: #a9c8e8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Action buttons: one shared ghost pill with a leading icon. */
+.filter-reset-btn.book-cover-btn {
+    width: 100%;
+    min-height: 38px;
+    gap: 8px;
+    padding: 8px 14px !important;
+    font-size: 12.5px;
+    cursor: pointer;
+}
+
+.book-cover-btn-icon {
+    display: inline-flex;
+    flex: 0 0 auto;
+    transition: transform 0.3s ease;
+}
+
+.book-cover-btn-icon svg {
+    width: 15px;
+    height: 15px;
+}
+
+.book-cover-btn-upload:hover .book-cover-btn-icon {
+    transform: translateY(-2px);
+}
+
+.book-cover-btn-refetch:hover .book-cover-btn-icon {
+    transform: rotate(180deg);
+}
+
+.book-cover-drop.has-file + .filter-reset-btn.book-cover-btn-upload {
+    background: linear-gradient(160deg, #4d8ad4 0%, #1c4573 100%) !important;
+    border-color: rgba(140, 185, 235, 0.6) !important;
+    color: #ffffff !important;
+    box-shadow: 0 6px 16px rgba(13, 36, 64, 0.22) !important;
+}
+
+.filter-reset-btn.book-cover-btn-danger {
+    background: transparent !important;
+    border-color: rgba(255, 127, 137, 0.5) !important;
+    color: #ffb4b4 !important;
+}
+
+.filter-reset-btn.book-cover-btn-danger:hover {
+    background: rgba(224, 90, 90, 0.18) !important;
+    border-color: rgba(255, 127, 137, 0.75) !important;
+    color: #ffd6d6 !important;
+}
+
+.book-cover-flash,
+.book-cover-caution {
+    margin: 0;
+    padding: 7px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.book-cover-flash-success { background: rgba(123, 240, 176, 0.16); border: 1px solid rgba(123, 240, 176, 0.4); color: #e2fff0; }
+.book-cover-flash-error { background: rgba(255, 127, 137, 0.16); border: 1px solid rgba(255, 127, 137, 0.4); color: #ffe6e6; }
+.book-cover-caution { background: rgba(255, 190, 99, 0.16); border: 1px solid rgba(255, 190, 99, 0.4); color: #ffe9b3; font-weight: 500; }
+
+/* Copies: accession lists become nested cards (same inner-card recipe
+   as the Borrow Records detail grid) instead of loose text. */
+.book-accession-block.edit-accession-panel {
+    margin-top: 0 !important;
+    padding: 12px !important;
+    gap: 10px;
+    border-radius: 12px;
+    background: rgba(140, 185, 235, 0.08);
+    border: 1px solid rgba(140, 185, 235, 0.22);
+}
+
+.edit-accession-panel .book-accession-head strong {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #dcebfa;
+}
+
+.edit-accession-panel .book-accession-hint {
+    color: #a9c8e8;
+    font-size: 12px;
+}
+
+.edit-accession-panel .book-accession-inputs:empty {
+    display: none;
+}
+
+.edit-book-section-copies .edit-copy-accession-list {
+    max-height: 260px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+.edit-book-section-copies .edit-copy-accession-row {
+    background: rgba(13, 36, 64, 0.2);
+    border-color: rgba(140, 185, 235, 0.22);
+}
+
+.edit-book-section-copies .edit-copy-accession-row.is-locked {
+    background: rgba(255, 190, 99, 0.08);
+    border-color: rgba(255, 190, 99, 0.38);
+}
+
+.edit-book-section-copies .edit-copy-accession-id {
+    color: #dcebfa;
+}
+
+.edit-book-section-copies .edit-copy-accession-status {
+    padding: 3px 10px;
+    font-size: 10.5px;
+    color: #eaf3fc;
+    background: rgba(180, 202, 220, 0.14);
+    border: 1px solid rgba(180, 202, 220, 0.3);
+}
+
+.edit-book-section-copies .edit-copy-accession-status.status-available { color: #cfe3f7; background: rgba(121, 184, 255, 0.16); border-color: rgba(121, 184, 255, 0.4); }
+.edit-book-section-copies .edit-copy-accession-status.status-borrowed { color: #c9f8de; background: rgba(123, 240, 176, 0.16); border-color: rgba(123, 240, 176, 0.4); }
+.edit-book-section-copies .edit-copy-accession-status.status-overdue { color: #ffd0d4; background: rgba(255, 127, 137, 0.16); border-color: rgba(255, 127, 137, 0.4); }
+.edit-book-section-copies .edit-copy-accession-status.status-missing { color: #ffe1b8; background: rgba(255, 190, 99, 0.16); border-color: rgba(255, 190, 99, 0.4); }
+
+.edit-book-layout .form-submit {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 1100px) {
+    .edit-book-section-cover,
+    .edit-book-section-details,
+    .edit-book-section-classification,
+    .edit-book-section-copies {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 620px) {
+    .edit-book-section-details .edit-field,
+    .edit-book-section-details .edit-field-half {
+        grid-column: 1 / -1;
+    }
+
+    .edit-field-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .edit-book-section-cover {
+        grid-template-columns: 1fr;
+    }
+
+    .book-cover-preview {
+        justify-self: center;
+    }
+}
+
+[data-theme="light"] .edit-book-section {
+    background: linear-gradient(160deg, #ffffff 0%, #eef4fc 100%);
+    border-color: rgba(63, 124, 194, 0.22);
+    border-top-color: rgba(63, 124, 194, 0.55);
+    box-shadow: 0 10px 22px rgba(20, 40, 70, 0.08);
+}
+
+[data-theme="light"] .edit-book-section-title,
+[data-theme="light"] .edit-location-legend,
+[data-theme="light"] .edit-accession-panel .book-accession-head strong,
+[data-theme="light"] .edit-book-section-copies .edit-copy-accession-id {
+    color: #1c4573;
+}
+
+[data-theme="light"] .edit-field-label,
+[data-theme="light"] .edit-accession-panel .book-accession-hint,
+[data-theme="light"] .book-cover-thumb-placeholder {
+    color: #2c5488;
+}
+
+[data-theme="light"] .edit-location-group,
+[data-theme="light"] .book-accession-block.edit-accession-panel {
+    background: rgba(63, 124, 194, 0.06);
+    border-color: rgba(63, 124, 194, 0.2);
+}
+
+[data-theme="light"] .edit-book-section-copies .edit-copy-accession-row {
+    background: #ffffff;
+    border-color: rgba(63, 124, 194, 0.2);
+}
+
+[data-theme="light"] .edit-book-section-copies .edit-copy-accession-row.is-locked {
+    background: rgba(154, 101, 0, 0.06);
+    border-color: rgba(154, 101, 0, 0.3);
+}
+
+[data-theme="light"] .edit-book-section-copies .edit-copy-accession-status { color: #33465c; }
+[data-theme="light"] .edit-book-section-copies .edit-copy-accession-status.status-available { color: #1d6895; background: rgba(29, 104, 149, 0.12); border-color: rgba(29, 104, 149, 0.32); }
+[data-theme="light"] .edit-book-section-copies .edit-copy-accession-status.status-borrowed { color: #266f4d; background: rgba(38, 111, 77, 0.12); border-color: rgba(38, 111, 77, 0.32); }
+[data-theme="light"] .edit-book-section-copies .edit-copy-accession-status.status-overdue { color: #b52f3a; background: rgba(181, 47, 58, 0.12); border-color: rgba(181, 47, 58, 0.32); }
+[data-theme="light"] .edit-book-section-copies .edit-copy-accession-status.status-missing { color: #9a6500; background: rgba(154, 101, 0, 0.12); border-color: rgba(154, 101, 0, 0.32); }
+
+[data-theme="light"] .book-cover-drop {
+    border-color: rgba(63, 124, 194, 0.4);
+    background: rgba(63, 124, 194, 0.05);
+}
+
+[data-theme="light"] .book-cover-drop:hover,
+[data-theme="light"] .book-cover-drop:focus-within,
+[data-theme="light"] .book-cover-drop.is-dragging {
+    border-color: rgba(63, 124, 194, 0.75);
+    background: rgba(63, 124, 194, 0.1);
+    box-shadow: 0 0 0 3px rgba(63, 124, 194, 0.12);
+}
+
+[data-theme="light"] .book-cover-drop.has-file {
+    border-color: rgba(38, 111, 77, 0.45);
+    background: rgba(38, 111, 77, 0.07);
+}
+
+[data-theme="light"] .book-cover-drop-icon {
+    background: linear-gradient(160deg, #ffffff 0%, #eaf1fb 100%);
+    border-color: rgba(63, 124, 194, 0.3);
+    color: #1c4573;
+}
+
+[data-theme="light"] .book-cover-drop.has-file .book-cover-drop-icon {
+    background: rgba(38, 111, 77, 0.12);
+    border-color: rgba(38, 111, 77, 0.35);
+    color: #266f4d;
+}
+
+[data-theme="light"] .book-cover-drop-text strong {
+    color: #1c4573;
+}
+
+[data-theme="light"] .book-cover-drop-text small {
+    color: #2c5488;
+}
+
+[data-theme="light"] .filter-reset-btn.book-cover-btn-danger {
+    border-color: rgba(181, 47, 58, 0.45) !important;
+    color: #b52f3a !important;
+}
+
+[data-theme="light"] .filter-reset-btn.book-cover-btn-danger:hover {
+    background: rgba(181, 47, 58, 0.1) !important;
+    color: #8f1f29 !important;
+}
+
+/* ============================================================
+   Pass v53: Manage Books / Manage Users row action buttons
+   ------------------------------------------------------------
+   "these looks out of place" -- the Action column icon buttons
+   were still the pre-blue solid mustard (#f0d36e) and solid red
+   (#ff6262) blocks from Stabilization v33, the loudest thing on
+   an otherwise glassy blue table. Re-skinned with the same glass
+   recipe as .icon-close / .panel-icon: translucent tint + thin
+   tinted border + colored glyph at rest, filling solid with a
+   white glyph on hover so the action still reads clearly. Colors
+   follow the app's existing meaning: view = neutral blue, edit =
+   accent blue (the .btn-primary gradient on hover), delete /
+   deactivate = the status-overdue red, activate = the
+   status-borrowed green. Each variant only sets the custom
+   properties; the shared rule does the rest. Scoped to the two
+   action cells so Borrow Records' returned/missing buttons are
+   untouched. */
+.book-actions-cell .user-action-icon-btn,
+.book-actions-cell .manage-book-icon-btn,
+.user-actions-cell .user-action-icon-btn {
+    --row-act-bg: rgba(13, 36, 64, 0.22);
+    --row-act-bd: rgba(170, 205, 245, 0.45);
+    --row-act-fg: #eaf3fc;
+    --row-act-hover-bg: linear-gradient(160deg, #4d8ad4 0%, #1c4573 100%);
+    --row-act-hover-bd: rgba(140, 185, 235, 0.7);
+    --row-act-glow: rgba(63, 124, 194, 0.4);
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    background: var(--row-act-bg) !important;
+    border: 1px solid var(--row-act-bd) !important;
+    color: var(--row-act-fg) !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset !important;
+    filter: none !important;
+    transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.book-actions-cell .user-action-icon-btn svg,
+.book-actions-cell .manage-book-icon-btn svg,
+.user-actions-cell .user-action-icon-btn svg {
+    width: 17px !important;
+    height: 17px !important;
+}
+
+/* The admin_icon() glyphs (square-pen / trash-2 / history / user-x /
+   user-check) carry more detail than the old inline ones, so a hair
+   lighter stroke keeps them crisp at 17px. */
+.book-actions-cell .user-action-icon-btn svg *,
+.book-actions-cell .manage-book-icon-btn svg *,
+.user-actions-cell .user-action-icon-btn svg * {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.85 !important;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.book-actions-cell .user-action-icon-btn:hover,
+.book-actions-cell .user-action-icon-btn:focus-visible,
+.book-actions-cell .manage-book-icon-btn:hover,
+.book-actions-cell .manage-book-icon-btn:focus-visible,
+.user-actions-cell .user-action-icon-btn:hover,
+.user-actions-cell .user-action-icon-btn:focus-visible {
+    background: var(--row-act-hover-bg) !important;
+    border-color: var(--row-act-hover-bd) !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px var(--row-act-glow) !important;
+    outline: none;
+}
+
+.book-actions-cell .user-action-icon-btn:active,
+.book-actions-cell .manage-book-icon-btn:active,
+.user-actions-cell .user-action-icon-btn:active {
+    transform: translateY(0);
+}
+
+/* Users Action cell: an old rule made this <td> display:inline-flex,
+   which pulls it out of the table grid -- it only spans its buttons,
+   so on wider screens the header re-centers across the full column
+   while the buttons stay packed on its left (and the row divider
+   stops short). Same fix Manage Books' .book-actions-cell already
+   uses: keep it a real table cell, center its inline buttons, and
+   space them with margins (font-size: 0 drops the whitespace gaps
+   between the inline elements). */
+.user-actions-cell {
+    display: table-cell !important;
+    vertical-align: middle !important;
+    text-align: center !important;
+    white-space: nowrap;
+    font-size: 0;
+}
+
+.user-actions-cell > a,
+.user-actions-cell .row-action-form {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    margin: 0;
+}
+
+.user-actions-cell > * + * {
+    margin-left: 6px !important;
+}
+
+/* Edit (pencil): accent blue so it's the obvious primary row action. */
+.book-actions-cell .user-pin-btn.user-action-icon-btn,
+.user-actions-cell .user-pin-btn.user-action-icon-btn:not(.borrower-history-icon-btn) {
+    --row-act-bg: rgba(77, 138, 212, 0.38);
+    --row-act-bd: rgba(170, 205, 245, 0.6);
+    --row-act-fg: #ffffff;
+}
+
+/* Delete / deactivate: red tint, solid red on hover. */
+.book-actions-cell .manage-book-icon-btn.delete,
+.user-actions-cell .user-toggle-btn.deactivate {
+    --row-act-bg: rgba(226, 66, 80, 0.55);
+    --row-act-bd: rgba(255, 160, 168, 0.7);
+    --row-act-fg: #ffffff;
+    --row-act-hover-bg: linear-gradient(160deg, #f2737d 0%, #c33a45 100%);
+    --row-act-hover-bd: rgba(255, 160, 168, 0.7);
+    --row-act-glow: rgba(195, 58, 69, 0.38);
+}
+
+/* Activate (check): green tint, solid green on hover. */
+.user-actions-cell .user-toggle-btn.activate {
+    --row-act-bg: rgba(40, 165, 100, 0.55);
+    --row-act-bd: rgba(150, 240, 190, 0.7);
+    --row-act-fg: #ffffff;
+    --row-act-hover-bg: linear-gradient(160deg, #3fbf7c 0%, #1f7d4f 100%);
+    --row-act-hover-bd: rgba(123, 240, 176, 0.7);
+    --row-act-glow: rgba(31, 125, 79, 0.38);
+}
+
+[data-theme="light"] .book-actions-cell .user-action-icon-btn,
+[data-theme="light"] .book-actions-cell .manage-book-icon-btn,
+[data-theme="light"] .user-actions-cell .user-action-icon-btn {
+    --row-act-bg: rgba(63, 124, 194, 0.07);
+    --row-act-bd: rgba(63, 124, 194, 0.28);
+    --row-act-fg: #2c5488;
+}
+
+[data-theme="light"] .book-actions-cell .user-pin-btn.user-action-icon-btn,
+[data-theme="light"] .user-actions-cell .user-pin-btn.user-action-icon-btn:not(.borrower-history-icon-btn) {
+    --row-act-bg: rgba(63, 124, 194, 0.12);
+    --row-act-bd: rgba(63, 124, 194, 0.4);
+    --row-act-fg: #1c4573;
+}
+
+[data-theme="light"] .book-actions-cell .manage-book-icon-btn.delete,
+[data-theme="light"] .user-actions-cell .user-toggle-btn.deactivate {
+    --row-act-bg: rgba(181, 47, 58, 0.07);
+    --row-act-bd: rgba(181, 47, 58, 0.32);
+    --row-act-fg: #b52f3a;
+}
+
+[data-theme="light"] .user-actions-cell .user-toggle-btn.activate {
+    --row-act-bg: rgba(38, 111, 77, 0.08);
+    --row-act-bd: rgba(38, 111, 77, 0.32);
+    --row-act-fg: #266f4d;
+}
+
+/* Manage Users column fit: Status was 9% of the table (~33px of
+   content at a ~1100px viewport) for a 70-82px Active/Inactive pill,
+   and Action was 116px with 10px + 20px padding (~86px of content)
+   for 114px of buttons, so both spilled into each other. Pin both to
+   pixel widths that fit their content; the %-based columns split
+   whatever is left (the Email column already wraps). */
+.manage-users-table th:nth-child(6),
+.manage-users-table td:nth-child(6) {
+    width: 104px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+}
+
+.manage-users-table th:nth-child(7),
+.manage-users-table td:nth-child(7) {
+    width: 134px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+}
+
+/* ...and rebalance the %-based columns around them: Email (which
+   already wraps) gives up a little so User Number's header and the
+   Role column ("Librarian") stop crowding at narrower viewports. */
+.manage-users-table th:nth-child(1),
+.manage-users-table td:nth-child(1) { width: 5% !important; }
+.manage-users-table th:nth-child(2),
+.manage-users-table td:nth-child(2) { width: 16% !important; }
+.manage-users-table th:nth-child(3),
+.manage-users-table td:nth-child(3) { width: 18% !important; }
+.manage-users-table th:nth-child(4),
+.manage-users-table td:nth-child(4) { width: 25% !important; }
+.manage-users-table th:nth-child(5),
+.manage-users-table td:nth-child(5) { width: 13% !important; }
+
+/* Below ~715px of table width the fixed Status/Action columns would
+   starve the rest, so stop shrinking there and let the existing
+   .table-wrap (overflow-x: auto) scroll sideways instead. Overrides
+   the older "min-width: 0" from the email/role overlap fix. */
+.manage-users-table {
+    min-width: 715px !important;
+}
+
+/* ============================================================
+   Pass v54: Archives "Options" column -- match the row actions
+   ------------------------------------------------------------
+   Retrieve was still the solid mustard gradient (an old
+   !important rule won over the later green one) and Open a bright
+   solid-blue pill -- the same out-of-place look Pass v53 removed
+   from Manage Books / Manage Users. Both now ride the same glass
+   recipe (tint + thin tinted border + white label, filling solid
+   on hover) in the app's tone system: Retrieve = green (restore),
+   Open = blue (view). "Retrieved #id" becomes a quiet outlined
+   status chip since it isn't clickable, and the no-action dash a
+   faint em dash. The cell was display:flex (same bug as the Users
+   Action cell), so it's a real table cell again to center under
+   its header. */
+.archive-table .archive-action-cell {
+    display: table-cell !important;
+    vertical-align: middle !important;
+    text-align: center !important;
+    white-space: nowrap;
+}
+
+.archive-action-cell .archive-action-form {
+    display: inline-flex;
+    vertical-align: middle;
+    margin: 0;
+}
+
+.archive-action-cell .archive-action-btn,
+.archive-action-cell .archive-retrieved {
+    --arch-bg: rgba(40, 165, 100, 0.5);
+    --arch-bd: rgba(150, 240, 190, 0.65);
+    --arch-fg: #ffffff;
+    --arch-hover-bg: linear-gradient(160deg, #3fbf7c 0%, #1f7d4f 100%);
+    --arch-glow: rgba(31, 125, 79, 0.38);
+    min-width: 104px !important;
+    height: 32px !important;
+    padding: 0 14px !important;
+    border-radius: 999px !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    vertical-align: middle;
+    font-size: 12px !important;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-decoration: none !important;
+    background: var(--arch-bg) !important;
+    border: 1px solid var(--arch-bd) !important;
+    color: var(--arch-fg) !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset !important;
+    filter: none !important;
+    cursor: pointer;
+    transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.archive-action-cell .archive-action-btn-view {
+    --arch-bg: rgba(77, 138, 212, 0.42);
+    --arch-bd: rgba(170, 205, 245, 0.62);
+    --arch-hover-bg: linear-gradient(160deg, #4d8ad4 0%, #1c4573 100%);
+    --arch-glow: rgba(63, 124, 194, 0.4);
+}
+
+.archive-action-cell .archive-action-btn:hover,
+.archive-action-cell .archive-action-btn:focus-visible {
+    background: var(--arch-hover-bg) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px var(--arch-glow) !important;
+    outline: none;
+}
+
+.archive-action-cell .archive-action-btn:active {
+    transform: translateY(0);
+}
+
+.archive-action-cell .archive-action-icon,
+.archive-action-cell .archive-action-icon svg {
+    width: 15px;
+    height: 15px;
+}
+
+.archive-action-cell .archive-action-icon svg {
+    stroke-width: 1.9;
+}
+
+.archive-action-cell .archive-action-btn:hover .archive-action-icon {
+    transform: translateY(-1px);
+    transition: transform 0.16s ease;
+}
+
+/* Not a button: outlined chip, no fill, no hover. */
+.archive-action-cell .archive-retrieved {
+    --arch-bg: transparent;
+    --arch-bd: rgba(150, 240, 190, 0.45);
+    --arch-fg: #b9f3d3;
+    cursor: default;
+}
+
+.archive-action-cell .archive-action-muted {
+    display: inline-block;
+    color: rgba(220, 235, 250, 0.35) !important;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+[data-theme="light"] .archive-action-cell .archive-action-btn {
+    --arch-bg: rgba(38, 111, 77, 0.1);
+    --arch-bd: rgba(38, 111, 77, 0.38);
+    --arch-fg: #266f4d;
+}
+
+[data-theme="light"] .archive-action-cell .archive-action-btn-view {
+    --arch-bg: rgba(63, 124, 194, 0.1);
+    --arch-bd: rgba(63, 124, 194, 0.4);
+    --arch-fg: #1c4573;
+}
+
+[data-theme="light"] .archive-action-cell .archive-action-btn:hover,
+[data-theme="light"] .archive-action-cell .archive-action-btn:focus-visible {
+    color: #ffffff !important;
+}
+
+[data-theme="light"] .archive-action-cell .archive-retrieved {
+    --arch-bg: transparent;
+    --arch-bd: rgba(38, 111, 77, 0.35);
+    --arch-fg: #266f4d;
+}
+
+[data-theme="light"] .archive-action-cell .archive-action-muted {
+    color: rgba(28, 69, 115, 0.35) !important;
+}
+
+/* Options column: a flat 10% left ~80px of content at 1440px for a
+   108px pill, so the pills overflowed and drifted right of the
+   header. Fixed width that fits the pill plus padding. */
+.archive-table th:nth-child(7),
+.archive-table td:nth-child(7) {
+    width: 132px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    text-align: center !important;
+}
+
+/* Archives column balance: the old all-percentage widths (Date 11%,
+   Action 7%, Entity 6%) crushed the short columns into one-letter-
+   per-line stacks ("D/e/l/e/t/e/d") at ~1100px, made worse once
+   Options got its fixed pill width. Pin the short columns to sizes
+   that fit their content -- the date and two-word action pills
+   ("Status Changed", "Bulk Imported") wrap at their space instead
+   of mid-word -- and let Item / Details / By share the rest. Below
+   ~700px of table width the existing .table-wrap scrolls instead of
+   squeezing further. */
+.archive-table {
+    min-width: 700px !important;
+}
+
+.archive-table th:nth-child(1),
+.archive-table td:nth-child(1) { width: 96px !important; }
+.archive-table th:nth-child(2),
+.archive-table td:nth-child(2) { width: 118px !important; text-align: center; }
+.archive-table th:nth-child(3),
+.archive-table td:nth-child(3) { width: 78px !important; }
+.archive-table th:nth-child(4),
+.archive-table td:nth-child(4) { width: 24% !important; }
+.archive-table th:nth-child(5),
+.archive-table td:nth-child(5) { width: 40% !important; }
+.archive-table th:nth-child(6),
+.archive-table td:nth-child(6) { width: 16% !important; }
+
+.archive-table td:nth-child(1),
+.archive-table td:nth-child(2),
+.archive-table td:nth-child(3) {
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+}
+
+.archive-table td:nth-child(2) .archive-action-text {
+    white-space: normal;
+    text-align: center;
+    line-height: 1.2;
+    max-width: 100%;
+}
+
+/* By ("Jonas Lanuzo" + "ADMIN001") was only ~58px at 1100px and
+   split surnames mid-word; give it a fixed fit too, and let Item /
+   Details split everything that's left. */
+.archive-table th:nth-child(4),
+.archive-table td:nth-child(4) { width: 36% !important; }
+.archive-table th:nth-child(5),
+.archive-table td:nth-child(5) { width: 64% !important; }
+.archive-table th:nth-child(6),
+.archive-table td:nth-child(6) { width: 108px !important; }
+
+.archive-table td:nth-child(6) {
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+}
+
+/* Tightened fixed widths -- each still fits its content whole (date
+   on two lines, "Deleted" pill, "Book"/"User"/"Borrow record",
+   "Jonas Lanuzo", 104px Options pill) -- so Item/Details keep enough
+   room at ~1100px to wrap at word boundaries instead of mid-word. */
+.archive-table th:nth-child(1),
+.archive-table td:nth-child(1) { width: 88px !important; }
+.archive-table th:nth-child(2),
+.archive-table td:nth-child(2) { width: 104px !important; }
+.archive-table th:nth-child(3),
+.archive-table td:nth-child(3) { width: 66px !important; }
+.archive-table th:nth-child(6),
+.archive-table td:nth-child(6) { width: 96px !important; }
+.archive-table th:nth-child(7),
+.archive-table td:nth-child(7) {
+    width: 124px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+}
+
+/* Wider screens: By at 96px wrapped "Jonas Lanuzo" onto two lines,
+   pinning it against Options and leaving a wide empty gutter after
+   the (mostly short) Details text. From 1280px up there's room to
+   keep the name on one line and give Item a fairer share, which
+   closes the Details -> By gap. The compact 1100px layout above is
+   unchanged. */
+@media (min-width: 1280px) {
+    .archive-table th:nth-child(4),
+    .archive-table td:nth-child(4) { width: 50% !important; }
+    .archive-table th:nth-child(5),
+    .archive-table td:nth-child(5) { width: 50% !important; }
+    .archive-table th:nth-child(6),
+    .archive-table td:nth-child(6) { width: 156px !important; }
+}
+
+/* ============================================================
+   Pass v55: Archives Action badges -- one consistent pill
+   ------------------------------------------------------------
+   Only Added / Deleted / Updated ever got a pill; Returned, Bulk
+   Imported and Status Changed fell back to plain bold text (and
+   the two-word ones wrapped to two lines), while Deleted's red text
+   on a red tint read dim. Every action type now shares one pill:
+   same height, single line, a small leading dot in the tone color,
+   lighter text for contrast -- each type keeps a distinct tone from
+   the app's palette (added = green, deleted = red, updated = blue,
+   returned = sky, bulk import = violet, status change = amber;
+   anything unrecognised gets a neutral pill instead of bare text). */
+.archive-table td:nth-child(2) .archive-action-text {
+    --act-tone: 220, 235, 250;
+    --act-text: #eaf3fc;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 24px;
+    padding: 0 10px !important;
+    border-radius: 999px !important;
+    white-space: nowrap !important;
+    font-size: 11.5px !important;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    line-height: 1 !important;
+    color: var(--act-text) !important;
+    background: rgba(var(--act-tone), 0.15) !important;
+    border: 1px solid rgba(var(--act-tone), 0.42) !important;
+}
+
+.archive-table td:nth-child(2) .archive-action-text::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: rgb(var(--act-tone));
+    box-shadow: 0 0 0 2px rgba(var(--act-tone), 0.2);
+}
+
+.archive-table td:nth-child(2) .archive-action-added { --act-tone: 123, 240, 176; --act-text: #c4f8dc; }
+.archive-table td:nth-child(2) .archive-action-deleted { --act-tone: 255, 127, 137; --act-text: #ffd0d4; }
+.archive-table td:nth-child(2) .archive-action-updated { --act-tone: 121, 184, 255; --act-text: #d6e8fb; }
+.archive-table td:nth-child(2) .archive-action-returned { --act-tone: 98, 214, 232; --act-text: #c9f2f8; }
+.archive-table td:nth-child(2) .archive-action-bulk_imported { --act-tone: 171, 148, 255; --act-text: #e2daff; }
+.archive-table td:nth-child(2) .archive-action-status_changed { --act-tone: 255, 190, 99; --act-text: #ffe4bf; }
+
+[data-theme="light"] .archive-table td:nth-child(2) .archive-action-text { --act-text: #33465c; }
+[data-theme="light"] .archive-table td:nth-child(2) .archive-action-added { --act-tone: 38, 111, 77; --act-text: #266f4d; }
+[data-theme="light"] .archive-table td:nth-child(2) .archive-action-deleted { --act-tone: 181, 47, 58; --act-text: #b52f3a; }
+[data-theme="light"] .archive-table td:nth-child(2) .archive-action-updated { --act-tone: 44, 84, 136; --act-text: #2c5488; }
+[data-theme="light"] .archive-table td:nth-child(2) .archive-action-returned { --act-tone: 18, 120, 140; --act-text: #12788c; }
+[data-theme="light"] .archive-table td:nth-child(2) .archive-action-bulk_imported { --act-tone: 98, 72, 190; --act-text: #6248be; }
+[data-theme="light"] .archive-table td:nth-child(2) .archive-action-status_changed { --act-tone: 154, 101, 0; --act-text: #9a6500; }
+
+/* Room for the one-line pills ("Status Changed" ~112px) and for the
+   ENTITY header / "Borrow record" without wrapping mid-word. */
+.archive-table th:nth-child(2),
+.archive-table td:nth-child(2) { width: 132px !important; }
+.archive-table th:nth-child(3),
+.archive-table td:nth-child(3) { width: 84px !important; }
+
+.archive-table th {
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+}
+
+.archive-table td:nth-child(2) .archive-action-text {
+    max-width: none !important;
+}
+
+/* Item/Details split from the real data rather than 50/50: 75% of
+   titles fit in ~355px and 75% of detail lines in ~595px, so ~37/63
+   lets most rows sit on one line in both columns without a wide
+   empty gutter after short titles. Action widened for the 126px
+   "Status Changed" pill. */
+.archive-table th:nth-child(2),
+.archive-table td:nth-child(2) { width: 148px !important; }
+
+@media (min-width: 1280px) {
+    .archive-table th:nth-child(4),
+    .archive-table td:nth-child(4) { width: 37% !important; }
+    .archive-table th:nth-child(5),
+    .archive-table td:nth-child(5) { width: 63% !important; }
+}
+
+/* Under 1280px the panel is too narrow for full-size pills plus
+   readable Item/Details columns, so the pills go compact (no dot,
+   tighter padding, still one line) and the short columns shrink
+   back to give Item/Details their room. */
+@media (max-width: 1279px) {
+    .archive-table td:nth-child(2) .archive-action-text {
+        padding: 0 8px !important;
+        font-size: 11px !important;
+    }
+
+    .archive-table td:nth-child(2) .archive-action-text::before {
+        display: none;
+    }
+
+    .archive-table th:nth-child(1),
+    .archive-table td:nth-child(1) { width: 92px !important; }
+    .archive-table th:nth-child(2),
+    .archive-table td:nth-child(2) {
+        width: 112px !important;
+        padding-left: 6px !important;
+        padding-right: 6px !important;
+    }
+    .archive-table th:nth-child(3),
+    .archive-table td:nth-child(3) { width: 72px !important; }
+    .archive-table th:nth-child(6),
+    .archive-table td:nth-child(6) { width: 86px !important; }
+}
+
+/* ============================================================
+   Pass v56: Borrow Records -- actions + status pills match
+   ------------------------------------------------------------
+   Last table still on the solid green / solid red icon blocks.
+   Same glass recipe as Pass v53 (tint + thin tinted border + white
+   glyph, filling solid on hover). Mark returned keeps green with a
+   book-check glyph; Mark missing moves from red to amber with the
+   warning-triangle glyph -- amber is what the app already uses for
+   "Missing" (status pill, Missing stat chip), and a red X read like
+   "delete". Status pills pick up the Archives badge treatment
+   (leading dot, lighter text -- Overdue's red-on-red was dim). */
+.borrow-action-row {
+    gap: 6px !important;
+}
+
+.borrow-action-row .borrow-action-icon-btn {
+    --row-act-bg: rgba(40, 165, 100, 0.55);
+    --row-act-bd: rgba(150, 240, 190, 0.7);
+    --row-act-hover-bg: linear-gradient(160deg, #3fbf7c 0%, #1f7d4f 100%);
+    --row-act-glow: rgba(31, 125, 79, 0.38);
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    background: var(--row-act-bg) !important;
+    border: 1px solid var(--row-act-bd) !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset !important;
+    filter: none !important;
+    transition: background 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.borrow-action-row .borrow-action-icon-btn.missing {
+    --row-act-bg: rgba(214, 150, 40, 0.55);
+    --row-act-bd: rgba(255, 210, 140, 0.7);
+    --row-act-hover-bg: linear-gradient(160deg, #e0a443 0%, #a8690f 100%);
+    --row-act-glow: rgba(168, 105, 15, 0.38);
+}
+
+.borrow-action-row .borrow-action-icon-btn:hover,
+.borrow-action-row .borrow-action-icon-btn:focus-visible {
+    background: var(--row-act-hover-bg) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px var(--row-act-glow) !important;
+    outline: none;
+}
+
+.borrow-action-row .borrow-action-icon-btn:active {
+    transform: translateY(0);
+}
+
+.borrow-action-row .borrow-action-icon-btn svg {
+    width: 17px !important;
+    height: 17px !important;
+}
+
+.borrow-action-row .borrow-action-icon-btn svg * {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.85 !important;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* alert-triangle's dot is a filled circle */
+.borrow-action-row .borrow-action-icon-btn svg circle[fill="currentColor"] {
+    fill: currentColor;
+    stroke: none;
+}
+
+.borrow-action-row .borrow-action-muted {
+    color: rgba(220, 235, 250, 0.35) !important;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.borrow-table .borrow-record-status-text {
+    --st-tone: 220, 235, 250;
+    --st-text: #eaf3fc;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 11px !important;
+    border-radius: 999px !important;
+    white-space: nowrap;
+    font-size: 12px !important;
+    font-weight: 700;
+    line-height: 1 !important;
+    color: var(--st-text) !important;
+    background: rgba(var(--st-tone), 0.15) !important;
+    border: 1px solid rgba(var(--st-tone), 0.42) !important;
+}
+
+.borrow-table .borrow-record-status-text::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: rgb(var(--st-tone));
+    box-shadow: 0 0 0 2px rgba(var(--st-tone), 0.2);
+}
+
+.borrow-table .borrow-record-status-borrowed { --st-tone: 123, 240, 176; --st-text: #c4f8dc; }
+.borrow-table .borrow-record-status-returned { --st-tone: 121, 184, 255; --st-text: #d6e8fb; }
+.borrow-table .borrow-record-status-overdue { --st-tone: 255, 127, 137; --st-text: #ffd0d4; }
+.borrow-table .borrow-record-status-missing { --st-tone: 255, 190, 99; --st-text: #ffe4bf; }
+
+[data-theme="light"] .borrow-action-row .borrow-action-muted {
+    color: rgba(28, 69, 115, 0.35) !important;
+}
+
+[data-theme="light"] .borrow-table .borrow-record-status-borrowed { --st-tone: 38, 111, 77; --st-text: #266f4d; }
+[data-theme="light"] .borrow-table .borrow-record-status-returned { --st-tone: 29, 104, 149; --st-text: #1d6895; }
+[data-theme="light"] .borrow-table .borrow-record-status-overdue { --st-tone: 181, 47, 58; --st-text: #b52f3a; }
+[data-theme="light"] .borrow-table .borrow-record-status-missing { --st-tone: 154, 101, 0; --st-text: #9a6500; }
+
+/* Borrow Records column fit: the fixed layout gave Record # / dates /
+   Status / Action a flat ~84px, narrower than a date (~90px), a
+   status pill (~94px) or the RECORD # header, so 40+ pills and the
+   date columns spilled into their neighbours at ~1440px. Short
+   columns now get widths that fit their content; Book (the only
+   long, wrapping column) takes whatever is left. */
+.borrow-table th:nth-child(1),
+.borrow-table td:nth-child(1) { width: 92px !important; }
+.borrow-table th:nth-child(2),
+.borrow-table td:nth-child(2) { width: 140px !important; }
+.borrow-table th:nth-child(3),
+.borrow-table td:nth-child(3) { width: auto !important; }
+.borrow-table th:nth-child(4),
+.borrow-table td:nth-child(4),
+.borrow-table th:nth-child(5),
+.borrow-table td:nth-child(5),
+.borrow-table th:nth-child(6),
+.borrow-table td:nth-child(6) { width: 110px !important; }
+.borrow-table th:nth-child(7),
+.borrow-table td:nth-child(7) { width: 118px !important; }
+.borrow-table th:nth-child(8),
+.borrow-table td:nth-child(8) { width: 72px !important; }
+.borrow-table th:nth-child(9),
+.borrow-table td:nth-child(9) { width: 98px !important; }
+
+.borrow-table td:nth-child(4),
+.borrow-table td:nth-child(5),
+.borrow-table td:nth-child(6),
+.borrow-table td:nth-child(7) {
+    white-space: nowrap;
+}
+
+/* Borrow Records actions, take two: icon-only squares (a book glyph
+   and a warning triangle) weren't readable at a glance, so each
+   action is now a small labelled pill -- check + "Returned", warning
+   + "Missing" -- stacked in the cell, same tones and glass recipe
+   as before. The aria-labels ("Mark returned" / "Mark missing")
+   are unchanged. */
+.borrow-action-row {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+.borrow-action-row .row-action-form {
+    display: flex;
+    margin: 0;
+}
+
+.borrow-action-row .borrow-action-icon-btn {
+    width: 104px !important;
+    min-width: 104px;
+    height: 28px !important;
+    padding: 0 12px !important;
+    border-radius: 999px !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.borrow-action-row .borrow-action-icon {
+    display: inline-flex;
+    flex: 0 0 auto;
+}
+
+.borrow-action-row .borrow-action-icon-btn svg {
+    width: 15px !important;
+    height: 15px !important;
+}
+
+.borrow-action-row .borrow-action-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.borrow-table th:nth-child(9),
+.borrow-table td:nth-child(9) {
+    width: 128px !important;
+}
+
+/* ============================================================
+   Pass v57: Course-Based Recommendations charts
+   ------------------------------------------------------------
+   1) Books per Course Popularity drew every bar at 100% of the track
+      (each course normalised to itself), so a 21-title course and a
+      1-title course looked identical. The renderer now sizes the bar
+      by the course's title count against the largest course, with the
+      borrowed / not-yet-borrowed split inside it, and says
+      "6 of 21 titles borrowed" instead of "21 titles" ("1 titles").
+   2) Borrowed stays the app's green (emphasis); "not yet borrowed"
+      drops the loud saturated gold for a quiet neutral, so the eye
+      goes to what was borrowed. Pair validated against the panel
+      surface (#2c5a8c): CVD dE 11.3, normal dE 17.2, both >= 3:1
+      contrast; legend + counts + the 2px gap carry identity too.
+      Glows removed; thinner 8px bars with a 2px surface gap between
+      segments (dataviz mark spec).
+   3) The popularity panel's green->gold accent used border-image,
+      which silently drops border-radius -- that's why it was the only
+      square-cornered card. It now gets the same rounded blue accent
+      as Course Borrowing Activity next to it.
+   4) Course Borrowing Activity: zero-value rows no longer draw a
+      minimum stub bar (renderer), so "0" reads as no activity. */
+.course-popularity-panel {
+    border-image: none !important;
+    border-top: 3px solid rgba(140, 185, 235, 0.75) !important;
+}
+
+.course-popularity-panel .stacked-track,
+#course-activity-chart .hbar-track {
+    height: 8px !important;
+    border-radius: 4px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    overflow: hidden;
+}
+
+.course-popularity-panel .stacked-track {
+    display: block !important;
+}
+
+.course-popularity-panel .stacked-bar {
+    display: flex;
+    gap: 2px;
+    height: 100%;
+    min-width: 0;
+}
+
+.course-popularity-panel .stacked-segment {
+    display: block;
+    height: 100%;
+    min-width: 3px;
+    width: auto !important;
+    filter: none !important;
+    border-radius: 0;
+}
+
+.course-popularity-panel .stacked-segment:first-child {
+    border-radius: 4px 0 0 4px;
+}
+
+.course-popularity-panel .stacked-segment:last-child {
+    border-radius: 0 4px 4px 0;
+}
+
+.course-popularity-panel .stacked-segment:only-child {
+    border-radius: 4px;
+}
+
+.course-popularity-panel .stacked-dot.borrowed,
+.course-popularity-panel .stacked-segment.borrowed {
+    background: #45c486 !important;
+}
+
+.course-popularity-panel .stacked-dot.remaining,
+.course-popularity-panel .stacked-segment.remaining {
+    background: #b4c6da !important;
+}
+
+.course-popularity-panel .stacked-value {
+    color: #c9dbee !important;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.course-popularity-panel .stacked-value strong {
+    color: #ffffff;
+    font-weight: 800;
+}
+
+#course-activity-chart .hbar-fill {
+    filter: none !important;
+    box-shadow: none !important;
+    border-radius: 4px !important;
+}
+
+[data-theme="light"] .course-popularity-panel {
+    border-top-color: rgba(63, 124, 194, 0.55) !important;
+}
+
+[data-theme="light"] .course-popularity-panel .stacked-track,
+[data-theme="light"] #course-activity-chart .hbar-track {
+    background: rgba(28, 69, 115, 0.08) !important;
+}
+
+[data-theme="light"] .course-popularity-panel .stacked-dot.borrowed,
+[data-theme="light"] .course-popularity-panel .stacked-segment.borrowed {
+    background: #2f9e68 !important;
+}
+
+[data-theme="light"] .course-popularity-panel .stacked-dot.remaining,
+[data-theme="light"] .course-popularity-panel .stacked-segment.remaining {
+    background: #a9b8c9 !important;
+}
+
+[data-theme="light"] .course-popularity-panel .stacked-value {
+    color: #4a5d73 !important;
+}
+
+[data-theme="light"] .course-popularity-panel .stacked-value strong {
+    color: #1c2f45;
+}
+
+/* ============================================================
+   Pass v58: Top Borrowed Book per Program -- accurate + clearer
+   ------------------------------------------------------------
+   Data fixes live in dashboard.php (ties reported, 0-borrow programs
+   dropped, no 6-card cap, program totals added). Cards now lead with
+   the program, then the title (full text on hover), an explicit tie
+   note when titles share the top count, and the count in context
+   ("4 borrows -- 20% of 20 program borrows") with a thin share bar
+   instead of the same filler sentence repeated on every card. The
+   grid picks its column count from the number of cards (6 -> 3x2)
+   so a lone card no longer dangles on its own row. */
+.recommendation-panel .recommendation-grid {
+    grid-template-columns: repeat(var(--rec-cols, 3), minmax(0, 1fr)) !important;
+    gap: 12px;
+}
+
+@media (max-width: 1100px) {
+    .recommendation-panel .recommendation-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .recommendation-panel .recommendation-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+.recommendation-panel .recommendation-card {
+    min-height: 0;
+    padding: 14px 16px 14px;
+    gap: 8px;
+}
+
+.recommendation-panel .recommendation-course {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #f2d78a;
+}
+
+.recommendation-panel .recommendation-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #ffffff;
+    -webkit-line-clamp: 2;
+}
+
+.recommendation-panel .recommendation-tie {
+    font-size: 12px;
+    line-height: 1.35;
+    color: #ffe1a6;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.recommendation-panel .recommendation-tie span {
+    color: #d7e3f0;
+}
+
+.recommendation-panel .recommendation-stats {
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid rgba(232, 185, 63, 0.16);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: baseline;
+    gap: 4px 10px;
+}
+
+.recommendation-panel .recommendation-count {
+    font-size: 12px;
+    color: #c9dbee;
+    white-space: nowrap;
+}
+
+.recommendation-panel .recommendation-count strong {
+    font-size: 20px;
+    font-weight: 800;
+    color: #ffffff;
+    margin-right: 2px;
+}
+
+.recommendation-panel .recommendation-share {
+    font-size: 12px;
+    color: #c9dbee;
+    text-align: right;
+}
+
+.recommendation-panel .recommendation-share-bar {
+    grid-column: 1 / -1;
+    height: 4px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+.recommendation-panel .recommendation-share-bar span {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+    background: #e8b93f;
+}
+
+[data-theme="light"] .recommendation-panel .recommendation-course { color: #8a6410; }
+[data-theme="light"] .recommendation-panel .recommendation-title { color: #1c2f45; }
+[data-theme="light"] .recommendation-panel .recommendation-tie { color: #8a5a00; }
+[data-theme="light"] .recommendation-panel .recommendation-tie span,
+[data-theme="light"] .recommendation-panel .recommendation-count,
+[data-theme="light"] .recommendation-panel .recommendation-share { color: #4a5d73; }
+[data-theme="light"] .recommendation-panel .recommendation-count strong { color: #1c2f45; }
+[data-theme="light"] .recommendation-panel .recommendation-stats { border-top-color: rgba(138, 100, 16, 0.18); }
+[data-theme="light"] .recommendation-panel .recommendation-share-bar { background: rgba(28, 69, 115, 0.1); }
+[data-theme="light"] .recommendation-panel .recommendation-share-bar span { background: #c9951f; }
+
+/* ============================================================
+   Pass v59: Appearance toggle -- sun / moon slider
+   ------------------------------------------------------------
+   The old control was a plain 44px track with a bare white dot,
+   which didn't say what either side meant. Now a pill track carries
+   a sun at one end and a moon at the other, and a glowing thumb
+   slides under the active one (light -> sun, dark -> moon); the
+   inactive icon stays visible but dim so both options read at a
+   glance. Same button, same JS (admin.js only sets data-theme /
+   aria-pressed / the "Dark mode" text), so behaviour is unchanged.
+   The card itself picks up the sidebar's glass recipe. */
+.theme-toggle-btn {
+    min-height: 52px;
+    padding: 9px 10px 9px 14px !important;
+    border-radius: 14px !important;
+    background: linear-gradient(160deg, rgba(140, 185, 235, 0.16) 0%, rgba(63, 124, 194, 0.1) 100%) !important;
+    border: 1px solid rgba(140, 185, 235, 0.3) !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.16s ease;
+}
+
+.theme-toggle-btn:hover {
+    transform: none;
+    filter: none;
+    border-color: rgba(140, 185, 235, 0.5) !important;
+    background: linear-gradient(160deg, rgba(140, 185, 235, 0.22) 0%, rgba(63, 124, 194, 0.14) 100%) !important;
+}
+
+.theme-toggle-btn:focus-visible {
+    outline: 2px solid rgba(140, 185, 235, 0.9);
+    outline-offset: 2px;
+}
+
+.theme-toggle-label {
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    color: #a9c8e8 !important;
+}
+
+.theme-toggle-state {
+    font-size: 13.5px;
+    color: #ffffff !important;
+}
+
+.theme-toggle-switch {
+    width: 64px !important;
+    height: 32px !important;
+    border-radius: 999px !important;
+    position: relative;
+    flex-shrink: 0;
+    background: rgba(8, 22, 40, 0.45) !important;
+    border: 1px solid rgba(140, 185, 235, 0.35) !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) inset;
+}
+
+.theme-toggle-btn[data-theme="light"] .theme-toggle-switch {
+    background: rgba(63, 124, 194, 0.14) !important;
+    border-color: rgba(63, 124, 194, 0.3) !important;
+    box-shadow: 0 1px 3px rgba(28, 69, 115, 0.15) inset;
+}
+
+/* Thumb: rests under the moon in dark mode, slides to the sun in light. */
+.theme-toggle-knob {
+    width: 26px !important;
+    height: 26px !important;
+    top: 2px !important;
+    left: 2px !important;
+    border-radius: 50%;
+    background: linear-gradient(160deg, #6fa3df 0%, #2f5f9a 100%) !important;
+    box-shadow: 0 2px 8px rgba(40, 90, 160, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+    transform: translateX(32px) !important;
+    transition: transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1), background 0.28s ease, box-shadow 0.28s ease;
+}
+
+.theme-toggle-btn[data-theme="light"] .theme-toggle-knob {
+    transform: translateX(0) !important;
+    background: linear-gradient(160deg, #ffd56b 0%, #f2a93b 100%) !important;
+    box-shadow: 0 2px 8px rgba(242, 169, 59, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.35) inset;
+}
+
+.theme-toggle-icon {
+    position: absolute;
+    top: 50%;
+    width: 26px;
+    height: 26px;
+    margin-top: -13px;
+    display: grid;
+    place-items: center;
+    z-index: 1;
+    transition: color 0.25s ease, opacity 0.25s ease, transform 0.35s ease;
+}
+
+.theme-toggle-icon--sun { left: 2px; }
+.theme-toggle-icon--moon { right: 2px; }
+
+.theme-toggle-icon svg {
+    width: 15px;
+    height: 15px;
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Active icon sits on the thumb in white; the other stays dim. */
+.theme-toggle-icon--moon { color: #ffffff; opacity: 1; }
+.theme-toggle-icon--sun { color: #a9c8e8; opacity: 0.55; }
+.theme-toggle-icon--moon svg { fill: currentColor; }
+
+.theme-toggle-btn[data-theme="light"] .theme-toggle-icon--sun {
+    color: #ffffff;
+    opacity: 1;
+    transform: rotate(90deg);
+}
+
+.theme-toggle-btn[data-theme="light"] .theme-toggle-icon--moon {
+    color: #2c5488;
+    opacity: 0.5;
+}
+
+.theme-toggle-btn[data-theme="light"] .theme-toggle-icon--moon svg {
+    fill: none;
+}
+
+.theme-toggle-btn:hover .theme-toggle-icon--sun,
+.theme-toggle-btn:hover .theme-toggle-icon--moon {
+    opacity: 1;
+}
+
+[data-theme="light"] .theme-toggle-btn {
+    background: linear-gradient(160deg, #ffffff 0%, #eef4fc 100%) !important;
+    border-color: rgba(63, 124, 194, 0.24) !important;
+}
+
+[data-theme="light"] .theme-toggle-btn:hover {
+    border-color: rgba(63, 124, 194, 0.42) !important;
+}
+
+[data-theme="light"] .theme-toggle-label {
+    color: #2c5488 !important;
+}
+
+[data-theme="light"] .theme-toggle-state {
+    color: #1c2f45 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .theme-toggle-knob,
+    .theme-toggle-icon {
+        transition: none;
+    }
+}
+
+/* ============================================================
+   Pass v60: Light mode readability audit
+   ------------------------------------------------------------
+   Every admin page was audited in light mode (text color vs the
+   real composited background behind it, WCAG 4.5:1 for body text,
+   3:1 for large text). Fixes, grouped by cause:
+
+   1) Leftover green-grey muted text from the pre-blue light theme
+      (--lm-muted #5d7a6b and hard-coded copies, ~4.0-4.49:1) and
+      the olive section heading -> one blue-grey muted ink that
+      clears 4.5:1 on every light card surface.
+   2) Components that never got a light version and kept their
+      dark-theme light text on a light background: Overdue summary
+      cards (white numbers, ~1.05:1), Bulk Import button + the whole
+      Bulk Import page (~1.0-2.6:1), and this session's Borrow
+      Records Returned/Missing pills (white on pastel, ~1.7-1.9:1).
+   3) White text on the light-mode green (#2fb77b, 2.57:1) for
+      Send Reminder / Download PDF -> deeper green (>= 4.5:1).
+   4) Status/action pill text a hair under 4.5:1 (Missing, Status
+      Changed, Returned) and the faint "no action" dash. */
+[data-theme="light"] {
+    --lm-muted: #4a5d73;
+}
+
+[data-theme="light"] .page-subtitle,
+[data-theme="light"] .panel-sub,
+[data-theme="light"] .trend-insight,
+[data-theme="light"] .live-activity-meta,
+[data-theme="light"] .metric-meta,
+[data-theme="light"] .recommendation-meta,
+[data-theme="light"] .reports-card-body p,
+[data-theme="light"] .reports-modal-metric-card span,
+[data-theme="light"] .arrival-activity-row .panel-sub,
+[data-theme="light"] .arrival-activity-row .overdue-books-panel .panel-sub,
+[data-theme="light"] .arrival-activity-row .live-activity-panel .panel-sub,
+[data-theme="light"] .book-accession-hint,
+[data-theme="light"] .overdue-due-date,
+[data-theme="light"] .archive-meta {
+    color: #4a5d73 !important;
+}
+
+[data-theme="light"] .section-heading {
+    color: #2c5488 !important;
+}
+
+[data-theme="light"] .recommendation-panel .recommendation-course {
+    color: #7a5a0e !important;
+}
+
+/* Overdue summary cards (dashboard) */
+[data-theme="light"] .overdue-summary-grid .overdue-summary-card strong {
+    color: #1c2f45 !important;
+}
+
+[data-theme="light"] .overdue-summary-grid .overdue-summary-card span {
+    color: #4a5d73 !important;
+}
+
+[data-theme="light"] .overdue-summary-grid .overdue-summary-card-alert strong {
+    color: #8f1f29 !important;
+}
+
+[data-theme="light"] .overdue-summary-grid .overdue-summary-card-alert span {
+    color: #8a4b12 !important;
+}
+
+/* White-on-green action buttons */
+[data-theme="light"] .overdue-action-col .btn-status.activate,
+[data-theme="light"] .reports-download-link {
+    background: linear-gradient(180deg, #23895a 0%, #1b6e48 100%) !important;
+    border-color: rgba(27, 110, 72, 0.6) !important;
+    color: #ffffff !important;
+}
+
+/* Manage Books "Bulk Import" button (inline-styled in manage_books.php) */
+[data-theme="light"] .bulk-import-nav-btn {
+    background: rgba(63, 124, 194, 0.08);
+    border-color: rgba(63, 124, 194, 0.45);
+    color: #1c4573;
+}
+
+[data-theme="light"] .bulk-import-nav-btn:hover {
+    background: rgba(63, 124, 194, 0.16);
+    border-color: rgba(63, 124, 194, 0.7);
+}
+
+/* Bulk Import page (inline-styled in bulk_import_books.php) */
+[data-theme="light"] .bulk-import-stepper-label { color: #5b6f86; }
+[data-theme="light"] .bulk-import-stepper-step.is-active .bulk-import-stepper-label,
+[data-theme="light"] .bulk-import-stepper-step.is-complete .bulk-import-stepper-label { color: #1c2f45; }
+[data-theme="light"] .bulk-import-stepper-circle { color: #2c5488; border-color: rgba(63, 124, 194, 0.4); background: rgba(63, 124, 194, 0.08); }
+[data-theme="light"] .bulk-import-stepper-step.is-active .bulk-import-stepper-circle,
+[data-theme="light"] .bulk-import-stepper-step.is-complete .bulk-import-stepper-circle { color: #ffffff; }
+[data-theme="light"] .bulk-import-stepper-line { background: rgba(63, 124, 194, 0.18); }
+[data-theme="light"] .bulk-import-stepper-line.is-complete { background: rgba(63, 124, 194, 0.55); }
+[data-theme="light"] .bulk-import-howto-text h4,
+[data-theme="light"] .bulk-import-dropzone-title,
+[data-theme="light"] .bulk-import-template-copy strong,
+[data-theme="light"] .bulk-import-result h2 { color: #1c2f45; }
+[data-theme="light"] .bulk-import-howto-text p,
+[data-theme="light"] .bulk-import-template-copy,
+[data-theme="light"] .bulk-import-template-copy code,
+[data-theme="light"] .bulk-import-dropzone-hint,
+[data-theme="light"] .bulk-import-info-note,
+[data-theme="light"] .bulk-import-result-count,
+[data-theme="light"] .bulk-import-row-num { color: #4a5d73; }
+[data-theme="light"] .bulk-import-template-copy code { background: rgba(63, 124, 194, 0.1); color: #1c4573; }
+[data-theme="light"] .bulk-import-info-note svg { color: #2c5488; }
+[data-theme="light"] .bulk-import-dropzone-filename { color: #5b6f86; }
+[data-theme="light"] .bulk-import-dropzone.has-file .bulk-import-dropzone-filename,
+[data-theme="light"] .bulk-import-result-count strong,
+[data-theme="light"] .bulk-import-row-ok-text { color: #1f6b47; }
+[data-theme="light"] .bulk-import-dropzone.has-file .bulk-import-dropzone-icon,
+[data-theme="light"] .bulk-import-result-icon { color: #1f6b47; }
+[data-theme="light"] .bulk-import-chip.is-ok { color: #1f6b47; background: rgba(38, 111, 77, 0.1); border-color: rgba(38, 111, 77, 0.35); }
+[data-theme="light"] .bulk-import-chip.is-error { color: #9b1f2a; background: rgba(181, 47, 58, 0.08); border-color: rgba(181, 47, 58, 0.35); }
+[data-theme="light"] .bulk-import-row-errors { color: #9b1f2a; }
+[data-theme="light"] .bulk-import-skip-panel-head { color: #7a4f00; }
+[data-theme="light"] .bulk-import-skip-panel ul { color: #5c4210; }
+
+/* Borrow Records Returned / Missing pills (Pass v56 had no light version) */
+[data-theme="light"] .borrow-action-row .borrow-action-icon-btn {
+    --row-act-bg: rgba(38, 111, 77, 0.1);
+    --row-act-bd: rgba(38, 111, 77, 0.45);
+    --row-act-hover-bg: linear-gradient(160deg, #23895a 0%, #1b6e48 100%);
+    color: #1f6b47 !important;
+}
+
+[data-theme="light"] .borrow-action-row .borrow-action-icon-btn.missing {
+    --row-act-bg: rgba(154, 101, 0, 0.1);
+    --row-act-bd: rgba(154, 101, 0, 0.45);
+    --row-act-hover-bg: linear-gradient(160deg, #a8690f 0%, #7d4d06 100%);
+    color: #7a4f00 !important;
+}
+
+[data-theme="light"] .borrow-action-row .borrow-action-icon-btn:hover,
+[data-theme="light"] .borrow-action-row .borrow-action-icon-btn:focus-visible {
+    color: #ffffff !important;
+}
+
+/* Pill text just under 4.5:1 */
+[data-theme="light"] .borrow-table .borrow-record-status-missing { --st-text: #7a4f00; }
+[data-theme="light"] .archive-table td:nth-child(2) .archive-action-status_changed { --act-text: #7a4f00; }
+[data-theme="light"] .archive-table td:nth-child(2) .archive-action-returned { --act-text: #0b5a69; }
+
+/* "No action" dash: decorative, but keep it legible */
+[data-theme="light"] .borrow-action-row .borrow-action-muted,
+[data-theme="light"] .archive-action-cell .archive-action-muted {
+    color: #56687c !important;
+    opacity: 1 !important;
+}
+
+/* Bulk Import icons (non-text, 3:1 target): how-to step tiles, the
+   drop zone's upload icon and the back arrow kept their dark-theme
+   pale-blue strokes on light tiles and nearly vanished. */
+[data-theme="light"] .bulk-import-howto-icon,
+[data-theme="light"] .bulk-import-dropzone-icon {
+    color: #2c5488;
+    background: rgba(63, 124, 194, 0.12);
+    border-color: rgba(63, 124, 194, 0.3);
+}
+
+[data-theme="light"] .bulk-import-back-btn {
+    color: #2c5488;
+    background: rgba(63, 124, 194, 0.08);
+    border-color: rgba(63, 124, 194, 0.35);
+}
+
+[data-theme="light"] .bulk-import-back-btn:hover {
+    background: rgba(63, 124, 194, 0.16);
+    border-color: rgba(63, 124, 194, 0.6);
+}
+
+/* ============================================================
+   Pass v61: Same background brightness on every page
+   ------------------------------------------------------------
+   The page gradient was attached to the scrolling document and
+   stretched over its full height, so a page's brightness depended on
+   how long it was: Manage Books (~109,000px tall with every title
+   listed) only ever showed the first ~1% of the gradient -- its
+   brightest blue -- while Users / Reports / Data Export (~1,000px)
+   squeezed the whole thing, down to the darkest #21447a, into one
+   screen. Dashboard and Borrow Records sat in between. Pinning the
+   background to the viewport makes it identical on every page and
+   steady while scrolling, and the stops are now the bright top band
+   Manage Books was showing (same for light mode). */
+html {
+    background-color: #4a7bb9;
+}
+
+[data-theme="light"] {
+    background-color: #e7eef9;
+}
+
+body {
+    background:
+        radial-gradient(120% 65% at 85% -10%, rgba(110, 175, 230, 0.26) 0%, rgba(110, 175, 230, 0) 55%),
+        linear-gradient(200deg, #4d7ebd 0%, #4677b5 100%) !important;
+    background-attachment: fixed !important;
+    background-size: 100% 100vh !important;
+    background-repeat: no-repeat !important;
+    background-color: #4a7bb9 !important;
+}
+
+[data-theme="light"] body {
+    background:
+        radial-gradient(120% 65% at 85% -10%, rgba(63, 124, 194, 0.14) 0%, rgba(63, 124, 194, 0) 55%),
+        linear-gradient(180deg, #e9f0fa 0%, #e3ebf8 100%) !important;
+    background-attachment: fixed !important;
+    background-size: 100% 100vh !important;
+    background-repeat: no-repeat !important;
+    background-color: #e7eef9 !important;
+}

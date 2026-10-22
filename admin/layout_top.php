@@ -43,6 +43,15 @@ function admin_icon(string $key): string {
         'currency' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.2"></circle><path d="M12 7.5v9"></path><path d="M14.8 9.3c-.5-.8-1.5-1.2-2.8-1.2-1.8 0-3 .9-3 2.1 0 1.1.9 1.6 2.6 2 1.9.4 3.2 1 3.2 2.2 0 1.2-1.3 2.1-3 2.1-1.4 0-2.5-.5-3-1.3"></path></svg>',
         'search' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"></circle><path d="m19.5 19.5-4.2-4.2"></path></svg>',
         'arrow-left' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"></path><path d="m11 6-6 6 6 6"></path></svg>',
+        'upload' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4.5"></path><path d="m7.5 9 4.5-4.5L16.5 9"></path><path d="M5 15.5v2.3A1.7 1.7 0 0 0 6.7 19.5h10.6a1.7 1.7 0 0 0 1.7-1.7v-2.3"></path></svg>',
+        'refresh' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 12a7.5 7.5 0 0 1-13.1 5"></path><path d="M4.5 12a7.5 7.5 0 0 1 13.1-5"></path><path d="M17.8 3.5v3.7h-3.7"></path><path d="M6.2 20.5v-3.7h3.7"></path></svg>',
+        'image' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4.5" width="16" height="15" rx="2.2"></rect><circle cx="9.2" cy="9.6" r="1.6"></circle><path d="m20 15.5-4.4-4.4L7 19.5"></path></svg>',
+        'square-pen' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4H6.5A2.5 2.5 0 0 0 4 6.5v11A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5V12"></path><path d="M17.6 3.6a2 2 0 0 1 2.8 2.8l-7.9 7.9-3.5.7.7-3.5Z"></path></svg>',
+        'trash-2' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16"></path><path d="M18 6.5v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-12"></path><path d="M9 6.5V4.8A1.8 1.8 0 0 1 10.8 3h2.4A1.8 1.8 0 0 1 15 4.8v1.7"></path><path d="M10 11v5.5"></path><path d="M14 11v5.5"></path></svg>',
+        'history' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"></path><path d="M3.5 3.5V8H8"></path><path d="M12 7.5V12l3 2"></path></svg>',
+        'archive-restore' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="4.5" rx="1.2"></rect><path d="M5.5 8.5v9.3a1.7 1.7 0 0 0 1.7 1.7h2.3"></path><path d="M18.5 8.5v9.3a1.7 1.7 0 0 1-1.7 1.7h-2.3"></path><path d="m9.5 14.5 2.5-2.5 2.5 2.5"></path><path d="M12 12v8"></path></svg>',
+        'sun' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.8"></circle><path d="M12 3v2"></path><path d="M12 19v2"></path><path d="m5.6 5.6 1.4 1.4"></path><path d="m17 17 1.4 1.4"></path><path d="M3 12h2"></path><path d="M19 12h2"></path><path d="m5.6 18.4 1.4-1.4"></path><path d="m17 7 1.4-1.4"></path></svg>',
+        'moon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 14.6A7.8 7.8 0 0 1 9.4 4.5a7.8 7.8 0 1 0 10.1 10.1Z"></path></svg>',
         'sparkles' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c.8 3.7 2.3 5.4 6 6.2-3.7.8-5.2 2.5-6 6.2-.8-3.7-2.3-5.4-6-6.2 3.7-.8 5.2-2.5 6-6.2Z"></path><path d="M18.5 15.5c.3 1.3.9 1.9 2.2 2.2-1.3.3-1.9.9-2.2 2.2-.3-1.3-.9-1.9-2.2-2.2 1.3-.3 1.9-.9 2.2-2.2Z"></path></svg>'
     ];
 
@@ -135,6 +144,8 @@ function stat_chip_meta(string $title): array {
                     </span>
                     <span class="theme-toggle-switch" aria-hidden="true">
                         <span class="theme-toggle-knob"></span>
+                        <span class="theme-toggle-icon theme-toggle-icon--sun"><?= admin_icon('sun') ?></span>
+                        <span class="theme-toggle-icon theme-toggle-icon--moon"><?= admin_icon('moon') ?></span>
                     </span>
                 </button>
             </div>

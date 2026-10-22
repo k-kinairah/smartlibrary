@@ -597,7 +597,7 @@ require 'layout_top.php';
                                     <?= htmlspecialchars(action_label($actionVal)) ?>
                                 </span>
                             </td>
-                            <td><?= htmlspecialchars(ucfirst($entityType)) ?></td>
+                            <td><?= htmlspecialchars(ucfirst(str_replace('_', ' ', $entityType))) ?></td>
                             <td>
                                 <?= htmlspecialchars($title) ?>
                                 <?php if ($entityId > 0): ?>
@@ -618,19 +618,19 @@ require 'layout_top.php';
                                         <input type="hidden" name="archive_action" value="retrieve_book">
                                         <input type="hidden" name="activity_id" value="<?= (int)($row['activity_id'] ?? 0) ?>">
                                         <button type="submit" class="archive-action-btn">
-                                            <span class="archive-action-icon" aria-hidden="true"><?= admin_icon('check-circle') ?></span>
+                                            <span class="archive-action-icon" aria-hidden="true"><?= admin_icon('archive-restore') ?></span>
                                             Retrieve
                                         </button>
                                     </form>
                                 <?php elseif ($canRetrieveBook && $restoredBookId > 0): ?>
-                                    <span class="archive-retrieved">Retrieved #<?= $restoredBookId ?></span>
+                                    <span class="archive-retrieved"><span class="archive-action-icon" aria-hidden="true"><?= admin_icon('check-circle') ?></span>Retrieved #<?= $restoredBookId ?></span>
                                 <?php elseif ($isAddedBook && $viewHref !== ''): ?>
                                     <a href="<?= htmlspecialchars($viewHref) ?>" class="archive-action-btn archive-action-btn-view">
                                         <span class="archive-action-icon" aria-hidden="true"><?= admin_icon('book-open') ?></span>
                                         Open
                                     </a>
                                 <?php else: ?>
-                                    <span class="archive-action-muted">-</span>
+                                    <span class="archive-action-muted" aria-label="No action available">&mdash;</span>
                                 <?php endif; ?>
                             </td>
                         </tr>

@@ -572,30 +572,16 @@ require 'layout_top.php';
                             <td><span class="<?= htmlspecialchars($statusClass) ?>"><?= htmlspecialchars($statusLabel) ?></span></td>
                             <td class="user-actions-cell">
                                 <a class="btn-status user-pin-btn user-action-icon-btn borrower-history-icon-btn" href="<?= htmlspecialchars($historyHref) ?>" aria-label="View borrower history">
-                                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                                        <path d="M7 4h10a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-4 2V6a2 2 0 0 1 2-2Z"></path>
-                                        <path d="M8 9h8"></path>
-                                        <path d="M8 13h6"></path>
-                                    </svg>
+                                    <?= admin_icon('history') ?>
                                 </a>
                                 <a class="btn-status user-pin-btn user-action-icon-btn" href="<?= htmlspecialchars($editHref) ?>" aria-label="Edit user">
-                                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                                        <path d="M4 20h4.2l9.7-9.7-4.2-4.2L4 15.8V20Z"></path>
-                                        <path d="m12.8 7.2 4.2 4.2"></path>
-                                    </svg>
+                                    <?= admin_icon('square-pen') ?>
                                 </a>
                                 <form method="POST" class="row-action-form user-status-confirm-form" data-user-action="<?= $u['status'] === 'active' ? 'deactivate' : 'activate' ?>" data-user-name="<?= htmlspecialchars($userDisplayName) ?>">
                                     <input type="hidden" name="toggle_user_status" value="<?= intval($u['user_id']) ?>">
                                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
                                     <button type="submit" class="btn-status user-toggle-btn user-action-icon-btn <?= $u['status'] === 'active' ? 'deactivate' : 'activate' ?>" aria-label="<?= $u['status'] === 'active' ? 'Deactivate user' : 'Activate user' ?>">
-                                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                                            <?php if ($u['status'] === 'active'): ?>
-                                                <path d="M7 7 17 17"></path>
-                                                <path d="M17 7 7 17"></path>
-                                            <?php else: ?>
-                                                <path d="M5 12.5 10 17l9-10"></path>
-                                            <?php endif; ?>
-                                        </svg>
+                                        <?= admin_icon($u['status'] === 'active' ? 'user-x' : 'user-check') ?>
                                     </button>
                                 </form>
                             </td>

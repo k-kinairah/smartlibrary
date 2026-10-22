@@ -81,7 +81,8 @@
         el.innerHTML = `
             <div class="${listClass}">
                 ${rows.map((row, idx) => {
-                    const width = Math.max(4, Math.round((row.value / max) * 100));
+                    // A zero gets no bar at all -- a minimum stub made 0 look like activity.
+                    const width = row.value > 0 ? Math.max(2, Math.round((row.value / max) * 100)) : 0;
                     return `
                         <div class="hbar-item">
                             <div class="hbar-head">
@@ -371,6 +372,11 @@
         }
 
         const sorted = rows.sort((x, y) => y.total - x.total || y.a - x.a).slice(0, cfg.limit || 10);
+        // Bar length is the course's title count against the largest course, so a
+        // 21-title course no longer draws the same full-width bar as a 1-title one;
+        // the borrowed/remaining split lives inside that length.
+        const maxTotal = Math.max(1, ...sorted.map(row => row.total));
+        const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
         el.innerHTML = `
             <div class="stacked-legend">
@@ -379,18 +385,19 @@
             </div>
             <div class="stacked-list">
                 ${sorted.map(row => {
-                    const safeTotal = Math.max(1, row.total);
-                    const aPct = Math.round((row.a / safeTotal) * 100);
-                    const bPct = Math.max(0, 100 - aPct);
+                    const barPct = row.total > 0 ? Math.max(3, (row.total / maxTotal) * 100) : 0;
+                    const tip = `${row.label}: ${row.a} borrowed, ${row.b} not yet borrowed (${plural(row.total, 'title')})`;
                     return `
-                        <div class="stacked-item">
+                        <div class="stacked-item" title="${esc(tip)}">
                             <div class="stacked-head">
                                 <span class="stacked-label">${esc(row.label)}</span>
-                                <span class="stacked-value">${row.total} titles</span>
+                                <span class="stacked-value"><strong>${row.a}</strong> of ${plural(row.total, 'title')} borrowed</span>
                             </div>
                             <div class="stacked-track">
-                                <span class="stacked-segment borrowed" style="width:${aPct}%;"></span>
-                                <span class="stacked-segment remaining" style="width:${bPct}%;"></span>
+                                <span class="stacked-bar" style="width:${barPct.toFixed(2)}%;">
+                                    ${row.a > 0 ? `<span class="stacked-segment borrowed" style="flex:${row.a} 1 0;"></span>` : ''}
+                                    ${row.b > 0 ? `<span class="stacked-segment remaining" style="flex:${row.b} 1 0;"></span>` : ''}
+                                </span>
                             </div>
                         </div>
                     `;
@@ -556,7 +563,7 @@
             safeArray(data.coursePopularity?.remainingTitles),
             {
                 firstLabel: 'Borrowed Titles',
-                secondLabel: 'Remaining Titles',
+                secondLabel: 'Not Yet Borrowed',
                 limit: 10,
                 emptyText: 'No course popularity data yet.'
             }

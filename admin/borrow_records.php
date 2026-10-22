@@ -464,9 +464,8 @@ require 'layout_top.php';
                                             <input type="hidden" name="record_action" value="mark_returned">
                                             <input type="hidden" name="record_id" value="<?= $rid ?>">
                                             <button type="submit" class="borrow-action-icon-btn returned" aria-label="Mark returned">
-                                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                                    <path d="M5 12.5 10 17l9-10"></path>
-                                                </svg>
+                                                <span class="borrow-action-icon" aria-hidden="true"><?= admin_icon('check-circle') ?></span>
+                                                <span class="borrow-action-label">Returned</span>
                                             </button>
                                         </form>
                                     <?php endif; ?>
@@ -476,16 +475,14 @@ require 'layout_top.php';
                                             <input type="hidden" name="record_action" value="mark_missing">
                                             <input type="hidden" name="record_id" value="<?= $rid ?>">
                                             <button type="submit" class="borrow-action-icon-btn missing" aria-label="Mark missing">
-                                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                                    <path d="M7 7 17 17"></path>
-                                                    <path d="M17 7 7 17"></path>
-                                                </svg>
+                                                <span class="borrow-action-icon" aria-hidden="true"><?= admin_icon('alert-triangle') ?></span>
+                                                <span class="borrow-action-label">Missing</span>
                                             </button>
                                         </form>
                                     <?php endif; ?>
 
                                     <?php if (!$canMarkReturned && !$canMarkMissing): ?>
-                                        <span class="borrow-action-muted">-</span>
+                                        <span class="borrow-action-muted" aria-label="No action available">&mdash;</span>
                                     <?php endif; ?>
                                 </div>
                             </td>
