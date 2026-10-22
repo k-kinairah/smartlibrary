@@ -301,14 +301,18 @@ if ($genreRes) {
 
                 <div class="filter-box-p" id="genre-box">
                     <label class="filter-label">Filter by subject/genre:</label>
-                    <div class="chip-container">
-                        <?php if (!empty($genreChips)): ?>
-                            <?php foreach ($genreChips as $genreName): ?>
-                                <div class="chip" data-filter="genre" data-value="<?= htmlspecialchars($genreName) ?>"><?= htmlspecialchars($genreName) ?></div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <div class="chip" aria-disabled="true">No genres available</div>
-                        <?php endif; ?>
+                    <div class="chip-carousel">
+                        <button type="button" class="chip-scroll-btn prev" aria-label="Scroll subjects left" disabled>&lsaquo;</button>
+                        <div class="chip-container">
+                            <?php if (!empty($genreChips)): ?>
+                                <?php foreach ($genreChips as $genreName): ?>
+                                    <div class="chip" data-filter="genre" data-value="<?= htmlspecialchars($genreName) ?>"><?= htmlspecialchars($genreName) ?></div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="chip" aria-disabled="true">No genres available</div>
+                            <?php endif; ?>
+                        </div>
+                        <button type="button" class="chip-scroll-btn next" aria-label="Scroll subjects right">&rsaquo;</button>
                     </div>
                 </div>
                 <div class="filter-box-p hidden" id="year_published-box">

@@ -30,6 +30,92 @@
         });
     };
 })();
+
+// Shared drag-vs-click gesture for horizontally draggable rows (homepage
+// Most Borrowed / Most Searched carousels, the subject/genre chip row).
+// onStart(e) runs on pointerdown, onMove(dx, e) on every move once a real
+// drag has begun, and onEnd(delta, dragged) on pointerup -- returning true
+// from onEnd marks the gesture as a swipe so the click that follows it is
+// swallowed instead of reaching the item under the pointer.
+function bindDragGesture(el, { onStart, onMove, onEnd } = {}) {
+    let activePointerId = null;
+    let startX = 0;
+    let lastX = 0;
+    let swiped = false;
+    let pointerCaptured = false;
+    const CAPTURE_THRESHOLD = 5;
+
+    el.addEventListener("pointerdown", e => {
+        activePointerId = e.pointerId;
+        startX = e.clientX;
+        lastX = e.clientX;
+        swiped = false;
+        pointerCaptured = false;
+        el.classList.add("dragging");
+        onStart?.(e);
+        // Pointer capture is deferred until real drag movement is seen (see
+        // pointermove below). Capturing immediately on pointerdown retargets
+        // the resulting mouseup/click event to el instead of the item the
+        // user actually clicked, which silently broke opening the book
+        // detail modal from a plain (non-drag) click.
+    });
+
+    el.addEventListener("pointermove", e => {
+        if (activePointerId !== e.pointerId) return;
+        lastX = e.clientX;
+
+        if (!pointerCaptured && Math.abs(lastX - startX) >= CAPTURE_THRESHOLD) {
+            pointerCaptured = true;
+            if (el.setPointerCapture) {
+                el.setPointerCapture(e.pointerId);
+            }
+        }
+
+        if (pointerCaptured) onMove?.(lastX - startX, e);
+    });
+
+    const endDrag = (e) => {
+        if (activePointerId !== e.pointerId) return;
+
+        if (onEnd?.(lastX - startX, pointerCaptured)) {
+            swiped = true;
+        }
+
+        el.classList.remove("dragging");
+
+        if (pointerCaptured && el.releasePointerCapture) {
+            try { el.releasePointerCapture(e.pointerId); } catch (_) {}
+        }
+
+        activePointerId = null;
+        pointerCaptured = false;
+
+        if (swiped) {
+            setTimeout(() => { swiped = false; }, 0);
+        }
+    };
+
+    el.addEventListener("pointerup", endDrag);
+    el.addEventListener("pointercancel", e => {
+        if (activePointerId !== e.pointerId) return;
+        el.classList.remove("dragging");
+        if (pointerCaptured && el.releasePointerCapture) {
+            try { el.releasePointerCapture(e.pointerId); } catch (_) {}
+        }
+        activePointerId = null;
+        pointerCaptured = false;
+        swiped = false;
+    });
+
+    el.addEventListener("click", e => {
+        if (swiped) {
+            e.preventDefault();
+            e.stopPropagation();
+            swiped = false;
+        }
+    }, true);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     let activeFilters = {
         search: "",
@@ -785,6 +871,53 @@ function loadBooks() {
             refreshActiveFilterDisplay();
             loadBooks();
         });
+    });
+
+    // Subject/genre chip row: one horizontally scrolling row with prev/next
+    // arrows, edge fades and drag/swipe (via the shared bindDragGesture, so a
+    // drag across a chip never toggles its filter).
+    document.querySelectorAll(".chip-carousel").forEach(carousel => {
+        const row = carousel.querySelector(".chip-container");
+        const prevBtn = carousel.querySelector(".chip-scroll-btn.prev");
+        const nextBtn = carousel.querySelector(".chip-scroll-btn.next");
+        if (!row || !prevBtn || !nextBtn) return;
+
+        const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+
+        const updateEdges = () => {
+            const maxScroll = row.scrollWidth - row.clientWidth;
+            const atStart = row.scrollLeft <= 1;
+            const atEnd = row.scrollLeft >= maxScroll - 1;
+            prevBtn.disabled = atStart;
+            nextBtn.disabled = atEnd;
+            carousel.classList.toggle("can-scroll-left", !atStart);
+            carousel.classList.toggle("can-scroll-right", !atEnd);
+        };
+
+        const scrollPage = (dir) => {
+            row.scrollBy({
+                left: dir * Math.max(row.clientWidth * 0.8, 120),
+                behavior: reduceMotion?.matches ? "auto" : "smooth"
+            });
+        };
+
+        prevBtn.addEventListener("click", () => scrollPage(-1));
+        nextBtn.addEventListener("click", () => scrollPage(1));
+
+        let dragStartScroll = 0;
+        bindDragGesture(row, {
+            onStart: () => { dragStartScroll = row.scrollLeft; },
+            onMove: dx => { row.scrollLeft = dragStartScroll - dx; },
+            onEnd: (delta, dragged) => dragged
+        });
+
+        row.addEventListener("scroll", updateEdges, { passive: true });
+        if (window.ResizeObserver) {
+            new ResizeObserver(updateEdges).observe(row);
+        } else {
+            window.addEventListener("resize", updateEdges);
+        }
+        updateEdges();
     });
 
     document.querySelectorAll(".filter-top-tab").forEach(tab => {
@@ -2260,82 +2393,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 rotateNext();
             });
 
-            let activePointerId = null;
-            let startX = 0;
-            let lastX = 0;
-            let swiped = false;
-            let pointerCaptured = false;
-            const CAPTURE_THRESHOLD = 5;
-
-            booksWrap.addEventListener("pointerdown", e => {
-                activePointerId = e.pointerId;
-                startX = e.clientX;
-                lastX = e.clientX;
-                swiped = false;
-                pointerCaptured = false;
-                booksWrap.classList.add("dragging");
-                // Pointer capture is deferred until real drag movement is seen (see
-                // pointermove below). Capturing immediately on pointerdown retargets
-                // the resulting mouseup/click event to booksWrap instead of the book
-                // cover the user actually clicked, which silently broke opening the
-                // book detail modal from a plain (non-drag) click.
-            });
-
-            booksWrap.addEventListener("pointermove", e => {
-                if (activePointerId !== e.pointerId) return;
-                lastX = e.clientX;
-
-                if (!pointerCaptured && Math.abs(lastX - startX) >= CAPTURE_THRESHOLD) {
-                    pointerCaptured = true;
-                    if (booksWrap.setPointerCapture) {
-                        booksWrap.setPointerCapture(e.pointerId);
-                    }
-                }
-            });
-
-            const endDrag = (e) => {
-                if (activePointerId !== e.pointerId) return;
-                const delta = lastX - startX;
-
-                if (Math.abs(delta) >= SWIPE_THRESHOLD) {
+            bindDragGesture(booksWrap, {
+                onEnd: delta => {
+                    if (Math.abs(delta) < SWIPE_THRESHOLD) return false;
                     if (delta < 0) rotateNext();
                     else rotatePrev();
-                    swiped = true;
+                    return true;
                 }
-
-                booksWrap.classList.remove("dragging");
-
-                if (pointerCaptured && booksWrap.releasePointerCapture) {
-                    try { booksWrap.releasePointerCapture(e.pointerId); } catch (_) {}
-                }
-
-                activePointerId = null;
-                pointerCaptured = false;
-
-                if (swiped) {
-                    setTimeout(() => { swiped = false; }, 0);
-                }
-            };
-
-            booksWrap.addEventListener("pointerup", endDrag);
-            booksWrap.addEventListener("pointercancel", e => {
-                if (activePointerId !== e.pointerId) return;
-                booksWrap.classList.remove("dragging");
-                if (pointerCaptured && booksWrap.releasePointerCapture) {
-                    try { booksWrap.releasePointerCapture(e.pointerId); } catch (_) {}
-                }
-                activePointerId = null;
-                pointerCaptured = false;
-                swiped = false;
             });
-
-            booksWrap.addEventListener("click", e => {
-                if (swiped) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    swiped = false;
-                }
-            }, true);
 
             render();
         });

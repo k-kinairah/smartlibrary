@@ -14567,3 +14567,104 @@ body {
   box-shadow: 0 8px 18px rgba(2, 16, 11, 0.3),
     0 0 16px rgba(255, 212, 0, 0.22) !important;
 }
+
+/* Subject/genre chip row as a single horizontally scrolling carousel.
+   Layout/scroll only -- chip look (icons, colors, selected state) is
+   unchanged. The row scrolls by drag/swipe (bindDragGesture in filters.js)
+   or the prev/next arrows; the native scrollbar is hidden. Edge fades are a
+   mask on the scroll box, switched on per side by .can-scroll-left/right
+   (toggled in filters.js) only while there's more content that way. */
+#search-view .chip-carousel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+#search-view .chip-carousel .chip-container {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-top: 0 !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* Room for the chips' hover lift and drop shadows inside the scroll box */
+  padding: 6px 2px 14px !important;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+  --fade-left: 0px;
+  --fade-right: 0px;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent 100%);
+}
+
+#search-view .chip-carousel .chip-container::-webkit-scrollbar {
+  display: none;
+}
+
+#search-view .chip-carousel.can-scroll-left .chip-container {
+  --fade-left: 36px;
+}
+
+#search-view .chip-carousel.can-scroll-right .chip-container {
+  --fade-right: 36px;
+}
+
+#search-view .chip-carousel .chip-container.dragging {
+  cursor: grabbing;
+}
+
+#search-view .chip-carousel .chip {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+#search-view .chip-scroll-btn {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0 3px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.14) 100%);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  box-shadow: 0 6px 14px rgba(2, 16, 11, 0.26), 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: opacity 0.18s ease, transform 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+#search-view .chip-scroll-btn:hover:not(:disabled) {
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.24) 100%);
+  box-shadow: 0 10px 20px rgba(2, 16, 11, 0.34), 0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 0 14px rgba(93, 193, 166, 0.35);
+  transform: translateY(-1px);
+}
+
+#search-view .chip-scroll-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+#search-view .chip-scroll-btn:disabled {
+  opacity: 0.32;
+  cursor: default;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #search-view .chip-scroll-btn {
+    transition: none;
+  }
+}
