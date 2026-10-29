@@ -17,13 +17,19 @@ C:\xampp\htdocs\SmartLib
 smartlib
 ```
 
-4. Open the app:
+4. Create the (gitignored) database config from the template and adjust the credentials if yours differ from the XAMPP defaults:
+
+```bash
+copy config\db_config.example.php config\db_config.php
+```
+
+5. Open the app:
 
 ```text
 http://localhost/SmartLib/
 ```
 
-5. Admin pages are under:
+6. Admin pages are under:
 
 ```text
 http://localhost/SmartLib/admin/dashboard.php

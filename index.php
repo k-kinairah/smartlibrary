@@ -1,6 +1,10 @@
 ﻿<?php
 session_start();
 require 'config/db_connect.php';
+require 'config/csrf.php';
+
+// Shared by login_handler.php and verify_2fa.php (sent by filters.js).
+$signinCsrfToken = smartlib_csrf_token('signin_csrf');
 
 $kioskCssVer = @filemtime(__DIR__ . '/assets/css/kiosk.css') ?: time();
 $filtersJsVer = @filemtime(__DIR__ . '/assets/javascript/filters.js') ?: time();
@@ -601,6 +605,7 @@ if ($genreRes) {
         </div>
     </div>
 </div>
+<script>window.SMARTLIB_SIGNIN_CSRF = <?= json_encode($signinCsrfToken) ?>;</script>
 <script src="assets/javascript/year-select-ui.js?v=<?= $yearSelectJsVer ?>"></script>
 <script src="assets/javascript/filters.js?v=<?= $filtersJsVer ?>"></script>
 </body>

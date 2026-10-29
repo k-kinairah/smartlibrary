@@ -1197,7 +1197,7 @@ let signinCountdownEndTs = 0;
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             credentials: "same-origin",
             cache: "no-store",
-            body: new URLSearchParams({ identifier, password, account_type: accountType })
+            body: new URLSearchParams({ identifier, password, account_type: accountType, csrf_token: window.SMARTLIB_SIGNIN_CSRF || "" })
         })
             .then(async (res) => {
                 const raw = await res.text();
@@ -1278,7 +1278,7 @@ let signinCountdownEndTs = 0;
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             credentials: "same-origin",
             cache: "no-store",
-            body: new URLSearchParams({ code })
+            body: new URLSearchParams({ code, csrf_token: window.SMARTLIB_SIGNIN_CSRF || "" })
         })
             .then(async (res) => {
                 const raw = await res.text();

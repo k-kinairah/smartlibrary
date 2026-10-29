@@ -2,6 +2,7 @@
 session_start();
 require 'config/db_connect.php';
 require 'config/auth_security.php';
+require 'config/csrf.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -13,6 +14,10 @@ function respond_json(array $payload, int $statusCode = 200): void {
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond_json(['status' => 'error', 'message' => 'Invalid request method.'], 405);
+}
+
+if (!smartlib_csrf_verify('signin_csrf', $_POST['csrf_token'] ?? '')) {
+    respond_json(['status' => 'expired', 'message' => 'Your session expired. Refresh the page and try again.'], 403);
 }
 
 $pending = $_SESSION['pending_2fa'] ?? null;

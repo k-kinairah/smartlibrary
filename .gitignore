@@ -21,6 +21,7 @@ Thumbs.db
 .DS_Store
 
 config/google_books_config.php
+config/db_config.php
 /smartlib_*.sql
 _test_mail.php
 /_db_*.php

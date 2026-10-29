@@ -54,8 +54,7 @@ $editUserData = [
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_user'])) {
-    $postedToken = trim((string)($_POST['csrf_token'] ?? ''));
-    if ($postedToken === '' || !hash_equals($csrfToken, $postedToken)) {
+    if (!smartlib_csrf_verify('manage_users_csrf', $_POST['csrf_token'] ?? '')) {
         $flash = ['type' => 'error', 'message' => 'Invalid request token. Refresh and try again.'];
     } else {
         $firstName = trim((string)($_POST['first_name'] ?? ''));
@@ -141,8 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_user'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
-    $postedToken = trim((string)($_POST['csrf_token'] ?? ''));
-    if ($postedToken === '' || !hash_equals($csrfToken, $postedToken)) {
+    if (!smartlib_csrf_verify('manage_users_csrf', $_POST['csrf_token'] ?? '')) {
         $flash = ['type' => 'error', 'message' => 'Invalid request token. Refresh and try again.'];
     } else {
         $editUserId = (int)($_POST['edit_user_id'] ?? 0);
@@ -292,8 +290,7 @@ $baseFilterParams = [
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_user_status'])) {
-    $postedToken = trim((string)($_POST['csrf_token'] ?? ''));
-    if ($postedToken !== '' && hash_equals($csrfToken, $postedToken)) {
+    if (smartlib_csrf_verify('manage_users_csrf', $_POST['csrf_token'] ?? '')) {
         $userId = (int)($_POST['toggle_user_status'] ?? 0);
         if ($userId > 0) {
             $beforeUser = null;
@@ -335,8 +332,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_user_status'])
 if (!$openEditUserModal && isset($_GET['edit_user'])) {
     $editId = (int)($_GET['edit_user'] ?? 0);
     if ($editId > 0) {
-        $editRes = $conn->query("SELECT user_id, first_name, last_name, user_number, email, program_id, role, status FROM library_users WHERE user_id = {$editId} LIMIT 1");
-        if ($editRes && ($editRow = $editRes->fetch_assoc())) {
+        $editRow = null;
+        $editStmt = $conn->prepare("SELECT user_id, first_name, last_name, user_number, email, program_id, role, status FROM library_users WHERE user_id = ? LIMIT 1");
+        if ($editStmt) {
+            $editStmt->bind_param('i', $editId);
+            $editStmt->execute();
+            $editRes = $editStmt->get_result();
+            $editRow = $editRes ? $editRes->fetch_assoc() : null;
+            $editStmt->close();
+        }
+        if ($editRow) {
             $dbRole = strtolower((string)($editRow['role'] ?? ''));
             if ($dbRole === 'admin') {
                 $dbRole = 'librarian';
@@ -358,25 +363,40 @@ if (!$openEditUserModal && isset($_GET['edit_user'])) {
 }
 
 $whereParts = [];
+$whereTypes = '';
+$whereParams = [];
 if ($search !== '') {
-    $safe = $conn->real_escape_string($search);
-    $whereParts[] = "(first_name LIKE '%$safe%' OR last_name LIKE '%$safe%' OR user_number LIKE '%$safe%' OR email LIKE '%$safe%')";
+    $like = '%' . $search . '%';
+    $whereParts[] = "(first_name LIKE ? OR last_name LIKE ? OR user_number LIKE ? OR email LIKE ?)";
+    $whereTypes .= 'ssss';
+    array_push($whereParams, $like, $like, $like, $like);
 }
 if ($roleFilter !== '') {
     if ($roleFilter === 'librarian') {
         $whereParts[] = "role IN ('librarian', 'admin')";
     } else {
-        $safeRole = $conn->real_escape_string($roleFilter);
-        $whereParts[] = "role = '$safeRole'";
+        $whereParts[] = "role = ?";
+        $whereTypes .= 's';
+        $whereParams[] = $roleFilter;
     }
 }
 if ($statusFilter !== '') {
-    $safeStatus = $conn->real_escape_string($statusFilter);
-    $whereParts[] = "status = '$safeStatus'";
+    $whereParts[] = "status = ?";
+    $whereTypes .= 's';
+    $whereParams[] = $statusFilter;
 }
 $whereSql = !empty($whereParts) ? ('WHERE ' . implode(' AND ', $whereParts)) : '';
 
-$users = $conn->query("SELECT * FROM library_users {$whereSql} ORDER BY created_at DESC");
+$users = false;
+$usersStmt = $conn->prepare("SELECT * FROM library_users {$whereSql} ORDER BY created_at DESC");
+if ($usersStmt) {
+    if ($whereTypes !== '') {
+        $usersStmt->bind_param($whereTypes, ...$whereParams);
+    }
+    $usersStmt->execute();
+    $users = $usersStmt->get_result();
+    $usersStmt->close();
+}
 
 $totalUsers = 0;
 $activeUsers = 0;

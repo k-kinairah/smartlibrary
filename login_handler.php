@@ -37,6 +37,7 @@ register_shutdown_function(static function (): void {
 session_start();
 require 'config/db_connect.php';
 require 'config/auth_security.php';
+require 'config/csrf.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -77,6 +78,10 @@ function respond_json(array $payload, int $statusCode = 200): void {
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond_json(['status' => 'error', 'message' => 'Invalid request method.'], 405);
+}
+
+if (!smartlib_csrf_verify('signin_csrf', $_POST['csrf_token'] ?? '')) {
+    respond_json(['status' => 'error', 'message' => 'Your session expired. Refresh the page and try again.'], 403);
 }
 
 $identifier = trim((string)($_POST['identifier'] ?? ''));
@@ -128,26 +133,12 @@ if (!$user) {
     respond_json(['status' => 'error', 'message' => 'Invalid credentials.'], 401);
 }
 
+// Hashed PINs only. The old plaintext-compare fallback (with upgrade-on-login)
+// was removed for launch; password_verify() returns false for anything that
+// isn't a valid hash, so a NULL/plaintext column simply can't sign in and the
+// user has to go through reset_pin.php.
 $storedPassword = (string)($user['password'] ?? '');
-$isHashed = preg_match('/^\$2[aby]\$/', $storedPassword) === 1;
-
-$isValid = false;
-if ($isHashed) {
-    $isValid = password_verify($password, $storedPassword);
-} else {
-    $isValid = hash_equals($storedPassword, $password);
-
-    if ($isValid) {
-        $newHash = password_hash($password, PASSWORD_DEFAULT);
-        $up = $conn->prepare("UPDATE library_users SET password = ? WHERE user_id = ? LIMIT 1");
-        if ($up) {
-            $uid = (int)($user['user_id'] ?? 0);
-            $up->bind_param('si', $newHash, $uid);
-            $up->execute();
-            $up->close();
-        }
-    }
-}
+$isValid = $storedPassword !== '' && password_verify($password, $storedPassword);
 
 if (!$isValid) {
     auth_record_login_attempt($conn, $identifier, $accountType, $clientIp, false, 'invalid_password');
