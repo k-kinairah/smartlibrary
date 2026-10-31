@@ -151,6 +151,12 @@ if ($genreRes) {
             <button id="discover-signin" class="discover-signin-btn">Sign In Now</button>
         </section>
         <?php endif; ?>
+        <section class="recommend-cta library-card-cta">
+            <div class="sparkle-icon" aria-hidden="true">🪪</div>
+            <h3>Get Your Library Card</h3>
+            <p>Sign up with your PHINMA email, then print your card to enter the library</p>
+            <a class="discover-signin-btn" href="library_card_signup.php">Get My Card</a>
+        </section>
     </div>
 
     <footer class="discover-footer">

@@ -1,0 +1,321 @@
+/* Library door entry scanner (admin/entry_scan.php). A full-screen status
+   display read from a few steps away, in the library card's dark green and
+   yellow: the name and result are large, and the panel colour tells the
+   librarian the outcome at a glance. */
+
+:root {
+    --es-text: #eaf6ef;
+    --es-muted: #a9c7b7;
+    --es-line: rgba(194, 224, 207, 0.22);
+    --es-panel: rgba(12, 65, 41, 0.62);
+    --es-yellow: #ffd84d;
+    --es-ok: #1b8b4e;
+    --es-warn: #9a6a00;
+    --es-error: #a62b37;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Arial, Helvetica, sans-serif;
+    color: var(--es-text);
+    background: radial-gradient(circle at 20% 20%, #1f6c50 0%, #0d2f24 45%, #071a14 100%) fixed;
+}
+
+.scan-page {
+    min-height: 100vh;
+    padding: 20px 28px 24px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 18px 24px;
+}
+
+.scan-top {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.scan-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.scan-brand img {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+}
+
+.scan-brand strong {
+    display: block;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 22px;
+}
+
+.scan-brand span {
+    font-size: 12px;
+    color: var(--es-muted);
+}
+
+.scan-top-right {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+}
+
+.scan-count {
+    text-align: right;
+}
+
+.scan-count b {
+    display: block;
+    font-size: 30px;
+    line-height: 1;
+    color: var(--es-yellow);
+    font-variant-numeric: tabular-nums;
+}
+
+.scan-count span {
+    font-size: 12px;
+    color: var(--es-muted);
+}
+
+.scan-exit {
+    padding: 8px 14px;
+    border: 1px solid var(--es-line);
+    border-radius: 999px;
+    font-size: 13px;
+    color: var(--es-text);
+    text-decoration: none;
+}
+
+.scan-exit:hover {
+    background: rgba(194, 224, 207, 0.1);
+}
+
+.scan-main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ---- Result panel ---- */
+
+.scan-status {
+    flex: 1;
+    min-height: 300px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border-radius: 18px;
+    border: 1px solid var(--es-line);
+    background: var(--es-panel);
+    box-shadow: 0 18px 36px rgba(2, 12, 8, 0.38);
+    transition: background-color 0.15s ease;
+}
+
+.scan-status p {
+    margin: 0;
+}
+
+.scan-status-label {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.scan-status-name {
+    margin-top: 10px !important;
+    font-size: clamp(32px, 5vw, 60px);
+    font-weight: 700;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+}
+
+.scan-status-meta {
+    margin-top: 12px !important;
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.86);
+}
+
+.scan-status.is-ready .scan-status-label {
+    color: var(--es-yellow);
+}
+
+.scan-status.is-ready .scan-status-name {
+    font-size: clamp(26px, 3.4vw, 40px);
+    font-weight: 400;
+    color: var(--es-muted);
+}
+
+.scan-status.is-ok {
+    background: var(--es-ok);
+    border-color: rgba(150, 230, 185, 0.6);
+}
+
+.scan-status.is-warn {
+    background: var(--es-warn);
+    border-color: rgba(255, 216, 77, 0.6);
+}
+
+.scan-status.is-error,
+.scan-status.is-signed-out {
+    background: var(--es-error);
+    border-color: rgba(255, 170, 178, 0.6);
+}
+
+/* ---- Scan and manual fields ---- */
+
+.scan-form label,
+.scan-manual label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--es-muted);
+}
+
+.scan-input,
+.scan-manual input {
+    width: 100%;
+    min-height: 54px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(196, 225, 208, 0.34);
+    background: rgba(230, 242, 236, 0.1);
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 20px;
+    outline: none;
+}
+
+.scan-input:focus,
+.scan-manual input:focus {
+    border-color: rgba(150, 230, 185, 0.85);
+    box-shadow: 0 0 0 3px rgba(98, 209, 145, 0.3);
+}
+
+.scan-manual-toggle {
+    align-self: flex-start;
+    padding: 2px 0;
+    border: 0;
+    background: none;
+    font-family: inherit;
+    font-size: 14px;
+    color: #c8e4d6;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.scan-manual-toggle[hidden],
+.scan-manual[hidden] {
+    display: none;
+}
+
+.scan-manual {
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid var(--es-line);
+    background: rgba(140, 215, 170, 0.06);
+}
+
+.scan-manual-row {
+    display: flex;
+    gap: 10px;
+}
+
+.scan-manual-row input {
+    flex: 1;
+    min-width: 0;
+}
+
+.scan-manual-row button {
+    padding: 0 20px;
+    border: 1px solid rgba(150, 230, 185, 0.45);
+    border-radius: 12px;
+    background: var(--es-ok);
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.scan-manual-row button.is-ghost {
+    background: transparent;
+    border-color: var(--es-line);
+    color: var(--es-text);
+    font-weight: 400;
+}
+
+/* ---- Latest entries ---- */
+
+.scan-recent {
+    min-width: 0;
+    padding: 16px 18px;
+    border-radius: 18px;
+    border: 1px solid var(--es-line);
+    background: rgba(12, 65, 41, 0.42);
+}
+
+.scan-recent h2 {
+    margin: 0 0 10px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--es-muted);
+}
+
+.scan-recent ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.scan-recent li {
+    padding: 9px 0;
+    border-top: 1px solid rgba(194, 224, 207, 0.12);
+}
+
+.scan-recent li:first-child {
+    border-top: 0;
+}
+
+.scan-recent-name {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.scan-recent-meta {
+    font-size: 12px;
+    color: var(--es-muted);
+}
+
+.scan-recent-empty {
+    margin: 0;
+    font-size: 14px;
+    color: var(--es-muted);
+}
+
+@media (max-width: 860px) {
+    .scan-page {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 16px;
+    }
+}

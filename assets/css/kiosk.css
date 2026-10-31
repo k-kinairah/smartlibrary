@@ -14727,3 +14727,17 @@ body {
   font-weight: 600;
   color: #9cceb2;
 }
+
+/* "Get Your Library Card" on the kiosk home page reuses the recommendation
+   call-to-action block. Its button is a link to library_card_signup.php
+   rather than a <button>, so it needs the button-only resets. */
+.library-card-cta {
+  margin-top: 24px;
+}
+
+a.discover-signin-btn {
+  display: inline-block;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13.3333px;
+  text-decoration: none;
+}
