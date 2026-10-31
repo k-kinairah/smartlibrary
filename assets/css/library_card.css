@@ -1,0 +1,1168 @@
+/* Library card signup, verification, reprint, and printable card.
+
+   Structure follows the admin "premium panel" language (assets/css/
+   admin.css: Edit Book sections, .data-table-panel, Bulk Import):
+   layered gradient panel with a 3px accent top border and a soft drop
+   shadow plus 1px inset highlight; 12px-radius fields with a 3px focus
+   ring; custom-chevron selects; gradient pill primary buttons that lift
+   1px on hover; ghost pill secondaries; uppercase 800-weight section
+   captions. Colours stay this flow's own dark green + gold.
+
+   The card itself is print-first (the door scanner is a laser scanner
+   and can't read phone screens). Its base rules and the print block at
+   the bottom are deliberately left exactly as they were; everything
+   that only affects how it looks on screen lives in @media screen. */
+
+:root {
+    --lc-text: #eaf6ef;
+    --lc-muted: #c8ddd1;
+    --lc-soft: #a9c7b7;
+    --lc-gold: #ffd84d;
+    --lc-gold-line: rgba(255, 216, 77, 0.72);
+    --lc-line: rgba(194, 224, 207, 0.24);
+    /* Thirty-fifth round: these were a single near-transparent flat tint
+       (0.1 alpha) that read as barely-there/grey against the dark green
+       page -- every field, the custom-select trigger, the role toggle,
+       and the consent circle all drew from it, so all of them looked
+       dull at once. Now a two-layer `background` (a faint gold-glass
+       sheen, same formula as .btn-ghost/.status-chip's premium pass,
+       over a darker solid base) so each surface reads as an actual
+       panel. `border`/`border-color` usages are untouched by this --
+       those still take a single colour -- only the `background-color`
+       usages below were widened to `background` to carry the gradient. */
+    --lc-field-bg:
+        linear-gradient(160deg, rgba(255, 216, 77, 0.07) 0%, rgba(255, 216, 77, 0.015) 40%, rgba(196, 225, 208, 0.08) 100%),
+        rgba(15, 46, 33, 0.4);
+    --lc-field-bg-focus:
+        linear-gradient(160deg, rgba(255, 216, 77, 0.11) 0%, rgba(255, 216, 77, 0.02) 40%, rgba(196, 225, 208, 0.12) 100%),
+        rgba(15, 46, 33, 0.48);
+    --lc-field-bd: rgba(196, 225, 208, 0.38);
+    --lc-field-bd-hover: rgba(196, 225, 208, 0.58);
+    --lc-focus-bd: rgba(150, 230, 185, 0.8);
+    --lc-focus-ring: rgba(98, 209, 145, 0.3);
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Arial, Helvetica, sans-serif;
+    background: radial-gradient(circle at 20% 20%, #1f6c50 0%, #0d2f24 45%, #071a14 100%);
+    background-attachment: fixed;
+    color: var(--lc-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 11px 16px;
+    box-sizing: border-box;
+}
+
+/* ---- Panel ------------------------------------------------------------ */
+
+.panel {
+    width: min(460px, 100%);
+    box-sizing: border-box;
+    padding: 16px 24px 12px;
+    border-radius: 16px;
+    background:
+        radial-gradient(120% 70% at 85% -15%, rgba(130, 215, 165, 0.16) 0%, rgba(130, 215, 165, 0) 55%),
+        linear-gradient(165deg, rgba(38, 104, 73, 0.66) 0%, rgba(22, 70, 50, 0.66) 55%, rgba(12, 42, 30, 0.72) 100%);
+    border: 1px solid var(--lc-line);
+    border-top: 3px solid var(--lc-gold-line);
+    box-shadow:
+        0 18px 36px rgba(2, 12, 8, 0.38),
+        0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+.panel-wide {
+    width: min(540px, 100%);
+}
+
+/* Seal + wordmark as one centred block, with a short gold rule under it. */
+.panel-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 5px;
+    margin-bottom: 6px;
+}
+.panel-brand img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #ffffff;
+    padding: 2px;
+    box-sizing: border-box;
+    box-shadow:
+        0 0 0 3px rgba(255, 216, 77, 0.32),
+        0 8px 18px rgba(2, 12, 8, 0.38);
+}
+.panel-brand strong {
+    display: block;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    color: var(--lc-gold);
+}
+.panel-brand span {
+    display: block;
+    margin-top: 3px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--lc-soft);
+}
+.panel-brand::after {
+    content: "";
+    width: 36px;
+    height: 2px;
+    margin-top: 1px;
+    border-radius: 2px;
+    background: var(--lc-gold-line);
+}
+
+h1 {
+    margin: 0 0 4px;
+    font-size: 19px;
+    line-height: 1.2;
+    text-align: center;
+    color: #ffffff;
+}
+p.sub {
+    margin: 0 0 6px;
+    color: var(--lc-muted);
+    font-size: 14px;
+    line-height: 1.45;
+    text-align: center;
+}
+
+/* ---- Messages --------------------------------------------------------- */
+
+.msg {
+    border-radius: 12px;
+    padding: 11px 14px;
+    margin-bottom: 10px;
+    font-size: 13.5px;
+    line-height: 1.45;
+}
+.msg.success { background: rgba(98, 209, 145, 0.16); color: #c4ffdb; border: 1px solid rgba(98, 209, 145, 0.38); }
+.msg.error { background: rgba(233, 94, 109, 0.16); color: #ffdbe0; border: 1px solid rgba(233, 94, 109, 0.42); }
+.msg.info { background: rgba(120, 177, 255, 0.14); color: #d9ecff; border: 1px solid rgba(120, 177, 255, 0.34); }
+
+/* ---- Fields ----------------------------------------------------------- */
+
+.field {
+    margin-bottom: 8px;
+    min-width: 0;
+}
+.field-row {
+    display: flex;
+    gap: 12px;
+}
+.field-row .field {
+    flex: 1;
+    min-width: 0;
+}
+.field-row .field-grow {
+    flex: 1.6;
+}
+.hint-under-row {
+    margin: -6px 0 14px;
+}
+.field[hidden] {
+    display: none;
+}
+label {
+    display: block;
+    margin-bottom: 3px;
+    color: #d6eadf;
+    font-size: 12.5px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+.label-note {
+    font-weight: 400;
+    letter-spacing: 0;
+    color: var(--lc-soft);
+}
+.hint {
+    display: block;
+    margin-top: 5px;
+    color: var(--lc-soft);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+input,
+select {
+    width: 100%;
+    min-height: 40px;
+    box-sizing: border-box;
+    border-radius: 12px;
+    border: 1px solid var(--lc-field-bd);
+    background: var(--lc-field-bg);
+    color: #f2fbf6;
+    padding: 9px 14px;
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease, background-position 0.18s ease;
+}
+input::placeholder {
+    color: rgba(200, 222, 210, 0.62);
+}
+input:hover,
+select:hover {
+    border-color: var(--lc-field-bd-hover);
+}
+input:focus,
+select:focus {
+    border-color: var(--lc-focus-bd);
+    background: var(--lc-field-bg-focus);
+    box-shadow: 0 0 0 3px var(--lc-focus-ring);
+}
+
+/* Selects: no native chrome; a themed chevron that eases 3px inward on
+   focus (same motion as the admin selects), and a muted colour while the
+   "Select ..." placeholder option is still chosen. */
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 40px;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23cdeedb' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 16px;
+}
+select:focus {
+    background-position: right 11px center;
+}
+select:has(option[value=""]:checked) {
+    color: rgba(200, 222, 210, 0.72);
+}
+select option {
+    color: #0f172a;
+    background: #ffffff;
+}
+
+/* Premium custom select: a themed trigger button + listbox panel, built
+   by hand (same spirit as the typing caret and the Code 128 encoder
+   elsewhere in this project -- no third-party dropdown library). The
+   `select` rules just above stay as-is and keep working as the no-JS
+   fallback: a native dropdown's closed box can be fully themed, like
+   they are, but its open list can only take a couple of CSS properties
+   and always renders in the OS's own flat white style no matter what --
+   this layer replaces the open list specifically, while the real
+   <select> stays in the DOM (visually hidden, not removed) so the form
+   still submits normally either way. Applied via JS in
+   library_card_signup.php; harmless/unused if JS never runs.
+   .lc-select select { ... } below needs the extra selector-specificity
+   to win over the plain `select { width: 100% }` rule above it. */
+.lc-select {
+    position: relative;
+}
+.lc-select select {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    padding: 0;
+    min-height: 0;
+}
+.lc-select-trigger {
+    width: 100%;
+    min-height: 40px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-radius: 12px;
+    border: 1px solid var(--lc-field-bd);
+    background: var(--lc-field-bg);
+    color: #f2fbf6;
+    padding: 9px 14px;
+    font-family: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+}
+.lc-select-trigger:hover {
+    border-color: var(--lc-field-bd-hover);
+}
+.lc-select-trigger.is-placeholder {
+    color: rgba(200, 222, 210, 0.72);
+}
+.lc-select-trigger:focus-visible,
+.lc-select.is-open .lc-select-trigger {
+    outline: none;
+    border-color: var(--lc-focus-bd);
+    background: var(--lc-field-bg-focus);
+    box-shadow: 0 0 0 3px var(--lc-focus-ring);
+}
+.lc-select-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.lc-select-chevron {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    stroke: #cdeedb;
+    transition: transform 0.16s ease;
+}
+.lc-select.is-open .lc-select-chevron {
+    transform: rotate(180deg);
+}
+.lc-select-panel {
+    /* Closed state is height:0 (not just invisible): this is an absolutely
+       positioned box, so a merely-invisible (opacity:0) panel at its full
+       open height still extends past the bottom of the page and forces a
+       page scrollbar that nobody can see the cause of -- the listbox
+       itself never becomes visibly taller than the viewport. Collapsing
+       it to zero height while closed removes it from the document's
+       scrollable area entirely; .is-open restores the real cap below. */
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 20;
+    max-height: 0;
+    overflow-y: auto;
+    padding: 6px;
+    border-radius: 12px;
+    background: linear-gradient(165deg, rgba(22, 70, 50, 0.98) 0%, rgba(10, 36, 25, 0.98) 100%);
+    border: 1px solid var(--lc-field-bd-hover);
+    box-shadow: 0 14px 30px rgba(2, 12, 8, 0.5);
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.14s ease, transform 0.14s ease;
+    /* Themed scrollbar for the option list: standard property first
+       (Firefox, and Chrome 121+), then the WebKit pseudo-elements for
+       anything older -- left alone, this scrolls with a flat grey/white
+       OS scrollbar that clashes the same way the native select's open
+       list used to, before the rest of this control was themed. */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(196, 225, 208, 0.45) transparent;
+}
+.lc-select-panel::-webkit-scrollbar {
+    width: 10px;
+}
+.lc-select-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+.lc-select-panel::-webkit-scrollbar-thumb {
+    background-color: rgba(196, 225, 208, 0.45);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+.lc-select-panel::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(196, 225, 208, 0.7);
+}
+.lc-select.is-open .lc-select-panel {
+    max-height: 224px;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+.lc-select-option {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 2px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 0;
+    background: transparent;
+    color: var(--lc-text);
+    font-family: inherit;
+    font-size: 13.5px;
+    text-align: left;
+    cursor: pointer;
+}
+.lc-select-option:last-child {
+    margin-bottom: 0;
+}
+.lc-select-option:hover,
+.lc-select-option.is-active {
+    background: rgba(230, 242, 236, 0.12);
+}
+.lc-select-option.is-selected {
+    color: #ffffff;
+    background: rgba(255, 216, 77, 0.14);
+    font-weight: 700;
+}
+
+/* Verification code: big, centred, tabular digits. The padding-left
+   offsets the trailing letter-spacing so the digits sit truly centred. */
+input.code-input {
+    min-height: 62px;
+    padding-left: 26px;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 14px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+input.code-input::placeholder {
+    letter-spacing: 14px;
+    color: rgba(200, 222, 210, 0.38);
+}
+
+/* A nested group, like the admin Edit Book location card, for the
+   report-only questions. */
+.form-group {
+    margin: 2px 0 14px;
+    padding: 12px 14px 1px;
+    border-radius: 14px;
+    background: rgba(140, 215, 170, 0.06);
+    border: 1px solid rgba(194, 224, 207, 0.18);
+}
+.form-group-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 4px;
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #dcefe4;
+}
+.form-group-title::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--lc-gold);
+    box-shadow: 0 0 0 3px rgba(255, 216, 77, 0.18);
+}
+.form-group-note {
+    margin: 0 0 12px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--lc-soft);
+}
+
+/* Student/faculty choice: an explicit segmented control rather than
+   guessing from the ID's shape (two ID formats are live at once as of
+   late 2026 -- see library_card_normalize_id() in
+   config/library_card_helpers.php). Same field tokens as inputs/selects
+   above; the radio itself is visually hidden and its label does the
+   clicking, so the whole pill is one big touch target for the kiosk. */
+.role-toggle {
+    display: flex;
+    gap: 10px;
+}
+.role-option {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    box-sizing: border-box;
+    margin-bottom: 0;
+    padding: 9px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--lc-field-bd);
+    background: var(--lc-field-bg);
+    color: var(--lc-muted);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: normal;
+    text-transform: none;
+    cursor: pointer;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease, color 0.16s ease;
+}
+.role-option:hover {
+    border-color: var(--lc-field-bd-hover);
+}
+.role-option input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    padding: 0;
+    min-height: 0;
+}
+.role-option:has(input:focus-visible) {
+    border-color: var(--lc-focus-bd);
+    box-shadow: 0 0 0 3px var(--lc-focus-ring);
+}
+.role-option:has(input:checked) {
+    /* Solid gold fill instead of a faint tint -- same "pop" treatment this
+       project already uses for its other gold-accent selected states (the
+       active genre chip, the Check Out button, the printed card's role
+       badge). Dark brown text rather than white: white washes out against
+       a fill this bright, same reasoning documented for those surfaces. */
+    border-color: var(--lc-gold);
+    background: linear-gradient(160deg, #ffe073 0%, #ffd84d 45%, #e8bd00 100%);
+    color: #2f2815;
+    font-weight: 800;
+    box-shadow:
+        0 0 0 1px rgba(255, 216, 77, 0.55) inset,
+        0 4px 14px rgba(232, 189, 0, 0.35);
+}
+
+/* ---- Buttons and links ------------------------------------------------ */
+
+/* Extra breathing room specifically above the submit button: the fields
+   above it only carry a 9px margin-bottom (trimmed for the no-scrollbar
+   fix), which reads as cramped right where it matters most -- the final
+   row before the primary action. Targeted via adjacent-sibling so only
+   this one spot gets the larger gap, not every field. The consent
+   checkbox field is what actually sits right before the button now. */
+.consent-field {
+    margin-top: 10px;
+    margin-bottom: 6px;
+}
+.consent-field + .btn {
+    margin-top: 6px;
+}
+/* Reprint page: extra room above the submit button, same idea as
+   .consent-field + .btn above but scoped to its own class since this
+   page's last field has no consent checkbox after it -- kept separate
+   rather than a bare ".field + .btn" so this doesn't also change
+   verify.php's code-entry field, which wasn't part of this ask and
+   hasn't been checked for spare room the way this page has (it has
+   plenty -- a two-field form, nowhere near needing a scrollbar). */
+.field-before-submit + .btn {
+    margin-top: 5px;
+}
+
+/* Data-privacy consent checkbox: a required field confirming the signer
+   understands how their info is used (name/email/ID for the account
+   itself, program/year/gender only for anonymous stats -- the same
+   disclosure the Twenty-third/Twenty-fifth rounds' now-removed hint line
+   used to carry, now backed by an actual consent action instead of just
+   a passive note). Hand-rolled circular control (Thirty-fourth round --
+   the native checkbox's accent-color only ever reached the CHECKED
+   state, so unchecked it sat as a plain square white box with a grey
+   outline, out of step with every other selected/active surface on this
+   page). Same sr-only-input + :has() pattern as .role-option's radios
+   just above, and the same solid-gold "selected" fill those use, so a
+   checked box reads as the same kind of "this is the active choice"
+   signal everywhere on the page. */
+.consent-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin-bottom: 0;
+    font-weight: 400;
+    letter-spacing: normal;
+    text-transform: none;
+    cursor: pointer;
+}
+.consent-option input[type="checkbox"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    padding: 0;
+    min-height: 0;
+}
+.consent-check {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    border: 1.5px solid var(--lc-field-bd);
+    background: var(--lc-field-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+.consent-check svg {
+    width: 11px;
+    height: 11px;
+    fill: none;
+    stroke: #2f2815;
+    stroke-width: 3.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity 0.14s ease, transform 0.14s ease;
+}
+.consent-option:hover .consent-check {
+    border-color: var(--lc-field-bd-hover);
+}
+.consent-option:has(input:checked) .consent-check {
+    border-color: var(--lc-gold);
+    background: linear-gradient(160deg, #ffe073 0%, #ffd84d 45%, #e8bd00 100%);
+    box-shadow:
+        0 0 0 1px rgba(255, 216, 77, 0.55) inset,
+        0 2px 8px rgba(232, 189, 0, 0.3);
+}
+.consent-option:has(input:checked) .consent-check svg {
+    opacity: 1;
+    transform: scale(1);
+}
+.consent-option:has(input:focus-visible) .consent-check {
+    border-color: var(--lc-focus-bd);
+    box-shadow: 0 0 0 3px var(--lc-focus-ring);
+}
+.consent-text {
+    color: var(--lc-soft);
+    font-size: 12px;
+    line-height: 1.45;
+}
+.consent-option:has(input:focus-visible) .consent-text {
+    text-decoration: underline;
+    text-decoration-color: var(--lc-focus-bd);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 40px;
+    box-sizing: border-box;
+    padding: 10px 22px;
+    border-radius: 999px;
+    border: 1px solid rgba(150, 230, 185, 0.45);
+    background: linear-gradient(160deg, #2fae68 0%, #156c3e 100%);
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 14.5px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(2, 12, 8, 0.32);
+    transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
+}
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 9px 20px rgba(2, 12, 8, 0.38);
+    filter: brightness(1.07);
+}
+.btn:active {
+    transform: translateY(0);
+}
+.btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 216, 77, 0.5), 0 6px 16px rgba(2, 12, 8, 0.32);
+}
+.btn svg {
+    width: 17px;
+    height: 17px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.btn-ghost {
+    background:
+        linear-gradient(160deg, rgba(255, 216, 77, 0.16) 0%, rgba(255, 216, 77, 0.03) 45%, rgba(194, 224, 207, 0.05) 100%),
+        rgba(13, 42, 30, 0.3);
+    border-color: rgba(255, 216, 77, 0.4);
+    color: #f5ecc9;
+    box-shadow: 0 4px 14px rgba(2, 12, 8, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+.btn-ghost svg {
+    stroke: var(--lc-gold);
+}
+.btn-ghost:hover {
+    background:
+        linear-gradient(160deg, rgba(255, 216, 77, 0.26) 0%, rgba(255, 216, 77, 0.06) 45%, rgba(194, 224, 207, 0.08) 100%),
+        rgba(13, 42, 30, 0.3);
+    border-color: rgba(255, 216, 77, 0.65);
+    color: #ffffff;
+    box-shadow: 0 8px 20px rgba(2, 12, 8, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    filter: none;
+}
+.btn-ghost:active {
+    filter: brightness(0.96);
+}
+
+/* Secondary navigation sits in one centred footer on every page. */
+.panel-footer {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(194, 224, 207, 0.15);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 8px 22px;
+}
+.link {
+    color: #c8e4d6;
+    font-size: 13px;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: color 0.14s ease;
+}
+.link strong {
+    color: #ffe48a;
+}
+.link:hover {
+    color: #ffffff;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.link:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--lc-focus-ring);
+}
+
+/* Callout, same shape as the Bulk Import info note, in gold. */
+.notice {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 11px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #f3e7bf;
+    background: rgba(255, 216, 77, 0.08);
+    border: 1px solid rgba(255, 216, 77, 0.3);
+    text-align: left;
+}
+.notice svg {
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    fill: none;
+    stroke: var(--lc-gold);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.notice strong {
+    color: #ffffff;
+}
+
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 14px 5px 6px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    color: #eafff2;
+    background: linear-gradient(160deg, rgba(98, 209, 145, 0.3) 0%, rgba(98, 209, 145, 0.08) 100%);
+    border: 1px solid rgba(132, 235, 177, 0.55);
+    box-shadow: 0 4px 12px rgba(2, 12, 8, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.status-chip svg {
+    width: 18px;
+    height: 18px;
+    padding: 3.5px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    background: linear-gradient(160deg, #5be8a4 0%, #1c9f61 100%);
+    box-shadow: 0 1px 3px rgba(2, 12, 8, 0.35);
+    fill: none;
+    stroke: #063019;
+    stroke-width: 2.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 16px 12px;
+    }
+    .panel {
+        padding: 20px 18px 16px;
+    }
+    .field-row.stack-sm {
+        flex-direction: column;
+        gap: 0;
+    }
+}
+
+/* ---- The card ------------------------------------------------------- */
+
+.card-page {
+    width: min(460px, 95vw);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+.card-page .panel {
+    width: 100%;
+}
+
+/* Sized in mm to the standard ID-1 card (85.6 x 54mm) so it prints at
+   real size. "Midnight" design: a deep-green card with fine engraved
+   (guilloche) linework, white and yellow type, and the barcode in its own
+   white panel.
+
+   Scan-critical zone: the barcode block (.lc-barcode, its SVG, and the ID
+   digits under it) is solid black on plain white inside .lc-barcode-box.
+   The SVG carries its own white quiet zone (10 modules each side), the box
+   adds 1.6mm more each side and 2.2mm above the bars; nothing coloured,
+   patterned, or framed may overlap that block.
+
+   Every colour is flat: no gradients, CSS patterns, or transparency (those
+   become PDF shading/tiling patterns that some viewers render pink). The
+   linework is individual solid circles.
+
+   Colours survive a black-and-white printer: on the deep green (~4%
+   luminance) the white text is 11.6:1, the yellow 8.4:1 and the pale-blue
+   label 7.6:1. */
+.library-card {
+    --lc-card-green: #0f5132;
+    --lc-card-deep: #0c4129;
+    --lc-card-line: #145a39;
+    /* PHINMA logo swoosh blue (sampled from assets/images/phinma-icon.png;
+       kiosk.css already uses it), and its pale tint for small labels. */
+    --lc-card-blue: #2e67a6;
+    --lc-card-blue-light: #b9d4f0;
+    --lc-card-yellow: #ffd84d;
+    position: relative;
+    width: 85.6mm;
+    height: 54mm;
+    box-sizing: border-box;
+    padding: 4mm 4.5mm 3.8mm;
+    background: var(--lc-card-deep);
+    color: #ffffff;
+    border-radius: 3mm;
+    display: flex;
+    flex-direction: column;
+    font-family: Arial, Helvetica, sans-serif;
+    overflow: hidden;
+}
+
+/* Engraved linework: two families of concentric circles (bottom-right and
+   top-left), one shade lighter than the card. Under the barcode panel the
+   panel's own white covers them. */
+.library-card .lc-guilloche {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+.library-card .lc-guilloche circle {
+    fill: none;
+    stroke: var(--lc-card-line);
+    stroke-width: 0.3;
+}
+.library-card .lc-head,
+.library-card .lc-rule,
+.library-card .lc-body {
+    position: relative;
+}
+
+/* Letterhead: seal beside the library name (bold serif) over a small,
+   widely tracked yellow subtitle. Georgia ships with Windows and macOS and
+   is embedded in the PDF; other systems fall back to their default serif. */
+.library-card .lc-head {
+    display: flex;
+    align-items: center;
+    gap: 2.4mm;
+}
+.library-card .lc-head img {
+    width: 9mm;
+    height: 9mm;
+    flex-shrink: 0;
+    border-radius: 50%;
+}
+.library-card .lc-letterhead {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6mm;
+}
+.library-card .lc-school {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 3.6mm;
+    font-weight: 700;
+    letter-spacing: 0.1mm;
+    line-height: 1.05;
+    color: #ffffff;
+}
+.library-card .lc-title {
+    font-size: 1.9mm;
+    font-weight: 700;
+    letter-spacing: 0.6mm;
+    text-transform: uppercase;
+    line-height: 1.2;
+    color: var(--lc-card-yellow);
+}
+/* The tracking already adds 0.6mm after the B of SMARTLIB, so the left
+   margin is that much smaller to centre the dot. */
+.library-card .lc-title-sep {
+    letter-spacing: 0;
+    margin: 0 1.2mm 0 0.6mm;
+}
+.library-card .lc-rule {
+    width: 12mm;
+    height: 0.4mm;
+    margin: 2.6mm 0 0;
+    background: var(--lc-card-yellow);
+}
+
+/* Bottom row: cardholder on the left, barcode panel on the right. */
+.library-card .lc-body {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 2mm;
+}
+.library-card .lc-holder {
+    min-width: 0;
+    flex: 1;
+}
+.library-card .lc-label {
+    font-size: 1.8mm;
+    font-weight: 700;
+    letter-spacing: 0.45mm;
+    text-transform: uppercase;
+    color: var(--lc-card-blue-light);
+    line-height: 1.2;
+}
+.library-card .lc-name {
+    margin-top: 0.5mm;
+    font-size: 4.3mm;
+    font-weight: 700;
+    line-height: 1.1;
+    color: #ffffff;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+/* Long names (over 22 characters) step down a size so they fit in full
+   within three lines instead of being cut off. */
+.library-card .lc-name-long {
+    font-size: 3.2mm;
+    line-height: 1.12;
+}
+/* Role badge: yellow outline, icon and text on the card green. */
+.library-card .lc-role {
+    display: inline-flex;
+    align-items: center;
+    gap: 1.1mm;
+    margin-top: 1.6mm;
+    padding: 0.55mm 2mm;
+    border: 0.3mm solid var(--lc-card-yellow);
+    border-radius: 999px;
+    color: var(--lc-card-yellow);
+    font-size: 1.9mm;
+    font-weight: 700;
+    letter-spacing: 0.4mm;
+    text-transform: uppercase;
+    line-height: 1;
+}
+/* Optical centring. The tracking adds 0.4mm after the last letter, so a
+   matching negative margin removes it; and capitals have no descenders,
+   so the cap height (not the font's full line box) is centred via the
+   small top nudge. */
+.library-card .lc-role-text {
+    display: block;
+    margin-right: -0.4mm;
+    padding-top: 0.18mm;
+}
+.library-card .lc-role svg {
+    width: 2.4mm;
+    height: 2.4mm;
+    flex-shrink: 0;
+    margin-top: -0.2mm;
+    fill: none;
+    stroke: var(--lc-card-yellow);
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+/* The briefcase sits 1mm inside its icon box (the cap only 0.5mm), so it
+   is pulled left to keep the icon + word group centred in the pill. */
+.library-card .lc-role .lc-role-icon-faculty {
+    margin-left: -0.4mm;
+    margin-top: -0.05mm;
+}
+
+/* The white barcode panel. Black text is set here because the card's text
+   colour is white and the ID digits inherit it. */
+.library-card .lc-barcode-box {
+    flex-shrink: 0;
+    padding: 2.2mm 1.6mm 0.8mm;
+    background: #ffffff;
+    color: #000000;
+    border-radius: 1.6mm;
+}
+.library-card .lc-barcode {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.library-card .lc-barcode svg {
+    display: block;
+}
+.library-card .lc-id {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 3.2mm;
+    font-weight: 700;
+    letter-spacing: 1mm;
+    margin-top: 0.8mm;
+}
+
+/* Thin blue edge along the bottom of the card. */
+.library-card .lc-edge {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 0.8mm;
+    background: var(--lc-card-blue);
+}
+
+/* ---- Card page, screen only -------------------------------------------
+   None of this reaches print. The card is shown larger (zoom scales its
+   mm sizes, barcode included) and lifted with depth; a faint light ring
+   separates the dark card from the dark page behind it. */
+@media screen {
+    .card-page {
+        width: min(540px, 100%);
+        box-sizing: border-box;
+        padding: 24px 26px 18px;
+        border-radius: 16px;
+        background:
+            radial-gradient(120% 70% at 85% -15%, rgba(130, 215, 165, 0.16) 0%, rgba(130, 215, 165, 0) 55%),
+            linear-gradient(165deg, rgba(38, 104, 73, 0.66) 0%, rgba(22, 70, 50, 0.66) 55%, rgba(12, 42, 30, 0.72) 100%);
+        border: 1px solid var(--lc-line);
+        border-top: 3px solid var(--lc-gold-line);
+        box-shadow:
+            0 18px 36px rgba(2, 12, 8, 0.38),
+            0 1px 0 rgba(255, 255, 255, 0.06) inset;
+        gap: 16px;
+    }
+    .card-page .panel-brand {
+        margin-bottom: 0;
+    }
+    .card-title-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 8px 12px;
+    }
+    .card-title-row h1 {
+        margin: 0;
+        font-weight: 800;
+        letter-spacing: 0.01em;
+    }
+
+    .card-stage {
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        justify-content: center;
+        padding: 18px 12px;
+        border-radius: 14px;
+        background:
+            radial-gradient(70% 80% at 50% 45%, rgba(170, 235, 200, 0.16) 0%, rgba(170, 235, 200, 0) 70%),
+            rgba(4, 20, 14, 0.28);
+        border: 1px solid rgba(194, 224, 207, 0.14);
+    }
+    .library-card {
+        zoom: 1.32;
+        box-shadow:
+            0 0 0 1px rgba(255, 255, 255, 0.12),
+            0 2px 4px rgba(0, 0, 0, 0.2),
+            0 14px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .card-actions {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .card-actions-row {
+        display: flex;
+        gap: 10px;
+    }
+    .card-actions-row .btn {
+        flex: 1;
+        min-width: 0;
+    }
+    .card-page .panel-footer {
+        width: 100%;
+        margin-top: 0;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .library-card {
+        zoom: 1.2;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .card-page {
+        padding: 20px 14px 16px;
+    }
+    .card-stage {
+        padding: 18px 0;
+        background: transparent;
+        border: 0;
+    }
+    /* Fill the phone's width: 85.6mm is ~324 CSS px at zoom 1. */
+    .library-card {
+        zoom: 1.02;
+    }
+}
+
+@media print {
+    @page {
+        size: auto;
+        margin: 15mm;
+    }
+    body {
+        background: #ffffff;
+        color: #000000;
+        display: block;
+        min-height: 0;
+        padding: 0;
+    }
+    .no-print {
+        display: none !important;
+    }
+    .card-page {
+        width: auto;
+        display: block;
+    }
+    .library-card {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        break-inside: avoid;
+    }
+}

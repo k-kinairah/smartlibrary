@@ -44,7 +44,8 @@ if (!empty($rate['too_many']) || !empty($rate['cooldown'])) {
 }
 
 $stmt = $conn->prepare(
-    "SELECT user_id, user_number, first_name, last_name, role, status, email
+    "SELECT user_id, user_number, first_name, last_name, role, status, email,
+            registration_source, password
      FROM library_users
      WHERE user_number = ?
      LIMIT 1"
@@ -77,6 +78,15 @@ if ($accountType === 'student') {
 }
 
 if (!$roleAllowed || ($status !== '' && $status !== 'active')) {
+    respond_json($genericSuccess);
+}
+
+// Self-registered library card accounts have no PIN and no kiosk access;
+// a librarian sets that up separately. Without this, "reset" would let
+// them set a first PIN themselves. Once a librarian has given the account
+// a PIN, normal resets work again.
+$isSelfSignup = (string)($user['registration_source'] ?? '') === 'self_signup';
+if ($isSelfSignup && trim((string)($user['password'] ?? '')) === '') {
     respond_json($genericSuccess);
 }
 
