@@ -26,3 +26,4 @@ config/db_config.php
 _test_mail.php
 /_db_*.php
 assets/images/BANTILING*.pdf
+logs/
