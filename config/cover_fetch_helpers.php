@@ -68,6 +68,46 @@ const EXCLUDED_BOOK_IDS = [
     1653 => 'title/author search top match is a generic "cover image unavailable" placeholder graphic, not a real cover',
 ];
 
+/**
+ * Images confirmed, by direct byte inspection, to be a generic "image not
+ * available" placeholder graphic rather than real cover art -- keyed by
+ * content hash (not book_id), so this protects *any* book this exact file
+ * might get served for, from *any* source, not just the book(s) it was
+ * first caught on.
+ *
+ * Re-added 2026-10-21. This exact check (then called KNOWN_BAD_IMAGE_HASHES
+ * + fbc_is_known_bad_image(), with the same single entry below) was first
+ * built and deployed 2026-10-10 after this same 9,103-byte placeholder was
+ * found served for 30 books under 30 different md5-identical filenames. At
+ * some point after that it was lost from this file -- most likely when the
+ * cover-fetch logic was pulled out of tools/fetch_book_covers.php into this
+ * shared file on 2026-10-12 (item 7, same day), probably starting from a
+ * copy of the tool predating the Oct 10 fix -- and nobody re-verified for
+ * this specific symptom afterward. The regression went undetected because
+ * MIN_IMAGE_BYTES (1,000) and the portrait-or-square check both pass this
+ * image cleanly (it's a real, valid, portrait-oriented 575x750 PNG; the
+ * only thing wrong with it is *which* 575x750 PNG it is) -- shape-based
+ * checks alone can never catch this class of bug, only a content check can.
+ *
+ * Caught again 2026-10-21 while checking the nightly cover-fetch job's
+ * progress: the one nightly run that completed cleanly after the Oct 10 fix
+ * (2026-10-12, before the job started failing on a DB-connection error for
+ * several nights running -- see logs/fetch_book_covers.log) had silently
+ * re-saved this exact placeholder for 15 books via the Google Books
+ * title/author fallback: #253, #446, #447, #571, #590, #701, #706, #723,
+ * #725, #814, #908, #988, #1017, #1030, #1058. Those 15 need the same
+ * tools/clear_bad_covers.php --book_ids=... --force --commit treatment the
+ * original 30 got, to reset books.cover back to NULL and delete the files.
+ */
+const KNOWN_BAD_IMAGE_HASHES = [
+    'a64fa89d7ebc97075c1d363fc5fea71f' => '9,103-byte 575x750 grayscale PNG "image not available" placeholder graphic -- both Open Library and Google Books have been observed serving this exact file for titles they don\'t really have cover art for',
+];
+
+/** A real cover's bytes never match a known "this isn't actually a cover" placeholder. */
+function fbc_is_known_bad_image(string $bytes): bool {
+    return array_key_exists(md5($bytes), KNOWN_BAD_IMAGE_HASHES);
+}
+
 function fbc_curl_available(): bool {
     return function_exists('curl_init');
 }
@@ -185,6 +225,9 @@ function fbc_try_isbn(string $isbn): ?array {
     if (!fbc_is_portrait_or_square($body)) {
         return null;
     }
+    if (fbc_is_known_bad_image($body)) {
+        return null;
+    }
     return ['bytes' => $body, 'ext' => $ext, 'via' => "ISBN {$clean}"];
 }
 
@@ -249,6 +292,11 @@ function fbc_try_title_author(string $title, string $author): ?array {
             // crowdsourced data occasionally attaches the wrong image to an
             // otherwise correct title+author match. Don't accept it; try the
             // next candidate instead of settling for a known-bad image.
+            continue;
+        }
+        if (fbc_is_known_bad_image($imgBody)) {
+            // Right shape, wrong content -- a known "image not available"
+            // placeholder. Try the next candidate instead of saving it.
             continue;
         }
         return [
@@ -491,6 +539,9 @@ function fbc_try_google_isbn(string $isbn): ?array {
             if (!fbc_is_portrait_or_square($imgBody)) {
                 continue;
             }
+            if (fbc_is_known_bad_image($imgBody)) {
+                continue;
+            }
             return ['bytes' => $imgBody, 'ext' => $ext, 'via' => "Google Books ISBN {$clean}"];
         }
         $matchedNoCoverTitle ??= (string)($volumeInfo['title'] ?? '') ?: "ISBN {$clean}";
@@ -587,6 +638,9 @@ function fbc_try_google_title_author(string $title, string $author): ?array {
                 continue;
             }
             if (!fbc_is_portrait_or_square($imgBody)) {
+                continue;
+            }
+            if (fbc_is_known_bad_image($imgBody)) {
                 continue;
             }
             return [
