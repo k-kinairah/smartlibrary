@@ -2,6 +2,7 @@
 session_start();
 require 'config/db_connect.php';
 require 'config/auth_security.php';
+require_once 'config/library_card_helpers.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -15,7 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond_json(['status' => 'error', 'message' => 'Invalid request method.'], 405);
 }
 
-$identifier = trim((string)($_POST['identifier'] ?? ''));
+// Same ID normalization as login_handler.php (dashes as printed on the card).
+$identifier = library_card_normalize_id((string)($_POST['identifier'] ?? ''));
 $accountType = strtolower(trim((string)($_POST['account_type'] ?? 'student')));
 $clientIp = auth_client_ip();
 $genericSuccess = [

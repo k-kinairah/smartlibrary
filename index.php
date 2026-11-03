@@ -427,11 +427,11 @@ if ($genreRes) {
                         <span class="option-title">Student</span>
                         <span class="option-sub">Borrow up to 3 books for 7 days</span>
                     </button>
-                    <button type="button" class="account-type-option" data-type="faculty" data-label="Faculty" data-sub="5 books - 30 days" data-id-label="Faculty ID" data-id-placeholder="FAC0001" data-secret-label="PIN" data-secret-placeholder="2026">
+                    <button type="button" class="account-type-option" data-type="faculty" data-label="Faculty" data-sub="5 books - 30 days" data-id-label="Faculty ID" data-id-placeholder="Your faculty ID" data-secret-label="PIN" data-secret-placeholder="2026">
                         <span class="option-title">Faculty</span>
                         <span class="option-sub">Borrow up to 5 books for 30 days</span>
                     </button>
-                    <button type="button" class="account-type-option" data-type="librarian" data-label="Librarian" data-sub="5 books - 7 days" data-id-label="Librarian ID" data-id-placeholder="LIB0001" data-secret-label="Password" data-secret-placeholder="Enter your password">
+                    <button type="button" class="account-type-option" data-type="librarian" data-label="Librarian" data-sub="5 books - 7 days" data-id-label="Librarian ID" data-id-placeholder="Your librarian ID" data-secret-label="Password" data-secret-placeholder="Enter your password">
                         <span class="option-title">Librarian</span>
                         <span class="option-sub">Staff access - up to 5 books for 7 days</span>
                     </button>

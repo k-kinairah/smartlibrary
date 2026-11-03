@@ -38,6 +38,7 @@ session_start();
 require 'config/db_connect.php';
 require 'config/auth_security.php';
 require 'config/csrf.php';
+require_once 'config/library_card_helpers.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -84,7 +85,10 @@ if (!smartlib_csrf_verify('signin_csrf', $_POST['csrf_token'] ?? '')) {
     respond_json(['status' => 'error', 'message' => 'Your session expired. Refresh the page and try again.'], 403);
 }
 
-$identifier = trim((string)($_POST['identifier'] ?? ''));
+// Same normalization as signup, reprint and the door scanner: IDs are stored
+// without dashes, but the card prints new-format IDs with them, so a patron
+// typing their ID exactly as printed must still match.
+$identifier = library_card_normalize_id((string)($_POST['identifier'] ?? ''));
 $password = trim((string)($_POST['password'] ?? ''));
 $accountType = strtolower(trim((string)($_POST['account_type'] ?? 'student')));
 $clientIp = auth_client_ip();

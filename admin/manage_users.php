@@ -12,6 +12,7 @@ if (!isset($_SESSION['user_id']) || !in_array($currentRole, ['librarian', 'admin
 require '../config/db_connect.php';
 require_once '../config/admin_audit.php';
 require_once '../config/csrf.php';
+require_once '../config/library_card_helpers.php';
 
 $buildManageUsersUrl = static function (array $params): string {
     $clean = [];
@@ -59,7 +60,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_user'])) {
     } else {
         $firstName = trim((string)($_POST['first_name'] ?? ''));
     $lastName = trim((string)($_POST['last_name'] ?? ''));
-    $userNumber = trim((string)($_POST['user_number'] ?? ''));
+    // Stored without dashes/spaces, like every other path that writes or looks
+    // up an ID (signup, login, the door scanner) -- see library_card_normalize_id().
+    $userNumber = library_card_normalize_id((string)($_POST['user_number'] ?? ''));
     $email = trim((string)($_POST['email'] ?? ''));
     $pin = trim((string)($_POST['pin'] ?? ''));
     $role = strtolower(trim((string)($_POST['role'] ?? 'student')));
@@ -146,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
         $editUserId = (int)($_POST['edit_user_id'] ?? 0);
     $firstName = trim((string)($_POST['edit_first_name'] ?? ''));
     $lastName = trim((string)($_POST['edit_last_name'] ?? ''));
-    $userNumber = trim((string)($_POST['edit_user_number'] ?? ''));
+    $userNumber = library_card_normalize_id((string)($_POST['edit_user_number'] ?? ''));
     $email = trim((string)($_POST['edit_email'] ?? ''));
     $programIdRaw = trim((string)($_POST['edit_program_id'] ?? ''));
     $programId = ctype_digit($programIdRaw) ? (int)$programIdRaw : null;
