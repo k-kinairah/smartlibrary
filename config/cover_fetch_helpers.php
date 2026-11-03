@@ -765,6 +765,7 @@ function fbc_db_reconnect_if_needed(mysqli $conn): mysqli {
         try {
             $fresh = new mysqli($host, $user, $pass, $db);
             $fresh->set_charset('utf8mb4');
+            $fresh->query("SET time_zone = '+08:00'"); // same as config/db_connect.php
             fbc_log_line("  [db] Connection to MySQL was lost; reconnected (attempt {$i})." . PHP_EOL);
             return $fresh;
         } catch (mysqli_sql_exception $e) {

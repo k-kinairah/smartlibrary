@@ -24,3 +24,9 @@ try {
     die('Database connection failed. Please try again later.');
 }
 $conn->set_charset("utf8mb4");
+// Pin MySQL's NOW()/CURDATE() to the same clock as PHP (Asia/Manila above).
+// The code mixes the two -- e.g. reset-token expiry is computed with PHP
+// date() and checked with SQL NOW() -- so they must agree. A database server
+// on UTC or US time would otherwise be 8-13 hours off. Manila has no DST, so
+// a fixed offset is exact and needs no timezone tables on the server.
+$conn->query("SET time_zone = '+08:00'");

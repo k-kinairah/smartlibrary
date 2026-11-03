@@ -28,30 +28,16 @@ function auth_is_local_request(string $ip): bool {
     return in_array($ip, ['127.0.0.1', '::1', 'localhost'], true);
 }
 
+// The TCP connection address only. X-Forwarded-For / Client-IP are request
+// headers any visitor can set, and trusting them let a remote request pass
+// as 127.0.0.1 (showing the 2FA code on screen) or dodge the login lockout
+// and reset rate limits by changing the header each time. There is no
+// reverse proxy in front of SmartLib, locally or on the planned host; if one
+// (e.g. Cloudflare) is added later, read its header only when REMOTE_ADDR is
+// on that proxy's published address list, never unconditionally.
 function auth_client_ip(): string {
-    $candidates = [
-        $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '',
-        $_SERVER['HTTP_CLIENT_IP'] ?? '',
-        $_SERVER['REMOTE_ADDR'] ?? ''
-    ];
-
-    foreach ($candidates as $candidate) {
-        $candidate = trim((string)$candidate);
-        if ($candidate === '') {
-            continue;
-        }
-
-        if (strpos($candidate, ',') !== false) {
-            $parts = explode(',', $candidate);
-            $candidate = trim((string)$parts[0]);
-        }
-
-        if ($candidate !== '') {
-            return substr($candidate, 0, 64);
-        }
-    }
-
-    return '0.0.0.0';
+    $ip = trim((string)($_SERVER['REMOTE_ADDR'] ?? ''));
+    return $ip !== '' ? substr($ip, 0, 64) : '0.0.0.0';
 }
 
 function auth_mask_email(string $email): string {
