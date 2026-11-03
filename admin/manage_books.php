@@ -1959,13 +1959,3 @@ require 'layout_top.php';
 <script src="../assets/javascript/manage_books_admin.js?v=<?= @filemtime(__DIR__ . '/../assets/javascript/manage_books_admin.js') ?: time() ?>"></script>
 
 <?php require 'layout_bottom.php'; ?>
-
-
-
-
-
-
-
-
-
-

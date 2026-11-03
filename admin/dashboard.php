@@ -1,4 +1,4 @@
-﻿<?php require 'layout_top.php'; ?>
+<?php require 'layout_top.php'; ?>
 <?php
 require '../config/db_connect.php';
 require_once '../config/borrow_fine_rules.php';
@@ -1119,29 +1119,3 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
 <script src="../assets/javascript/admin_dashboard.js?v=<?= $dashJsVer ?>"></script>
 
 <?php require 'layout_bottom.php'; ?>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

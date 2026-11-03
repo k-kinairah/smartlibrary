@@ -731,5 +731,3 @@ window.addEventListener('keydown', function (event) {
 </script>
 
 <?php require 'layout_bottom.php'; ?>
-
-

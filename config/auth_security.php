@@ -597,8 +597,3 @@ function auth_finalize_session_login(array $user, string $normalizedRole): void 
 
     unset($_SESSION['pending_2fa']);
 }
-
-?>
-
-
-

@@ -223,7 +223,3 @@ respond([
     'status' => 'success',
     'message' => 'Receipt sent to ' . mask_email($email)
 ]);
-?>
-
-
-

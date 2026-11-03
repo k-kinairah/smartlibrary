@@ -983,20 +983,3 @@ window.addEventListener('click', function (e) {
 </script>
 
 <?php require 'layout_bottom.php'; ?>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

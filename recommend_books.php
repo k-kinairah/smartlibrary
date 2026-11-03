@@ -938,10 +938,3 @@ echo json_encode([
     ],
     'panels' => $panels
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-?>
-
-
-
-
-
-

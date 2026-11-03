@@ -641,12 +641,3 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <?php require 'layout_bottom.php'; ?>
-
-
-
-
-
-
-
-
-
