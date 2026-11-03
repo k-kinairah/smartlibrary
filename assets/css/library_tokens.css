@@ -1,0 +1,34 @@
+/* Shared design tokens for the library's public-facing pages: the card
+   signup flow (library_card.css) and the door entry scanner (entry_scan.css).
+   Both import this file, so they stay in sync. */
+
+:root {
+    --lc-text: #eaf6ef;
+    --lc-muted: #c8ddd1;
+    --lc-soft: #a9c7b7;
+    --lc-gold: #ffd84d;
+    --lc-gold-line: rgba(255, 216, 77, 0.72);
+    --lc-line: rgba(194, 224, 207, 0.24);
+    /* Thirty-fifth round: these were a single near-transparent flat tint
+       (0.1 alpha) that read as barely-there/grey against the dark green
+       page -- every field, the custom-select trigger, the role toggle,
+       and the consent circle all drew from it, so all of them looked
+       dull at once. Now a two-layer `background` (a faint gold-glass
+       sheen, same formula as .btn-ghost/.status-chip's premium pass,
+       over a darker solid base) so each surface reads as an actual
+       panel. `border`/`border-color` usages are untouched by this --
+       those still take a single colour -- only the `background-color`
+       usages below were widened to `background` to carry the gradient. */
+    --lc-field-bg:
+        linear-gradient(160deg, rgba(255, 216, 77, 0.07) 0%, rgba(255, 216, 77, 0.015) 40%, rgba(196, 225, 208, 0.08) 100%),
+        rgba(15, 46, 33, 0.4);
+    --lc-field-bg-focus:
+        linear-gradient(160deg, rgba(255, 216, 77, 0.11) 0%, rgba(255, 216, 77, 0.02) 40%, rgba(196, 225, 208, 0.12) 100%),
+        rgba(15, 46, 33, 0.48);
+    --lc-field-bd: rgba(196, 225, 208, 0.38);
+    --lc-field-bd-hover: rgba(196, 225, 208, 0.58);
+    --lc-focus-bd: rgba(150, 230, 185, 0.8);
+    --lc-focus-ring: rgba(98, 209, 145, 0.3);
+    --lc-gold-deep: #e8bd00;
+    --lc-ink: #2f2815;
+}
