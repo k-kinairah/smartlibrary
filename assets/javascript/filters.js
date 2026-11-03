@@ -2112,6 +2112,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (value === "") return "assets/covers/default.jpg";
         if (/^(https?:)?\/\//i.test(value)) return value;
         if (value.startsWith("assets/")) return value;
+        // Generated-cover URLs (config/book_cover.php's book_cover_url(), e.g.
+        // "book_cover.php?id=208&v=2") are already a complete, root-relative
+        // path with no "/" in them, so they fall through the two checks
+        // above and the one below -- without this, they'd get wrongly
+        // prefixed to "assets/covers/book_cover.php?id=208&v=2" (404).
+        if (value.startsWith("book_cover.php")) return value;
         if (value.includes("/")) return value;
         return `assets/covers/${value}`;
     };

@@ -1,6 +1,7 @@
 <?php
 session_start();
 require 'config/db_connect.php';
+require_once 'config/book_cover.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -36,10 +37,10 @@ function column_exists(mysqli $conn, string $table, string $column): bool {
     return in_array($column, $knownColumns[$table] ?? [], true);
 }
 
-function cover_url(string $cover): string {
+function cover_url(string $cover, int $bookId = 0): string {
     $cover = trim($cover);
     if ($cover === '') {
-        return 'assets/covers/default.jpg';
+        return $bookId > 0 ? book_cover_url($bookId) : 'assets/covers/default.jpg';
     }
 
     if (preg_match('/^(https?:)?\\/\\//i', $cover)) {
@@ -105,7 +106,7 @@ function normalize_book(array $row, string $reason = ''): array {
         'title' => $title !== '' ? $title : 'Untitled',
         'author' => $author !== '' ? $author : 'Unknown Author',
         'cover' => $cover,
-        'cover_url' => cover_url($cover),
+        'cover_url' => cover_url($cover, $bookId),
         'reason' => trim($reason),
         'available_copies' => $availableCopies,
         'total_copies' => $totalCopies,

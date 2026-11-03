@@ -1,6 +1,7 @@
 <?php
 session_start();
 require 'config/db_connect.php';
+require_once 'config/book_cover.php';
 
 function esc(mysqli $conn, string $str): string {
     return mysqli_real_escape_string($conn, $str);
@@ -247,8 +248,11 @@ if ($favoritesEnabled && $currentUserId > 0) {
 
 if ($res && $resultCount > 0) {
     while ($row = mysqli_fetch_assoc($res)) {
-        $cover = !empty($row['cover']) ? 'assets/covers/' . $row['cover'] : 'assets/covers/default.jpg';
         $bookId = (int)($row['book_id'] ?? 0);
+        $coverFile = basename((string)($row['cover'] ?? ''));
+        $cover = ($coverFile !== '' && is_file(__DIR__ . '/assets/covers/' . $coverFile))
+            ? 'assets/covers/' . $coverFile
+            : book_cover_url($bookId);
         $title = htmlspecialchars((string)($row['title'] ?? 'Untitled'));
         $author = htmlspecialchars((string)($row['author'] ?? 'Unknown Author'));
         $isFavorited = isset($favoritedBookIds[$bookId]);

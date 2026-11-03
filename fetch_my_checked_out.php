@@ -2,6 +2,7 @@
 session_start();
 require 'config/db_connect.php';
 require_once 'config/borrow_fine_rules.php';
+require_once 'config/book_cover.php';
 
 header('Content-Type: application/json');
 
@@ -11,10 +12,10 @@ function respond(array $payload, int $code = 200): void {
     exit;
 }
 
-function my_books_cover_path(?string $coverFile): string {
+function my_books_cover_path(?string $coverFile, int $bookId = 0): string {
     $coverFile = trim((string)$coverFile);
     if ($coverFile === '') {
-        return 'assets/covers/default.jpg';
+        return $bookId > 0 ? book_cover_url($bookId) : 'assets/covers/default.jpg';
     }
 
     if (preg_match('/^(https?:)?\/\//i', $coverFile) || str_starts_with($coverFile, 'assets/')) {
@@ -150,6 +151,7 @@ $sql = "
         br.fine,
         COALESCE(br.renew_count, 0) AS renew_count,
         bc.accession_no,
+        b.book_id,
         b.title,
         b.author,
         b.cover
@@ -232,7 +234,7 @@ if ($res) {
             'max_renewals' => $maxRenewals,
             'can_renew' => $canRenew,
             'renew_note' => $renewNote,
-            'cover' => my_books_cover_path((string)($row['cover'] ?? ''))
+            'cover' => my_books_cover_path((string)($row['cover'] ?? ''), (int)($row['book_id'] ?? 0))
         ];
 
         $books[] = $item;
@@ -290,7 +292,7 @@ if (my_books_favorites_table_exists($conn)) {
                 'book_id' => (int)($favRow['book_id'] ?? 0),
                 'title' => (string)($favRow['title'] ?? 'Untitled'),
                 'author' => (string)($favRow['author'] ?? 'Unknown Author'),
-                'cover' => my_books_cover_path((string)($favRow['cover'] ?? '')),
+                'cover' => my_books_cover_path((string)($favRow['cover'] ?? ''), (int)($favRow['book_id'] ?? 0)),
                 'added_at_label' => my_books_date((string)($favRow['created_at'] ?? '')),
                 'total_copies' => $totalCopies,
                 'available_copies' => $availableCopies,

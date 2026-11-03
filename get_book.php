@@ -1,5 +1,6 @@
 <?php
 require 'config/db_connect.php';
+require_once 'config/book_cover.php';
 session_start();
 
 function h($value) {
@@ -45,18 +46,13 @@ function column_exists(mysqli $conn, string $table, string $column): bool {
 
     return $res && $res->num_rows > 0;
 }
-function cover_path($coverName) {
+function cover_path($coverName, int $bookId = 0) {
     $name = basename((string)$coverName);
-    if ($name === '') {
-        return 'assets/covers/default.jpg';
-    }
-
-    $full = __DIR__ . '/assets/covers/' . $name;
-    if (is_file($full)) {
+    if ($name !== '' && is_file(__DIR__ . '/assets/covers/' . $name)) {
         return 'assets/covers/' . $name;
     }
 
-    return 'assets/covers/default.jpg';
+    return $bookId > 0 ? book_cover_url($bookId) : 'assets/covers/default.jpg';
 }
 
 function split_tags($genre, $course = '') {
@@ -475,7 +471,7 @@ $isbn = (string)pick($book, ['isbn'], 'N/A');
 $description = (string)pick($book, ['description', 'summary', 'synopsis'], 'No description available yet.');
 $location = (string)pick($book, ['location'], '');
 $coverName = (string)pick($book, ['cover'], $requestedCover);
-$cover = cover_path($coverName);
+$cover = cover_path($coverName, (int)pick($book, ['book_id'], 0));
 
 $tags = split_tags($genre, $course);
 $availability = availability_text($book);

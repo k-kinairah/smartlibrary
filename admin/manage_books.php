@@ -14,6 +14,7 @@ require_once '../config/csrf.php';
 
 require_once __DIR__ . '/includes/manage_books_functions.php';
 require_once __DIR__ . '/../config/cover_fetch_helpers.php';
+require_once __DIR__ . '/../config/book_cover.php';
 
 $categories = $conn->query('SELECT category_id, category_name FROM categories ORDER BY category_name ASC');
 $programs = $conn->query('SELECT program_id, program_name FROM programs ORDER BY program_name ASC');
@@ -1719,7 +1720,8 @@ require 'layout_top.php';
                     <?php if ($editCoverFilename !== ''): ?>
                         <img src="../assets/covers/<?= htmlspecialchars($editCoverFilename) ?>?v=<?= time() ?>" alt="Current cover for this book" class="book-cover-thumb-img">
                     <?php else: ?>
-                        <div class="book-cover-thumb-placeholder">No cover yet</div>
+                        <?php // Generated default cover (config/book_cover.php), the same one the kiosk shows for this book. ?>
+                        <img src="../book_cover.php?id=<?= intval($editForm['book_id'] ?? 0) ?>&amp;v=<?= BOOK_COVER_VERSION ?>" alt="Generated cover (no cover image yet)" class="book-cover-thumb-img">
                     <?php endif; ?>
                 </div>
 
