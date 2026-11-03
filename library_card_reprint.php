@@ -111,5 +111,6 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
         <a class="link" href="index.php">Back to SmartLib</a>
     </div>
 </div>
+<script src="assets/javascript/kiosk-idle.js?v=<?= @filemtime(__DIR__ . '/assets/javascript/kiosk-idle.js') ?: time() ?>"></script>
 </body>
 </html>

@@ -162,5 +162,6 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
     });
 })();
 </script>
+<script src="assets/javascript/kiosk-idle.js?v=<?= @filemtime(__DIR__ . '/assets/javascript/kiosk-idle.js') ?: time() ?>" data-idle-ms="<?= LIBRARY_CARD_CODE_TTL_MINUTES * 60000 ?>"></script>
 </body>
 </html>

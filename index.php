@@ -9,6 +9,7 @@ $signinCsrfToken = smartlib_csrf_token('signin_csrf');
 $kioskCssVer = @filemtime(__DIR__ . '/assets/css/kiosk.css') ?: time();
 $filtersJsVer = @filemtime(__DIR__ . '/assets/javascript/filters.js') ?: time();
 $yearSelectJsVer = @filemtime(__DIR__ . '/assets/javascript/year-select-ui.js') ?: time();
+$kioskIdleJsVer = @filemtime(__DIR__ . '/assets/javascript/kiosk-idle.js') ?: time();
 
 $genreChips = [];
 // 2026-10-10: was a live information_schema lookup on every page load.
@@ -630,6 +631,7 @@ if ($genreRes) {
 <script>window.SMARTLIB_SIGNIN_CSRF = <?= json_encode($signinCsrfToken) ?>;</script>
 <script src="assets/javascript/year-select-ui.js?v=<?= $yearSelectJsVer ?>"></script>
 <script src="assets/javascript/filters.js?v=<?= $filtersJsVer ?>"></script>
+<script src="assets/javascript/kiosk-idle.js?v=<?= $kioskIdleJsVer ?>" data-home="1" data-signed-in="<?= isset($_SESSION['user_id']) ? '1' : '0' ?>"></script>
 </body>
 </html>
 
