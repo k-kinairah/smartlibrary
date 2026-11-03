@@ -743,6 +743,65 @@ function fbc_find_cover(string $title, string $author, string $isbn, bool $isbnO
 }
 
 /**
+ * Returns a working connection: $conn itself if it still answers, otherwise
+ * a fresh one. The nightly cover fetch holds one connection for a run that
+ * spends most of its time on HTTP calls, and on this laptop a sleep/resume or
+ * network blip in the middle of that drops it ("MySQL server has gone away"),
+ * which used to kill the whole run on the next write. Throws RuntimeException
+ * if MySQL still can't be reached after a few tries.
+ */
+function fbc_db_reconnect_if_needed(mysqli $conn): mysqli {
+    try {
+        if ($conn->query('SELECT 1') !== false) {
+            return $conn;
+        }
+    } catch (Throwable $e) {
+        // Dropped connection; reconnect below.
+    }
+
+    require __DIR__ . '/db_config.php';
+    $attempts = 3;
+    for ($i = 1; $i <= $attempts; $i++) {
+        try {
+            $fresh = new mysqli($host, $user, $pass, $db);
+            $fresh->set_charset('utf8mb4');
+            fbc_log_line("  [db] Connection to MySQL was lost; reconnected (attempt {$i})." . PHP_EOL);
+            return $fresh;
+        } catch (mysqli_sql_exception $e) {
+            fbc_log_line("  [db] Reconnect attempt {$i} of {$attempts} failed: " . $e->getMessage() . PHP_EOL);
+            if ($i < $attempts) {
+                sleep(10);
+            }
+        }
+    }
+
+    throw new RuntimeException('MySQL is unreachable after ' . $attempts . ' reconnect attempts.');
+}
+
+/**
+ * Points books.cover at $filename, reconnecting first if the connection has
+ * dropped, and retrying once if it drops between that check and the write.
+ * Never throws: returns false (with the reason in $error) so one failed
+ * write doesn't end the run. $conn is replaced if a reconnect happened.
+ */
+function fbc_db_set_cover(mysqli &$conn, int $bookId, string $filename, ?string &$error = null): bool {
+    $error = null;
+    for ($try = 1; $try <= 2; $try++) {
+        try {
+            $conn = fbc_db_reconnect_if_needed($conn);
+            $stmt = $conn->prepare('UPDATE books SET cover = ? WHERE book_id = ?');
+            $stmt->bind_param('si', $filename, $bookId);
+            $ok = $stmt->execute();
+            $stmt->close();
+            return $ok;
+        } catch (Throwable $e) {
+            $error = $e->getMessage();
+        }
+    }
+    return false;
+}
+
+/**
  * Saves cover image bytes for a book: writes assets/covers/cover_<id>.<ext>
  * and points books.cover at it. Used for every "a cover is now set" path --
  * auto-matched (an fbc_find_cover() result) or manually uploaded -- so every

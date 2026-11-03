@@ -120,6 +120,7 @@ $skippedMatchedNoCover = 0;
 $skippedExcluded = 0;
 $googleRateLimited = 0;
 $errors = 0;
+$dbFailuresInARow = 0;
 $skippedDetails = [];
 
 foreach ($books as $i => $b) {
@@ -238,13 +239,20 @@ foreach ($books as $i => $b) {
             $errors++;
             continue;
         }
-        $stmt = $conn->prepare('UPDATE books SET cover = ? WHERE book_id = ?');
-        $stmt->bind_param('si', $filename, $bookId);
-        if (!$stmt->execute()) {
-            fwrite(STDERR, "  DB update failed for book #{$bookId}: " . $stmt->error . PHP_EOL);
+        // Reconnects if a sleep/network blip dropped the connection, instead of
+        // the whole run dying on "MySQL server has gone away".
+        if (fbc_db_set_cover($conn, $bookId, $filename, $dbError)) {
+            $dbFailuresInARow = 0;
+        } else {
+            fwrite(STDERR, "  DB update failed for book #{$bookId}: " . ($dbError ?? 'unknown error') . PHP_EOL);
             $errors++;
+            // MySQL is down, not just blipping: stop rather than keep spending
+            // the day's Google quota on covers that can't be recorded.
+            if (++$dbFailuresInARow >= 3) {
+                fwrite(STDERR, '  Stopping: 3 database writes in a row failed. Re-run once MySQL is back.' . PHP_EOL);
+                exit(1);
+            }
         }
-        $stmt->close();
     }
 }
 
@@ -276,4 +284,8 @@ echo $commit
     ? 'Done.'
     : 'Dry run complete -- re-run with --commit to actually download covers and update the database.';
 echo PHP_EOL;
+
+// Non-zero when any cover couldn't be saved, so the scheduled task's result
+// (via run_fetch_book_covers.bat) shows it.
+exit($commit && $errors > 0 ? 1 : 0);
 ?>

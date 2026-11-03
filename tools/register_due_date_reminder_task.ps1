@@ -4,9 +4,9 @@
 # on or not", which needs the Windows password once. It's asked for in a normal
 # Windows prompt and handed straight to Task Scheduler; nothing is saved here.
 #
-# Unlike the cover task, this one also runs on battery and catches up after a
-# missed 8:00 AM, because the host is a laptop and Task Scheduler otherwise
-# skips the day. Reminders are de-duplicated in due_soon_reminder_logs, so a
+# Runs on battery and catches up after a missed 8:00 AM, because the host is a
+# laptop and Task Scheduler otherwise skips the day (the cover task now does
+# the same; see register_cover_fetch_task.ps1). Reminders are de-duplicated in due_soon_reminder_logs, so a
 # catch-up run can't email anyone twice.
 #
 # Safe to run again: it replaces the existing task of the same name.

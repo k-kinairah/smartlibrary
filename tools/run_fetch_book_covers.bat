@@ -11,6 +11,11 @@ REM
 REM Intended to be run by Windows Task Scheduler once a day. Output is
 REM appended to logs\fetch_book_covers.log so a day's run can be checked
 REM without having to watch it happen.
+REM
+REM Exits with PHP's own exit code (0 = clean run, 1 = some covers couldn't
+REM be saved or MySQL was unreachable, 255 = PHP fatal), so Task Scheduler's
+REM "Last Run Result" means something. Each run also ends with a "finished"
+REM line: a run with a start line and no finish line was killed partway.
 
 setlocal
 set "SMARTLIB_DIR=C:\xampp\htdocs\SmartLib"
@@ -25,5 +30,8 @@ echo ===== %date% %time% ===== >> "%LOG_FILE%"
 
 cd /d "%SMARTLIB_DIR%"
 "%PHP_EXE%" tools\fetch_book_covers.php --commit >> "%LOG_FILE%" 2>&1
+set "EXIT_CODE=%ERRORLEVEL%"
 
-endlocal
+echo ----- finished %date% %time% (exit code %EXIT_CODE%) ----- >> "%LOG_FILE%"
+
+endlocal & exit /b %EXIT_CODE%
