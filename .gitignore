@@ -23,7 +23,6 @@ Thumbs.db
 config/google_books_config.php
 config/db_config.php
 /smartlib_*.sql
-_test_mail.php
 /_db_*.php
 assets/images/BANTILING*.pdf
 logs/
