@@ -105,3 +105,14 @@ ALTER TABLE library_entry_logs
     ADD COLUMN IF NOT EXISTS program_id INT NULL AFTER account_type,
     ADD COLUMN IF NOT EXISTS year_level TINYINT UNSIGNED NULL AFTER program_id,
     ADD COLUMN IF NOT EXISTS gender ENUM('female','male','prefer_not_to_say') NULL AFTER year_level;
+
+-- ---------------------------------------------------------------------------
+-- 5. Self-chosen kiosk PIN at signup (added 2026-11-04)
+--
+-- The signer picks their kiosk PIN on the signup form. Only its
+-- password_hash() is staged here -- never the plain PIN -- and it's copied
+-- into library_users.password when the account is created. NULL for reprint
+-- rows and for signups staged before this change.
+-- ---------------------------------------------------------------------------
+ALTER TABLE auth_signup_verifications
+    ADD COLUMN IF NOT EXISTS pin_hash VARCHAR(255) NULL AFTER code_hash;

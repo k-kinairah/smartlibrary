@@ -497,8 +497,9 @@ input.code-input::placeholder {
    above it only carry a 9px margin-bottom (trimmed for the no-scrollbar
    fix), which reads as cramped right where it matters most -- the final
    row before the primary action. Targeted via adjacent-sibling so only
-   this one spot gets the larger gap, not every field. The consent
-   checkbox field is what actually sits right before the button now. */
+   this one spot gets the larger gap, not every field. On the signup
+   page the kiosk PIN row now sits between the consent checkbox and the
+   button (see .pin-row + .btn below). */
 .consent-field {
     margin-top: 10px;
     margin-bottom: 6px;
@@ -515,6 +516,61 @@ input.code-input::placeholder {
    plenty -- a two-field form, nowhere near needing a scrollbar). */
 .field-before-submit + .btn {
     margin-top: 5px;
+}
+
+/* Signup: kiosk PIN + confirm, after the consent checkbox. The intro line
+   reuses .hint's look; the pair sits side by side like the name row to
+   keep the form's height down. Show/hide toggle matches reset_pin.php's. */
+.pin-intro {
+    margin: 4px 0 6px;
+}
+.pin-row + .btn {
+    margin-top: 6px;
+}
+.password-field-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.password-field-wrap input {
+    padding-right: 46px;
+}
+.password-toggle-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    border: 1px solid rgba(184, 211, 196, 0.42);
+    background: rgba(214, 233, 223, 0.14);
+    color: #d9efe4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+}
+.password-toggle-btn:hover {
+    background: rgba(205, 229, 217, 0.24);
+    border-color: rgba(196, 225, 208, 0.55);
+}
+.password-toggle-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.password-toggle-btn .icon-eye-off,
+.password-toggle-btn.is-visible .icon-eye {
+    display: none;
+}
+.password-toggle-btn.is-visible .icon-eye-off {
+    display: block;
 }
 
 /* Data-privacy consent checkbox: a required field confirming the signer

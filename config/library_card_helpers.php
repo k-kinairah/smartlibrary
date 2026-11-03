@@ -3,8 +3,10 @@
  * Self-registration for the digital library card.
  *
  * Students/faculty sign up with their PHINMA email and school ID number,
- * confirm a 6-digit emailed code, and get a library_users row with a card
- * but no PIN -- kiosk access stays librarian-created, as before.
+ * choose their own kiosk PIN, confirm a 6-digit emailed code, and get a
+ * library_users row with a card and that PIN, so they can sign in to the
+ * kiosk straight away. Self-signups created before 2026-11-04 have no PIN
+ * and still need a librarian to set one.
  *
  * Pending signups live in auth_signup_verifications (see
  * database/library_card_setup.sql). All expiry/age checks are done in SQL
@@ -288,9 +290,10 @@ function library_card_check_reprint_allowed(mysqli $conn, string $email, string 
 /**
  * Store a new pending code and return ['verification_id' => ..., 'code' => ...].
  * $purpose is 'signup' (account created on success) or 'reprint' (existing
- * account $userId is shown on success).
+ * account $userId is shown on success). $pinHash is the password_hash() of
+ * the signer's chosen kiosk PIN (signup only); the plain PIN never gets here.
  */
-function library_card_create_verification(mysqli $conn, array $signup, string $ip, string $purpose = 'signup', ?int $userId = null): ?array {
+function library_card_create_verification(mysqli $conn, array $signup, string $ip, string $purpose = 'signup', ?int $userId = null, ?string $pinHash = null): ?array {
     $code = (string)random_int(100000, 999999);
     $hash = password_hash($code, PASSWORD_DEFAULT);
     $maxAttempts = LIBRARY_CARD_MAX_ATTEMPTS;
@@ -304,9 +307,9 @@ function library_card_create_verification(mysqli $conn, array $signup, string $i
         "INSERT INTO auth_signup_verifications (
             purpose, user_id, user_number, account_type, first_name, last_name,
             program_id, year_level, gender, email_to,
-            code_hash, requested_ip, attempt_count, max_attempts, expires_at, created_at
+            code_hash, pin_hash, requested_ip, attempt_count, max_attempts, expires_at, created_at
         ) VALUES (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, NOW() + INTERVAL ? MINUTE, NOW()
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, NOW() + INTERVAL ? MINUTE, NOW()
         )"
     );
     if (!$stmt) {
@@ -314,9 +317,9 @@ function library_card_create_verification(mysqli $conn, array $signup, string $i
     }
 
     $stmt->bind_param(
-        'sissssiissssii',
+        'sissssiisssssii',
         $purpose, $userId, $signup['user_number'], $signup['account_type'], $signup['first_name'], $signup['last_name'],
-        $programId, $yearLevel, $gender, $signup['email'], $hash, $ip, $maxAttempts, $ttl
+        $programId, $yearLevel, $gender, $signup['email'], $hash, $pinHash, $ip, $maxAttempts, $ttl
     );
     $ok = $stmt->execute();
     $verificationId = (int)$stmt->insert_id;
@@ -333,7 +336,7 @@ function library_card_create_verification(mysqli $conn, array $signup, string $i
 function library_card_get_verification(mysqli $conn, int $verificationId): ?array {
     $stmt = $conn->prepare(
         "SELECT verification_id, purpose, user_id, user_number, account_type, first_name, last_name,
-                program_id, year_level, gender, email_to, code_hash, attempt_count, max_attempts, expires_at, used_at,
+                program_id, year_level, gender, email_to, code_hash, pin_hash, attempt_count, max_attempts, expires_at, used_at,
                 (expires_at <= NOW()) AS is_expired
          FROM auth_signup_verifications
          WHERE verification_id = ?
@@ -372,8 +375,10 @@ function library_card_increment_attempt(mysqli $conn, int $verificationId): void
 }
 
 /**
- * Create the verified account from a pending signup. No PIN is set, so the
- * account can't sign in to the kiosk until a librarian sets one up.
+ * Create the verified account from a pending signup. The staged pin_hash
+ * (the signer's chosen kiosk PIN, already hashed) becomes the account's
+ * password, so it can sign in to the kiosk right away. A signup staged
+ * before pin_hash existed carries NULL and gets a no-PIN account, as before.
  *
  * Returns ['user_id' => ...] or ['error' => 'duplicate' | 'failed'].
  */
@@ -390,19 +395,20 @@ function library_card_create_account(mysqli $conn, array $verification): array {
                 card_issued_at, registration_source, password, program_id, year_level, gender,
                 role, status, created_at
             ) VALUES (
-                ?, ?, ?, ?, NOW(), NOW(), 'self_signup', NULL, ?, ?, ?, ?, 'active', NOW()
+                ?, ?, ?, ?, NOW(), NOW(), 'self_signup', ?, ?, ?, ?, ?, 'active', NOW()
             )"
         );
         if (!$stmt) {
             return ['error' => 'failed'];
         }
+        $pinHash = $verification['pin_hash'] ?? null;
         $programId = $verification['program_id'] !== null ? (int)$verification['program_id'] : null;
         $yearLevel = $verification['year_level'] !== null ? (int)$verification['year_level'] : null;
         $gender = $verification['gender'];
         $stmt->bind_param(
-            'ssssiiss',
+            'sssssiiss',
             $verification['user_number'], $verification['first_name'], $verification['last_name'],
-            $verification['email_to'], $programId, $yearLevel, $gender, $role
+            $verification['email_to'], $pinHash, $programId, $yearLevel, $gender, $role
         );
         $stmt->execute();
         $userId = (int)$stmt->insert_id;

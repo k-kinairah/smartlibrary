@@ -81,10 +81,11 @@ if (!$roleAllowed || ($status !== '' && $status !== 'active')) {
     respond_json($genericSuccess);
 }
 
-// Self-registered library card accounts have no PIN and no kiosk access;
-// a librarian sets that up separately. Without this, "reset" would let
-// them set a first PIN themselves. Once a librarian has given the account
-// a PIN, normal resets work again.
+// Legacy guard: self-signups created before 2026-11-04 have no PIN and no
+// kiosk access (a librarian sets that up separately). Without this, "reset"
+// would let them set a first PIN themselves. Self-signups since then always
+// choose a PIN at signup, so they pass through here and reset normally, as
+// does any legacy account once a librarian has given it a PIN.
 $isSelfSignup = (string)($user['registration_source'] ?? '') === 'self_signup';
 if ($isSelfSignup && trim((string)($user['password'] ?? '')) === '') {
     respond_json($genericSuccess);
