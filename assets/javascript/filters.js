@@ -484,7 +484,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     attachTypingPlaceholder(advancedSearchInput, [
         "Find a title in seconds...",
-        "Look up a book number or keyword...",
+        "Search by program, like BS Nursing or BS Criminology...",
         "Search by subject, like Nursing or Criminology...",
         "Need sources for your thesis? Try research methods...",
         "Search by author, like Earl Babbie or Thomas Cormen...",
@@ -3082,6 +3082,71 @@ document.addEventListener("DOMContentLoaded", () => {
 
     closeMyBooksBtn?.addEventListener("click", closeMyBooks);
     myBooksBackdrop?.addEventListener("click", closeMyBooks);
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Kiosk Polish v162 (Auto-Hiding Search Dock)
+    // The search view's header is a floating pill anchored to the BOTTOM
+    // of the screen (v92 in kiosk.css moved it there from the top), and
+    // it stays on screen at all times while scrolling through search
+    // results -- on a kiosk where every pixel of vertical space matters,
+    // that's a permanent overlay sitting over the last row of results.
+    // This adds the same pattern as a modern app's bottom nav bar (the
+    // developer's own reference point): hide it on scroll-down, bring it
+    // back the moment the student starts scrolling back up, so it's out
+    // of the way while reading down a list and still within a tap's reach
+    // as soon as they reverse direction. Self-contained and additive --
+    // re-queries #search-view by id rather than reusing the view-switching
+    // closure above, so none of the existing show/hide-view logic needs
+    // to change for this.
+    const searchViewEl = document.getElementById("search-view");
+    const searchDock = searchViewEl?.querySelector(".header.search-header");
+    if (!searchViewEl || !searchDock) return;
+
+    const HIDE_CLASS = "search-dock-hidden";
+    const DOWN_THRESHOLD = 60; // don't hide until scrolled this far down,
+                                // so a tiny nudge near the top doesn't
+                                // flicker the dock away
+    const TOP_REVEAL = 40; // always show once back near the very top
+    const MOVE_THRESHOLD = 4; // ignore sub-pixel/jitter scroll deltas
+
+    let lastY = window.scrollY;
+    let ticking = false;
+
+    const isActive = () => !searchViewEl.classList.contains("hidden");
+
+    const update = () => {
+        ticking = false;
+        if (!isActive()) return;
+        const y = window.scrollY;
+        const delta = y - lastY;
+
+        if (y <= TOP_REVEAL || delta < -MOVE_THRESHOLD) {
+            searchDock.classList.remove(HIDE_CLASS);
+        } else if (delta > MOVE_THRESHOLD && y > DOWN_THRESHOLD) {
+            searchDock.classList.add(HIDE_CLASS);
+        }
+        lastY = y;
+    };
+
+    window.addEventListener("scroll", () => {
+        if (!ticking) {
+            ticking = true;
+            requestAnimationFrame(update);
+        }
+    }, { passive: true });
+
+    // Whenever search-view becomes the active screen again (its "hidden"
+    // class is removed, e.g. coming back from the homepage), start the
+    // dock visible and re-sync the scroll baseline -- otherwise it could
+    // come up already hidden from a previous scroll session, or misjudge
+    // the first scroll's direction against a stale lastY.
+    new MutationObserver(() => {
+        if (isActive()) {
+            searchDock.classList.remove(HIDE_CLASS);
+            lastY = window.scrollY;
+        }
+    }).observe(searchViewEl, { attributes: true, attributeFilter: ["class"] });
 });
 
 

@@ -14728,6 +14728,187 @@ body {
   color: #9cceb2;
 }
 
+/* "Active filters" row: plain-text filter tags
+   Each active filter is now just its name in plain text followed by its
+   x remove control -- no pill: no gold gradient fill, border, rounding,
+   shadow or padding. The x keeps a small tap target and is still the only
+   clickable part, as before. Scoped to #active-filters so the genre chip
+   row (.chip.chip-active, which shares some earlier selectors) is
+   untouched, and the "Active filters:" label and Clear button keep their
+   existing styling. */
+#search-view #active-filters {
+  gap: 6px 18px !important;
+  align-items: center !important;
+}
+
+#search-view #active-filters .active-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #eafff2 !important;
+}
+
+#search-view #active-filters .active-chip .remove-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 0;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700 !important;
+  line-height: 1;
+  color: #9cceb2 !important;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+#search-view #active-filters .active-chip .remove-x:hover {
+  color: #ffffff !important;
+  background: rgba(156, 206, 178, 0.18);
+}
+
+/* "Admin Panel" in the account menu (librarian/admin sessions only) is a
+   link, not a button like its siblings, so it needs the button-only
+   resets the other items get for free: no underline, same box sizing and
+   font. Everything else comes from the shared .user-menu-item rules. */
+#search-view a.user-menu-item {
+  box-sizing: border-box;
+  text-decoration: none !important;
+  font-family: inherit;
+}
+
+/* Kiosk Polish v193 (Search Hero Brand: SJCDC Seal Added, Wordmark Dropped)
+   The hero banner above "Find What You're Looking For" showed only the
+   PHINMA icon + "PHINMA Education / Making Lives Better Through
+   Education" text (v105). Developer asked for the school's own SJCDC
+   seal to appear there too, and for the pair to read as two logos, not
+   logos-plus-paragraphs -- so index.php now puts a second
+   .search-hero-brand-icon (assets/images/stjude_seal_64.png, the same
+   seal already used on generated book covers) next to the PHINMA one
+   and drops the <div class="search-hero-brand-text"> wordmark/tagline
+   block entirely. No new CSS was needed for this: .search-hero-brand's
+   flex+gap and .search-hero-brand-icon's sizing already apply to any
+   number of icon children. v105's .search-hero-brand-text/-title/
+   -tagline rules above are left in place rather than deleted, per this
+   file's append-only convention -- they now match nothing in the
+   markup and are effectively retired. */
+
+/* Kiosk Polish v195 (Search Hero Design Option 1: Grouped Brand Pill) --
+   TRIAL, replacing the v194 (Option 2: Compact Banner Card) trial, whose
+   unused CSS has since been removed.
+   This option keeps the original stacked layout (logos above the
+   headline, h2/p as direct .search-hero children, same .search-hero-divider
+   element) completely untouched -- the base .search-hero/.search-hero-brand/
+   .search-hero-divider rules from the very top of this file's search-hero
+   section apply again unmodified. Only two new, additive pieces:
+   1) .search-hero-brand--pill groups the two logos into one pill-shaped
+      chip (background + border + rounded corners) with a thin vertical
+      divider between them, instead of two icons floating separately with
+      open space between them.
+   2) .search-hero-divider--dots adds a small glowing dot at each end of
+      the existing accent bar and narrows it slightly, so it reads less
+      like a flat rule and more like a deliberate accent.
+   Both are scoped as additive modifier classes alongside the original
+   classes (search-hero-brand search-hero-brand--pill, search-hero-divider
+   search-hero-divider--dots) rather than new standalone elements, so if
+   this isn't the one kept, reverting is removing two class names and one
+   divider <div> in index.php -- no markup restructuring needed. */
+.search-hero-brand--pill {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 7px 14px;
+  gap: 10px;
+}
+
+.search-hero-brand--pill .search-hero-brand-icon {
+  width: clamp(26px, 3vw, 32px);
+  height: clamp(26px, 3vw, 32px);
+}
+
+.search-hero-brand-pill-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.search-hero-divider--dots {
+  width: 44px;
+  position: relative;
+}
+
+.search-hero-divider--dots::before,
+.search-hero-divider--dots::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  box-shadow: 0 0 8px currentColor;
+}
+
+.search-hero-divider--dots::before {
+  left: -3px;
+  background: #54c491;
+  color: #54c491;
+}
+
+.search-hero-divider--dots::after {
+  right: -3px;
+  background: #2f8fd1;
+  color: #2f8fd1;
+}
+
+@media (max-width: 640px) {
+  .search-hero-brand--pill {
+    padding: 6px 12px;
+    gap: 8px;
+  }
+}
+
+/* Kiosk Polish v196 (Auto-Hiding Search Dock)
+   Companion to the Eighteenth follow-up round's filters.js scroll-direction
+   listener: adds the transition and the .search-dock-hidden state the dock
+   (v92's floating bottom pill) needs to actually hide/reveal smoothly.
+   v92's own rule already sets transform: translateX(-50%) !important to
+   center the dock -- .search-dock-hidden layers an additional translateY
+   on top of that same centering so the dock slides straight down off the
+   bottom edge instead of re-centering itself. pointer-events is turned off
+   while hidden so a tap can't land on an invisible dock mid-transition
+   just below the viewport edge. */
+
+#search-view .header.search-header,
+#search-view .search-header {
+  transition: transform 0.32s ease, opacity 0.32s ease !important;
+}
+
+#search-view .header.search-header.search-dock-hidden,
+#search-view .search-header.search-dock-hidden {
+  transform: translateX(-50%) translateY(140%) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #search-view .header.search-header,
+  #search-view .search-header {
+    transition: none !important;
+  }
+}
+
 /* "Get Your Library Card" on the kiosk home page reuses the recommendation
    call-to-action block. Its button is a link to library_card_signup.php
    rather than a <button>, so it needs the button-only resets. */

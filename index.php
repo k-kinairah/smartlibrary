@@ -230,6 +230,20 @@ if ($genreRes) {
                         </span>
                         <span>My Favorites</span>
                     </button>
+                    <?php if (in_array(strtolower(trim((string)($_SESSION['role'] ?? ''))), ['librarian', 'admin'], true)): ?>
+                        <?php // Mirrors the admin panel's "Go back to kiosk" link: a plain link on the same session; admin/layout_top.php re-checks the role. ?>
+                        <a href="admin/dashboard.php" class="user-menu-item user-menu-item-admin">
+                            <span class="menu-item-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" role="presentation">
+                                    <rect x="4" y="4" width="6" height="6" rx="1.2"></rect>
+                                    <rect x="14" y="4" width="6" height="6" rx="1.2"></rect>
+                                    <rect x="4" y="14" width="6" height="6" rx="1.2"></rect>
+                                    <rect x="14" y="14" width="6" height="6" rx="1.2"></rect>
+                                </svg>
+                            </span>
+                            <span>Admin Panel</span>
+                        </a>
+                    <?php endif; ?>
 
                     <div class="user-menu-divider" role="separator" aria-hidden="true"></div>
 
@@ -263,16 +277,18 @@ if ($genreRes) {
 
     <div class="search-layout">
         <div class="search-hero">
-            <div class="search-hero-brand">
-                <img src="assets/images/phinma-icon.png" alt="" class="search-hero-brand-icon">
-                <div class="search-hero-brand-text">
-                    <span class="search-hero-brand-title">PHINMA Education</span>
-                    <span class="search-hero-brand-tagline">Making Lives Better Through Education</span>
-                </div>
+            <!-- Kiosk Polish v195 (Search Hero Design Option 1: Grouped Brand Pill) --
+                 trial markup, see assets/css/kiosk.css for the matching CSS block and
+                 full rationale. Supersedes the v194 (Option 2: Compact Banner Card)
+                 trial markup that was here before; its unused CSS has since been removed. -->
+            <div class="search-hero-brand search-hero-brand--pill">
+                <img src="assets/images/phinma-icon.png" alt="PHINMA Education" class="search-hero-brand-icon">
+                <div class="search-hero-brand-pill-divider" aria-hidden="true"></div>
+                <img src="assets/images/stjude_seal_64.png" alt="St. Jude College" class="search-hero-brand-icon">
             </div>
             <h2>Find What You're Looking For</h2>
-            <p>Search our library by title, author, subject, or book number</p>
-            <div class="search-hero-divider" aria-hidden="true"></div>
+            <p>Search our library by title, author, subject, or program</p>
+            <div class="search-hero-divider search-hero-divider--dots" aria-hidden="true"></div>
         </div>
         <div class="filters-wrapper">
             <div class="search-filters-top">
