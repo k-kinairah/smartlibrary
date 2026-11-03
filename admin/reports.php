@@ -10,6 +10,8 @@ if (!isset($_SESSION['user_id']) || !in_array($currentRole, ['librarian', 'admin
 }
 
 require '../config/db_connect.php';
+require_once '../config/entry_report_helpers.php';
+require_once __DIR__ . '/includes/reports_modal_view.php';
 
 function reports_query(mysqli $conn, string $sql) {
     try {
@@ -221,6 +223,9 @@ function reports_build_visual_pdf(array $report): string {
     $topBooks = (array)($report['top_books'] ?? []);
     $programActivity = (array)($report['program_activity'] ?? []);
     $detailedRows = (array)($report['detailed_rows'] ?? []);
+    $entryReport = (array)($report['entry_report'] ?? []);
+    $showEntries = !empty($scope['show_entries']);
+    $entriesOnly = $reportType === 'entry_log';
 
     $contentX = 36.0;
     $contentW = 540.0;
@@ -263,7 +268,7 @@ function reports_build_visual_pdf(array $report): string {
         $cursorY -= 10;
     };
 
-    $drawBarSection = function (string $heading, array $rows, string $labelKey, string $valueKey, string $suffix = '', int $limit = 10, string $sliceMode = 'last', array $barFill = [0.39, 0.70, 0.53]) use (
+    $drawBarSection = function (string $heading, array $rows, string $labelKey, string $valueKey, string $suffix = '', int $limit = 10, string $sliceMode = 'last', array $barFill = [0.39, 0.70, 0.53], int $labelLen = 26) use (
         &$cursorY,
         $margin,
         $contentX,
@@ -297,14 +302,14 @@ function reports_build_visual_pdf(array $report): string {
                 $drawSectionHeading($heading . ' (cont.)');
             }
 
-            $label = reports_trim_label((string)($row[$labelKey] ?? '-'), 26);
+            $label = reports_trim_label((string)($row[$labelKey] ?? '-'), $labelLen);
             $value = (int)($row[$valueKey] ?? 0);
             $ratio = $maxValue > 0 ? ($value / $maxValue) : 0;
             $trackX = $contentX + 230;
             $trackW = 220.0;
             $trackH = 8.0;
             $trackY = $cursorY - 11;
-            $fillW = max(2.0, $trackW * $ratio);
+            $fillW = $value > 0 ? max(2.0, $trackW * $ratio) : 0.0;
 
             $rowBg = ($index % 2 === 0) ? [0.97, 0.98, 0.97] : [0.94, 0.97, 0.95];
             $addRect($contentX, $cursorY - 16, 540, 16, $rowBg, [0.86, 0.90, 0.88], 0.25);
@@ -327,9 +332,11 @@ function reports_build_visual_pdf(array $report): string {
     $metaLines = [
         'Range: ' . $rangeLabel,
         'From: ' . $rangeFrom . '  To: ' . $rangeTo,
-        'Status Filter: ' . ucfirst($statusFilter),
-        'Trend Grouping: ' . $trendGrouping
     ];
+    if (!$entriesOnly) {
+        $metaLines[] = 'Status Filter: ' . ucfirst($statusFilter);
+        $metaLines[] = 'Trend Grouping: ' . $trendGrouping;
+    }
     if ($reportLabel !== '') {
         array_unshift($metaLines, 'Report Type: ' . $reportLabel);
     }
@@ -383,6 +390,20 @@ function reports_build_visual_pdf(array $report): string {
     }
     if ($scope['show_program']) {
         $drawBarSection('Program Borrow Activity', $programActivity, 'program_name', 'borrow_count', ' borrows', 10, 'first', [0.40, 0.71, 0.54]);
+    }
+    if ($showEntries) {
+        $drawSectionHeading('Library Entries');
+        if (empty($entryReport['ok'])) {
+            $addText($contentX + 2, $cursorY - 10, 'Entry data could not be loaded.', 10, false, [0.40, 0.52, 0.46]);
+            $cursorY -= 22;
+        } else {
+            $addText($contentX + 2, $cursorY - 10, number_format((int)$entryReport['total']) . ' entries by ' . number_format((int)$entryReport['people']) . ' people. Each breakdown adds up to the entry total.', 10, false, [0.14, 0.28, 0.21]);
+            $cursorY -= 24;
+            foreach ((array)$entryReport['sections'] as $section) {
+                $sectionRows = (array)$section['rows'];
+                $drawBarSection((string)$section['title'], $sectionRows, 'label', 'total', '', max(1, count($sectionRows)), 'first', [0.84, 0.66, 0.20], 40);
+            }
+        }
     }
 
     if ($scope['show_detailed'] && !empty($detailedRows)) {
@@ -602,10 +623,24 @@ function reports_resolve_scope(string $reportType, string $mode = 'summary'): ar
         'show_activity_month' => true,
         'show_top_books' => true,
         'show_program' => true,
+        'show_entries' => true,
         'show_detailed' => (strtolower(trim($mode)) === 'detailed')
     ];
 
     $type = strtolower(trim($reportType));
+    if ($type === 'entry_log') {
+        return [
+            'show_totals' => false,
+            'show_status' => false,
+            'show_borrow' => false,
+            'show_search' => false,
+            'show_activity_month' => false,
+            'show_top_books' => false,
+            'show_program' => false,
+            'show_entries' => true,
+            'show_detailed' => false
+        ];
+    }
     if ($type === 'monthly_summary') {
         return [
             'show_totals' => true,
@@ -1054,6 +1089,8 @@ if ($resProgramActivity) {
     }
 }
 
+$entryReport = entry_report_build($conn, $rangeFrom, $rangeTo);
+
 $maxBorrowTrend = 1;
 foreach ($borrowTrendRows as $row) {
     $maxBorrowTrend = max($maxBorrowTrend, (int)($row['total'] ?? 0));
@@ -1121,6 +1158,12 @@ $quickTypeProfiles = [
         'mode' => 'summary',
         'title' => 'SEARCH TREND REPORT',
         'label' => 'Search Trend'
+    ],
+    'entry_log' => [
+        'report_type' => 'entry_log',
+        'mode' => 'summary',
+        'title' => 'LIBRARY ENTRY REPORT',
+        'label' => 'Library Entries'
     ]
 ];
 
@@ -1131,6 +1174,7 @@ $customReportTypeOptions = [
     'yearly_trend' => 'Yearly Trend',
     'program_activity' => 'Program Activity',
     'search_trend' => 'Search Trend',
+    'entry_log' => 'Library Entries',
     'detailed_transactions' => 'Detailed Transactions'
 ];
 
@@ -1207,11 +1251,15 @@ if (in_array($exportMode, ['summary', 'detailed', 'summary_pdf', 'detailed_pdf']
         }
     }
 
-    $pdfBinary = reports_build_visual_pdf([
-        'title' => $reportTitle,
+    require_once __DIR__ . '/includes/reports_pdf.php';
+    $pdfBinary = reports_build_branded_pdf([
+        'title' => str_replace('Smartlib', 'SmartLib', ucwords(strtolower($reportTitle))),
         'report_type' => $reportType,
         'report_label' => $reportLabel,
-        'generated_at' => date('Y-m-d H:i:s'),
+        'generated_at' => date('F j, Y') . ' · ' . date('g:i A'),
+        'period' => $period,
+        'borrow_daily' => $borrowTrendDisplayRows,
+        'search_daily' => $searchTrendDisplayRows,
         'range_label' => $rangeLabel,
         'range_from' => $rangeFrom,
         'range_to' => $rangeTo,
@@ -1225,6 +1273,7 @@ if (in_array($exportMode, ['summary', 'detailed', 'summary_pdf', 'detailed_pdf']
         'activity_by_month' => $activityByMonth,
         'top_books' => $topBooks,
         'program_activity' => $programActivityRows,
+        'entry_report' => $entryReport,
         'detailed_rows' => $detailedRows
     ]);
 
@@ -1273,6 +1322,7 @@ $downloadReportHref = reports_build_url(array_merge($baseParams, ['quick_type' =
 $printReportHref = reports_build_url(array_merge($baseParams, ['quick_type' => $customReportType, 'export' => 'summary', 'print' => '1']));
 $quickReports = [
     [
+        'group' => 'borrowing',
         'title' => 'Monthly Summary Report',
         'description' => 'Overview of monthly borrow activity, status breakdown, and top books.',
         'view_url' => reports_build_url(['period' => 'monthly', 'year' => (string)$year, 'month' => (string)$month, 'status' => 'all', 'trend_bucket' => 'monthly', 'quick_type' => 'monthly_summary']),
@@ -1280,6 +1330,7 @@ $quickReports = [
         'download_url' => reports_build_url(['period' => 'monthly', 'year' => (string)$year, 'month' => (string)$month, 'status' => 'all', 'trend_bucket' => 'monthly', 'quick_type' => 'monthly_summary', 'export' => 'summary'])
     ],
     [
+        'group' => 'borrowing',
         'title' => 'Weekly Trend Report',
         'description' => 'Weekly borrow and search trend timeline with trend-focused grouping.',
         'view_url' => reports_build_url(['period' => 'weekly', 'year' => (string)$year, 'week' => (string)$week, 'status' => 'all', 'trend_bucket' => 'weekly', 'quick_type' => 'weekly_trend']),
@@ -1287,6 +1338,7 @@ $quickReports = [
         'download_url' => reports_build_url(['period' => 'weekly', 'year' => (string)$year, 'week' => (string)$week, 'status' => 'all', 'trend_bucket' => 'weekly', 'quick_type' => 'weekly_trend', 'export' => 'summary'])
     ],
     [
+        'group' => 'borrowing',
         'title' => 'Yearly Trend Report',
         'description' => 'Year-level activity snapshot for planning and annual panel review.',
         'view_url' => reports_build_url(['period' => 'yearly', 'year' => (string)$year, 'status' => 'all', 'trend_bucket' => 'yearly', 'quick_type' => 'yearly_trend']),
@@ -1294,6 +1346,7 @@ $quickReports = [
         'download_url' => reports_build_url(['period' => 'yearly', 'year' => (string)$year, 'status' => 'all', 'trend_bucket' => 'yearly', 'quick_type' => 'yearly_trend', 'export' => 'summary'])
     ],
     [
+        'group' => 'borrowing',
         'title' => 'Detailed Transactions',
         'description' => 'Record-level report including users, titles, status, and fines.',
         'view_url' => reports_build_url(['period' => $period, 'year' => (string)$year, 'month' => (string)$month, 'quarter' => (string)$quarter, 'week' => (string)$week, 'day' => $day, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'status' => $statusFilter, 'trend_bucket' => $trendBucket, 'quick_type' => 'detailed_transactions']),
@@ -1301,6 +1354,7 @@ $quickReports = [
         'download_url' => reports_build_url(['period' => $period, 'year' => (string)$year, 'month' => (string)$month, 'quarter' => (string)$quarter, 'week' => (string)$week, 'day' => $day, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'status' => $statusFilter, 'trend_bucket' => $trendBucket, 'quick_type' => 'detailed_transactions', 'export' => 'detailed'])
     ],
     [
+        'group' => 'borrowing',
         'title' => 'Program Activity Report',
         'description' => 'Top programs by borrow activity for curriculum-level demand signals.',
         'view_url' => reports_build_url(['period' => 'quarterly', 'year' => (string)$year, 'quarter' => (string)$quarter, 'status' => 'all', 'trend_bucket' => 'monthly', 'quick_type' => 'program_activity']),
@@ -1308,12 +1362,27 @@ $quickReports = [
         'download_url' => reports_build_url(['period' => 'quarterly', 'year' => (string)$year, 'quarter' => (string)$quarter, 'status' => 'all', 'trend_bucket' => 'monthly', 'quick_type' => 'program_activity', 'export' => 'summary'])
     ],
     [
+        'group' => 'search',
         'title' => 'Search Trend Report',
         'description' => 'Search behavior trend report for demand and topic monitoring.',
         'view_url' => reports_build_url(['period' => $period, 'year' => (string)$year, 'month' => (string)$month, 'quarter' => (string)$quarter, 'week' => (string)$week, 'day' => $day, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'status' => 'all', 'trend_bucket' => $trendBucket, 'quick_type' => 'search_trend']),
         'preview_url' => reports_build_url(['period' => $period, 'year' => (string)$year, 'month' => (string)$month, 'quarter' => (string)$quarter, 'week' => (string)$week, 'day' => $day, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'status' => 'all', 'trend_bucket' => $trendBucket, 'quick_type' => 'search_trend', 'preview_modal' => '1']),
         'download_url' => reports_build_url(['period' => $period, 'year' => (string)$year, 'month' => (string)$month, 'quarter' => (string)$quarter, 'week' => (string)$week, 'day' => $day, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'status' => 'all', 'trend_bucket' => $trendBucket, 'quick_type' => 'search_trend', 'export' => 'summary'])
+    ],
+    [
+        'group' => 'entries',
+        'title' => 'Library Entry Report',
+        'description' => 'Door entries by hour, course, gender, and year level.',
+        'view_url' => reports_build_url(['period' => $period, 'year' => (string)$year, 'month' => (string)$month, 'quarter' => (string)$quarter, 'week' => (string)$week, 'day' => $day, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'status' => 'all', 'quick_type' => 'entry_log']),
+        'preview_url' => reports_build_url(['period' => $period, 'year' => (string)$year, 'month' => (string)$month, 'quarter' => (string)$quarter, 'week' => (string)$week, 'day' => $day, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'status' => 'all', 'quick_type' => 'entry_log', 'preview_modal' => '1']),
+        'download_url' => reports_build_url(['period' => $period, 'year' => (string)$year, 'month' => (string)$month, 'quarter' => (string)$quarter, 'week' => (string)$week, 'day' => $day, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'status' => 'all', 'quick_type' => 'entry_log', 'export' => 'summary'])
     ]
+];
+
+$quickReportGroups = [
+    'borrowing' => ['label' => 'Borrowing Activity', 'tone' => 'is-blue', 'grid' => 'reports-quick-grid-row5'],
+    'search' => ['label' => 'Search & Catalog', 'tone' => 'is-gold', 'grid' => ''],
+    'entries' => ['label' => 'Library Entries', 'tone' => 'is-green', 'grid' => ''],
 ];
 
 $isModalPreview = trim((string)($_GET['preview_modal'] ?? '')) === '1';
@@ -1321,217 +1390,161 @@ if ($isModalPreview) {
     header('Content-Type: text/html; charset=UTF-8');
     $modalReportType = $selectedQuickProfile['report_type'] ?? 'full_summary';
     $modalMode = $selectedQuickProfile['mode'] ?? 'summary';
-    $modalLabel = $selectedQuickProfile['label'] ?? 'Full Summary';
     $modalScope = reports_resolve_scope((string)$modalReportType, (string)$modalMode);
-    $modalBorrowRows = array_slice($borrowTrendDisplayRows, -12);
-    $modalSearchRows = array_slice($searchTrendDisplayRows, -12);
-    $modalActivityRows = array_slice($activityByMonth, -12);
+    $modalGroupKey = $modalReportType === 'entry_log' ? 'entries' : ($modalReportType === 'search_trend' ? 'search' : 'borrowing');
+    $modalGroup = $quickReportGroups[$modalGroupKey];
+    $periodWord = reports_modal_period_word($period);
+
+    // One line instead of the old meta grid. Status only matters for
+    // borrow reports, and only when it narrows something down.
+    $metaParts = [str_starts_with($rangeLabel, 'Custom') ? 'Custom range' : $rangeLabel, reports_modal_short_range($rangeFrom, $rangeTo)];
+    if ($modalGroupKey === 'borrowing' && $statusFilter !== 'all') {
+        $metaParts[] = 'Status: ' . ucfirst($statusFilter);
+    }
+
+    $borrowChart = reports_modal_buckets($borrowTrendDisplayRows, $rangeFrom, $rangeTo);
+    $searchChart = reports_modal_buckets($searchTrendDisplayRows, $rangeFrom, $rangeTo);
+    $searchPeakSentence = reports_modal_peak_sentence('Search activity', 'searches', $searchChart, reports_modal_peak_day($searchTrendDisplayRows));
+    $borrowSentence = reports_modal_borrow_sentence($totals, $periodWord);
     $modalTopBooks = array_slice($topBooks, 0, 10);
     $modalProgramRows = array_slice($programActivityRows, 0, 10);
     $modalPreviewRows = array_slice($previewRows, 0, 20);
 
-    $maxModalActivity = 1;
-    foreach ($modalActivityRows as $row) {
-        $maxModalActivity = max($maxModalActivity, (int)($row['total'] ?? 0));
+    // The callout: one plain sentence from numbers already on hand.
+    $summary = '';
+    $summaryIsEmpty = false;
+    if ($modalReportType === 'entry_log') {
+        if (empty($entryReport['ok'])) {
+            $summary = 'Entry data could not be loaded. Please try again.';
+        } elseif ((int)$entryReport['total'] === 0) {
+            $summary = reports_modal_empty_text('library entries', $periodWord);
+            $summaryIsEmpty = true;
+        } else {
+            $hours = $entryReport['sections'][0]['rows'];
+            $busiest = null;
+            foreach ($hours as $row) {
+                if ($busiest === null || $row['total'] > $busiest['total']) {
+                    $busiest = $row;
+                }
+            }
+            $course = reports_modal_top_label($entryReport['sections'][1]['rows']);
+            $summary = number_format((int)$entryReport['total']) . ' entries from ' . number_format((int)$entryReport['people'])
+                . ' ' . ((int)$entryReport['people'] === 1 ? 'person' : 'people') . ' this ' . $periodWord . '. Busiest hour: '
+                . $busiest['label'] . '.' . ($course !== null ? ' Most common course: ' . $course . '.' : '');
+        }
+    } elseif ($modalReportType === 'search_trend') {
+        $searchTotal = array_sum(array_column($searchTrendDisplayRows, 'total'));
+        if ($searchTotal === 0) {
+            $summary = reports_modal_empty_text('searches', $periodWord);
+            $summaryIsEmpty = true;
+        } else {
+            $summary = number_format($searchTotal) . ' searches this ' . $periodWord . '. ' . $searchPeakSentence;
+        }
+    } elseif ($modalReportType === 'program_activity') {
+        if (empty($modalProgramRows)) {
+            $summary = reports_modal_empty_text('program borrowing', $periodWord);
+            $summaryIsEmpty = true;
+        } else {
+            $summary = $modalProgramRows[0]['program_name'] . ' led with ' . number_format((int)$modalProgramRows[0]['borrow_count']) . ' borrows this ' . $periodWord . '.';
+        }
+    } elseif ($modalReportType === 'detailed_transactions') {
+        if (empty($previewRows)) {
+            $summary = reports_modal_empty_text('loans', $periodWord);
+            $summaryIsEmpty = true;
+        } else {
+            $summary = number_format((int)$totals['total']) . ' loans this ' . $periodWord . '. The latest ' . count($modalPreviewRows) . ' are listed below.';
+        }
+    } else {
+        if ($borrowSentence === '' && $searchPeakSentence === '') {
+            $summary = reports_modal_empty_text('borrowing activity', $periodWord);
+            $summaryIsEmpty = true;
+        } else {
+            $summary = trim(($borrowSentence !== '' ? $borrowSentence : 'No books borrowed yet this ' . $periodWord . '.')
+                . ($modalReportType !== 'monthly_summary' ? ' ' . $searchPeakSentence : ''));
+        }
     }
-    $maxModalTopBooks = 1;
-    foreach ($modalTopBooks as $row) {
-        $maxModalTopBooks = max($maxModalTopBooks, (int)($row['borrow_count'] ?? 0));
-    }
+
+    // Overdue, missing and fines turn amber above zero; zero tiles go quiet.
+    $tiles = [
+        ['label' => 'Total Records', 'value' => (int)$totals['total'], 'text' => number_format((int)$totals['total']), 'warn' => false],
+        ['label' => 'Borrowed', 'value' => (int)$totals['borrowed'], 'text' => number_format((int)$totals['borrowed']), 'warn' => false],
+        ['label' => 'Returned', 'value' => (int)$totals['returned'], 'text' => number_format((int)$totals['returned']), 'warn' => false],
+        ['label' => 'Overdue', 'value' => (int)$totals['overdue'], 'text' => number_format((int)$totals['overdue']), 'warn' => true],
+        ['label' => 'Missing', 'value' => (int)$totals['missing'], 'text' => number_format((int)$totals['missing']), 'warn' => true],
+        ['label' => 'Total Fine', 'value' => (float)$totals['total_fine'], 'text' => 'PHP ' . number_format((float)$totals['total_fine'], 2), 'warn' => true],
+    ];
     ?>
-    <div class="reports-modal-meta">
-        <div><strong>Report Type:</strong> <?= htmlspecialchars($modalLabel) ?></div>
-        <div><strong>Period:</strong> <?= htmlspecialchars($rangeLabel) ?></div>
-        <div><strong>Date Range:</strong> <?= htmlspecialchars($rangeFrom) ?> to <?= htmlspecialchars($rangeTo) ?></div>
-        <div><strong>Status:</strong> <?= htmlspecialchars(ucfirst($statusFilter)) ?></div>
-        <div><strong>Trend Display:</strong> Daily</div>
-    </div>
+    <p class="reports-modal-metaline"><?= implode('<span class="reports-modal-sep" aria-hidden="true">&middot;</span>', array_map('htmlspecialchars', $metaParts)) ?></p>
+    <?php if ($modalReportType === 'entry_log' && !empty($entryReport['ok']) && (int)$entryReport['total'] > 0): ?>
+        <?php
+            // Headline numbers first, then what stands out in words.
+            $busiestHour = reports_entry_busiest_hour($entryReport);
+            $highlights = reports_entry_highlights($entryReport, $rangeFrom, $rangeTo, $periodWord);
+            $headlineTiles = [
+                ['value' => number_format((int)$entryReport['total']), 'label' => 'Entries'],
+                ['value' => number_format((int)$entryReport['people']), 'label' => (int)$entryReport['people'] === 1 ? 'Person' : 'People'],
+                ['value' => $busiestHour ? reports_entry_short_hour((string)$busiestHour['label']) : '-', 'label' => 'Busiest hour'],
+            ];
+        ?>
+        <div class="reports-modal-headline">
+            <?php foreach ($headlineTiles as $tile): ?>
+                <div class="reports-modal-headline-tile"><strong><?= htmlspecialchars($tile['value']) ?></strong><span><?= htmlspecialchars($tile['label']) ?></span></div>
+            <?php endforeach; ?>
+            <p class="reports-modal-callout is-green"><?= htmlspecialchars($highlights['text']) ?></p>
+        </div>
+    <?php else: ?>
+        <p class="reports-modal-callout<?= $summaryIsEmpty ? ' is-empty' : '' ?>"><?= htmlspecialchars($summary) ?></p>
+    <?php endif; ?>
 
     <?php if ($modalScope['show_totals']): ?>
-        <div class="reports-modal-metrics">
-            <article class="reports-modal-metric-card"><span>Total Records</span><strong><?= number_format((int)$totals['total']) ?></strong></article>
-            <article class="reports-modal-metric-card"><span>Borrowed</span><strong><?= number_format((int)$totals['borrowed']) ?></strong></article>
-            <article class="reports-modal-metric-card"><span>Returned</span><strong><?= number_format((int)$totals['returned']) ?></strong></article>
-            <article class="reports-modal-metric-card"><span>Overdue</span><strong><?= number_format((int)$totals['overdue']) ?></strong></article>
-            <article class="reports-modal-metric-card"><span>Missing</span><strong><?= number_format((int)$totals['missing']) ?></strong></article>
-            <article class="reports-modal-metric-card"><span>Total Fine</span><strong><?= number_format((float)$totals['total_fine'], 2) ?></strong></article>
+        <div class="reports-modal-tiles">
+            <?php foreach ($tiles as $tile): ?>
+                <?php $tileClass = $tile['value'] > 0 ? ($tile['warn'] ? ' is-warning' : '') : ' is-quiet'; ?>
+                <article class="reports-modal-tile<?= $tileClass ?>"><span><?= htmlspecialchars($tile['label']) ?></span><strong><?= htmlspecialchars($tile['text']) ?></strong></article>
+            <?php endforeach; ?>
         </div>
     <?php endif; ?>
 
-    <div class="reports-modal-grid">
-        <?php if ($modalScope['show_borrow']): ?>
-            <section class="reports-modal-panel">
-                <h3>Borrow Trend (Daily)</h3>
-                <div class="table-wrap">
-                    <table class="data-table reports-mini-table reports-modal-table">
-                        <thead>
-                            <tr><th>Period</th><th>Count</th><th>Trend</th></tr>
-                        </thead>
-                        <tbody>
-                            <?php if (!empty($modalBorrowRows)): ?>
-                                <?php foreach ($modalBorrowRows as $row): ?>
-                                    <?php
-                                        $val = (int)($row['total'] ?? 0);
-                                        $pct = (int)round(($val / max(1, $maxBorrowTrendDisplay)) * 100);
-                                        $pct = max(4, min(100, $pct));
-                                    ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars((string)($row['bucket_label'] ?? '-')) ?></td>
-                                        <td><?= number_format($val) ?></td>
-                                        <td><span class="reports-bar-track"><span class="reports-bar-fill reports-bar-fill-borrow" style="width: <?= $pct ?>%"></span></span></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr><td colspan="3">No borrow trend data.</td></tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        <?php endif; ?>
+    <?php if ($modalScope['show_borrow'] || $modalScope['show_activity_month']): ?>
+        <?php reports_modal_chart('Borrow activity by ' . $borrowChart['unit'], 'is-blue', $borrowChart, $borrowTrendDisplayRows, reports_modal_empty_text('borrowing activity', $periodWord)); ?>
+    <?php endif; ?>
 
-        <?php if ($modalScope['show_search']): ?>
-            <section class="reports-modal-panel">
-                <h3>Search Trend (Daily)</h3>
-                <div class="table-wrap">
-                    <table class="data-table reports-mini-table reports-modal-table">
-                        <thead>
-                            <tr><th>Period</th><th>Count</th><th>Trend</th></tr>
-                        </thead>
-                        <tbody>
-                            <?php if (!empty($modalSearchRows)): ?>
-                                <?php foreach ($modalSearchRows as $row): ?>
-                                    <?php
-                                        $val = (int)($row['total'] ?? 0);
-                                        $pct = (int)round(($val / max(1, $maxSearchTrendDisplay)) * 100);
-                                        $pct = max(4, min(100, $pct));
-                                    ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars((string)($row['bucket_label'] ?? '-')) ?></td>
-                                        <td><?= number_format($val) ?></td>
-                                        <td><span class="reports-bar-track"><span class="reports-bar-fill reports-bar-fill-search" style="width: <?= $pct ?>%"></span></span></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr><td colspan="3">No search trend data.</td></tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        <?php endif; ?>
-    </div>
-
-    <?php if ($modalScope['show_activity_month']): ?>
-        <section class="reports-modal-panel">
-            <h3>Activity by Month</h3>
-            <div class="table-wrap">
-                <table class="data-table reports-mini-table reports-modal-table">
-                    <thead>
-                        <tr><th>Month</th><th>Count</th><th>Trend</th></tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($modalActivityRows)): ?>
-                            <?php foreach ($modalActivityRows as $row): ?>
-                                <?php
-                                    $val = (int)($row['total'] ?? 0);
-                                    $pct = (int)round(($val / max(1, $maxModalActivity)) * 100);
-                                    $pct = max(4, min(100, $pct));
-                                ?>
-                                <tr>
-                                    <td><?= htmlspecialchars((string)($row['period_key'] ?? '-')) ?></td>
-                                    <td><?= number_format($val) ?></td>
-                                    <td><span class="reports-bar-track"><span class="reports-bar-fill reports-bar-fill-program" style="width: <?= $pct ?>%"></span></span></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr><td colspan="3">No monthly activity data.</td></tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-        </section>
+    <?php if ($modalScope['show_search']): ?>
+        <?php reports_modal_chart('Search activity by ' . $searchChart['unit'], 'is-gold', $searchChart, $searchTrendDisplayRows, reports_modal_empty_text('searches', $periodWord)); ?>
     <?php endif; ?>
 
     <?php if ($modalScope['show_top_books']): ?>
-        <section class="reports-modal-panel">
-            <h3>Top Borrowed Books</h3>
-            <div class="table-wrap">
-                <table class="data-table reports-mini-table reports-modal-table">
-                    <thead>
-                        <tr><th>Book</th><th>Borrows</th><th>Trend</th></tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($modalTopBooks)): ?>
-                            <?php foreach ($modalTopBooks as $row): ?>
-                                <?php
-                                    $val = (int)($row['borrow_count'] ?? 0);
-                                    $pct = (int)round(($val / max(1, $maxModalTopBooks)) * 100);
-                                    $pct = max(4, min(100, $pct));
-                                ?>
-                                <tr>
-                                    <td><?= htmlspecialchars(reports_trim_label((string)($row['title'] ?? '-'), 44)) ?></td>
-                                    <td><?= number_format($val) ?></td>
-                                    <td><span class="reports-bar-track"><span class="reports-bar-fill reports-bar-fill-borrow" style="width: <?= $pct ?>%"></span></span></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr><td colspan="3">No top books data.</td></tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+        <section class="reports-modal-card">
+            <div class="reports-modal-card-head"><h3>Top borrowed books</h3></div>
+            <?php if (!empty($modalTopBooks)): ?>
+                <?php reports_modal_bar_rows(array_map(fn($row) => ['label' => $row['title'] !== '' ? $row['title'] : 'Unknown title', 'total' => $row['borrow_count']], $modalTopBooks), 'is-blue', true); ?>
+            <?php else: ?>
+                <?php reports_modal_empty('No books borrowed yet this ' . $periodWord . '. This section fills in automatically as entries come in.'); ?>
+            <?php endif; ?>
         </section>
     <?php endif; ?>
 
     <?php if ($modalScope['show_program']): ?>
-        <section class="reports-modal-panel">
-            <h3>Program Borrow Activity</h3>
-            <div class="table-wrap">
-                <table class="data-table reports-mini-table reports-modal-table">
-                    <thead>
-                        <tr><th>Program</th><th>Borrows</th><th>Trend</th></tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($modalProgramRows)): ?>
-                            <?php foreach ($modalProgramRows as $row): ?>
-                                <?php
-                                    $val = (int)($row['borrow_count'] ?? 0);
-                                    $pct = (int)round(($val / max(1, $maxProgramActivity)) * 100);
-                                    $pct = max(4, min(100, $pct));
-                                ?>
-                                <tr>
-                                    <td><?= htmlspecialchars((string)($row['program_name'] ?? '-')) ?></td>
-                                    <td><?= number_format($val) ?></td>
-                                    <td><span class="reports-bar-track"><span class="reports-bar-fill reports-bar-fill-program" style="width: <?= $pct ?>%"></span></span></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr><td colspan="3">No program activity data.</td></tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+        <section class="reports-modal-card">
+            <div class="reports-modal-card-head"><h3>Borrows by program</h3></div>
+            <?php if (!empty($modalProgramRows)): ?>
+                <?php reports_modal_bar_rows(array_map(fn($row) => ['label' => $row['program_name'], 'total' => $row['borrow_count']], $modalProgramRows), 'is-blue', true); ?>
+            <?php else: ?>
+                <?php reports_modal_empty(reports_modal_empty_text('program borrowing', $periodWord)); ?>
+            <?php endif; ?>
         </section>
     <?php endif; ?>
 
     <?php if ($modalScope['show_detailed']): ?>
-        <section class="reports-modal-panel">
-            <h3>Recent Records</h3>
-            <div class="table-wrap">
-                <table class="data-table reports-mini-table reports-modal-table">
-                    <thead>
-                        <tr>
-                            <th>Record #</th>
-                            <th>Date</th>
-                            <th>User</th>
-                            <th>Book</th>
-                            <th>Status</th>
-                            <th>Fine</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($modalPreviewRows)): ?>
+        <section class="reports-modal-card">
+            <div class="reports-modal-card-head"><h3>Latest loans</h3></div>
+            <?php if (!empty($modalPreviewRows)): ?>
+                <div class="table-wrap">
+                    <table class="data-table reports-mini-table reports-modal-table">
+                        <thead>
+                            <tr><th>Record #</th><th>Date</th><th>User</th><th>Book</th><th>Status</th><th>Fine</th></tr>
+                        </thead>
+                        <tbody>
                             <?php foreach ($modalPreviewRows as $row): ?>
                                 <?php
                                     $statusVal = strtolower(trim((string)($row['status'] ?? '')));
@@ -1549,13 +1562,24 @@ if ($isModalPreview) {
                                     <td><?= number_format((float)($row['fine'] ?? 0), 2) ?></td>
                                 </tr>
                             <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr><td colspan="6">No records for this report.</td></tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+                        </tbody>
+                    </table>
+                </div>
+            <?php else: ?>
+                <?php reports_modal_empty(reports_modal_empty_text('loans', $periodWord)); ?>
+            <?php endif; ?>
         </section>
+    <?php endif; ?>
+
+    <?php if (!empty($modalScope['show_entries']) && !empty($entryReport['ok']) && (int)$entryReport['total'] > 0): ?>
+        <div class="reports-modal-grid">
+            <?php foreach ($entryReport['sections'] as $section): ?>
+                <section class="reports-modal-card">
+                    <div class="reports-modal-card-head"><h3><?= htmlspecialchars((string)$section['title']) ?></h3></div>
+                    <?php reports_entry_breakdown($section['rows'], (int)$entryReport['total']); ?>
+                </section>
+            <?php endforeach; ?>
+        </div>
     <?php endif; ?>
     <?php
     exit;
@@ -1567,15 +1591,78 @@ require 'layout_top.php';
 <div class="page-top reports-top">
     <div>
         <h1 class="page-heading"><span class="page-icon" aria-hidden="true"><?= admin_icon('reports') ?></span>Reports</h1>
-        <p class="page-subtitle">Generate custom PDF reports by date range and report type, then download or print.</p>
+        <p class="page-subtitle">Pick a report below, or build a custom one for something specific.</p>
     </div>
-    <div class="welcome">Period: <?= htmlspecialchars($rangeLabel) ?></div>
+    <div class="welcome reports-period-chip">
+        <span class="reports-period-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="12" cy="15" r="1.2"/></svg></span>
+        <span class="reports-period-text"><small>Period</small><strong><?= htmlspecialchars($rangeLabel) ?></strong></span>
+    </div>
 </div>
 
-<section class="panel glass-card reports-custom-panel data-table-panel">
-    <div class="panel-head">
-        <h2>Generate Custom Report</h2>
+<section class="reports-quick">
+    <?php
+        // Borrowing Activity keeps its own labelled row. The two groups with a
+        // single report each share one row, each card carrying its group tag.
+        $quickRows = [
+            ['groups' => ['borrowing'], 'grid' => $quickReportGroups['borrowing']['grid'], 'tagged' => false],
+            ['groups' => ['search', 'entries'], 'grid' => 'reports-quick-grid-pair', 'tagged' => true],
+        ];
+    ?>
+    <?php foreach ($quickRows as $quickRow): ?>
+        <?php if (!$quickRow['tagged']): ?>
+            <?php $group = $quickReportGroups[$quickRow['groups'][0]]; ?>
+            <div class="reports-group-label"><span class="reports-group-dot <?= $group['tone'] ?>" aria-hidden="true"></span><?= htmlspecialchars($group['label']) ?><span class="reports-group-line" aria-hidden="true"></span></div>
+        <?php endif; ?>
+    <div class="reports-quick-grid <?= $quickRow['grid'] ?>">
+        <?php foreach ($quickReports as $card): ?>
+            <?php if (!in_array($card['group'] ?? '', $quickRow['groups'], true)) continue; ?>
+            <article class="panel glass-card reports-quick-card data-table-panel">
+                <div class="reports-card-body">
+                    <?php if ($quickRow['tagged']): ?>
+                        <?php $cardGroup = $quickReportGroups[$card['group']]; ?>
+                        <span class="reports-modal-tag reports-card-group-tag <?= $cardGroup['tone'] ?>"><span aria-hidden="true"></span><?= htmlspecialchars($cardGroup['label']) ?></span>
+                    <?php endif; ?>
+                    <h3><svg class="reports-card-title-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7zM14 3v6h6M10 13h6M10 17h6"/></svg><?= htmlspecialchars((string)$card['title']) ?></h3>
+                    <p><?= htmlspecialchars((string)$card['description']) ?></p>
+                    <?php if (!empty($card['badge'])): ?>
+                        <span class="reports-card-badge"><?= htmlspecialchars((string)$card['badge']) ?></span>
+                    <?php endif; ?>
+                    <div class="reports-card-actions">
+                        <button
+                            type="button"
+                            class="reports-action-link reports-icon-btn js-quick-view"
+                            data-preview-url="<?= htmlspecialchars((string)$card['preview_url']) ?>"
+                            data-report-title="<?= htmlspecialchars((string)$card['title']) ?>"
+                            data-report-tone="<?= htmlspecialchars($quickReportGroups[$card['group']]['tone']) ?>"
+                            data-report-group="<?= htmlspecialchars($quickReportGroups[$card['group']]['label']) ?>"
+                        >
+                            <span class="reports-btn-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6zM12 9a3 3 0 100 6 3 3 0 000-6z"/></svg>
+                            </span>
+                            View
+                        </button>
+                        <a class="reports-download-link reports-icon-btn" href="<?= htmlspecialchars((string)$card['download_url']) ?>">
+                            <span class="reports-btn-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="M12 4v10m0 0l-4-4m4 4l4-4M5 18h14"/></svg>
+                            </span>
+                            Download PDF
+                        </a>
+                    </div>
+                </div>
+            </article>
+        <?php endforeach; ?>
     </div>
+    <?php endforeach; ?>
+</section>
+
+<details class="panel glass-card reports-custom-panel data-table-panel"<?= isset($_GET['report_type']) ? ' open' : '' ?>>
+    <summary class="reports-custom-toggle">
+        <span>
+            <strong>Need something specific?</strong>
+            <span class="reports-custom-sub">Build a custom report by date range, type, and filters.</span>
+        </span>
+        <span class="reports-custom-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span>
+    </summary>
     <form method="GET" class="filters-inline reports-filters reports-custom-form" id="reportsFilters">
         <div class="reports-field-group">
             <label for="reportPeriod">Report Period</label>
@@ -1688,175 +1775,75 @@ require 'layout_top.php';
             </a>
         </div>
     </form>
-</section>
+</details>
 
-<section class="reports-quick">
-    <div class="panel-head reports-quick-head">
-        <h2>Quick Reports</h2>
+
+<section class="reports-glance" id="atAGlance">
+    <div class="panel-head reports-quick-head reports-glance-head reports-section-head is-green">
+        <h2><span class="reports-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></span>At a Glance</h2>
+        <span class="reports-glance-note reports-section-note"><i class="reports-live-dot" aria-hidden="true"></i>Updates automatically, not a report</span>
     </div>
-    <div class="reports-quick-grid">
-        <?php foreach ($quickReports as $card): ?>
-            <article class="panel glass-card reports-quick-card data-table-panel">
-                <div class="reports-card-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7zM14 3v6h6M10 13h6M10 17h6"/></svg>
-                </div>
-                <div class="reports-card-body">
-                    <h3><?= htmlspecialchars((string)$card['title']) ?></h3>
-                    <p><?= htmlspecialchars((string)$card['description']) ?></p>
-                    <div class="reports-card-actions">
-                        <button
-                            type="button"
-                            class="reports-action-link reports-icon-btn js-quick-view"
-                            data-preview-url="<?= htmlspecialchars((string)$card['preview_url']) ?>"
-                            data-report-title="<?= htmlspecialchars((string)$card['title']) ?>"
-                        >
-                            <span class="reports-btn-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24"><path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6zM12 9a3 3 0 100 6 3 3 0 000-6z"/></svg>
-                            </span>
-                            View
-                        </button>
-                        <a class="reports-download-link reports-icon-btn" href="<?= htmlspecialchars((string)$card['download_url']) ?>">
-                            <span class="reports-btn-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24"><path d="M12 4v10m0 0l-4-4m4 4l4-4M5 18h14"/></svg>
-                            </span>
-                            Download PDF
-                        </a>
-                    </div>
-                </div>
-            </article>
-        <?php endforeach; ?>
-    </div>
-</section>
 
 <section class="reports-trend-grid">
-    <article class="panel glass-card data-table-panel" id="borrowTrend">
+    <article class="panel glass-card data-table-panel reports-glance-panel" id="borrowTrend">
         <div class="panel-head">
-            <h2>Borrow Trend (Daily)</h2>
+            <h2><span class="reports-group-dot is-blue" aria-hidden="true"></span>Borrow Trend (Daily)</h2>
         </div>
-        <div class="table-wrap">
-            <table class="data-table reports-mini-table">
-                <thead>
-                    <tr>
-                        <th>Period</th>
-                        <th>Borrow Count</th>
-                        <th>Trend</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (!empty($borrowTrendDisplayRows)): ?>
-                        <?php foreach ($borrowTrendDisplayRows as $row): ?>
-                            <?php
-                                $borrowValue = (int)($row['total'] ?? 0);
-                                $borrowPct = (int)round(($borrowValue / max(1, $maxBorrowTrendDisplay)) * 100);
-                                $borrowPct = max(4, min(100, $borrowPct));
-                            ?>
-                            <tr>
-                                <td><?= htmlspecialchars((string)$row['bucket_label']) ?></td>
-                                <td><?= number_format($borrowValue) ?></td>
-                                <td>
-                                    <span class="reports-bar-track">
-                                        <span class="reports-bar-fill reports-bar-fill-borrow" style="width: <?= $borrowPct ?>%"></span>
-                                    </span>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="3" class="dashboard-empty-cell">No borrow trend data for this range.</td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+        <?php reports_glance_sparkline($borrowTrendDisplayRows, $rangeFrom, $rangeTo, 'is-blue', '&#128216;', 'No borrowing activity yet this period.'); ?>
     </article>
 
-    <article class="panel glass-card data-table-panel" id="searchTrend">
+    <article class="panel glass-card data-table-panel reports-glance-panel" id="searchTrend">
         <div class="panel-head">
-            <h2>Search Trend (Daily)</h2>
+            <h2><span class="reports-group-dot is-gold" aria-hidden="true"></span>Search Trend (Daily)</h2>
         </div>
-        <div class="table-wrap">
-            <table class="data-table reports-mini-table">
-                <thead>
-                    <tr>
-                        <th>Period</th>
-                        <th>Search Count</th>
-                        <th>Trend</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (!empty($searchTrendDisplayRows)): ?>
-                        <?php foreach ($searchTrendDisplayRows as $row): ?>
-                            <?php
-                                $searchValue = (int)($row['total'] ?? 0);
-                                $searchPct = (int)round(($searchValue / max(1, $maxSearchTrendDisplay)) * 100);
-                                $searchPct = max(4, min(100, $searchPct));
-                            ?>
-                            <tr>
-                                <td><?= htmlspecialchars((string)$row['bucket_label']) ?></td>
-                                <td><?= number_format($searchValue) ?></td>
-                                <td>
-                                    <span class="reports-bar-track">
-                                        <span class="reports-bar-fill reports-bar-fill-search" style="width: <?= $searchPct ?>%"></span>
-                                    </span>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="3" class="dashboard-empty-cell">No search trend data available for this range.</td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+        <?php reports_glance_sparkline($searchTrendDisplayRows, $rangeFrom, $rangeTo, 'is-gold', '&#128269;', 'No searches recorded yet this period.'); ?>
     </article>
 
-    <article class="panel glass-card data-table-panel" id="programActivity">
+    <article class="panel glass-card data-table-panel reports-glance-panel" id="programActivity">
         <div class="panel-head">
-            <h2>Program Borrow Activity</h2>
+            <h2><span class="reports-group-dot is-blue" aria-hidden="true"></span>Program Borrow Activity</h2>
         </div>
-        <div class="table-wrap">
-            <table class="data-table reports-mini-table">
-                <thead>
-                    <tr>
-                        <th>Program</th>
-                        <th>Borrows</th>
-                        <th>Trend</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (!empty($programActivityRows)): ?>
-                        <?php foreach ($programActivityRows as $row): ?>
-                            <?php
-                                $programValue = (int)($row['borrow_count'] ?? 0);
-                                $programPct = (int)round(($programValue / max(1, $maxProgramActivity)) * 100);
-                                $programPct = max(4, min(100, $programPct));
-                            ?>
-                            <tr>
-                                <td><?= htmlspecialchars((string)$row['program_name']) ?></td>
-                                <td><?= number_format($programValue) ?></td>
-                                <td>
-                                    <span class="reports-bar-track">
-                                        <span class="reports-bar-fill reports-bar-fill-program" style="width: <?= $programPct ?>%"></span>
-                                    </span>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="3" class="dashboard-empty-cell">No program trend data for this range.</td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+        <?php if (!empty($programActivityRows)): ?>
+            <?php reports_modal_bar_rows(array_map(fn($row) => ['label' => $row['program_name'], 'total' => $row['borrow_count']], array_slice($programActivityRows, 0, 5)), 'is-blue', true); ?>
+        <?php else: ?>
+            <?php reports_glance_empty('&#127891;', 'No borrowing by program yet this period.'); ?>
+        <?php endif; ?>
     </article>
+</section>
+
+<section id="libraryEntries">
+    <div class="reports-group-label"><span class="reports-group-dot is-green" aria-hidden="true"></span>Library Entries<span class="reports-group-line" aria-hidden="true"></span></div>
+    <?php $entrySummary = reports_entry_summary($entryReport, $rangeFrom, $rangeTo, reports_modal_period_word($period)); ?>
+    <?php if (!empty($entryReport['ok']) && (int)$entryReport['total'] > 0): ?>
+        <p class="reports-entries-caption">Each breakdown below totals <?= number_format((int)$entryReport['total']) ?> &mdash; they're independent views of the same entries, not additive. The Status Filter above doesn't apply to this report.</p>
+        <div class="reports-entries-grid">
+            <?php foreach ($entryReport['sections'] as $section): ?>
+                <section class="reports-modal-card">
+                    <div class="reports-modal-card-head"><h3><?= htmlspecialchars((string)$section['title']) ?></h3></div>
+                    <?php reports_entry_breakdown($section['rows'], (int)$entryReport['total']); ?>
+                </section>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+    <div class="reports-entries-summary is-last<?= $entrySummary['empty'] ? ' is-empty' : '' ?>">
+        <span class="reports-entries-summary-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 21V4.5L14 3v18M14 21h5V6h-5"/><circle cx="11" cy="12.5" r="0.8"/></svg></span>
+        <p><?= $entrySummary['empty'] ? htmlspecialchars($entrySummary['text']) : reports_entry_summary_html($entrySummary['text']) ?></p>
+    </div>
+</section>
 </section>
 
 <div class="overlay-modal reports-preview-modal" id="quickReportModal" aria-hidden="true">
     <div class="overlay-card glass-card reports-preview-card" role="dialog" aria-modal="true" aria-labelledby="quickReportModalTitle">
         <div class="reports-preview-head">
-            <h2 id="quickReportModalTitle">Quick Report Preview</h2>
+            <span class="reports-preview-icon" aria-hidden="true">
+                <svg class="for-blue" viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 1.5zM6 21h13v-3"/><path d="M9 7h6M9 11h6"/></svg>
+                <svg class="for-gold" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+                <svg class="for-green" viewBox="0 0 24 24"><path d="M5 21V4.5L14 3v18M14 21h5V6h-5"/><circle cx="11" cy="12.5" r="0.8"/></svg>
+            </span>
+            <div class="reports-preview-titles">
+                <span class="reports-preview-eyebrow" id="quickReportModalGroup"></span>
+                <h2 id="quickReportModalTitle">Quick Report Preview</h2>
+            </div>
             <button type="button" class="reports-preview-close" id="quickReportModalClose" aria-label="Close preview">&times;</button>
         </div>
         <div class="reports-preview-body" id="quickReportModalBody">
@@ -1901,6 +1888,19 @@ require 'layout_top.php';
 
             periodSelect.addEventListener('change', syncPeriodFields);
             syncPeriodFields();
+
+            // Status is a borrow-record filter; search and entry reports ignore it.
+            var typeSelect = document.getElementById('reportType');
+            var statusField = document.getElementById('reportStatus');
+            statusField = statusField ? statusField.closest('.reports-field-group') : null;
+            function syncStatusField() {
+                var type = typeSelect.value;
+                setVisible(statusField, type !== 'search_trend' && type !== 'entry_log');
+            }
+            if (typeSelect && statusField) {
+                typeSelect.addEventListener('change', syncStatusField);
+                syncStatusField();
+            }
         }
 
         var modal = document.getElementById('quickReportModal');
@@ -1938,6 +1938,14 @@ require 'layout_top.php';
                 }
 
                 modalTitle.textContent = reportTitle;
+                // Header colour follows the report's group on the Quick Reports page.
+                var card = modal.querySelector('.reports-preview-card');
+                card.classList.remove('is-blue', 'is-gold', 'is-green', 'is-opening');
+                card.classList.add(btn.getAttribute('data-report-tone') || 'is-blue');
+                document.getElementById('quickReportModalGroup').textContent = btn.getAttribute('data-report-group') || '';
+                // Restart the one-time sheen across the header.
+                void card.offsetWidth;
+                card.classList.add('is-opening');
                 setLoading();
                 openModal();
 
