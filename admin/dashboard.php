@@ -845,6 +845,30 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
     </article>
 </section>
 
+<section class="dashboard-section-wrap">
+    <div class="dashboard-public-grid">
+        <article class="panel glass-card dashboard-scan-panel">
+            <div class="panel-head">
+                <div>
+                    <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('scan') ?></span>Start your day</h2>
+                    <p class="panel-sub">Open the entry scanner each morning and leave it running at the door.</p>
+                </div>
+                <a class="btn-primary dashboard-scan-btn" href="entry_scan.php">Open Entry Scanner</a>
+            </div>
+        </article>
+
+        <article class="panel glass-card dashboard-scan-panel">
+            <div class="panel-head">
+                <div>
+                    <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('kiosk') ?></span>Kiosk</h2>
+                    <p class="panel-sub">Return this screen to student self-service mode.</p>
+                </div>
+                <a class="btn-primary dashboard-scan-btn" href="../index.php">Go to Kiosk</a>
+            </div>
+        </article>
+    </div>
+</section>
+
 <section class="dashboard-chart-grid arrival-activity-row"> 
     <article class="panel glass-card chart-panel compact-panel overdue-books-panel">
         <div class="panel-head overdue-panel-head">

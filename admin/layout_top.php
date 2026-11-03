@@ -126,6 +126,68 @@ function stat_chip_meta(string $title): array {
 </head>
 <body>
 <div class="admin-container">
+    <!-- Ahead of the sidebar rather than at the end of the page, so the
+         confirmation is ready as soon as the Logout link can be clicked,
+         even while a long page like Books is still loading. -->
+    <div class="overlay-modal" id="logoutConfirmModal" aria-hidden="true">
+        <div class="overlay-card glass-card confirm-modal-card" role="dialog" aria-modal="true" aria-labelledby="logoutConfirmTitle" aria-describedby="logoutConfirmText">
+            <button type="button" class="icon-close confirm-modal-close" id="logoutConfirmClose" aria-label="Cancel">&times;</button>
+            <div class="confirm-modal-header">
+                <span class="confirm-modal-icon is-warning" aria-hidden="true">!</span>
+                <div>
+                    <h2 id="logoutConfirmTitle">Log out</h2>
+                    <p id="logoutConfirmText">Are you sure you want to log out?</p>
+                </div>
+            </div>
+            <div class="confirm-modal-actions">
+                <button type="button" class="confirm-modal-cancel" id="logoutConfirmCancel">Cancel</button>
+                <button type="button" class="confirm-modal-confirm is-warning" id="logoutConfirmSubmit">Log out</button>
+            </div>
+        </div>
+    </div>
+    <script>
+    (function () {
+        var modal = document.getElementById('logoutConfirmModal');
+        var cancelBtn = document.getElementById('logoutConfirmCancel');
+
+        function closeModal() {
+            modal.classList.remove('show');
+            modal.setAttribute('aria-hidden', 'true');
+            document.querySelector('.logout-btn').focus();
+        }
+
+        // Listens on the document because the link doesn't exist yet here.
+        document.addEventListener('click', function (event) {
+            if (!event.target.closest('.logout-btn')) {
+                return;
+            }
+            event.preventDefault();
+            modal.classList.add('show');
+            modal.setAttribute('aria-hidden', 'false');
+            cancelBtn.focus();
+        });
+
+        document.getElementById('logoutConfirmSubmit').addEventListener('click', function () {
+            window.location.href = '../logout.php';
+        });
+
+        cancelBtn.addEventListener('click', closeModal);
+        document.getElementById('logoutConfirmClose').addEventListener('click', closeModal);
+
+        modal.addEventListener('click', function (event) {
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && modal.classList.contains('show')) {
+                closeModal();
+            }
+        });
+    }());
+    </script>
+
     <aside class="sidebar glass-card">
         <div class="sidebar-header">
             <img src="../assets/images/stjude_logo.jpg" class="sidebar-logo" alt="St. Jude logo">
@@ -156,13 +218,11 @@ function stat_chip_meta(string $title): array {
         <a class="nav-link <?= $currentPage === 'borrow_records.php' ? 'active' : '' ?>" href="borrow_records.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('borrow') ?></span><span>Borrow Records</span></a>
         <a class="nav-link <?= $currentPage === 'manage_books.php' ? 'active' : '' ?>" href="manage_books.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('books') ?></span><span>Books</span></a>
         <a class="nav-link <?= $currentPage === 'manage_users.php' ? 'active' : '' ?>" href="manage_users.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('users') ?></span><span>Users</span></a>
-        <a class="nav-link" href="entry_scan.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('scan') ?></span><span>Entry Scanner</span></a>
         <a class="nav-link <?= $currentPage === 'reports.php' ? 'active' : '' ?>" href="reports.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('reports') ?></span><span>Reports</span></a>
         <a class="nav-link <?= $currentPage === 'archived_history.php' ? 'active' : '' ?>" href="archived_history.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('archives') ?></span><span>Archives</span></a>
         <a class="nav-link <?= $currentPage === 'export_center.php' ? 'active' : '' ?>" href="export_center.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('export') ?></span><span>Data Export</span></a>
 
         <div class="sidebar-footer">
-            <a class="nav-link nav-link-kiosk" href="../index.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('kiosk') ?></span><span>Go back to kiosk</span></a>
             <a href="../logout.php" class="logout-btn"><span class="nav-icon" aria-hidden="true"><?= admin_icon('logout') ?></span><span>Logout</span></a>
         </div>
     </aside>
