@@ -8,8 +8,7 @@
  *
  * Pending signups live in auth_signup_verifications (see
  * database/library_card_setup.sql). All expiry/age checks are done in SQL
- * with NOW() rather than PHP's date(), because PHP's timezone isn't
- * configured on this install and would disagree with MySQL's.
+ * with NOW(), so the database is the one clock they depend on.
  */
 
 const LIBRARY_CARD_EMAIL_DOMAIN = 'phinmaed.com';

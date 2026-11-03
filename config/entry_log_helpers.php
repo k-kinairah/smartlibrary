@@ -9,8 +9,7 @@
  *
  * Program, year level and gender are copied onto each row at scan time, so
  * a student moving up a year or changing program doesn't rewrite past
- * reports. All times come from MySQL's clock (see library_card_helpers.php
- * for why PHP's isn't used).
+ * reports. All times come from MySQL's clock.
  */
 
 // A second scan of the same person within this window is treated as an

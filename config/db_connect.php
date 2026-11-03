@@ -1,4 +1,8 @@
 <?php
+// The school is in the Philippines. Matches MySQL's clock (same UTC+8 offset), so
+// PHP dates agree with NOW(). This install's php.ini says Europe/Berlin otherwise.
+date_default_timezone_set('Asia/Manila');
+
 // Credentials live in the gitignored config/db_config.php
 // (copy config/db_config.example.php to create it).
 $dbConfigPath = __DIR__ . '/db_config.php';
