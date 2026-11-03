@@ -89,22 +89,22 @@ if ($genreRes) {
 
         <?php endif; ?>
 
-        <section class="discover-panel" data-panel-key="most_borrowed">
-            <h2>Most Borrowed Books</h2>
-            <p>Popular titles frequently checked out by students</p>
+        <section class="discover-panel" data-panel-key="new_arrivals">
+            <h2>New Arrivals</h2>
+            <p>Latest books and journals added to our collection</p>
             <div class="discover-carousel">
                 <button class="carousel-arrow">&#8249;</button>
                 <div class="carousel-books">
-                    <img class="side discover-book" data-cover="atkinson.png" src="assets/covers/atkinson.png" alt="Book cover">
+                    <img class="side discover-book" data-cover="adventure2.jpg" src="assets/covers/adventure2.jpg" alt="Book cover">
+                    <img class="side discover-book" data-cover="adventure1.jpg" src="assets/covers/adventure1.jpg" alt="Book cover">
+                    <img class="center discover-book" data-cover="atkinson.png" src="assets/covers/atkinson.png" alt="Book cover">
                     <img class="side discover-book" data-cover="databasedesign.jpg" src="assets/covers/databasedesign.jpg" alt="Book cover">
-                    <img class="center discover-book" data-cover="tech2.jpg" src="assets/covers/tech2.jpg" alt="Book cover">
-                    <img class="side discover-book" data-cover="anatomy.jpg" src="assets/covers/anatomy.jpg" alt="Book cover">
-                    <img class="side discover-book" data-cover="drug2023.png" src="assets/covers/drug2023.png" alt="Book cover">
+                    <img class="side discover-book" data-cover="tech2.jpg" src="assets/covers/tech2.jpg" alt="Book cover">
                 </div>
                 <button class="carousel-arrow">&#8250;</button>
             </div>
-            <h3 class="carousel-title">Introduction to Algorithms</h3>
-            <p class="carousel-author">Thomas H. Cormen</p>
+            <h3 class="carousel-title">Calculus: Early Transcendentals</h3>
+            <p class="carousel-author">James Stewart</p>
             <p class="carousel-reason">Available now</p>
         </section>
         <section class="discover-panel" data-panel-key="most_searched">
@@ -125,22 +125,22 @@ if ($genreRes) {
             <p class="carousel-author">Thomas H. Cormen</p>
             <p class="carousel-reason">Available now</p>
         </section>
-<section class="discover-panel" data-panel-key="new_arrivals">
-            <h2>New Arrivals</h2>
-            <p>Latest books and journals added to our collection</p>
+<section class="discover-panel" data-panel-key="most_borrowed">
+            <h2>Most Borrowed Books</h2>
+            <p>Popular titles frequently checked out by students</p>
             <div class="discover-carousel">
                 <button class="carousel-arrow">&#8249;</button>
                 <div class="carousel-books">
-                    <img class="side discover-book" data-cover="adventure2.jpg" src="assets/covers/adventure2.jpg" alt="Book cover">
-                    <img class="side discover-book" data-cover="adventure1.jpg" src="assets/covers/adventure1.jpg" alt="Book cover">
-                    <img class="center discover-book" data-cover="atkinson.png" src="assets/covers/atkinson.png" alt="Book cover">
+                    <img class="side discover-book" data-cover="atkinson.png" src="assets/covers/atkinson.png" alt="Book cover">
                     <img class="side discover-book" data-cover="databasedesign.jpg" src="assets/covers/databasedesign.jpg" alt="Book cover">
-                    <img class="side discover-book" data-cover="tech2.jpg" src="assets/covers/tech2.jpg" alt="Book cover">
+                    <img class="center discover-book" data-cover="tech2.jpg" src="assets/covers/tech2.jpg" alt="Book cover">
+                    <img class="side discover-book" data-cover="anatomy.jpg" src="assets/covers/anatomy.jpg" alt="Book cover">
+                    <img class="side discover-book" data-cover="drug2023.png" src="assets/covers/drug2023.png" alt="Book cover">
                 </div>
                 <button class="carousel-arrow">&#8250;</button>
             </div>
-            <h3 class="carousel-title">Calculus: Early Transcendentals</h3>
-            <p class="carousel-author">James Stewart</p>
+            <h3 class="carousel-title">Introduction to Algorithms</h3>
+            <p class="carousel-author">Thomas H. Cormen</p>
             <p class="carousel-reason">Available now</p>
         </section>
         <?php if (!isset($_SESSION['user_id'])): ?>

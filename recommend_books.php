@@ -877,10 +877,10 @@ if ($isPersonalized) {
     }
 
     $panels[] = [
-        'key' => 'most_borrowed',
-        'title' => 'Most Borrowed Books',
-        'subtitle' => 'Popular titles frequently checked out by students',
-        'books' => $mostBorrowedBooks
+        'key' => 'new_arrivals',
+        'title' => 'New Arrivals',
+        'subtitle' => 'Latest books and journals added to our collection',
+        'books' => $newArrivalBooks
     ];
     $panels[] = [
         'key' => 'most_searched',
@@ -889,18 +889,18 @@ if ($isPersonalized) {
         'books' => $mostSearchedBooks
     ];
     $panels[] = [
-        'key' => 'new_arrivals',
-        'title' => 'New Arrivals',
-        'subtitle' => 'Latest books and journals added to our collection',
-        'books' => $newArrivalBooks
+        'key' => 'most_borrowed',
+        'title' => 'Most Borrowed Books',
+        'subtitle' => 'Popular titles frequently checked out by students',
+        'books' => $mostBorrowedBooks
     ];
 } else {
     $panels = [
         [
-            'key' => 'most_borrowed',
-            'title' => 'Most Borrowed Books',
-            'subtitle' => 'Popular titles frequently checked out by students',
-            'books' => $mostBorrowedBooks
+            'key' => 'new_arrivals',
+            'title' => 'New Arrivals',
+            'subtitle' => 'Latest books and journals added to our collection',
+            'books' => $newArrivalBooks
         ],
         [
             'key' => 'most_searched',
@@ -909,10 +909,10 @@ if ($isPersonalized) {
             'books' => $mostSearchedBooks
         ],
         [
-            'key' => 'new_arrivals',
-            'title' => 'New Arrivals',
-            'subtitle' => 'Latest books and journals added to our collection',
-            'books' => $newArrivalBooks
+            'key' => 'most_borrowed',
+            'title' => 'Most Borrowed Books',
+            'subtitle' => 'Popular titles frequently checked out by students',
+            'books' => $mostBorrowedBooks
         ]
     ];
 }
