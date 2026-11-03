@@ -4,6 +4,7 @@ config/ai_config.php
 
 tmp/*
 !tmp/.gitkeep
+!tmp/.htaccess
 *.log
 
 node_modules/

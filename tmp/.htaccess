@@ -1,0 +1,9 @@
+# This directory is for server-side use only (PHP include/CLI scripts).
+# Nothing in here should ever be requested directly over HTTP.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
