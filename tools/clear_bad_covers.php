@@ -17,9 +17,12 @@ declare(strict_types=1);
 // cover with a different filename, since we don't know that provenance.
 //
 // Safe by default: dry-run unless --commit is passed. --commit deletes the
-// bad image file and sets books.cover back to NULL, so a later
-// fetch_book_covers.php run will pick the book up again and try to find a
-// correct (portrait) cover -- or correctly skip it if none exists.
+// bad image file, sets books.cover back to NULL (the book then shows its
+// generated cover) and records the book in book_cover_rejections, so the
+// nightly fetch_book_covers.php run won't download the same image again --
+// which is exactly what happened after the late-October 2026 cleanup, when
+// clearing alone brought 24 of 27 bad covers back byte-for-byte. --reason=
+// sets the text stored with the rejection.
 //
 // The landscape check only catches "obviously a photo, wrong shape." It
 // cannot catch a correctly-shaped (portrait) image that's still wrong
@@ -35,6 +38,7 @@ declare(strict_types=1);
 //   php tools/clear_bad_covers.php --commit
 //   php tools/clear_bad_covers.php --book_ids=326,603,767   (restrict to specific books)
 //   php tools/clear_bad_covers.php --book_ids=1690,768 --force --commit   (human-verified bad, not landscape)
+//   php tools/clear_bad_covers.php --book_ids=1690 --force --commit --reason="scanned contents page"
 
 if (PHP_SAPI !== 'cli') {
     http_response_code(404);
@@ -42,14 +46,16 @@ if (PHP_SAPI !== 'cli') {
 }
 
 require __DIR__ . '/../config/db_connect.php';
-
-const COVERS_DIR = __DIR__ . '/../assets/covers';
+require_once __DIR__ . '/../config/cover_fetch_helpers.php';
 
 $commit = in_array('--commit', $argv, true);
 $onlyIds = null;
+$reasonArg = null;
 foreach ($argv as $arg) {
     if (preg_match('/^--book_ids=([\d,]+)$/', (string)$arg, $m)) {
         $onlyIds = array_map('intval', explode(',', $m[1]));
+    } elseif (preg_match('/^--reason=(.+)$/s', (string)$arg, $m)) {
+        $reasonArg = trim($m[1]);
     }
 }
 // Only meaningful (and only honored) alongside an explicit --book_ids list --
@@ -113,21 +119,15 @@ foreach ($bad as $b) {
     ) . PHP_EOL;
 
     if ($commit) {
-        if (!@unlink($b['path'])) {
-            fwrite(STDERR, "  Failed to delete {$b['path']}" . PHP_EOL);
-            $errors++;
-            continue;
-        }
-        $stmt = $conn->prepare('UPDATE books SET cover = NULL WHERE book_id = ?');
         $bookId = (int)$r['book_id'];
-        $stmt->bind_param('i', $bookId);
-        if (!$stmt->execute()) {
-            fwrite(STDERR, "  DB update failed for book #{$bookId}: " . $stmt->error . PHP_EOL);
+        $reason = $reasonArg ?? ($b['reason'] === 'landscape' ? 'landscape image, not a cover' : 'human-verified wrong cover');
+        $result = fbc_clear_cover($conn, $bookId, $b['filename'], $reason, 'tools/clear_bad_covers.php');
+        if (!$result['ok']) {
+            fwrite(STDERR, "  Failed for book #{$bookId}: " . ($result['error'] ?? 'unknown error') . PHP_EOL);
             $errors++;
         } else {
             $cleared++;
         }
-        $stmt->close();
     }
 }
 
@@ -135,7 +135,7 @@ echo PHP_EOL;
 if ($commit) {
     echo "Cleared: {$cleared}" . PHP_EOL;
     echo "Errors:  {$errors}" . PHP_EOL;
-    echo PHP_EOL . 'Done. Re-run tools/fetch_book_covers.php --commit to try finding correct covers for these (now-fixed to reject landscape images).' . PHP_EOL;
+    echo PHP_EOL . 'Done. These books now show their generated cover and are recorded in book_cover_rejections, so the nightly fetch skips them. Fetch or upload a correct cover from the admin panel if one turns up.' . PHP_EOL;
 } else {
     echo 'Dry run complete -- re-run with --commit to delete these files and clear their books.cover value.' . PHP_EOL;
 }

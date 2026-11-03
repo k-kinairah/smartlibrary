@@ -111,6 +111,10 @@ if (!is_dir(COVERS_DIR)) {
     }
 }
 
+// Books whose fetched cover was rejected as wrong (book_cover_rejections).
+// Loaded once; checked alongside EXCLUDED_BOOK_IDS below.
+$rejectedCovers = fbc_rejected_cover_reasons($conn);
+
 $isbnMatched = 0;
 $titleAuthorMatched = 0;
 $googleIsbnMatched = 0;
@@ -118,6 +122,7 @@ $googleTitleAuthorMatched = 0;
 $skippedNoMatch = 0;
 $skippedMatchedNoCover = 0;
 $skippedExcluded = 0;
+$skippedRejected = 0;
 $googleRateLimited = 0;
 $errors = 0;
 $dbFailuresInARow = 0;
@@ -137,19 +142,25 @@ foreach ($books as $i => $b) {
         );
         continue;
     }
+    if (array_key_exists($bookId, $rejectedCovers)) {
+        // Cleared as wrong by a librarian or tools/clear_bad_covers.php.
+        // Fetching again would just bring the same image back.
+        $skippedRejected++;
+        continue;
+    }
 
     $found = null;
     $matchedButNoCoverLogged = false;
 
     if ($isbn !== '') {
-        $found = fbc_try_isbn($isbn);
+        $found = fbc_try_isbn($isbn, $bookId);
         usleep(REQUEST_SLEEP_MICROSECONDS);
     }
 
     $matchKind = $found !== null ? 'isbn' : null;
 
     if ($found === null && !$isbnOnly) {
-        $result = fbc_try_title_author($title, $author);
+        $result = fbc_try_title_author($title, $author, $bookId);
         usleep(REQUEST_SLEEP_MICROSECONDS);
         if ($result !== null && isset($result['no_cover_for_match'])) {
             $skippedMatchedNoCover++;
@@ -168,7 +179,7 @@ foreach ($books as $i => $b) {
     // nothing at all for this book. Not attempted for a book already matched. ---
 
     if ($found === null && $isbn !== '') {
-        $gResult = fbc_try_google_isbn($isbn);
+        $gResult = fbc_try_google_isbn($isbn, $bookId);
         usleep(REQUEST_SLEEP_MICROSECONDS);
         if ($gResult !== null && isset($gResult['rate_limited'])) {
             $googleRateLimited++;
@@ -188,7 +199,7 @@ foreach ($books as $i => $b) {
     }
 
     if ($found === null && !$isbnOnly) {
-        $gResult = fbc_try_google_title_author($title, $author);
+        $gResult = fbc_try_google_title_author($title, $author, $bookId);
         usleep(REQUEST_SLEEP_MICROSECONDS);
         if ($gResult !== null && isset($gResult['rate_limited'])) {
             $googleRateLimited++;
@@ -264,6 +275,7 @@ echo 'Matched via Google Books (title/author):  ' . $googleTitleAuthorMatched . 
 echo 'Skipped (matched, no cover available):    ' . $skippedMatchedNoCover . PHP_EOL;
 echo 'Skipped (no confident match):             ' . $skippedNoMatch . PHP_EOL;
 echo 'Skipped (manually excluded):              ' . $skippedExcluded . PHP_EOL;
+echo 'Skipped (cover rejected as wrong):        ' . $skippedRejected . PHP_EOL;
 if ($googleRateLimited > 0) {
     echo 'Google Books rate-limited (retry later, re-run to pick these up): ' . $googleRateLimited . PHP_EOL;
 }

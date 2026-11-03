@@ -108,6 +108,149 @@ function fbc_is_known_bad_image(string $bytes): bool {
     return array_key_exists(md5($bytes), KNOWN_BAD_IMAGE_HASHES);
 }
 
+/**
+ * Scanned-page check (added 2026-11-04). Google Books' digitized library
+ * copies, and some Open Library records, offer the first scanned page --
+ * a title, half-title or contents page -- as the "cover": black type on
+ * white, no colour at all. A 2026-11-04 review found 55 of these live; on a
+ * 48x64 sample grid every one was >= 85% near-white with mean colourfulness
+ * (max - min channel) of ~0, where the catalog's median real cover is 8%
+ * white. Coloured interior pages (ads, chapter pages, back covers) can't be
+ * told from real white covers this way; those are handled by rejecting the
+ * book (book_cover_rejections) instead.
+ */
+const SCAN_PAGE_MIN_WHITE_FRACTION = 0.85;
+const SCAN_PAGE_MAX_COLORFULNESS = 3.0;
+// Real covers that happen to trip the scanned-page check -- confirmed by eye
+// in the 2026-11-04 review. Never auto-rejected for looking like a scan.
+const SCAN_CHECK_ALLOWLIST = [
+    1017 => 'real Rex Book Store cover: white with a small coloured crown and rope',
+    1645 => 'real SAGE cover, photographed: pale grey with grey type',
+];
+
+/**
+ * White fraction and mean colourfulness of an image on a 48x64 sample grid,
+ * or null if it can't be decoded (needs PHP's gd extension).
+ *
+ * @return array{white:float,colorfulness:float}|null
+ */
+function fbc_page_whiteness(string $bytes): ?array {
+    if (!function_exists('imagecreatefromstring')) {
+        return null;
+    }
+    $img = @imagecreatefromstring($bytes);
+    if ($img === false) {
+        return null;
+    }
+    $w = imagesx($img);
+    $h = imagesy($img);
+    $cols = 48;
+    $rows = 64;
+    $n = 0;
+    $white = 0;
+    $chromaSum = 0;
+    for ($j = 0; $j < $rows; $j++) {
+        $y = min($h - 1, (int)floor(($j + 0.5) * $h / $rows));
+        for ($i = 0; $i < $cols; $i++) {
+            $x = min($w - 1, (int)floor(($i + 0.5) * $w / $cols));
+            $rgb = imagecolorsforindex($img, imagecolorat($img, $x, $y));
+            $r = $rgb['red'];
+            $g = $rgb['green'];
+            $b = $rgb['blue'];
+            $chroma = max($r, $g, $b) - min($r, $g, $b);
+            $luma = 0.299 * $r + 0.587 * $g + 0.114 * $b;
+            $n++;
+            $chromaSum += $chroma;
+            if ($luma >= 200 && $chroma <= 40) {
+                $white++;
+            }
+        }
+    }
+    imagedestroy($img);
+    return ['white' => $white / $n, 'colorfulness' => $chromaSum / $n];
+}
+
+/** True when the image looks like a scanned black-on-white page, not cover art. */
+function fbc_looks_like_scanned_page(string $bytes, ?int $bookId = null): bool {
+    if ($bookId !== null && array_key_exists($bookId, SCAN_CHECK_ALLOWLIST)) {
+        return false;
+    }
+    $stats = fbc_page_whiteness($bytes);
+    if ($stats === null) {
+        static $warned = false;
+        if (!$warned && !function_exists('imagecreatefromstring')) {
+            $warned = true;
+            fbc_log_line('  [cover check] PHP gd extension is off -- scanned-page check skipped. Enable extension=gd in php.ini.' . PHP_EOL);
+        }
+        return false;
+    }
+    return $stats['white'] >= SCAN_PAGE_MIN_WHITE_FRACTION
+        && $stats['colorfulness'] <= SCAN_PAGE_MAX_COLORFULNESS;
+}
+
+/**
+ * Every automatic check a fetched candidate image must pass, in one place.
+ * Returns null if it's acceptable, otherwise a short reason. Not applied to
+ * librarian uploads (see fbc_validate_uploaded_image()).
+ */
+function fbc_candidate_problem(string $bytes, ?int $bookId = null): ?string {
+    if (!fbc_is_portrait_or_square($bytes)) {
+        return 'landscape';
+    }
+    if (fbc_is_known_bad_image($bytes)) {
+        return 'known placeholder image';
+    }
+    if (fbc_looks_like_scanned_page($bytes, $bookId)) {
+        return 'scanned page';
+    }
+    return null;
+}
+
+/**
+ * Why a book's fetched covers are rejected, or null if they aren't: the
+ * hard-coded EXCLUDED_BOOK_IDS above, then book_cover_rejections (see
+ * database/cover_rejections_setup.sql). The nightly job skips these books.
+ */
+function fbc_cover_rejection_reason(mysqli $conn, int $bookId): ?string {
+    if (array_key_exists($bookId, EXCLUDED_BOOK_IDS)) {
+        return EXCLUDED_BOOK_IDS[$bookId];
+    }
+    return fbc_rejected_cover_reasons($conn)[$bookId] ?? null;
+}
+
+/** @return array<int,string> book_id => reason, for every row in book_cover_rejections. */
+function fbc_rejected_cover_reasons(mysqli $conn): array {
+    $reasons = [];
+    try {
+        $res = $conn->query('SELECT book_id, reason FROM book_cover_rejections');
+    } catch (Throwable $e) {
+        $res = false; // table not created yet: nothing rejected
+    }
+    while ($res && ($row = $res->fetch_assoc())) {
+        $reasons[(int)$row['book_id']] = (string)$row['reason'];
+    }
+    return $reasons;
+}
+
+/** Records (or updates) a book's cover rejection. */
+function fbc_record_cover_rejection(mysqli $conn, int $bookId, string $reason, ?string $coverMd5, ?string $rejectedBy): bool {
+    $reason = mb_substr(trim($reason) !== '' ? trim($reason) : 'cover rejected', 0, 255);
+    $rejectedBy = $rejectedBy !== null ? mb_substr($rejectedBy, 0, 100) : null;
+    $stmt = $conn->prepare(
+        'INSERT INTO book_cover_rejections (book_id, reason, rejected_cover_md5, rejected_by)
+         VALUES (?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE reason = VALUES(reason), rejected_cover_md5 = VALUES(rejected_cover_md5),
+                                 rejected_by = VALUES(rejected_by), created_at = NOW()'
+    );
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('isss', $bookId, $reason, $coverMd5, $rejectedBy);
+    $ok = $stmt->execute();
+    $stmt->close();
+    return $ok;
+}
+
 function fbc_curl_available(): bool {
     return function_exists('curl_init');
 }
@@ -208,7 +351,7 @@ function fbc_is_portrait_or_square(string $bytes): bool {
 }
 
 /** Try a direct ISBN cover lookup. Returns image bytes+ext, or null. */
-function fbc_try_isbn(string $isbn): ?array {
+function fbc_try_isbn(string $isbn, ?int $bookId = null): ?array {
     $clean = preg_replace('/[^0-9Xx]/', '', $isbn) ?? '';
     if ($clean === '') {
         return null;
@@ -222,17 +365,14 @@ function fbc_try_isbn(string $isbn): ?array {
     if ($ext === null) {
         return null;
     }
-    if (!fbc_is_portrait_or_square($body)) {
-        return null;
-    }
-    if (fbc_is_known_bad_image($body)) {
+    if (fbc_candidate_problem($body, $bookId) !== null) {
         return null;
     }
     return ['bytes' => $body, 'ext' => $ext, 'via' => "ISBN {$clean}"];
 }
 
 /** Try a title/author search match. Returns image bytes+ext+confidence info, or null. */
-function fbc_try_title_author(string $title, string $author): ?array {
+function fbc_try_title_author(string $title, string $author, ?int $bookId = null): ?array {
     if (trim($title) === '') {
         return null;
     }
@@ -287,16 +427,11 @@ function fbc_try_title_author(string $title, string $author): ?array {
         if ($ext === null) {
             continue;
         }
-        if (!fbc_is_portrait_or_square($imgBody)) {
-            // A landscape image is almost never a real cover -- Open Library's
-            // crowdsourced data occasionally attaches the wrong image to an
-            // otherwise correct title+author match. Don't accept it; try the
-            // next candidate instead of settling for a known-bad image.
-            continue;
-        }
-        if (fbc_is_known_bad_image($imgBody)) {
-            // Right shape, wrong content -- a known "image not available"
-            // placeholder. Try the next candidate instead of saving it.
+        if (fbc_candidate_problem($imgBody, $bookId) !== null) {
+            // Landscape (Open Library's crowdsourced data occasionally attaches
+            // the wrong image to an otherwise correct title+author match), the
+            // known "image not available" placeholder, or a scanned page.
+            // Try the next candidate instead of settling for a bad image.
             continue;
         }
         return [
@@ -459,7 +594,7 @@ function fbc_log_google_daily_quota_once(int $resetAtUnix): void {
 }
 
 /** Try a Google Books ISBN lookup. Returns image bytes+ext, ['no_cover_for_match'=>true,...], ['rate_limited'=>true], or null. */
-function fbc_try_google_isbn(string $isbn): ?array {
+function fbc_try_google_isbn(string $isbn, ?int $bookId = null): ?array {
     if (GOOGLE_BOOKS_API_KEY === '') {
         return null; // fallback not configured -- see config/google_books_config.php
     }
@@ -536,10 +671,7 @@ function fbc_try_google_isbn(string $isbn): ?array {
             if ($ext === null) {
                 continue;
             }
-            if (!fbc_is_portrait_or_square($imgBody)) {
-                continue;
-            }
-            if (fbc_is_known_bad_image($imgBody)) {
+            if (fbc_candidate_problem($imgBody, $bookId) !== null) {
                 continue;
             }
             return ['bytes' => $imgBody, 'ext' => $ext, 'via' => "Google Books ISBN {$clean}"];
@@ -553,7 +685,7 @@ function fbc_try_google_isbn(string $isbn): ?array {
 }
 
 /** Try a Google Books title/author search. Returns image bytes+ext+confidence info, ['rate_limited'=>true], or null. */
-function fbc_try_google_title_author(string $title, string $author): ?array {
+function fbc_try_google_title_author(string $title, string $author, ?int $bookId = null): ?array {
     if (GOOGLE_BOOKS_API_KEY === '') {
         return null; // fallback not configured -- see config/google_books_config.php
     }
@@ -637,10 +769,7 @@ function fbc_try_google_title_author(string $title, string $author): ?array {
             if ($ext === null) {
                 continue;
             }
-            if (!fbc_is_portrait_or_square($imgBody)) {
-                continue;
-            }
-            if (fbc_is_known_bad_image($imgBody)) {
+            if (fbc_candidate_problem($imgBody, $bookId) !== null) {
                 continue;
             }
             return [
@@ -683,15 +812,17 @@ function fbc_try_google_title_author(string $title, string $author): ?array {
  * -- a confident title+author match was found but that source had no actual
  * cover image for it (first such notice only, matching the nightly job's
  * own "don't double-report the same book" behavior).
+ *
+ * $bookId, when known, lets the scanned-page check honour SCAN_CHECK_ALLOWLIST.
  */
-function fbc_find_cover(string $title, string $author, string $isbn, bool $isbnOnly = false, bool $useGoogle = true): array {
+function fbc_find_cover(string $title, string $author, string $isbn, bool $isbnOnly = false, bool $useGoogle = true, ?int $bookId = null): array {
     $isbn = trim($isbn);
     $noCoverNotice = null;
     $rateLimitedCount = 0;
     $result = null;
 
     if ($isbn !== '') {
-        $found = fbc_try_isbn($isbn);
+        $found = fbc_try_isbn($isbn, $bookId);
         usleep(REQUEST_SLEEP_MICROSECONDS);
         if ($found !== null) {
             $result = ['status' => 'found', 'kind' => 'isbn'] + $found;
@@ -699,7 +830,7 @@ function fbc_find_cover(string $title, string $author, string $isbn, bool $isbnO
     }
 
     if ($result === null && !$isbnOnly) {
-        $r = fbc_try_title_author($title, $author);
+        $r = fbc_try_title_author($title, $author, $bookId);
         usleep(REQUEST_SLEEP_MICROSECONDS);
         if ($r !== null && isset($r['no_cover_for_match'])) {
             $noCoverNotice ??= ['source' => 'open_library', 'matched_title' => $r['matched_title'], 'similarity' => $r['similarity']];
@@ -709,7 +840,7 @@ function fbc_find_cover(string $title, string $author, string $isbn, bool $isbnO
     }
 
     if ($result === null && $useGoogle && $isbn !== '') {
-        $g = fbc_try_google_isbn($isbn);
+        $g = fbc_try_google_isbn($isbn, $bookId);
         usleep(REQUEST_SLEEP_MICROSECONDS);
         if ($g !== null && isset($g['rate_limited'])) {
             $rateLimitedCount++;
@@ -721,7 +852,7 @@ function fbc_find_cover(string $title, string $author, string $isbn, bool $isbnO
     }
 
     if ($result === null && $useGoogle && !$isbnOnly) {
-        $g = fbc_try_google_title_author($title, $author);
+        $g = fbc_try_google_title_author($title, $author, $bookId);
         usleep(REQUEST_SLEEP_MICROSECONDS);
         if ($g !== null && isset($g['rate_limited'])) {
             $rateLimitedCount++;
@@ -879,17 +1010,27 @@ function fbc_validate_uploaded_image(string $tmpPath): array {
  * the cover_<id>.<ext> convention this project's own tools use -- never a
  * differently-named pre-existing cover, since we don't know its provenance;
  * same safety rule tools/clear_bad_covers.php follows) and sets books.cover
- * back to NULL so the nightly job will try to find a replacement.
+ * back to NULL, so the book shows its generated cover.
+ *
+ * Clearing a cover means it was wrong, so the book is also recorded in
+ * book_cover_rejections and the nightly job won't fetch it again -- before
+ * this, it just re-downloaded the same image the next night. A librarian
+ * can still fetch or upload a cover for it by hand.
  *
  * @return array{ok:bool,error?:string}
  */
-function fbc_clear_cover(mysqli $conn, int $bookId, ?string $coverFilename): array {
+function fbc_clear_cover(mysqli $conn, int $bookId, ?string $coverFilename, string $reason = 'cover cleared as wrong', ?string $rejectedBy = null): array {
     $coverFilename = trim((string)$coverFilename);
+    $ownFile = null;
     if ($coverFilename !== '' && preg_match('/^cover_[0-9]+\.(jpg|jpeg|png)$/i', $coverFilename)) {
-        $fullPath = COVERS_DIR . '/' . $coverFilename;
-        if (is_file($fullPath)) {
-            @unlink($fullPath);
-        }
+        $ownFile = COVERS_DIR . '/' . $coverFilename;
+    }
+    $coverMd5 = ($ownFile !== null && is_file($ownFile)) ? (md5_file($ownFile) ?: null) : null;
+    if (!fbc_record_cover_rejection($conn, $bookId, $reason, $coverMd5, $rejectedBy)) {
+        return ['ok' => false, 'error' => 'Could not record the rejected cover, so it was not cleared.'];
+    }
+    if ($ownFile !== null && is_file($ownFile)) {
+        @unlink($ownFile);
     }
     $stmt = $conn->prepare('UPDATE books SET cover = NULL WHERE book_id = ?');
     if (!$stmt) {

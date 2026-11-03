@@ -359,7 +359,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_book'])) {
             // again on its own.
             if (fbc_curl_available()) {
                 try {
-                    $coverResult = fbc_find_cover($title, $author, $isbn, false, false);
+                    $coverResult = fbc_find_cover($title, $author, $isbn, false, false, $newBookId);
                     if ($coverResult['status'] === 'found') {
                         fbc_save_cover_bytes($conn, $newBookId, $coverResult['bytes'], $coverResult['ext']);
                     }
@@ -878,7 +878,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['refetch_cover'])) {
                     (string)($coverBookRow['author'] ?? ''),
                     (string)($coverBookRow['isbn'] ?? ''),
                     false,
-                    true
+                    true,
+                    $coverBookId
                 );
                 if ($coverResult['status'] === 'found') {
                     $coverSaveResult = fbc_save_cover_bytes($conn, $coverBookId, $coverResult['bytes'], $coverResult['ext']);
@@ -963,9 +964,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_cover'])) {
     }
 
     if ($clearBookRow) {
-        $clearResult = fbc_clear_cover($conn, $coverBookId, (string)($clearBookRow['cover'] ?? ''));
+        $clearResult = fbc_clear_cover(
+            $conn,
+            $coverBookId,
+            (string)($clearBookRow['cover'] ?? ''),
+            'cleared by a librarian in Manage Books',
+            smartlib_admin_audit_actor_name()
+        );
         if ($clearResult['ok']) {
-            $clearMessage = 'Cover cleared. The nightly job will try to find a replacement automatically.';
+            $clearMessage = 'Cover cleared. The book now shows its generated cover, and the nightly job won\'t fetch this one again. Re-fetch or upload a cover here if you find the right one.';
             manage_books_log_activity($conn, 'cover_cleared', $coverBookId, (string)($clearBookRow['title'] ?? ''), []);
         } else {
             $clearMessage = (string)($clearResult['error'] ?? 'Could not clear the cover.');
@@ -1689,7 +1696,7 @@ require 'layout_top.php';
         <?php
             $editCoverFilename = trim((string)($editForm['cover'] ?? ''));
             $editBookIdForCover = (int)($editForm['book_id'] ?? 0);
-            $editCoverIsExcluded = array_key_exists($editBookIdForCover, EXCLUDED_BOOK_IDS);
+            $editCoverIsExcluded = $editBookIdForCover > 0 && fbc_cover_rejection_reason($conn, $editBookIdForCover) !== null;
         ?>
         <!-- Cover actions are their own POST forms; HTML can't nest forms, so
              their visible controls live in the Cover section below and attach
@@ -1703,7 +1710,7 @@ require 'layout_top.php';
             <input type="hidden" name="book_id" value="<?= $editBookIdForCover ?>">
         </form>
         <?php if ($editCoverFilename !== ''): ?>
-            <form method="POST" id="editCoverClearForm" hidden onsubmit="return confirm(&quot;Clear this book's cover? The nightly job will try to find a replacement automatically.&quot;);">
+            <form method="POST" id="editCoverClearForm" hidden onsubmit="return confirm(&quot;Clear this book's cover as wrong? It will show its generated cover, and the nightly job won't fetch this one again.&quot;);">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
                 <input type="hidden" name="book_id" value="<?= $editBookIdForCover ?>">
             </form>
