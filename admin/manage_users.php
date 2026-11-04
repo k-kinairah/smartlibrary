@@ -241,6 +241,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
             }
 
             if ($ok) {
+                // The session caches name/ID/role at login (auth_finalize_session_login).
+                // When librarians edit their own account, refresh those copies now so the
+                // badge, audit trail and access checks match the DB without a re-login.
+                // Editing anyone else leaves the editor's session alone.
+                if ($editUserId === (int)($_SESSION['user_id'] ?? 0)) {
+                    $_SESSION['name'] = trim($firstName . ' ' . $lastName);
+                    $_SESSION['user_number'] = $userNumber;
+                    $_SESSION['role'] = $role === 'admin' ? 'librarian' : $role;
+                }
+
                 smartlib_admin_audit_log($conn, 'updated', 'user', $editUserId, trim($firstName . ' ' . $lastName), [
                     'user_number' => $userNumber,
                     'email' => $email,
