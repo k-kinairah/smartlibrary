@@ -11796,3 +11796,187 @@ body {
 .reports-quick > .reports-group-label:first-of-type {
     margin-top: 22px;
 }
+
+/* ============================================================
+   Pass v62: Data Export polish
+   ------------------------------------------------------------
+   Each export card gets its own icon from the shared admin_icon()
+   set (book / layers / people / swap / alert) instead of five
+   identical download arrows; the download arrow moves onto the
+   button. "What Each Export Includes" turns its Sensitive Data
+   text into a scannable badge -- None (green) vs Personal data
+   (amber; names / ID numbers / emails, never passwords) -- with the
+   original phrase kept as a caption, plus row striping. The card
+   count pills (gold, incl. Overdue & Missing) are left as they are.
+   ============================================================ */
+.export-card-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Title + count pill: the pill drops under the title when the card is
+   too narrow for both, instead of squeezing the title onto 2-3 lines. */
+.export-card-title-row {
+    flex-wrap: wrap;
+    row-gap: 2px;
+}
+
+.export-card-title-row h3 {
+    flex: 1 1 auto;
+}
+
+/* Buttons line up along the bottom of every card, one line each. */
+.export-card {
+    display: flex;
+}
+
+.export-card .reports-card-body {
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+}
+
+.export-card .reports-card-actions {
+    margin-top: auto;
+}
+
+.export-download-btn {
+    gap: 7px;
+    width: 100%;
+    white-space: nowrap;
+}
+
+.export-download-btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.export-include-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    color: #eaf3fc;
+    white-space: nowrap;
+}
+
+.export-include-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(90, 150, 210, 0.2);
+    border: 1px solid rgba(140, 185, 235, 0.34);
+    color: #cfe3f7;
+}
+
+.export-include-icon svg {
+    width: 15px;
+    height: 15px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.export-sensitivity {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+}
+
+.export-sensitivity-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.export-sensitivity-badge::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.export-sensitivity-none {
+    color: #a9efc6;
+    background: rgba(137, 242, 182, 0.13);
+    border-color: rgba(137, 242, 182, 0.38);
+}
+
+.export-sensitivity-personal {
+    color: #ffc58f;
+    background: rgba(255, 158, 77, 0.14);
+    border-color: rgba(255, 158, 77, 0.42);
+}
+
+.export-sensitivity-note {
+    font-size: 12px;
+    line-height: 1.35;
+    color: #9fb8d0;
+}
+
+.export-center-table tbody tr:nth-child(even) {
+    background: rgba(140, 185, 235, 0.11);
+}
+
+.export-center-table tbody tr:hover {
+    background: rgba(140, 185, 235, 0.18);
+}
+
+[data-theme="light"] .export-include-name {
+    color: #16324f;
+}
+
+[data-theme="light"] .export-include-icon {
+    background: rgba(63, 124, 194, 0.12);
+    border-color: rgba(63, 124, 194, 0.28);
+    color: #1c4573;
+}
+
+[data-theme="light"] .export-sensitivity-none {
+    color: #1f6c39;
+    background: rgba(38, 140, 77, 0.1);
+    border-color: rgba(38, 140, 77, 0.3);
+}
+
+[data-theme="light"] .export-sensitivity-personal {
+    color: #9a4a00;
+    background: rgba(214, 110, 20, 0.1);
+    border-color: rgba(214, 110, 20, 0.34);
+}
+
+[data-theme="light"] .export-sensitivity-note {
+    color: #5a7088;
+}
+
+[data-theme="light"] .export-center-table tbody tr:nth-child(odd) {
+    background: #ffffff !important;
+}
+
+[data-theme="light"] .export-center-table tbody tr:nth-child(even) {
+    background: #f1f6fc !important;
+}
+
+[data-theme="light"] .export-center-table tbody tr:hover {
+    background: rgba(63, 124, 194, 0.12) !important;
+}
