@@ -35,6 +35,19 @@ $normalizeRoleFilter = static function (string $role): string {
     return in_array($role, ['', 'student', 'faculty', 'librarian'], true) ? $role : '';
 };
 
+// Inactive status is only enforced at login, so when librarians deactivate
+// their own account, end the session right away -- same as ../logout.php.
+$signOutIfSelfDeactivated = static function (int $editedUserId, string $newStatus): void {
+    if ($newStatus !== 'inactive' || $editedUserId !== (int)($_SESSION['user_id'] ?? 0)) {
+        return;
+    }
+
+    $_SESSION = [];
+    session_destroy();
+    header('Location: ../index.php');
+    exit;
+};
+
 $allowedRoles = ['student', 'faculty', 'librarian', 'admin'];
 $allowedStatusValues = ['active', 'inactive'];
 
@@ -260,6 +273,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
                     'pin_changed' => $newPin !== ''
                 ]);
 
+                $signOutIfSelfDeactivated($editUserId, $status);
+
                 $redirectParams = [
                     'search' => $returnSearch,
                     'role' => $returnRole,
@@ -333,6 +348,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_user_status'])
                         'previous_status' => $oldStatus,
                         'new_status' => $newStatus
                     ]);
+
+                    $signOutIfSelfDeactivated($userId, $newStatus);
                 }
             }
         }
