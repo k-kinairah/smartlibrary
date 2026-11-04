@@ -34,7 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond(['status' => 'error', 'message' => 'Invalid request method.'], 405);
 }
 
-$userId = (int)($_SESSION['user_id'] ?? 0);
+require_once 'config/session_guard.php';
+$userId = smartlib_active_session_user_id($conn); // 0 if signed out, inactive or deleted
 if ($userId <= 0) {
     respond(['status' => 'error', 'message' => 'Please sign in first.'], 401);
 }

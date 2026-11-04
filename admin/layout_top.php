@@ -9,6 +9,17 @@ if (!isset($_SESSION['user_id']) || !in_array($currentRole, ['librarian', 'admin
     exit;
 }
 
+// Live account check (active + still staff). Pages that include this file
+// first (dashboard, borrower history, export center) get their DB connection
+// here; pages that include it later already ran the same check, so the
+// require_once and the guard's per-request memo make this a no-op for them.
+require_once __DIR__ . '/../config/db_connect.php';
+require_once __DIR__ . '/../config/session_guard.php';
+if (!smartlib_active_staff_session($conn)) {
+    header("Location: ../index.php");
+    exit;
+}
+
 $currentPage = basename($_SERVER['PHP_SELF']);
 $roleLabel = $currentRole === 'admin' ? 'Administrator' : 'Librarian';
 

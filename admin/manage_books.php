@@ -9,6 +9,11 @@ if (!isset($_SESSION['user_id']) || !in_array($currentRole, ['librarian', 'admin
     exit;
 }
 require '../config/db_connect.php';
+require_once '../config/session_guard.php';
+if (!smartlib_active_staff_session($conn)) {
+    header('Location: ../index.php');
+    exit;
+}
 require_once '../config/admin_audit.php';
 require_once '../config/csrf.php';
 

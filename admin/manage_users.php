@@ -10,6 +10,11 @@ if (!isset($_SESSION['user_id']) || !in_array($currentRole, ['librarian', 'admin
 }
 
 require '../config/db_connect.php';
+require_once '../config/session_guard.php';
+if (!smartlib_active_staff_session($conn)) {
+    header('Location: ../index.php');
+    exit;
+}
 require_once '../config/admin_audit.php';
 require_once '../config/csrf.php';
 require_once '../config/library_card_helpers.php';
@@ -35,8 +40,9 @@ $normalizeRoleFilter = static function (string $role): string {
     return in_array($role, ['', 'student', 'faculty', 'librarian'], true) ? $role : '';
 };
 
-// Inactive status is only enforced at login, so when librarians deactivate
-// their own account, end the session right away -- same as ../logout.php.
+// When librarians deactivate their own account, end the session on this same
+// save -- same as ../logout.php -- rather than redirecting back into Manage
+// Users only for the live check (config/session_guard.php) to bounce them.
 $signOutIfSelfDeactivated = static function (int $editedUserId, string $newStatus): void {
     if ($newStatus !== 'inactive' || $editedUserId !== (int)($_SESSION['user_id'] ?? 0)) {
         return;
@@ -254,14 +260,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
             }
 
             if ($ok) {
-                // The session caches name/ID/role at login (auth_finalize_session_login).
-                // When librarians edit their own account, refresh those copies now so the
-                // badge, audit trail and access checks match the DB without a re-login.
-                // Editing anyone else leaves the editor's session alone.
+                // When librarians edit their own account, refresh the session copies
+                // now so this request's audit entry and the redirect already use the
+                // new values. Other accounts pick up the change on their own next
+                // request (config/session_guard.php), via the same helper.
                 if ($editUserId === (int)($_SESSION['user_id'] ?? 0)) {
-                    $_SESSION['name'] = trim($firstName . ' ' . $lastName);
-                    $_SESSION['user_number'] = $userNumber;
-                    $_SESSION['role'] = $role === 'admin' ? 'librarian' : $role;
+                    smartlib_session_apply_account([
+                        'first_name' => $firstName,
+                        'last_name' => $lastName,
+                        'user_number' => $userNumber,
+                        'role' => $role,
+                    ]);
                 }
 
                 smartlib_admin_audit_log($conn, 'updated', 'user', $editUserId, trim($firstName . ' ' . $lastName), [

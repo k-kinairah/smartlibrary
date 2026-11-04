@@ -60,7 +60,8 @@ function my_books_days_until_due(?string $raw): ?int {
     return (int)$today->diff($due)->format('%r%a');
 }
 
-$userId = (int)($_SESSION['user_id'] ?? 0);
+require_once 'config/session_guard.php';
+$userId = smartlib_active_session_user_id($conn); // 0 if signed out, inactive or deleted
 if ($userId <= 0) {
     respond(['status' => 'error', 'message' => 'Please sign in first.'], 401);
 }

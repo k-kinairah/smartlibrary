@@ -2,6 +2,11 @@
 session_start();
 require 'config/db_connect.php';
 require 'config/csrf.php';
+require_once 'config/session_guard.php';
+
+// Signs out an account that was deactivated or deleted since login, so the
+// header below shows the signed-out state; refreshes name/role otherwise.
+smartlib_active_session_user_id($conn);
 
 // Shared by login_handler.php and verify_2fa.php (sent by filters.js).
 $signinCsrfToken = smartlib_csrf_token('signin_csrf');

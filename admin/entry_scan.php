@@ -18,6 +18,13 @@ $currentRole = strtolower(trim((string)($_SESSION['role'] ?? '')));
 $isStaff = isset($_SESSION['user_id']) && in_array($currentRole, ['librarian', 'admin'], true);
 $isPost = $_SERVER['REQUEST_METHOD'] === 'POST';
 
+if ($isStaff) {
+    // Live check: still active and still staff (see config/session_guard.php).
+    require '../config/db_connect.php';
+    require_once '../config/session_guard.php';
+    $isStaff = smartlib_active_staff_session($conn);
+}
+
 if (!$isStaff) {
     if ($isPost) {
         http_response_code(401);
@@ -29,7 +36,6 @@ if (!$isStaff) {
     exit;
 }
 
-require '../config/db_connect.php';
 require_once '../config/csrf.php';
 require_once '../config/library_card_helpers.php';
 require_once '../config/entry_log_helpers.php';

@@ -1,6 +1,6 @@
 <?php require 'layout_top.php'; ?>
 <?php
-require '../config/db_connect.php';
+require_once '../config/db_connect.php';
 require_once '../config/borrow_fine_rules.php';
 
 function safe_query(mysqli $conn, string $sql) {
