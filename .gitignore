@@ -27,3 +27,10 @@ config/db_config.php
 /_db_*.php
 assets/images/BANTILING*.pdf
 logs/
+
+# Audit-log backups from tools/clear_audit_log.php. They are written outside
+# htdocs by default (<xampp>/smartlib_backups/); these patterns keep any copy
+# that ends up inside the project from ever being committed.
+/backups/
+/smartlib_backups/
+audit_log_backup_*.sql

@@ -20,6 +20,9 @@ declare(strict_types=1);
 //     when wiping test data so test scans don't count toward launch reports;
 //   * writes one "deleted" entry per account to the admin activity log
 //     (Archived History), listing what was removed and which copies were reset.
+//     It is recorded under the --by name exactly as given (linked to that
+//     librarian's account when the name matches one), else "System Admin";
+//     the metadata notes it came from this tool.
 //
 // SAFE BY DEFAULT: dry-run unless --commit is passed. A dry run only reads
 // the database and prints exactly what --commit would do. Each account is
@@ -50,7 +53,7 @@ require_once __DIR__ . '/../config/library_card_helpers.php';
 $commit = in_array('--commit', $argv, true);
 $allowStaff = in_array('--allow-staff', $argv, true);
 $purgeEntryLogs = in_array('--purge-entry-logs', $argv, true);
-$actorName = 'Account cleanup tool (CLI)';
+$byName = '';
 $ids = [];
 $userNumbers = [];
 
@@ -61,7 +64,7 @@ foreach (array_slice($argv, 1) as $arg) {
     } elseif (preg_match('/^--user-number=(.+)$/', $arg, $m)) {
         $userNumbers[] = library_card_normalize_id($m[1]);
     } elseif (preg_match('/^--by=(.+)$/', $arg, $m) && trim($m[1]) !== '') {
-        $actorName = trim($m[1]) . ' (account cleanup tool)';
+        $byName = trim($m[1]);
     } elseif (!in_array($arg, ['--commit', '--allow-staff', '--purge-entry-logs'], true)) {
         fwrite(STDERR, "Unknown argument: {$arg}" . PHP_EOL);
         exit(1);
@@ -206,14 +209,17 @@ if (!empty($staff)) {
 // ---- Plan / execute -------------------------------------------------------
 
 echo 'Mode: ' . ($commit ? 'COMMIT (writing to the database)' : 'DRY RUN (nothing will be saved -- pass --commit to actually delete)') . PHP_EOL;
-echo 'Recorded as: ' . $actorName . PHP_EOL;
+$actor = smartlib_admin_audit_set_cli_actor($conn, $byName);
+echo 'Recorded as: ' . $actor['name'] . ($actor['user_id'] > 0 ? " (librarian account #{$actor['user_id']})" : '') . PHP_EOL;
+if ($byName === '') {
+    echo '  (no --by given -- pass --by="Your Name" so the log shows who ran this)' . PHP_EOL;
+}
 echo 'Accounts: ' . count($users) . PHP_EOL . PHP_EOL;
 
 if ($commit) {
     // Run the audit table's CREATE/ALTER now: DDL commits any open
     // transaction, so it must not happen inside the per-account ones.
     smartlib_admin_audit_ensure_table($conn);
-    $_SESSION = ['name' => $actorName];
 }
 
 $totals = ['accounts' => 0, 'loans' => 0, 'copies_reset' => 0, 'failed' => 0];

@@ -74,6 +74,45 @@ function smartlib_admin_audit_actor_name(): string {
     return $name;
 }
 
+/**
+ * For command-line tools (tools/*.php), which have no signed-in session:
+ * set who their audit entries are recorded as. The --by name is recorded
+ * exactly as given -- no tool name added -- and when it is the full name
+ * of exactly one active librarian/admin account, the entry is linked to
+ * that account too, so Archived History shows it the same way as that
+ * person's own actions in the admin panel. Without a name it falls back
+ * to the same neutral "System Admin" the panel uses.
+ *
+ * Returns ['name' => recorded name, 'user_id' => linked account or 0].
+ */
+function smartlib_admin_audit_set_cli_actor(mysqli $conn, string $byName): array {
+    $byName = trim($byName);
+    $userId = 0;
+
+    if ($byName !== '') {
+        $stmt = $conn->prepare(
+            "SELECT user_id FROM library_users
+              WHERE role IN ('librarian', 'admin') AND status = 'active'
+                AND TRIM(CONCAT(first_name, ' ', last_name)) = ?
+              LIMIT 2"
+        );
+        if ($stmt) {
+            $stmt->bind_param('s', $byName);
+            $stmt->execute();
+            $matches = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
+            if (count($matches) === 1) {
+                $userId = (int)$matches[0]['user_id'];
+            }
+        }
+    }
+
+    $name = $byName !== '' ? $byName : 'System Admin';
+    $_SESSION = ['name' => $name, 'user_id' => $userId];
+
+    return ['name' => $name, 'user_id' => $userId];
+}
+
 function smartlib_admin_audit_log(
     mysqli $conn,
     string $actionType,
