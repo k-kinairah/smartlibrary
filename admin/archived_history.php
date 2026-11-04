@@ -52,11 +52,97 @@ function parse_meta_json(?string $json): array {
     return is_array($decoded) ? $decoded : [];
 }
 
-function meta_summary(?string $json): string {
+/**
+ * The detail fields that matter most for each kind of entry, shown first in
+ * the Details column (up to 4). Without this, entries whose details include
+ * an ISBN/author only ever showed those, and the rest fell back to their
+ * first 4 stored fields -- which hid the borrower and fine on returns, the
+ * copy counts on book edits, "PIN changed" on user edits, and so on. This
+ * reads existing rows as they are; nothing stored is rewritten.
+ */
+function meta_summary_priority_fields(string $action, string $entity): array {
+    $map = [
+        'returned|borrow_record' => ['borrower', 'borrower_number', 'fine', 'accession_no'],
+        'missing|borrow_record' => ['borrower', 'borrower_number', 'accession_no', 'copy_status'],
+        'updated|book' => ['copies_added', 'copies_removed', 'copy_count_after_update', 'isbn'],
+        'updated|user' => ['user_number', 'role', 'pin_changed', 'program_id'],
+        'deleted|user' => ['user_number', 'loans_deleted', 'copies_reset_to_available', 'role'],
+        'retrieved|book' => ['retrieved_from_activity_id', 'isbn', 'author'],
+    ];
+    return $map[$action . '|' . $entity] ?? [];
+}
+
+function meta_field_label(string $key): string {
+    $labels = [
+        'borrower_number' => 'Borrower ID',
+        'copy_count_after_update' => 'Copies after',
+        'copies_reset_to_available' => 'Copies reset',
+        'retrieved_from_activity_id' => 'Retrieved from',
+        'pin_changed' => 'PIN changed',
+        'program_id' => 'Program',
+        'copy_status' => 'Copy marked',
+        'accession_no' => 'Accession',
+        'isbn' => 'ISBN',
+    ];
+    return $labels[$key] ?? ucfirst(str_replace('_', ' ', $key));
+}
+
+function meta_program_name(int $programId): string {
+    static $names = null;
+    if ($names === null) {
+        $names = [];
+        global $conn;
+        $res = ($conn instanceof mysqli) ? safe_query($conn, 'SELECT program_id, program_name FROM programs') : false;
+        if ($res) {
+            while ($row = $res->fetch_assoc()) {
+                $names[(int)$row['program_id']] = (string)$row['program_name'];
+            }
+        }
+    }
+    return $names[$programId] ?? ('#' . $programId);
+}
+
+function meta_field_value(string $key, $value): string {
+    if ($key === 'program_id') {
+        return ($value === null || (int)$value <= 0) ? 'None' : meta_program_name((int)$value);
+    }
+    if ($key === 'fine') {
+        return 'PHP ' . number_format((float)$value, 2);
+    }
+    if ($key === 'retrieved_from_activity_id') {
+        return 'entry #' . (int)$value;
+    }
+    if (is_bool($value)) {
+        return $value ? 'Yes' : 'No';
+    }
+    if (is_array($value)) {
+        $flat = array_filter(array_map(fn($v) => is_scalar($v) ? (string)$v : '', $value), fn($v) => $v !== '');
+        return empty($flat) ? 'none' : implode(', ', $flat);
+    }
+    if ($value === null || $value === '') {
+        return '-';
+    }
+    return (string)$value;
+}
+
+function meta_summary(?string $json, string $action = '', string $entity = ''): string {
     $decoded = parse_meta_json($json);
     if (empty($decoded)) {
         $raw = trim((string)$json);
         return $raw === '' ? '-' : $raw;
+    }
+
+    $priority = meta_summary_priority_fields($action, $entity);
+    if (!empty($priority)) {
+        $parts = [];
+        foreach ($priority as $key) {
+            if (array_key_exists($key, $decoded)) {
+                $parts[] = meta_field_label($key) . ': ' . meta_field_value($key, $decoded[$key]);
+            }
+        }
+        if (!empty($parts)) {
+            return implode(' | ', $parts);
+        }
     }
 
     $parts = [];
@@ -359,102 +445,167 @@ if ($dateFilter !== '') {
     $dateFilter = $dateFrom;
 }
 
+// Every action type belongs to exactly one stat card, so Total always equals
+// the sum of the cards, and clicking a card lists exactly the rows it counts.
+// "Updated" is the catch-all: any action type added later lands there too.
+const ARCHIVE_CARD_GROUPS = [
+    'added' => ['added', 'bulk_imported', 'retrieved'],
+    'returned' => ['returned'],
+    'missing' => ['missing'],
+    'deleted' => ['deleted'],
+    'updated' => ['updated', 'status_changed', 'cover_refetched', 'cover_uploaded', 'cover_cleared'],
+];
+const ARCHIVE_ROW_LIMIT = 350;
+
+function archive_card_for_action(string $actionType): string {
+    foreach (ARCHIVE_CARD_GROUPS as $card => $types) {
+        if (in_array($actionType, $types, true)) {
+            return $card;
+        }
+    }
+    return 'updated';
+}
+
+function archive_sql_in(mysqli $conn, array $values): string {
+    return implode(', ', array_map(fn($v) => "'" . $conn->real_escape_string((string)$v) . "'", $values));
+}
+
+// Strict YYYY-MM-DD check; anything else is reported instead of silently
+// matching nothing.
+function archive_valid_date(string $value): bool {
+    $dt = DateTime::createFromFormat('!Y-m-d', $value);
+    return $dt !== false && $dt->format('Y-m-d') === $value;
+}
+
+$dateError = '';
+foreach (['start' => $dateFrom, 'end' => $dateTo] as $which => $value) {
+    if ($value !== '' && !archive_valid_date($value)) {
+        $dateError = $dateFilter !== ''
+            ? '"' . $value . '" is not a valid date. Pick a date, or press Reset.'
+            : '"' . $value . '" is not a valid ' . $which . ' date (use YYYY-MM-DD). Fix the date range, or press Reset.';
+        break;
+    }
+}
+if ($dateError === '' && $dateFrom !== '' && $dateTo !== '' && $dateFrom > $dateTo) {
+    $dateError = 'The start date (' . $dateFrom . ') is after the end date (' . $dateTo . '). Swap them, or press Reset.';
+}
+
 $where = ['1=1'];
 
-if (in_array($action, smartlib_admin_audit_actions(), true)) {
-    $safeAction = $conn->real_escape_string($action);
-    $where[] = "a.action_type = '{$safeAction}'";
+if (isset(ARCHIVE_CARD_GROUPS[$action])) {
+    if ($action === 'updated') {
+        // Catch-all card: everything not claimed by another card.
+        $others = [];
+        foreach (ARCHIVE_CARD_GROUPS as $card => $types) {
+            if ($card !== 'updated') {
+                $others = array_merge($others, $types);
+            }
+        }
+        $where[] = 'a.action_type NOT IN (' . archive_sql_in($conn, $others) . ')';
+    } else {
+        $where[] = 'a.action_type IN (' . archive_sql_in($conn, ARCHIVE_CARD_GROUPS[$action]) . ')';
+    }
+} elseif (in_array($action, smartlib_admin_audit_actions(), true)) {
+    // A single action type, e.g. ?action=status_changed (no card of its own).
+    $where[] = "a.action_type = '" . $conn->real_escape_string($action) . "'";
 }
 
 if ($search !== '') {
-    $safeSearch = $conn->real_escape_string($search);
+    // % and _ are literal characters here, not wildcards.
+    $safeSearch = $conn->real_escape_string(addcslashes($search, '\\%_'));
+    // "By" shows the account's current name when the entry is linked to an
+    // account, else the name stored at the time -- search the same thing.
     $where[] = "(
         a.entity_title LIKE '%{$safeSearch}%'
         OR a.entity_type LIKE '%{$safeSearch}%'
-        OR a.actor_name LIKE '%{$safeSearch}%'
         OR a.metadata_json LIKE '%{$safeSearch}%'
+        OR (CASE WHEN TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) <> ''
+                 THEN TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) COLLATE utf8mb4_unicode_ci
+                 ELSE a.actor_name END) LIKE '%{$safeSearch}%'
+        OR COALESCE(u.user_number, '') LIKE '%{$safeSearch}%'
     )";
 }
 
-if ($dateFrom !== '') {
-    $safeFrom = $conn->real_escape_string($dateFrom);
-    $where[] = "DATE(a.created_at) >= '{$safeFrom}'";
-}
-
-if ($dateTo !== '') {
-    $safeTo = $conn->real_escape_string($dateTo);
-    $where[] = "DATE(a.created_at) <= '{$safeTo}'";
+if ($dateError === '') {
+    if ($dateFrom !== '') {
+        $where[] = "DATE(a.created_at) >= '" . $conn->real_escape_string($dateFrom) . "'";
+    }
+    if ($dateTo !== '') {
+        $where[] = "DATE(a.created_at) <= '" . $conn->real_escape_string($dateTo) . "'";
+    }
 }
 
 $whereSql = implode(' AND ', $where);
 
+$cardCounts = array_fill_keys(array_keys(ARCHIVE_CARD_GROUPS), 0);
 $totalLogs = 0;
-$totalAdded = 0;
-$totalDeleted = 0;
-$totalUpdated = 0;
-$totalReturned = 0;
-$totalMissing = 0;
+$matchingTotal = 0;
 $rows = [];
+$existingBookIds = [];
 
 if ($tableReady) {
-    $resTotal = safe_query($conn, 'SELECT COUNT(*) AS total FROM admin_activity_logs');
-    if ($resTotal && ($r = $resTotal->fetch_assoc())) {
-        $totalLogs = (int)($r['total'] ?? 0);
+    $resTypes = safe_query($conn, 'SELECT action_type, COUNT(*) AS total FROM admin_activity_logs GROUP BY action_type');
+    if ($resTypes) {
+        while ($r = $resTypes->fetch_assoc()) {
+            $n = (int)($r['total'] ?? 0);
+            $cardCounts[archive_card_for_action(strtolower((string)$r['action_type']))] += $n;
+            $totalLogs += $n;
+        }
     }
 
-    $resAdded = safe_query($conn, "SELECT COUNT(*) AS total FROM admin_activity_logs WHERE action_type = 'added'");
-    if ($resAdded && ($r = $resAdded->fetch_assoc())) {
-        $totalAdded = (int)($r['total'] ?? 0);
+    if ($dateError === '') {
+        $fromSql = "FROM admin_activity_logs a LEFT JOIN library_users u ON u.user_id = a.actor_user_id WHERE {$whereSql}";
+
+        $resMatching = safe_query($conn, "SELECT COUNT(*) AS total {$fromSql}");
+        if ($resMatching && ($r = $resMatching->fetch_assoc())) {
+            $matchingTotal = (int)($r['total'] ?? 0);
+        }
+
+        $historyRes = safe_query(
+            $conn,
+            "
+            SELECT
+                a.activity_id,
+                a.action_type,
+                a.entity_type,
+                a.entity_id,
+                a.entity_title,
+                a.metadata_json,
+                a.actor_name,
+                a.created_at,
+                u.user_number,
+                CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) AS user_full_name
+            {$fromSql}
+            ORDER BY a.created_at DESC, a.activity_id DESC
+            LIMIT " . ARCHIVE_ROW_LIMIT
+        );
+
+        if ($historyRes && $historyRes->num_rows > 0) {
+            while ($row = $historyRes->fetch_assoc()) {
+                $rows[] = $row;
+            }
+        }
     }
 
-    $resDeleted = safe_query($conn, "SELECT COUNT(*) AS total FROM admin_activity_logs WHERE action_type = 'deleted'");
-    if ($resDeleted && ($r = $resDeleted->fetch_assoc())) {
-        $totalDeleted = (int)($r['total'] ?? 0);
+    // Which "added book" rows still point at a book that exists, so the
+    // Open link is only shown when it leads somewhere.
+    $addedBookIds = [];
+    foreach ($rows as $row) {
+        if (strtolower((string)$row['action_type']) === 'added' && strtolower((string)$row['entity_type']) === 'book' && (int)$row['entity_id'] > 0) {
+            $addedBookIds[] = (int)$row['entity_id'];
+        }
     }
-
-    $resUpdated = safe_query($conn, "SELECT COUNT(*) AS total FROM admin_activity_logs WHERE action_type IN ('updated', 'status_changed')");
-    if ($resUpdated && ($r = $resUpdated->fetch_assoc())) {
-        $totalUpdated = (int)($r['total'] ?? 0);
-    }
-
-    $resReturned = safe_query($conn, "SELECT COUNT(*) AS total FROM admin_activity_logs WHERE action_type = 'returned'");
-    if ($resReturned && ($r = $resReturned->fetch_assoc())) {
-        $totalReturned = (int)($r['total'] ?? 0);
-    }
-
-    $resMissing = safe_query($conn, "SELECT COUNT(*) AS total FROM admin_activity_logs WHERE action_type = 'missing'");
-    if ($resMissing && ($r = $resMissing->fetch_assoc())) {
-        $totalMissing = (int)($r['total'] ?? 0);
-    }
-
-    $historyRes = safe_query(
-        $conn,
-        "
-        SELECT
-            a.activity_id,
-            a.action_type,
-            a.entity_type,
-            a.entity_id,
-            a.entity_title,
-            a.metadata_json,
-            a.actor_name,
-            a.created_at,
-            u.user_number,
-            CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) AS user_full_name
-        FROM admin_activity_logs a
-        LEFT JOIN library_users u ON u.user_id = a.actor_user_id
-        WHERE {$whereSql}
-        ORDER BY a.created_at DESC, a.activity_id DESC
-        LIMIT 350
-        "
-    );
-
-    if ($historyRes && $historyRes->num_rows > 0) {
-        while ($row = $historyRes->fetch_assoc()) {
-            $rows[] = $row;
+    if (!empty($addedBookIds)) {
+        $resBooks = safe_query($conn, 'SELECT book_id FROM books WHERE book_id IN (' . implode(',', array_unique($addedBookIds)) . ')');
+        if ($resBooks) {
+            while ($r = $resBooks->fetch_assoc()) {
+                $existingBookIds[(int)$r['book_id']] = true;
+            }
         }
     }
 }
+
+$isTruncated = $matchingTotal > count($rows);
 
 $buildArchiveUrl = static function (array $params): string {
     $clean = [];
@@ -475,11 +626,11 @@ $baseFilterParams = [
 
 $chipMetrics = [
     ['action' => '', 'title' => 'Total Logged Actions', 'count' => $totalLogs],
-    ['action' => 'added', 'title' => 'Added', 'count' => $totalAdded],
-    ['action' => 'updated', 'title' => 'Updated', 'count' => $totalUpdated],
-    ['action' => 'returned', 'title' => 'Returned', 'count' => $totalReturned],
-    ['action' => 'missing', 'title' => 'Missing', 'count' => $totalMissing],
-    ['action' => 'deleted', 'title' => 'Deleted', 'count' => $totalDeleted]
+    ['action' => 'added', 'title' => 'Added', 'count' => $cardCounts['added']],
+    ['action' => 'updated', 'title' => 'Updated', 'count' => $cardCounts['updated']],
+    ['action' => 'returned', 'title' => 'Returned', 'count' => $cardCounts['returned']],
+    ['action' => 'missing', 'title' => 'Missing', 'count' => $cardCounts['missing']],
+    ['action' => 'deleted', 'title' => 'Deleted', 'count' => $cardCounts['deleted']]
 ];
 $archiveFlash = pull_archive_flash();
 
@@ -548,6 +699,16 @@ require 'layout_top.php';
     </form>
 </section>
 
+<?php if ($dateError !== ''): ?>
+    <section class="panel glass-card borrow-flash borrow-flash-error archive-filter-notice" role="alert">
+        <?= htmlspecialchars($dateError) ?>
+    </section>
+<?php elseif ($isTruncated): ?>
+    <section class="panel glass-card borrow-flash borrow-flash-info archive-filter-notice" role="status">
+        Showing the newest <?= number_format(count($rows)) ?> of <?= number_format($matchingTotal) ?> matching entries. Narrow your search or pick a date to see the rest.
+    </section>
+<?php endif; ?>
+
 <section class="panel glass-card data-table-panel">
     <div class="table-wrap">
         <table class="data-table archive-table">
@@ -574,7 +735,7 @@ require 'layout_top.php';
                             $entityType = strtolower(trim((string)($row['entity_type'] ?? 'book')));
                             $entityId = (int)($row['entity_id'] ?? 0);
                             $title = trim((string)($row['entity_title'] ?? 'Untitled Item'));
-                            $metaText = meta_summary((string)($row['metadata_json'] ?? ''));
+                            $metaText = meta_summary((string)($row['metadata_json'] ?? ''), $actionVal, $entityType);
                             $metaData = parse_meta_json((string)($row['metadata_json'] ?? ''));
 
                             $resolvedName = trim((string)($row['user_full_name'] ?? ''));
@@ -587,7 +748,8 @@ require 'layout_top.php';
                             $isAddedBook = $actionVal === 'added' && $entityType === 'book';
                             $restoredBookId = (int)($metaData['restored_book_id'] ?? 0);
                             $viewHref = '';
-                            if ($isAddedBook) {
+                            $bookGone = $isAddedBook && $entityId > 0 && !isset($existingBookIds[$entityId]);
+                            if ($isAddedBook && !$bookGone) {
                                 if ($entityId > 0) {
                                     $viewHref = 'manage_books.php?edit=' . $entityId;
                                 } elseif ($title !== '') {
@@ -629,6 +791,8 @@ require 'layout_top.php';
                                     </form>
                                 <?php elseif ($canRetrieveBook && $restoredBookId > 0): ?>
                                     <span class="archive-retrieved"><span class="archive-action-icon" aria-hidden="true"><?= admin_icon('check-circle') ?></span>Retrieved #<?= $restoredBookId ?></span>
+                                <?php elseif ($bookGone): ?>
+                                    <span class="archive-action-muted" title="This book has since been deleted">Book deleted</span>
                                 <?php elseif ($isAddedBook && $viewHref !== ''): ?>
                                     <a href="<?= htmlspecialchars($viewHref) ?>" class="archive-action-btn archive-action-btn-view">
                                         <span class="archive-action-icon" aria-hidden="true"><?= admin_icon('book-open') ?></span>
@@ -642,7 +806,7 @@ require 'layout_top.php';
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="7">No archived history found for the selected filters.</td>
+                        <td colspan="7"><?= $dateError !== '' ? 'Fix the date filter above to see entries.' : 'No archived history found for the selected filters.' ?></td>
                     </tr>
                 <?php endif; ?>
             </tbody>
