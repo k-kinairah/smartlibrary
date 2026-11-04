@@ -119,9 +119,9 @@ $signinType = $done ? strtolower((string)($tokenRow['account_type'] ?? '')) : ''
 $signinHref = 'index.php?signin=' . (in_array($signinType, ['student', 'faculty', 'librarian'], true) ? $signinType : 'open');
 
 $messageIcons = [
-    'success' => '<path d="m7.5 12.3 3 3 6-6.3"></path><circle cx="12" cy="12" r="9"></circle>',
+    'success' => '<path d="m6.5 12.5 3.6 3.6 7.4-8"></path>',
     'error' => '<path d="M12 4.5 21 19H3L12 4.5Z"></path><path d="M12 10v4"></path><path d="M12 16.8h.01"></path>',
-    'info' => '<circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 7.8h.01"></path>',
+    'info' => '<path d="M12 11v6"></path><path d="M12 7.3h.01"></path>',
 ];
 $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
 ?>
@@ -141,9 +141,9 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
             --ok: #8ff0b6;
             --ok-bg: rgba(98, 209, 145, 0.16);
             --ok-line: rgba(98, 209, 145, 0.5);
-            --bad: #ffb3bd;
-            --bad-bg: rgba(233, 94, 109, 0.18);
-            --bad-line: rgba(233, 94, 109, 0.62);
+            --bad: #ff9a9a;
+            --bad-bg: rgba(255, 107, 107, 0.18);
+            --bad-line: rgba(255, 107, 107, 0.65);
         }
         * { box-sizing: border-box; }
         body {
@@ -170,15 +170,17 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
            so a patron can tell this is the real SmartLib page. */
         .brand {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 12px;
-            padding-bottom: 16px;
-            margin-bottom: 18px;
+            gap: 10px;
+            text-align: center;
+            padding-bottom: 18px;
+            margin-bottom: 20px;
             border-bottom: 1px solid var(--line);
         }
         .brand img {
-            width: 52px;
-            height: 52px;
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid rgba(255, 255, 255, 0.4);
@@ -187,12 +189,13 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
         }
         .brand-name {
             margin: 0;
-            font-size: 20px;
+            font-size: 22px;
+            line-height: 1.1;
             font-weight: 800;
             letter-spacing: 0.01em;
         }
         .brand-sub {
-            margin: 2px 0 0;
+            margin: 3px 0 0;
             font-size: 12px;
             color: var(--soft);
         }
@@ -208,31 +211,69 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
             line-height: 1.45;
         }
 
-        /* Status banners: one style for every success / error / info message. */
+        /* Status banner: ONE component for every message. All variants share
+           the base below and only swap the three accent variables. The fill
+           is a dark neutral (not a translucent tint, which turned red into a
+           muddy brown over this green), with the accent carried by the left
+           bar, the icon chip and the border. */
         .msg {
+            --accent: #7cb8ff;
+            --accent-soft: rgba(124, 184, 255, 0.18);
+            --accent-line: rgba(124, 184, 255, 0.5);
             display: flex;
             align-items: flex-start;
-            gap: 10px;
+            gap: 12px;
+            margin-bottom: 18px;
+            padding: 13px 15px 13px 13px;
             border-radius: 12px;
-            padding: 11px 12px;
-            margin-bottom: 16px;
+            border: 1px solid var(--accent-line);
+            border-left: 4px solid var(--accent);
+            background:
+                linear-gradient(90deg, var(--accent-soft) 0%, rgba(0, 0, 0, 0) 75%),
+                rgba(5, 16, 12, 0.62);
+            color: #f4fbf7;
             font-size: 14px;
-            line-height: 1.4;
+            line-height: 1.5;
         }
-        .msg svg {
-            width: 19px;
-            height: 19px;
+        .msg-icon {
+            width: 30px;
+            height: 30px;
             flex-shrink: 0;
-            margin-top: -1px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent-soft);
+            color: var(--accent);
+        }
+        .msg-icon svg {
+            width: 17px;
+            height: 17px;
             fill: none;
             stroke: currentColor;
-            stroke-width: 2;
+            stroke-width: 2.2;
             stroke-linecap: round;
             stroke-linejoin: round;
         }
-        .msg.success { background: rgba(98, 209, 145, 0.2); color: #b7ffd1; border: 1px solid rgba(98, 209, 145, 0.35); }
-        .msg.error { background: rgba(233, 94, 109, 0.2); color: #ffd8de; border: 1px solid rgba(233, 94, 109, 0.35); }
-        .msg.info { background: rgba(120, 177, 255, 0.18); color: #d9ecff; border: 1px solid rgba(120, 177, 255, 0.32); }
+        .msg-text {
+            padding-top: 4px;
+            min-width: 0;
+        }
+        .msg.success {
+            --accent: #5fe39c;
+            --accent-soft: rgba(95, 227, 156, 0.17);
+            --accent-line: rgba(95, 227, 156, 0.45);
+        }
+        .msg.error {
+            --accent: #ff6b6b;
+            --accent-soft: rgba(255, 107, 107, 0.18);
+            --accent-line: rgba(255, 107, 107, 0.55);
+        }
+        .msg.info {
+            --accent: #7cb8ff;
+            --accent-soft: rgba(124, 184, 255, 0.18);
+            --accent-line: rgba(124, 184, 255, 0.5);
+        }
 
         .help {
             margin: -4px 0 16px;
@@ -274,7 +315,7 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
         }
         .field.is-ok input { border-color: var(--ok-line); }
         .field.is-bad input { border-color: var(--bad-line); }
-        .field.is-bad input:focus { box-shadow: 0 0 0 3px rgba(233, 94, 109, 0.2); }
+        .field.is-bad input:focus { box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.22); }
 
         .password-field-wrap {
             position: relative;
@@ -359,7 +400,7 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
             opacity: 1;
             border-color: var(--bad-line);
             background-color: var(--bad-bg);
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M3 3l4 4M7 3 3 7' fill='none' stroke='%23ffb3bd' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M3 3l4 4M7 3 3 7' fill='none' stroke='%23ff9a9a' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
         }
         /* Hidden rule still holds its line, so the card doesn't jump when it appears. */
         .rule[hidden] { display: flex; visibility: hidden; }
@@ -423,8 +464,8 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
 
     <?php if ($message !== ''): ?>
         <div class="msg <?= htmlspecialchars($messageType) ?>" role="<?= $messageType === 'error' ? 'alert' : 'status' ?>">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><?= $messageIcons[$messageType] ?? $messageIcons['info'] ?></svg>
-            <span><?= htmlspecialchars($message) ?></span>
+            <span class="msg-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><?= $messageIcons[$messageType] ?? $messageIcons['info'] ?></svg></span>
+            <span class="msg-text"><?= htmlspecialchars($message) ?></span>
         </div>
     <?php endif; ?>
 
