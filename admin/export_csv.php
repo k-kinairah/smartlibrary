@@ -47,6 +47,9 @@ function export_csv_send(mysqli $conn, string $type, array $headers, string $sql
         exit;
     }
 
+    // UTF-8 byte-order mark: without it Excel reads the file as ANSI and
+    // shows accented names garbled (e.g. "Leaño" as "LeaÃ±o").
+    fwrite($out, "\xEF\xBB\xBF");
     fputcsv($out, $headers);
     while ($row = $res->fetch_assoc()) {
         $line = [];
