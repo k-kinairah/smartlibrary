@@ -681,11 +681,11 @@ require 'layout_top.php';
     .bulk-import-back-btn {
         display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
         width: 38px; height: 38px; border-radius: 50%; text-decoration: none;
-        background: rgba(140, 185, 235, 0.1); border: 1.5px solid rgba(140, 185, 235, 0.34); color: #cfe2fa;
+        background: rgba(var(--pb-8cb9eb), 0.1); border: 1.5px solid rgba(var(--pb-8cb9eb), 0.34); color: rgb(var(--pb-cfe2fa));
         transition: background .15s ease, border-color .15s ease, transform .14s ease;
     }
     .bulk-import-back-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
-    .bulk-import-back-btn:hover { background: rgba(140, 185, 235, 0.22); border-color: rgba(140, 185, 235, 0.6); transform: translateX(-2px); }
+    .bulk-import-back-btn:hover { background: rgba(var(--pb-8cb9eb), 0.22); border-color: rgba(var(--pb-8cb9eb), 0.6); transform: translateX(-2px); }
     .bulk-import-back-btn:active { transform: translateX(-1px); }
 
     /* ---- Stepper ---- */
@@ -694,42 +694,42 @@ require 'layout_top.php';
     .bulk-import-stepper-circle {
         width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
         display: grid; place-items: center; font-size: 13px; font-weight: 800;
-        background: rgba(140, 185, 235, 0.1); border: 1.5px solid rgba(140, 185, 235, 0.32); color: #9fbfe4;
+        background: rgba(var(--pb-8cb9eb), 0.1); border: 1.5px solid rgba(var(--pb-8cb9eb), 0.32); color: rgb(var(--pb-9fbfe4));
         transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
     }
     .bulk-import-stepper-circle svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
     .bulk-import-stepper-step.is-active .bulk-import-stepper-circle,
     .bulk-import-stepper-step.is-complete .bulk-import-stepper-circle {
-        background: linear-gradient(160deg, #4d8ad4 0%, #1c4573 100%); border-color: rgba(140, 185, 235, 0.65); color: #fff;
+        background: linear-gradient(160deg, rgb(var(--pb-4d8ad4)) 0%, rgb(var(--pb-1c4573)) 100%); border-color: rgba(var(--pb-8cb9eb), 0.65); color: #fff;
     }
-    .bulk-import-stepper-step.is-active .bulk-import-stepper-circle { box-shadow: 0 0 0 4px rgba(77, 138, 212, 0.22); }
-    .bulk-import-stepper-label { font-size: 13px; font-weight: 700; color: #85a2c6; white-space: nowrap; }
+    .bulk-import-stepper-step.is-active .bulk-import-stepper-circle { box-shadow: 0 0 0 4px rgba(var(--pb-4d8ad4), 0.22); }
+    .bulk-import-stepper-label { font-size: 13px; font-weight: 700; color: rgb(var(--pb-85a2c6)); white-space: nowrap; }
     .bulk-import-stepper-step.is-active .bulk-import-stepper-label,
-    .bulk-import-stepper-step.is-complete .bulk-import-stepper-label { color: #eaf3fc; }
-    .bulk-import-stepper-line { flex: 1 1 auto; height: 2px; min-width: 20px; margin: 0 14px; border-radius: 2px; background: rgba(140, 185, 235, 0.2); }
-    .bulk-import-stepper-line.is-complete { background: rgba(140, 185, 235, 0.6); }
+    .bulk-import-stepper-step.is-complete .bulk-import-stepper-label { color: rgb(var(--pb-eaf3fc)); }
+    .bulk-import-stepper-line { flex: 1 1 auto; height: 2px; min-width: 20px; margin: 0 14px; border-radius: 2px; background: rgba(var(--pb-8cb9eb), 0.2); }
+    .bulk-import-stepper-line.is-complete { background: rgba(var(--pb-8cb9eb), 0.6); }
 
     /* ---- "How it works" strip ---- */
     .bulk-import-howto { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 4px 0 22px; }
     .bulk-import-howto-item { display: flex; gap: 10px; align-items: flex-start; }
     .bulk-import-howto-icon {
         width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
-        display: grid; place-items: center; background: rgba(140, 185, 235, 0.14);
-        border: 1px solid rgba(140, 185, 235, 0.3); color: #d7e8fa;
+        display: grid; place-items: center; background: rgba(var(--pb-8cb9eb), 0.14);
+        border: 1px solid rgba(var(--pb-8cb9eb), 0.3); color: rgb(var(--pb-d7e8fa));
     }
     .bulk-import-howto-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .bulk-import-howto-text h4 { margin: 2px 0 3px; font-size: 13px; color: #eaf3fc; }
-    .bulk-import-howto-text p { margin: 0; font-size: 12px; color: #92accf; line-height: 1.4; }
+    .bulk-import-howto-text h4 { margin: 2px 0 3px; font-size: 13px; color: rgb(var(--pb-eaf3fc)); }
+    .bulk-import-howto-text p { margin: 0; font-size: 12px; color: rgb(var(--pb-92accf)); line-height: 1.4; }
 
     /* ---- Template download row ---- */
     .bulk-import-template-row {
         display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
         padding: 13px 16px; border-radius: 12px; margin-bottom: 20px;
-        background: rgba(140, 185, 235, 0.07); border: 1px solid rgba(140, 185, 235, 0.22);
+        background: rgba(var(--pb-8cb9eb), 0.07); border: 1px solid rgba(var(--pb-8cb9eb), 0.22);
     }
-    .bulk-import-template-copy { font-size: 13px; color: #b9cee2; }
-    .bulk-import-template-copy strong { color: #eaf3fc; }
-    .bulk-import-template-copy code { background: rgba(140, 185, 235, 0.14); border-radius: 5px; padding: 1px 5px; font-size: 12px; }
+    .bulk-import-template-copy { font-size: 13px; color: rgb(var(--pb-b9cee2)); }
+    .bulk-import-template-copy strong { color: rgb(var(--pb-eaf3fc)); }
+    .bulk-import-template-copy code { background: rgba(var(--pb-8cb9eb), 0.14); border-radius: 5px; padding: 1px 5px; font-size: 12px; }
     .bulk-import-template-btn { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; flex-shrink: 0; }
     .bulk-import-template-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
@@ -737,32 +737,32 @@ require 'layout_top.php';
     .bulk-import-dropzone {
         display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 7px;
         padding: 36px 20px; border-radius: 14px; cursor: pointer;
-        border: 2px dashed rgba(140, 185, 235, 0.35); background: rgba(140, 185, 235, 0.05);
+        border: 2px dashed rgba(var(--pb-8cb9eb), 0.35); background: rgba(var(--pb-8cb9eb), 0.05);
         transition: border-color .15s ease, background .15s ease;
     }
     .bulk-import-dropzone:hover,
-    .bulk-import-dropzone.is-dragover { border-color: rgba(140, 185, 235, 0.68); background: rgba(140, 185, 235, 0.12); }
+    .bulk-import-dropzone.is-dragover { border-color: rgba(var(--pb-8cb9eb), 0.68); background: rgba(var(--pb-8cb9eb), 0.12); }
     .bulk-import-dropzone.has-file { border-style: solid; border-color: rgba(122, 219, 160, 0.55); background: rgba(68, 148, 96, 0.1); }
     .bulk-import-dropzone-icon {
         width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center;
-        background: rgba(140, 185, 235, 0.16); border: 1px solid rgba(140, 185, 235, 0.32); color: #cfe2fa;
+        background: rgba(var(--pb-8cb9eb), 0.16); border: 1px solid rgba(var(--pb-8cb9eb), 0.32); color: rgb(var(--pb-cfe2fa));
         margin-bottom: 2px; transition: background .15s ease, color .15s ease;
     }
     .bulk-import-dropzone.has-file .bulk-import-dropzone-icon { background: rgba(84, 188, 123, 0.22); color: #bdf2d2; }
     .bulk-import-dropzone-icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .bulk-import-dropzone-title { font-weight: 700; font-size: 14px; color: #eaf3fc; }
-    .bulk-import-dropzone-hint { font-size: 12px; color: #88a4c8; }
-    .bulk-import-dropzone-filename { font-size: 13px; font-weight: 700; color: #7f9cc0; margin-top: 2px; word-break: break-all; }
+    .bulk-import-dropzone-title { font-weight: 700; font-size: 14px; color: rgb(var(--pb-eaf3fc)); }
+    .bulk-import-dropzone-hint { font-size: 12px; color: rgb(var(--pb-88a4c8)); }
+    .bulk-import-dropzone-filename { font-size: 13px; font-weight: 700; color: rgb(var(--pb-7f9cc0)); margin-top: 2px; word-break: break-all; }
     .bulk-import-dropzone.has-file .bulk-import-dropzone-filename { color: #9ff0c0; }
     .bulk-import-file-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
     /* ---- Info note ---- */
     .bulk-import-info-note {
         display: flex; gap: 10px; align-items: flex-start; margin: 16px 0 4px;
-        padding: 11px 14px; border-radius: 11px; font-size: 12.5px; line-height: 1.5; color: #a9c2de;
-        background: rgba(140, 185, 235, 0.07); border: 1px solid rgba(140, 185, 235, 0.2);
+        padding: 11px 14px; border-radius: 11px; font-size: 12.5px; line-height: 1.5; color: rgb(var(--pb-a9c2de));
+        background: rgba(var(--pb-8cb9eb), 0.07); border: 1px solid rgba(var(--pb-8cb9eb), 0.2);
     }
-    .bulk-import-info-note svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; color: #8fb3de; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .bulk-import-info-note svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; color: rgb(var(--pb-8fb3de)); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
     .bulk-import-panel > form .borrow-flash { margin-bottom: 18px; }
 
@@ -775,7 +775,7 @@ require 'layout_top.php';
         position: fixed; top: 22px; left: 50%; transform: translateX(-50%);
         z-index: 1000; display: flex; align-items: flex-start; gap: 12px;
         max-width: min(560px, calc(100vw - 32px));
-        box-shadow: 0 18px 40px rgba(4, 14, 28, 0.35), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+        box-shadow: 0 18px 40px rgba(var(--pb-040e1c), 0.35), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
         animation: bulkImportToastIn 0.25s ease-out;
     }
     .bulk-import-flash-toast.is-positioned { transform: none; }
@@ -804,15 +804,15 @@ require 'layout_top.php';
     .bulk-import-summary-chips { display: flex; gap: 10px; flex-wrap: wrap; margin: 2px 0 18px; }
     .bulk-import-chip {
         display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 999px;
-        font-size: 13px; font-weight: 700; border: 1px solid rgba(140, 185, 235, 0.28); background: rgba(140, 185, 235, 0.08); color: #dcebfa;
+        font-size: 13px; font-weight: 700; border: 1px solid rgba(var(--pb-8cb9eb), 0.28); background: rgba(var(--pb-8cb9eb), 0.08); color: rgb(var(--pb-dcebfa));
     }
     .bulk-import-chip svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
     .bulk-import-chip.is-ok { border-color: rgba(84, 188, 123, 0.4); background: rgba(68, 148, 96, 0.14); color: #bdf2d2; }
     .bulk-import-chip.is-error { border-color: rgba(233, 113, 113, 0.4); background: rgba(150, 57, 57, 0.14); color: #ffc9c9; }
 
-    .bulk-import-row-num { color: #7f9cc0; font-variant-numeric: tabular-nums; font-size: 12.5px; }
-    .bulk-import-call-chip { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: rgba(140, 185, 235, 0.1); border: 1px solid rgba(140, 185, 235, 0.22); padding: 3px 7px; border-radius: 6px; color: #cfe2fa; white-space: nowrap; }
-    .bulk-import-copies-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; padding: 2px 7px; border-radius: 999px; background: rgba(140, 185, 235, 0.12); border: 1px solid rgba(140, 185, 235, 0.26); font-size: 12px; font-weight: 700; color: #dcebfa; }
+    .bulk-import-row-num { color: rgb(var(--pb-7f9cc0)); font-variant-numeric: tabular-nums; font-size: 12.5px; }
+    .bulk-import-call-chip { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: rgba(var(--pb-8cb9eb), 0.1); border: 1px solid rgba(var(--pb-8cb9eb), 0.22); padding: 3px 7px; border-radius: 6px; color: rgb(var(--pb-cfe2fa)); white-space: nowrap; }
+    .bulk-import-copies-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; padding: 2px 7px; border-radius: 999px; background: rgba(var(--pb-8cb9eb), 0.12); border: 1px solid rgba(var(--pb-8cb9eb), 0.26); font-size: 12px; font-weight: 700; color: rgb(var(--pb-dcebfa)); }
     .bulk-import-row-ok-text { display: inline-flex; align-items: center; gap: 4px; color: #7fd6a0; font-size: 12px; font-weight: 600; }
     .bulk-import-row-ok-text svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
     .bulk-import-row-errors { margin: 0; padding-left: 16px; color: #ffb3b3; font-size: 12px; line-height: 1.55; }
@@ -824,8 +824,8 @@ require 'layout_top.php';
     .bulk-import-result { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 22px 10px 6px; }
     .bulk-import-result-icon { width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; background: rgba(68, 148, 96, 0.18); border: 1px solid rgba(84, 188, 123, 0.4); color: #bdf2d2; margin-bottom: 4px; }
     .bulk-import-result-icon svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-    .bulk-import-result h2 { margin: 0; font-size: 21px; color: #eaf3fc; }
-    .bulk-import-result-count { font-size: 14.5px; color: #b9cee2; margin: 0; }
+    .bulk-import-result h2 { margin: 0; font-size: 21px; color: rgb(var(--pb-eaf3fc)); }
+    .bulk-import-result-count { font-size: 14.5px; color: rgb(var(--pb-b9cee2)); margin: 0; }
     .bulk-import-result-count strong { color: #9ff0c0; font-size: 16px; }
     .bulk-import-skip-panel { margin: 18px 0 4px; padding: 14px 16px; border-radius: 12px; background: rgba(214, 171, 58, 0.1); border: 1px solid rgba(214, 171, 58, 0.3); text-align: left; }
     .bulk-import-skip-panel-head { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #ffe9b3; }

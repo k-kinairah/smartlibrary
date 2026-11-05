@@ -23,6 +23,16 @@ if (!smartlib_active_staff_session($conn)) {
 $currentPage = basename($_SERVER['PHP_SELF']);
 $roleLabel = $currentRole === 'admin' ? 'Administrator' : 'Librarian';
 
+// Green/gold-accent palette (assets/css/admin_palette_green.css), on for every
+// admin page. Set this to false to fall back to the original blue palette:
+// admin.css still carries the blue values as the token defaults.
+$adminPalettePilot = true;
+// Dark mode under the palette is the deep-navy BLUE variant (original blue
+// design, darker surfaces so it passes WCAG AA). The charcoal ('neutral') and
+// deep-green dark CSS are still in the stylesheet for reference, unused.
+// Light mode is the same whatever this is set to.
+$adminDarkVariant = $adminPalettePilot ? 'blue' : '';
+
 function admin_icon(string $key): string {
     $icons = [
         'dashboard' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.2"></rect><rect x="14" y="4" width="6" height="6" rx="1.2"></rect><rect x="4" y="14" width="6" height="6" rx="1.2"></rect><rect x="14" y="14" width="6" height="6" rx="1.2"></rect></svg>',
@@ -115,7 +125,7 @@ function stat_chip_meta(string $title): array {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"<?= $adminPalettePilot ? ' data-palette="green"' : '' ?><?= $adminDarkVariant !== '' ? ' data-dark-variant="' . $adminDarkVariant . '"' : '' ?>>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -135,6 +145,10 @@ function stat_chip_meta(string $title): array {
     <link rel="icon" href="../assets/images/phinma-icon.png" type="image/png">
     <?php $adminCssVer = @filemtime(__DIR__ . '/../assets/css/admin.css') ?: time(); ?>
     <link rel="stylesheet" href="../assets/css/admin.css?v=<?= $adminCssVer ?>">
+    <?php if ($adminPalettePilot): ?>
+    <?php $paletteCssVer = @filemtime(__DIR__ . '/../assets/css/admin_palette_green.css') ?: time(); ?>
+    <link rel="stylesheet" href="../assets/css/admin_palette_green.css?v=<?= $paletteCssVer ?>">
+    <?php endif; ?>
 </head>
 <body>
 <div class="admin-container">

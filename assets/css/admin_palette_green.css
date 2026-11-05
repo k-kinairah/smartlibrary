@@ -1,0 +1,1004 @@
+/* Green/gold-accent palette pilot for the admin panel (colour only).
+
+   Only loaded, and only active, where layout_top.php puts
+   data-palette="green" on <html> -- every admin page that uses the shared
+   layout. Those pages also always get data-dark-variant="neutral".
+
+   What each mode looks like now:
+   - Light: white / faint cool-neutral surfaces, seal green for text, icons
+     and buttons, seal gold on the highlighted-panel stripe.
+   - Dark: neutral charcoal surfaces (the "Variant B" blocks below), with
+     green and gold only as accents.
+   - The first deep-green dark (Reset PIN's field) is still defined here
+     (the plain html[data-palette="green"] token block and the [data-theme=
+     "dark"] background), kept for reference. Variant B always overrides it,
+     so it isn't reachable from the toggle.
+
+   How the tokens work: each --pb-* token in admin.css is one of the old
+   chrome blues, named after its hex (--pb-3f7cc2 was #3f7cc2). Each block
+   here gives it a replacement at the same relative luminance, so text
+   contrast carries over. Semantic colours are not tokens and stay as they
+   were: Borrow Records status pills (--st-tone), Archives action badges
+   (--act-tone), and the Reports family colours (--rp-tone: Borrowing blue,
+   Search gold, Entries green). Status pills that shared those hues through
+   plain hex (Active / Available, copy "Available", Live Kiosk "checked out")
+   were restored to literal colours in admin.css for the same reason.
+
+   Hand-written sections at the bottom: backgrounds, accents, and fixes
+   found by measuring contrast / checking chart series stay distinct. */
+html[data-palette="green"] {
+    --pb-7f9cc0: 83, 168, 146;
+    --pb-85a2c6: 85, 176, 151;
+    --pb-88a4c8: 87, 178, 153;
+    --pb-8fb3de: 102, 193, 168;
+    --pb-92accf: 97, 185, 162;
+    --pb-9fbfe4: 126, 203, 182;
+    --pb-a9c2de: 134, 206, 186;
+    --pb-cfe2fa: 206, 230, 217;
+    --pb-d7e8fa: 215, 235, 224;
+    --pb-040e1c: 4, 16, 12;
+    --pb-050d1a: 4, 15, 12;
+    --pb-081628: 7, 25, 19;
+    --pb-0a1428: 6, 24, 18;
+    --pb-0a1626: 7, 25, 19;
+    --pb-0a162a: 7, 26, 19;
+    --pb-0a192d: 8, 28, 22;
+    --pb-0a1e38: 9, 35, 26;
+    --pb-0d2440: 11, 41, 31;
+    --pb-0f2846: 12, 44, 34;
+    --pb-0f3f84: 30, 72, 61;
+    --pb-142846: 13, 46, 35;
+    --pb-14345c: 23, 58, 48;
+    --pb-143c6e: 27, 66, 56;
+    --pb-16324f: 15, 56, 42;
+    --pb-163a5e: 26, 62, 53;
+    --pb-1b3567: 25, 61, 51;
+    --pb-1c2f45: 21, 51, 41;
+    --pb-1c4573: 31, 76, 64;
+    --pb-1c5ca3: 41, 101, 85;
+    --pb-1d6895: 45, 110, 92;
+    --pb-204488: 32, 79, 66;
+    --pb-21447a: 31, 76, 64;
+    --pb-285aa0: 41, 100, 85;
+    --pb-295082: 36, 87, 74;
+    --pb-2b5490: 38, 93, 79;
+    --pb-2b6dc5: 50, 121, 102;
+    --pb-2c4a70: 33, 80, 68;
+    --pb-2c5488: 38, 93, 78;
+    --pb-2c64a3: 45, 110, 92;
+    --pb-2f5f9a: 43, 104, 88;
+    --pb-33465c: 41, 74, 66;
+    --pb-345170: 40, 87, 75;
+    --pb-379fe0: 68, 167, 141;
+    --pb-3a6aa8: 48, 117, 98;
+    --pb-3b6c95: 47, 115, 97;
+    --pb-3f7cc2: 55, 135, 114;
+    --pb-4677b5: 53, 130, 109;
+    --pb-477fcd: 57, 140, 117;
+    --pb-4a5d73: 63, 99, 89;
+    --pb-4a6178: 63, 102, 92;
+    --pb-4a6378: 64, 104, 93;
+    --pb-4a7bb9: 55, 135, 113;
+    --pb-4a89c4: 60, 147, 124;
+    --pb-4d7ebd: 56, 138, 116;
+    --pb-4d8ad4: 61, 150, 127;
+    --pb-56687c: 75, 109, 100;
+    --pb-5a7088: 78, 117, 107;
+    --pb-5a82aa: 71, 138, 121;
+    --pb-5a96d2: 66, 161, 136;
+    --pb-5b6f86: 79, 116, 107;
+    --pb-5e9bd6: 68, 167, 140;
+    --pb-5e9df0: 70, 171, 144;
+    --pb-5eb6e7: 95, 190, 164;
+    --pb-5f80ad: 71, 138, 120;
+    --pb-6b83a0: 89, 138, 125;
+    --pb-6ea8d8: 73, 180, 151;
+    --pb-6eafe6: 87, 186, 160;
+    --pb-6fa3df: 72, 177, 149;
+    --pb-6fabf0: 82, 185, 157;
+    --pb-77a9da: 77, 182, 154;
+    --pb-79b8ff: 109, 196, 173;
+    --pb-7fb8ec: 107, 194, 171;
+    --pb-83bbff: 117, 199, 177;
+    --pb-86aed8: 90, 187, 161;
+    --pb-8cb9eb: 112, 197, 174;
+    --pb-8fb3dd: 102, 192, 168;
+    --pb-8fc3ea: 129, 203, 183;
+    --pb-9fb6d4: 119, 194, 174;
+    --pb-9fb8d0: 129, 193, 176;
+    --pb-9fc7ff: 144, 210, 192;
+    --pb-9fd8ff: 168, 219, 206;
+    --pb-a9b8c9: 152, 191, 180;
+    --pb-a9c8e8: 144, 210, 192;
+    --pb-aacdf5: 153, 214, 197;
+    --pb-b4c6da: 156, 206, 193;
+    --pb-b4cadc: 158, 210, 196;
+    --pb-b4d2f5: 164, 218, 203;
+    --pb-b9cee2: 158, 215, 199;
+    --pb-b9d3ea: 166, 218, 204;
+    --pb-c9dbee: 194, 224, 208;
+    --pb-cfdef2: 200, 227, 212;
+    --pb-cfe3f7: 207, 230, 218;
+    --pb-d7e3f0: 209, 231, 219;
+    --pb-d7e6ff: 213, 233, 223;
+    --pb-d7e8f7: 215, 235, 224;
+    --pb-dbe6f4: 213, 233, 223;
+    --pb-dce8f7: 217, 235, 225;
+    --pb-dce9fb: 218, 236, 227;
+    --pb-dcebfa: 221, 237, 228;
+    --pb-dde8f6: 217, 235, 226;
+    --pb-e2f1ff: 230, 242, 235;
+    --pb-e3ebf8: 223, 238, 230;
+    --pb-e3ecf9: 223, 239, 231;
+    --pb-e3edff: 225, 239, 232;
+    --pb-e6edf7: 225, 239, 232;
+    --pb-e6eefa: 227, 241, 233;
+    --pb-e7eef9: 227, 241, 233;
+    --pb-e7f0fb: 230, 242, 235;
+    --pb-e9f0fa: 230, 242, 236;
+    --pb-eaf1fb: 232, 243, 237;
+    --pb-eaf3fc: 235, 244, 239;
+    --pb-eaf4ff: 236, 245, 240;
+    --pb-eef2f7: 234, 244, 238;
+    --pb-eef3fa: 235, 244, 239;
+    --pb-eef3fb: 235, 245, 240;
+    --pb-eef4fc: 237, 246, 241;
+    --pb-f1f6fc: 240, 247, 244;
+    --pb-f2f8ff: 242, 249, 245;
+    --pb-f3f7fd: 242, 249, 245;
+    --pb-f4f8fd: 243, 249, 246;
+    --pb-f5f9ff: 245, 250, 247;
+    --pb-f6f9fd: 245, 250, 247;
+    --pb-f7fafe: 246, 250, 248;
+    --pb-f8fbff: 248, 252, 250;
+}
+
+html[data-palette="green"][data-theme="light"] {
+    --pb-7f9cc0: 83, 168, 146;
+    --pb-85a2c6: 85, 176, 151;
+    --pb-88a4c8: 87, 178, 153;
+    --pb-8fb3de: 102, 193, 168;
+    --pb-92accf: 97, 185, 162;
+    --pb-9fbfe4: 126, 203, 182;
+    --pb-a9c2de: 134, 206, 186;
+    --pb-cfe2fa: 221, 225, 227;
+    --pb-d7e8fa: 228, 230, 233;
+    --pb-040e1c: 4, 16, 12;
+    --pb-050d1a: 4, 15, 12;
+    --pb-081628: 7, 25, 19;
+    --pb-0a1428: 6, 24, 18;
+    --pb-0a1626: 7, 25, 19;
+    --pb-0a162a: 7, 26, 19;
+    --pb-0a192d: 8, 28, 22;
+    --pb-0a1e38: 9, 35, 26;
+    --pb-0d2440: 11, 41, 31;
+    --pb-0f2846: 12, 44, 34;
+    --pb-0f3f84: 30, 72, 61;
+    --pb-142846: 13, 46, 35;
+    --pb-14345c: 23, 58, 48;
+    --pb-143c6e: 27, 66, 56;
+    --pb-16324f: 15, 56, 42;
+    --pb-163a5e: 26, 62, 53;
+    --pb-1b3567: 25, 61, 51;
+    --pb-1c2f45: 21, 51, 41;
+    --pb-1c4573: 31, 76, 64;
+    --pb-1c5ca3: 41, 101, 85;
+    --pb-1d6895: 45, 110, 92;
+    --pb-204488: 32, 79, 66;
+    --pb-21447a: 31, 76, 64;
+    --pb-285aa0: 41, 100, 85;
+    --pb-295082: 36, 87, 74;
+    --pb-2b5490: 38, 93, 79;
+    --pb-2b6dc5: 50, 121, 102;
+    --pb-2c4a70: 33, 80, 68;
+    --pb-2c5488: 38, 93, 78;
+    --pb-2c64a3: 45, 110, 92;
+    --pb-2f5f9a: 43, 104, 88;
+    --pb-33465c: 41, 74, 66;
+    --pb-345170: 40, 87, 75;
+    --pb-379fe0: 68, 167, 141;
+    --pb-3a6aa8: 48, 117, 98;
+    --pb-3b6c95: 47, 115, 97;
+    --pb-3f7cc2: 55, 135, 114;
+    --pb-4677b5: 53, 130, 109;
+    --pb-477fcd: 57, 140, 117;
+    --pb-4a5d73: 63, 99, 89;
+    --pb-4a6178: 63, 102, 92;
+    --pb-4a6378: 64, 104, 93;
+    --pb-4a7bb9: 55, 135, 113;
+    --pb-4a89c4: 60, 147, 124;
+    --pb-4d7ebd: 56, 138, 116;
+    --pb-4d8ad4: 61, 150, 127;
+    --pb-56687c: 75, 109, 100;
+    --pb-5a7088: 78, 117, 107;
+    --pb-5a82aa: 71, 138, 121;
+    --pb-5a96d2: 66, 161, 136;
+    --pb-5b6f86: 79, 116, 107;
+    --pb-5e9bd6: 68, 167, 140;
+    --pb-5e9df0: 70, 171, 144;
+    --pb-5eb6e7: 95, 190, 164;
+    --pb-5f80ad: 71, 138, 120;
+    --pb-6b83a0: 89, 138, 125;
+    --pb-6ea8d8: 73, 180, 151;
+    --pb-6eafe6: 87, 186, 160;
+    --pb-6fa3df: 72, 177, 149;
+    --pb-6fabf0: 82, 185, 157;
+    --pb-77a9da: 77, 182, 154;
+    --pb-79b8ff: 109, 196, 173;
+    --pb-7fb8ec: 107, 194, 171;
+    --pb-83bbff: 117, 199, 177;
+    --pb-86aed8: 90, 187, 161;
+    --pb-8cb9eb: 112, 197, 174;
+    --pb-8fb3dd: 102, 192, 168;
+    --pb-8fc3ea: 129, 203, 183;
+    --pb-9fb6d4: 119, 194, 174;
+    --pb-9fb8d0: 129, 193, 176;
+    --pb-9fc7ff: 144, 210, 192;
+    --pb-9fd8ff: 168, 219, 206;
+    --pb-a9b8c9: 152, 191, 180;
+    --pb-a9c8e8: 144, 210, 192;
+    --pb-aacdf5: 153, 214, 197;
+    --pb-b4c6da: 156, 206, 193;
+    --pb-b4cadc: 158, 210, 196;
+    --pb-b4d2f5: 164, 218, 203;
+    --pb-b9cee2: 158, 215, 199;
+    --pb-b9d3ea: 166, 218, 204;
+    --pb-c9dbee: 213, 218, 221;
+    --pb-cfdef2: 217, 221, 224;
+    --pb-cfe3f7: 221, 225, 228;
+    --pb-d7e3f0: 222, 226, 228;
+    --pb-d7e6ff: 226, 230, 232;
+    --pb-d7e8f7: 227, 230, 232;
+    --pb-dbe6f4: 226, 230, 232;
+    --pb-dce8f7: 228, 231, 233;
+    --pb-dce9fb: 229, 232, 234;
+    --pb-dcebfa: 231, 233, 235;
+    --pb-dde8f6: 229, 232, 233;
+    --pb-e2f1ff: 238, 240, 241;
+    --pb-e3ebf8: 232, 235, 236;
+    --pb-e3ecf9: 233, 235, 237;
+    --pb-e3edff: 234, 237, 238;
+    --pb-e6edf7: 234, 237, 238;
+    --pb-e6eefa: 235, 238, 239;
+    --pb-e7eef9: 235, 238, 239;
+    --pb-e7f0fb: 238, 240, 241;
+    --pb-e9f0fa: 238, 240, 241;
+    --pb-eaf1fb: 239, 240, 242;
+    --pb-eaf3fc: 240, 242, 243;
+    --pb-eaf4ff: 241, 243, 244;
+    --pb-eef2f7: 240, 242, 243;
+    --pb-eef3fa: 241, 243, 244;
+    --pb-eef3fb: 241, 243, 244;
+    --pb-eef4fc: 242, 243, 244;
+    --pb-f1f6fc: 244, 245, 246;
+    --pb-f2f8ff: 247, 248, 248;
+    --pb-f3f7fd: 245, 247, 247;
+    --pb-f4f8fd: 247, 248, 248;
+    --pb-f5f9ff: 248, 248, 249;
+    --pb-f6f9fd: 248, 248, 249;
+    --pb-f7fafe: 249, 250, 250;
+    --pb-f8fbff: 250, 250, 251;
+}
+
+/* Variant B (neutral dark): selected with data-dark-variant="neutral" on <html>.
+   Same luminance mapping as above, but near-grey instead of green, so the
+   page and cards are charcoal and green/gold only appear as accents
+   (see "Variant B accents" at the bottom). */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] {
+    --pb-7f9cc0: 143, 157, 150;
+    --pb-85a2c6: 149, 162, 156;
+    --pb-88a4c8: 151, 165, 158;
+    --pb-8fb3de: 167, 178, 173;
+    --pb-92accf: 160, 173, 167;
+    --pb-9fbfe4: 181, 190, 186;
+    --pb-a9c2de: 184, 193, 189;
+    --pb-cfe2fa: 225, 224, 219;
+    --pb-d7e8fa: 231, 230, 225;
+    --pb-040e1c: 13, 14, 13;
+    --pb-050d1a: 12, 13, 12;
+    --pb-081628: 20, 22, 21;
+    --pb-0a1428: 19, 21, 20;
+    --pb-0a1626: 20, 22, 21;
+    --pb-0a162a: 20, 22, 21;
+    --pb-0a192d: 22, 25, 24;
+    --pb-0a1e38: 27, 30, 29;
+    --pb-0d2440: 32, 36, 34;
+    --pb-0f2846: 35, 41, 38;
+    --pb-0f3f84: 59, 68, 63;
+    --pb-142846: 36, 42, 39;
+    --pb-14345c: 47, 54, 50;
+    --pb-143c6e: 53, 62, 57;
+    --pb-16324f: 44, 50, 47;
+    --pb-163a5e: 51, 58, 54;
+    --pb-1b3567: 49, 57, 53;
+    --pb-1c2f45: 41, 48, 44;
+    --pb-1c4573: 60, 70, 65;
+    --pb-1c5ca3: 82, 94, 88;
+    --pb-1d6895: 88, 101, 95;
+    --pb-204488: 63, 73, 68;
+    --pb-21447a: 61, 71, 66;
+    --pb-285aa0: 81, 93, 87;
+    --pb-295082: 71, 81, 76;
+    --pb-2b5490: 75, 86, 81;
+    --pb-2b6dc5: 99, 113, 106;
+    --pb-2c4a70: 65, 75, 70;
+    --pb-2c5488: 74, 85, 80;
+    --pb-2c64a3: 88, 101, 95;
+    --pb-2f5f9a: 84, 96, 90;
+    --pb-33465c: 61, 71, 66;
+    --pb-345170: 71, 81, 76;
+    --pb-379fe0: 139, 154, 147;
+    --pb-3a6aa8: 93, 108, 101;
+    --pb-3b6c95: 93, 107, 100;
+    --pb-3f7cc2: 109, 126, 117;
+    --pb-4677b5: 105, 121, 113;
+    --pb-477fcd: 113, 131, 122;
+    --pb-4a5d73: 82, 94, 88;
+    --pb-4a6178: 85, 97, 91;
+    --pb-4a6378: 86, 99, 93;
+    --pb-4a7bb9: 108, 125, 116;
+    --pb-4a89c4: 119, 136, 128;
+    --pb-4d7ebd: 111, 128, 119;
+    --pb-4d8ad4: 122, 139, 131;
+    --pb-56687c: 92, 105, 99;
+    --pb-5a7088: 99, 113, 106;
+    --pb-5a82aa: 113, 131, 122;
+    --pb-5a96d2: 134, 150, 142;
+    --pb-5b6f86: 98, 112, 105;
+    --pb-5e9bd6: 139, 154, 147;
+    --pb-5e9df0: 144, 159, 151;
+    --pb-5eb6e7: 164, 175, 170;
+    --pb-5f80ad: 113, 131, 122;
+    --pb-6b83a0: 116, 133, 124;
+    --pb-6ea8d8: 152, 165, 159;
+    --pb-6eafe6: 160, 172, 166;
+    --pb-6fa3df: 149, 162, 156;
+    --pb-6fabf0: 158, 171, 164;
+    --pb-77a9da: 154, 168, 161;
+    --pb-79b8ff: 172, 183, 177;
+    --pb-7fb8ec: 170, 181, 176;
+    --pb-83bbff: 176, 186, 181;
+    --pb-86aed8: 161, 174, 167;
+    --pb-8cb9eb: 173, 184, 178;
+    --pb-8fb3dd: 167, 178, 173;
+    --pb-8fc3ea: 182, 192, 187;
+    --pb-9fb6d4: 172, 183, 177;
+    --pb-9fb8d0: 173, 184, 178;
+    --pb-9fc7ff: 190, 199, 194;
+    --pb-9fd8ff: 204, 211, 207;
+    --pb-a9b8c9: 174, 184, 179;
+    --pb-a9c8e8: 190, 199, 194;
+    --pb-aacdf5: 196, 204, 200;
+    --pb-b4c6da: 189, 198, 194;
+    --pb-b4cadc: 192, 201, 197;
+    --pb-b4d2f5: 201, 208, 205;
+    --pb-b9cee2: 198, 205, 202;
+    --pb-b9d3ea: 203, 210, 206;
+    --pb-c9dbee: 219, 217, 210;
+    --pb-cfdef2: 222, 220, 215;
+    --pb-cfe3f7: 226, 225, 219;
+    --pb-d7e3f0: 227, 225, 220;
+    --pb-d7e6ff: 230, 229, 224;
+    --pb-d7e8f7: 231, 230, 225;
+    --pb-dbe6f4: 230, 228, 224;
+    --pb-dce8f7: 232, 230, 226;
+    --pb-dce9fb: 232, 231, 227;
+    --pb-dcebfa: 234, 233, 230;
+    --pb-dde8f6: 232, 230, 226;
+    --pb-e2f1ff: 240, 239, 236;
+    --pb-e3ebf8: 235, 234, 231;
+    --pb-e3ecf9: 236, 236, 232;
+    --pb-e3edff: 237, 236, 233;
+    --pb-e6edf7: 237, 236, 233;
+    --pb-e6eefa: 238, 238, 235;
+    --pb-e7eef9: 238, 238, 235;
+    --pb-e7f0fb: 240, 239, 236;
+    --pb-e9f0fa: 240, 239, 237;
+    --pb-eaf1fb: 241, 241, 238;
+    --pb-eaf3fc: 242, 242, 239;
+    --pb-eaf4ff: 243, 242, 240;
+    --pb-eef2f7: 242, 241, 239;
+    --pb-eef3fa: 243, 242, 240;
+    --pb-eef3fb: 243, 242, 240;
+    --pb-eef4fc: 244, 244, 242;
+    --pb-f1f6fc: 246, 246, 244;
+    --pb-f2f8ff: 248, 247, 246;
+    --pb-f3f7fd: 247, 247, 245;
+    --pb-f4f8fd: 248, 247, 246;
+    --pb-f5f9ff: 249, 249, 247;
+    --pb-f6f9fd: 249, 249, 247;
+    --pb-f7fafe: 250, 250, 249;
+    --pb-f8fbff: 251, 250, 250;
+}
+
+/* Dark mode (current): BLUE on deep navy -- data-dark-variant="blue".
+   Every token is reset to its original blue value (the green/neutral
+   blocks above set them otherwise). The original blue dark mode failed AA
+   mainly because of its mid-blue page; the page and modals sit on deep
+   navy instead (see "Blue dark" at the bottom), which is what lets the
+   unchanged blues pass. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] {
+    --pb-040e1c: 4, 14, 28;
+    --pb-050d1a: 5, 13, 26;
+    --pb-081628: 8, 22, 40;
+    --pb-0a1428: 10, 20, 40;
+    --pb-0a1626: 10, 22, 38;
+    --pb-0a162a: 10, 22, 42;
+    --pb-0a192d: 10, 25, 45;
+    --pb-0a1e38: 10, 30, 56;
+    --pb-0d2440: 13, 36, 64;
+    --pb-0f2846: 15, 40, 70;
+    --pb-0f3f84: 15, 63, 132;
+    --pb-142846: 20, 40, 70;
+    --pb-14345c: 20, 52, 92;
+    --pb-143c6e: 20, 60, 110;
+    --pb-16324f: 22, 50, 79;
+    --pb-163a5e: 22, 58, 94;
+    --pb-1b3567: 27, 53, 103;
+    --pb-1c2f45: 28, 47, 69;
+    --pb-1c4573: 28, 69, 115;
+    --pb-1c5ca3: 28, 92, 163;
+    --pb-1d6895: 29, 104, 149;
+    --pb-204488: 32, 68, 136;
+    --pb-21447a: 33, 68, 122;
+    --pb-285aa0: 40, 90, 160;
+    --pb-295082: 41, 80, 130;
+    --pb-2b5490: 43, 84, 144;
+    --pb-2b6dc5: 43, 109, 197;
+    --pb-2c4a70: 44, 74, 112;
+    --pb-2c5488: 44, 84, 136;
+    --pb-2c64a3: 44, 100, 163;
+    --pb-2f5f9a: 47, 95, 154;
+    --pb-33465c: 51, 70, 92;
+    --pb-345170: 52, 81, 112;
+    --pb-379fe0: 55, 159, 224;
+    --pb-3a6aa8: 58, 106, 168;
+    --pb-3b6c95: 59, 108, 149;
+    --pb-3f7cc2: 63, 124, 194;
+    --pb-4677b5: 70, 119, 181;
+    --pb-477fcd: 71, 127, 205;
+    --pb-4a5d73: 74, 93, 115;
+    --pb-4a6178: 74, 97, 120;
+    --pb-4a6378: 74, 99, 120;
+    --pb-4a7bb9: 74, 123, 185;
+    --pb-4a89c4: 74, 137, 196;
+    --pb-4d7ebd: 77, 126, 189;
+    --pb-4d8ad4: 77, 138, 212;
+    --pb-56687c: 86, 104, 124;
+    --pb-5a7088: 90, 112, 136;
+    --pb-5a82aa: 90, 130, 170;
+    --pb-5a96d2: 90, 150, 210;
+    --pb-5b6f86: 91, 111, 134;
+    --pb-5e9bd6: 94, 155, 214;
+    --pb-5e9df0: 94, 157, 240;
+    --pb-5eb6e7: 94, 182, 231;
+    --pb-5f80ad: 95, 128, 173;
+    --pb-6b83a0: 107, 131, 160;
+    --pb-6ea8d8: 110, 168, 216;
+    --pb-6eafe6: 110, 175, 230;
+    --pb-6fa3df: 111, 163, 223;
+    --pb-6fabf0: 111, 171, 240;
+    --pb-77a9da: 119, 169, 218;
+    --pb-79b8ff: 121, 184, 255;
+    --pb-7f9cc0: 127, 156, 192;
+    --pb-7fb8ec: 127, 184, 236;
+    --pb-83bbff: 131, 187, 255;
+    --pb-85a2c6: 133, 162, 198;
+    --pb-86aed8: 134, 174, 216;
+    --pb-88a4c8: 136, 164, 200;
+    --pb-8cb9eb: 140, 185, 235;
+    --pb-8fb3dd: 143, 179, 221;
+    --pb-8fb3de: 143, 179, 222;
+    --pb-8fc3ea: 143, 195, 234;
+    --pb-92accf: 146, 172, 207;
+    --pb-9fb6d4: 159, 182, 212;
+    --pb-9fb8d0: 159, 184, 208;
+    --pb-9fbfe4: 159, 191, 228;
+    --pb-9fc7ff: 159, 199, 255;
+    --pb-9fd8ff: 159, 216, 255;
+    --pb-a9b8c9: 169, 184, 201;
+    --pb-a9c2de: 169, 194, 222;
+    --pb-a9c8e8: 169, 200, 232;
+    --pb-aacdf5: 170, 205, 245;
+    --pb-b4c6da: 180, 198, 218;
+    --pb-b4cadc: 180, 202, 220;
+    --pb-b4d2f5: 180, 210, 245;
+    --pb-b9cee2: 185, 206, 226;
+    --pb-b9d3ea: 185, 211, 234;
+    --pb-c9dbee: 201, 219, 238;
+    --pb-cfdef2: 207, 222, 242;
+    --pb-cfe2fa: 207, 226, 250;
+    --pb-cfe3f7: 207, 227, 247;
+    --pb-d7e3f0: 215, 227, 240;
+    --pb-d7e6ff: 215, 230, 255;
+    --pb-d7e8f7: 215, 232, 247;
+    --pb-d7e8fa: 215, 232, 250;
+    --pb-dbe6f4: 219, 230, 244;
+    --pb-dce8f7: 220, 232, 247;
+    --pb-dce9fb: 220, 233, 251;
+    --pb-dcebfa: 220, 235, 250;
+    --pb-dde8f6: 221, 232, 246;
+    --pb-e2f1ff: 226, 241, 255;
+    --pb-e3ebf8: 227, 235, 248;
+    --pb-e3ecf9: 227, 236, 249;
+    --pb-e3edff: 227, 237, 255;
+    --pb-e6edf7: 230, 237, 247;
+    --pb-e6eefa: 230, 238, 250;
+    --pb-e7eef9: 231, 238, 249;
+    --pb-e7f0fb: 231, 240, 251;
+    --pb-e9f0fa: 233, 240, 250;
+    --pb-eaf1fb: 234, 241, 251;
+    --pb-eaf3fc: 234, 243, 252;
+    --pb-eaf4ff: 234, 244, 255;
+    --pb-eef2f7: 238, 242, 247;
+    --pb-eef3fa: 238, 243, 250;
+    --pb-eef3fb: 238, 243, 251;
+    --pb-eef4fc: 238, 244, 252;
+    --pb-f1f6fc: 241, 246, 252;
+    --pb-f2f8ff: 242, 248, 255;
+    --pb-f3f7fd: 243, 247, 253;
+    --pb-f4f8fd: 244, 248, 253;
+    --pb-f5f9ff: 245, 249, 255;
+    --pb-f6f9fd: 246, 249, 253;
+    --pb-f7fafe: 247, 250, 254;
+    --pb-f8fbff: 248, 251, 255;
+}
+
+/* ---------------------------------------------------------------------
+   Hand-written overrides
+   ------------------------------------------------------------------- */
+
+/* Dark: the same deep-green field as Reset PIN / the library-card pages
+   (reset_pin.php, library_card.css), instead of the old mid blue. */
+html[data-palette="green"][data-theme="dark"] {
+    background-color: #071a14;
+}
+
+html[data-palette="green"][data-theme="dark"] body {
+    /* admin.css sets body's background with !important, so this has to too */
+    background:
+        radial-gradient(circle at 20% 0%, #1f6c50 0%, #0d2f24 45%, #071a14 100%) !important;
+    background-attachment: fixed !important;
+    background-size: 100% 100vh !important;
+    background-repeat: no-repeat !important;
+    background-color: #071a14 !important;
+}
+
+/* Secondary accent: the seal's gold on the 3px top stripe that already
+   marks the Dashboard's highlighted panels (was the accent blue). Colour
+   only -- widths/styles still come from admin.css. Decorative stripe, not
+   text, so it doesn't carry a text-contrast requirement. */
+html[data-palette="green"] .dashboard-scan-panel,
+html[data-palette="green"] .arrival-activity-row .overdue-books-panel,
+html[data-palette="green"] .arrival-activity-row .live-activity-panel,
+html[data-palette="green"] .arrival-activity-row .chart-panel.compact-panel,
+html[data-palette="green"] .course-popularity-panel {
+    border-top-color: rgba(226, 178, 74, 0.8) !important;   /* seal gold, lifted for dark */
+}
+
+html[data-palette="green"][data-theme="light"] .dashboard-scan-panel,
+html[data-palette="green"][data-theme="light"] .arrival-activity-row .overdue-books-panel,
+html[data-palette="green"][data-theme="light"] .arrival-activity-row .live-activity-panel,
+html[data-palette="green"][data-theme="light"] .arrival-activity-row .chart-panel.compact-panel,
+html[data-palette="green"][data-theme="light"] .course-popularity-panel {
+    border-top-color: rgba(201, 145, 38, 0.85) !important;  /* seal gold #d69a2c, deepened for cream */
+}
+
+/* Contrast fixes found by measuring the pilot (WCAG AA, 4.5:1 small text). */
+
+/* "Send Reminder" (dark): white on the bright #3fcf8e -> #1f9f68 pill was
+   2.0-2.6:1 -- it failed on the old blue theme too. Deeper greens from the
+   same family give 5.3:1+ (and stay above 4.5:1 under the hover brighten). */
+html[data-palette="green"][data-theme="dark"] .overdue-reminder-btn {
+    background: linear-gradient(180deg, #1d7a50 0%, #176240 100%) !important;
+    border-color: rgba(111, 224, 168, 0.5) !important;
+}
+
+/* Sidebar "Appearance" label (dark): 3.9:1 at 10.5px -> lifted sage. */
+html[data-palette="green"][data-theme="dark"] .theme-toggle-label {
+    color: #cfe9dc !important;   /* admin.css sets this with !important */
+}
+
+/* Books per Course Popularity: "Not Yet Borrowed" was a blue-grey, which the
+   token mapping turned into a pale green -- too close to the green "Borrowed
+   Titles" segment/legend dot next to it. A warm neutral stone keeps the two
+   series apart without borrowing the gold that means "needs attention". */
+html[data-palette="green"] .course-popularity-panel .stacked-dot.remaining,
+html[data-palette="green"] .course-popularity-panel .stacked-segment.remaining {
+    background: #aaa595 !important;
+}
+
+html[data-palette="green"][data-theme="light"] .course-popularity-panel .stacked-dot.remaining,
+html[data-palette="green"][data-theme="light"] .course-popularity-panel .stacked-segment.remaining {
+    background: #bdb6a5 !important;
+}
+
+/* Course Borrowing Activity bars (dark): the cyan start stop (#8fdcff) sits
+   just outside the tokenized hue range, so the bar came out cyan->green.
+   Same green->gold family light mode already uses for these bars. */
+html[data-palette="green"][data-theme="dark"] .hbar-track.course .hbar-fill.course,
+html[data-palette="green"][data-theme="dark"] .hbar-fill.course {
+    background: linear-gradient(90deg, #6fc79a 0%, #e2b24a 100%) !important;
+}
+
+/* ---------------------------------------------------------------------
+   Variant B accents (neutral dark, data-dark-variant="neutral")
+   Charcoal page and cards; green and gold kept only where they mark
+   something: buttons, the active nav item, icons, headings, chart marks.
+   Semantic badge tones are untouched here too.
+   ------------------------------------------------------------------- */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] {
+    background-color: #111312;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] body {
+    background:
+        radial-gradient(circle at 20% 0%, #1d211f 0%, #141716 45%, #0f1110 100%) !important;
+    background-attachment: fixed !important;
+    background-size: 100% 100vh !important;
+    background-repeat: no-repeat !important;
+    background-color: #111312 !important;
+}
+
+/* Primary buttons ("Open Entry Scanner", "Go to Kiosk"): white on deep
+   seal green, same pair as the dark "Send Reminder" fix (5.3:1+). */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .dashboard-scan-btn {
+    background: linear-gradient(160deg, #1d7a50 0%, #176240 100%) !important;
+    border-color: rgba(111, 224, 168, 0.45) !important;
+}
+
+/* Active sidebar item: a green wash and ring instead of the grey one. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .nav-link.active {
+    background: linear-gradient(135deg, rgba(47, 160, 107, 0.24) 0%, rgba(47, 160, 107, 0.08) 100%) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(111, 224, 168, 0.32) inset !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .nav-link.active .nav-icon {
+    background: linear-gradient(160deg, #2fa06b 0%, #1d7a50 100%) !important;
+    box-shadow: 0 4px 12px rgba(47, 160, 107, 0.35) !important;
+}
+
+/* Header/panel icon glyphs and the neutral-count stat icons: green glyph
+   on the grey chip (chips themselves stay neutral). */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .page-icon,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .panel-icon,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .welcome-icon {
+    color: #8fe3b9 !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .metric-icon-badge--blue {
+    color: #8fd6bd !important;
+}
+
+/* Secondary outline button ("View all"). */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .panel-link-btn {
+    border-color: rgba(111, 224, 168, 0.45) !important;
+    color: #c4efd9 !important;
+}
+
+/* Section label ("Course-based recommendations") in seal gold. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .section-heading {
+    color: #e2b24a !important;
+}
+
+/* Theme switch knob: the one control that carries the brand green. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .theme-toggle-knob {
+    background: linear-gradient(160deg, #2fa06b 0%, #1d7a50 100%) !important;
+}
+
+/* Chart panels: their cards were washed edge to edge in gold (search) or
+   green (borrowing). Card bodies go neutral like every other card; the
+   panel's coloured border, the bars, lines and chips keep the gold/green,
+   so each chart still says which family it belongs to. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .search-trend-panel,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .borrow-trend-panel,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .search-keywords-panel,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .borrowed-books-panel,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .recommendation-panel {
+    background:
+        radial-gradient(140% 120% at 15% -20%, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 55%),
+        linear-gradient(160deg, rgba(109, 126, 117, 0.22) 0%, rgba(60, 70, 65, 0.17) 60%, rgba(32, 36, 34, 0.2) 100%) !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .trend-scroll {
+    background: rgba(255, 255, 255, 0.03) !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .search-keywords-insight {
+    background: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* ---------------------------------------------------------------------
+   Panel-wide rollout
+   ------------------------------------------------------------------- */
+
+/* Primary actions on every page (Apply, + Add Book/User, Generate/Download
+   Report, Preview import, modal submits...) share .btn-primary / the
+   filter-bar button. The neutral dark token map turned them grey; they're
+   the accent, so deep seal green -- same pair as the Dashboard launchers. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .btn-primary,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .filters-inline button {
+    background: linear-gradient(160deg, #1d7a50 0%, #176240 100%) !important;
+    border-color: rgba(111, 224, 168, 0.45) !important;
+    color: #ffffff !important;
+}
+
+/* Neutral-count stat icons ("Total Users", "Students", "Total Books"...).
+   In green they were indistinguishable from the green "positive" icons
+   (Active, Available, Returned) they sit next to. Grey ink keeps the
+   established meaning: neutral = calm, green = positive, gold = needs
+   attention, red = missing. */
+html[data-palette="green"] .metric-icon-badge--blue {
+    color: #b9c4bf !important;
+}
+
+html[data-palette="green"][data-theme="light"] .metric-icon-badge--blue {
+    color: #56645e !important;
+}
+
+/* Dashboard overdue summary tiles are links; their text has its own
+   colours, but the link itself still carried the browser's default blue,
+   which a keyboard focus ring would draw in. */
+html[data-palette="green"] a.overdue-summary-card {
+    color: inherit;
+}
+
+/* ---------------------------------------------------------------------
+   AA fixes found by the panel-wide audit. All of these already failed
+   in the original blue theme; colour-only fixes, same hue families.
+   ------------------------------------------------------------------- */
+
+/* Light-mode secondary text (#5c7a6b, 4.0-4.4:1 on the off-white cards)
+   -> one step deeper in the same grey-green: 4.9:1+. Generated from every
+   light rule in admin.css that sets #5c7a6b. */
+html[data-palette="green"][data-theme="light"] .metric-meta,
+html[data-palette="green"][data-theme="light"] .panel-sub,
+html[data-palette="green"][data-theme="light"] .trend-insight,
+html[data-palette="green"][data-theme="light"] .reports-card-body p,
+html[data-palette="green"][data-theme="light"] .arrival-activity-row .overdue-books-panel .panel-sub,
+html[data-palette="green"][data-theme="light"] .arrival-activity-row .live-activity-panel .panel-sub,
+html[data-palette="green"][data-theme="light"] .arrival-activity-row .panel-sub,
+html[data-palette="green"][data-theme="light"] .book-accession-hint,
+html[data-palette="green"][data-theme="light"] .reports-group-label,
+html[data-palette="green"][data-theme="light"] .reports-custom-sub,
+html[data-palette="green"][data-theme="light"] .reports-glance-note,
+html[data-palette="green"][data-theme="light"] .reports-modal-tile span,
+html[data-palette="green"][data-theme="light"] .reports-modal-column-label,
+html[data-palette="green"][data-theme="light"] .reports-modal-daily summary,
+html[data-palette="green"][data-theme="light"] .reports-modal-rank,
+html[data-palette="green"][data-theme="light"] .reports-modal-empty,
+html[data-palette="green"][data-theme="light"] .reports-entries-caption,
+html[data-palette="green"][data-theme="light"] .reports-entries-zeros summary,
+html[data-palette="green"][data-theme="light"] .reports-glance-empty .reports-glance-empty-sub,
+html[data-palette="green"][data-theme="light"] .reports-glance-spark-label,
+html[data-palette="green"][data-theme="light"] .reports-glance-spark-foot,
+html[data-palette="green"][data-theme="light"] .reports-modal-bar-value small {
+    color: #526d60 !important;
+}
+
+/* Reports: zero-count rows were faded with opacity: 0.5 (down to 1.9:1).
+   Full opacity with a muted colour keeps them visibly secondary. */
+html[data-palette="green"] .reports-modal-bars li.is-muted .reports-modal-bar-label,
+html[data-palette="green"] .reports-modal-bars li.is-muted .reports-modal-bar-value {
+    opacity: 1;
+    color: #9aa39f !important;
+}
+
+html[data-palette="green"][data-theme="light"] .reports-modal-bars li.is-muted .reports-modal-bar-label,
+html[data-palette="green"][data-theme="light"] .reports-modal-bars li.is-muted .reports-modal-bar-value {
+    color: #5f6f68 !important;
+}
+
+html[data-palette="green"] .reports-modal-bars li.is-muted .reports-modal-bar-value small {
+    color: #9aa39f !important;
+}
+
+html[data-palette="green"][data-theme="light"] .reports-modal-bars li.is-muted .reports-modal-bar-value small {
+    color: #5f6f68 !important;
+}
+
+html[data-palette="green"][data-theme="light"] .reports-entries-caption {
+    opacity: 1;
+}
+
+/* Reports period chip ("Period"): gold #9a7400 -> #856400 (5.3:1). */
+html[data-palette="green"][data-theme="light"] .reports-period-text small {
+    color: #856400 !important;
+}
+
+/* White-on-bright-green actions (Retrieve, Download PDF): 2.6:1 ->
+   the deep seal-green pair used for every other primary action. */
+html[data-palette="green"] .confirm-modal-confirm.is-positive,
+html[data-palette="green"][data-theme="dark"] .reports-download-link {
+    background: linear-gradient(180deg, #1d7a50 0%, #176240 100%) !important;
+    border-color: rgba(111, 224, 168, 0.45) !important;
+    color: #ffffff !important;
+}
+
+/* Delete (white on #ff6262, 3.4:1): same red family, deeper (5.6:1+). */
+html[data-palette="green"] .confirm-delete-actions .confirm-delete-confirm,
+html[data-palette="green"] .confirm-delete-confirm {
+    background: linear-gradient(180deg, #c62828 0%, #a51e1e 100%) !important;
+    border-color: #8f1a1a !important;
+    color: #ffffff !important;
+}
+
+/* Warning / delete "!" icons. Light mode reused dark mode's pale glyph
+   (1.1:1 on pale gold); dark mode's gold disc was a mid-tone that no
+   glyph colour clears 4.5:1 on, so the disc is a little more see-through. */
+html[data-palette="green"][data-theme="light"] .confirm-modal-icon.is-warning {
+    color: #7a5a00 !important;
+}
+
+html[data-palette="green"][data-theme="light"] .confirm-delete-icon {
+    color: #a51e1e !important;
+}
+
+html[data-palette="green"][data-theme="dark"] .confirm-modal-icon.is-warning {
+    background: linear-gradient(160deg, rgba(240, 207, 102, 0.24) 0%, rgba(221, 185, 69, 0.12) 100%) !important;
+}
+
+/* Add/Edit User: PIN rule note was light yellow on the white modal. */
+html[data-palette="green"][data-theme="light"] .pin-rule-note.is-strict {
+    color: #8a5a00 !important;
+}
+
+/* Faded "—" / "Book deleted" placeholders in Borrow Records and Archives
+   action columns (35% opacity, 2.1:1) -> still lighter than real text. */
+html[data-palette="green"][data-theme="dark"] .borrow-action-row .borrow-action-muted,
+html[data-palette="green"][data-theme="dark"] .archive-action-cell .archive-action-muted {
+    color: #c8ccc9 !important;
+}
+
+/* Modals (dark): the old mid-blue modal glass mapped to a light grey glass
+   -- heavier than the page's cards, and the close "x" sat on it at 4.0:1.
+   Solid charcoal card instead, a step lighter than the page cards so the
+   dialog still lifts off the dimmed page. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .overlay-card {
+    background:
+        radial-gradient(120% 70% at 85% -15%, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 60%),
+        linear-gradient(165deg, #2b312e 0%, #1d2220 100%) !important;
+}
+
+/* Data Export "Download CSV" (dark): its accent-blue tint became a dim grey
+   outline in charcoal; a green tint marks it as the card's action again
+   (light mode already fills it green). */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="neutral"] .export-download-btn {
+    background: rgba(47, 160, 107, 0.18) !important;
+    border-color: rgba(111, 224, 168, 0.45) !important;
+    color: #c4efd9 !important;
+}
+
+/* Report preview (opened from Reports > View). Its header is filled in on
+   open, so the page-wide audit only reached it once a report was opened. */
+/* Family label: the eyebrow uses the family tone on a tinted header glow
+   (Borrowing blue: 3.5:1 in dark). A lighter shade of each family hue keeps
+   the colour coding and clears 4.5:1. */
+html[data-palette="green"][data-theme="dark"] .reports-preview-card.is-blue .reports-preview-eyebrow {
+    color: #a9cdee !important;
+}
+
+/* The "·" between the period and date range was at 45% opacity (3.5:1). */
+html[data-palette="green"] .reports-modal-sep {
+    opacity: 0.75;
+}
+
+/* Monthly Summary: tiles with a zero value were faded with opacity: 0.55
+   (2.2:1). Full opacity with muted text, like the zero rows above. */
+html[data-palette="green"] .reports-modal-tile.is-quiet {
+    opacity: 1;
+}
+
+html[data-palette="green"] .reports-modal-tile.is-quiet span,
+html[data-palette="green"] .reports-modal-tile.is-quiet strong {
+    color: #b4bab7 !important;
+}
+
+html[data-palette="green"][data-theme="light"] .reports-modal-tile.is-quiet span,
+html[data-palette="green"][data-theme="light"] .reports-modal-tile.is-quiet strong {
+    color: #5f6f68 !important;
+}
+
+/* Library Entries headline tiles: 80%-white labels on a mid green (3.1:1).
+   Deep seal green (as on every primary button) and full-white labels. */
+html[data-palette="green"] .reports-modal-headline-tile {
+    background: linear-gradient(160deg, #1d7a50 0%, #176240 100%) !important;
+}
+
+html[data-palette="green"] .reports-modal-headline-tile span {
+    color: #ffffff !important;
+}
+
+/* Family labels / peak markers that sat just under 4.5:1. */
+html[data-palette="green"][data-theme="dark"] .reports-preview-card.is-green .reports-preview-eyebrow {
+    color: #8fe3b9 !important;
+}
+
+html[data-palette="green"][data-theme="light"] .reports-preview-card.is-gold .reports-preview-eyebrow,
+html[data-palette="green"][data-theme="light"] .reports-modal-peak {
+    color: #856400 !important;
+}
+
+
+/* ---------------------------------------------------------------------
+   Blue dark (data-dark-variant="blue") -- the dark mode now in use.
+   Original blue design language; the changes are the deep navy surfaces
+   that fix its contrast, plus the hue-independent fixes elsewhere in this
+   file (Send Reminder, Appearance label, Delete/Retrieve/Download PDF,
+   warning icon, faded placeholders, Reports rows/tiles/labels).
+   ------------------------------------------------------------------- */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] {
+    background-color: #0a1322;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] body {
+    background:
+        radial-gradient(circle at 20% 0%, #1b2d4a 0%, #111d31 45%, #0a1322 100%) !important;
+    background-attachment: fixed !important;
+    background-size: 100% 100vh !important;
+    background-repeat: no-repeat !important;
+    background-color: #0a1322 !important;
+}
+
+/* Modals: the original light-blue glass card -> a solid deep-blue card a
+   step lighter than the page, so the dialog still lifts off. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .overlay-card {
+    background:
+        radial-gradient(120% 70% at 85% -15%, rgba(140, 185, 235, 0.10) 0%, rgba(140, 185, 235, 0) 60%),
+        linear-gradient(165deg, #1e3150 0%, #14223a 100%) !important;
+}
+
+/* Back to the original blue where the pilot had swapped colours only
+   because of the green palette. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .dashboard-scan-panel,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .arrival-activity-row .overdue-books-panel,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .arrival-activity-row .live-activity-panel,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .arrival-activity-row .chart-panel.compact-panel,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .course-popularity-panel {
+    border-top-color: rgba(140, 185, 235, 0.75) !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .course-popularity-panel .stacked-dot.remaining,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .course-popularity-panel .stacked-segment.remaining {
+    background: #b4c6da !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .hbar-track.course .hbar-fill.course,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .hbar-fill.course {
+    background: linear-gradient(90deg, #8fdcff 0%, #379fe0 100%) !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .metric-icon-badge--blue {
+    color: #7fb8ec !important;
+}
+
+/* Hue-independent fixes, tinted blue instead of sage/grey. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .theme-toggle-label {
+    color: #d6e6f7 !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .reports-modal-bars li.is-muted .reports-modal-bar-label,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .reports-modal-bars li.is-muted .reports-modal-bar-value,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .reports-modal-bars li.is-muted .reports-modal-bar-value small {
+    color: #a3b5c9 !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .reports-modal-tile.is-quiet span,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .reports-modal-tile.is-quiet strong {
+    color: #b8c6d6 !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .borrow-action-row .borrow-action-muted,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .archive-action-cell .archive-action-muted {
+    color: #c3cfdc !important;
+}
+
+/* Primary buttons (Apply, + Add, Create User, Save Changes, Download
+   Report, ...): white on the original #4d8ad4 top stop was 3.6-4.3:1.
+   Same blue family, starting one step deeper: 5.6:1 at the lightest point,
+   and still above 4.5:1 under the hover brighten. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .btn-primary,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .filters-inline button {
+    background: linear-gradient(160deg, #3468b0 0%, #1c4573 100%) !important;
+    color: #ffffff !important;
+}

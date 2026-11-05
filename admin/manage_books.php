@@ -1334,11 +1334,11 @@ require 'layout_top.php';
     .bulk-import-nav-btn {
         display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
         border-radius: 999px; padding: 10px 18px; font-weight: 700; font-size: 14px;
-        background: rgba(140, 185, 235, 0.16); border: 1.5px solid rgba(140, 185, 235, 0.55); color: #eaf3fc;
+        background: rgba(var(--pb-8cb9eb), 0.16); border: 1.5px solid rgba(var(--pb-8cb9eb), 0.55); color: rgb(var(--pb-eaf3fc));
         transition: background .15s ease, border-color .15s ease, transform .14s ease, box-shadow .14s ease;
     }
     .bulk-import-nav-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .bulk-import-nav-btn:hover { background: rgba(140, 185, 235, 0.27); border-color: rgba(140, 185, 235, 0.8); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(13, 36, 64, 0.22); }
+    .bulk-import-nav-btn:hover { background: rgba(var(--pb-8cb9eb), 0.27); border-color: rgba(var(--pb-8cb9eb), 0.8); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(var(--pb-0d2440), 0.22); }
     .bulk-import-nav-btn:active { transform: translateY(0); }
 </style>
 
