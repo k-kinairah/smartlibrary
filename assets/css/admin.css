@@ -7711,21 +7711,6 @@ html[data-theme="light"] *::-webkit-scrollbar-thumb:hover {
     text-align: left !important;
 }
 
-/* Small "COPIES - n" label above the nested table, so it reads as a
-   sub-section of the book row rather than part of the Books table. */
-.copy-detail-caption {
-    margin: 0 0 8px 2px;
-    text-align: left;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: rgb(var(--pb-b9cee2));
-}
-
-[data-theme="light"] .copy-detail-caption {
-    color: #526d60;
-}
 
 .copy-detail-note {
     color: rgb(var(--pb-b9cee2));
@@ -7733,6 +7718,64 @@ html[data-theme="light"] *::-webkit-scrollbar-thumb:hover {
 
 [data-theme="light"] .copy-detail-note {
     color: #526d60;
+}
+
+/* Books > copies list: status edge bar + row rhythm.
+   A 4px bar on each row's left edge in the colour of that copy's state
+   (same hue as its pill in each theme), so status reads at a glance;
+   overdue / lost rows also get a semi-bold weight. Accession numbers are
+   the row's anchor (bold, tabular), Copy IDs are secondary (muted), rows
+   get a little more air, and pills carry a small status icon. */
+.copy-detail-table tbody tr[data-copy-state] td:first-child {
+    box-shadow: inset 4px 0 0 var(--copy-edge, transparent);
+    padding-left: 14px;
+}
+
+.copy-detail-table tbody tr[data-copy-state="available"] { --copy-edge: #79b8ff; }
+.copy-detail-table tbody tr[data-copy-state="loan"] { --copy-edge: #9fb6d4; }
+.copy-detail-table tbody tr[data-copy-state="overdue"] { --copy-edge: #ff7f89; }
+.copy-detail-table tbody tr[data-copy-state="lost"] { --copy-edge: #ffbe63; }
+
+[data-theme="light"] .copy-detail-table tbody tr[data-copy-state="available"] { --copy-edge: #2f9e68; }
+[data-theme="light"] .copy-detail-table tbody tr[data-copy-state="loan"] { --copy-edge: #8a958f; }
+[data-theme="light"] .copy-detail-table tbody tr[data-copy-state="overdue"] { --copy-edge: #d0454f; }
+[data-theme="light"] .copy-detail-table tbody tr[data-copy-state="lost"] { --copy-edge: #d39a1c; }
+
+.copy-detail-table tbody tr[data-copy-state="overdue"] td,
+.copy-detail-table tbody tr[data-copy-state="lost"] td {
+    font-weight: 600;
+}
+
+.copy-detail-table tbody td {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.copy-detail-table td.copy-detail-accession {
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+}
+
+.copy-detail-table td.copy-detail-id {
+    color: rgb(var(--pb-9fb6d4));
+    font-variant-numeric: tabular-nums;
+}
+
+[data-theme="light"] .copy-detail-table td.copy-detail-id {
+    color: #5f6f68;
+}
+
+.copy-detail-icon {
+    width: 12px;
+    height: 12px;
+    margin-right: 4px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .copy-detail-status-borrowed { background: rgba(123, 240, 176, 0.16); border-color: rgba(123, 240, 176, 0.4); }
@@ -12146,3 +12189,114 @@ body {
 [data-theme="light"] .export-center-table tbody tr:hover {
     background: rgba(var(--pb-3f7cc2), 0.12) !important;
 }
+
+/* ---------------------------------------------------------------------
+   Compact sidebar header (both themes)
+   ------------------------------------------------------------------- */
+
+/* Wordmark: mixed-case "SmartLib" as written everywhere else, at its
+   original size and spacing, in Manrope ExtraBold (800 -- the family's
+   heaviest weight) for a little more presence. */
+.sidebar-header .sidebar-logo {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.sidebar-header h2 {
+    font-weight: 800;
+    line-height: 1.15;
+}
+
+/* Role badge: back on its own line under the wordmark (it names the
+   signed-in user's role, not the app), but the smaller pill and a tighter
+   gap than the original. */
+.sidebar-header > p {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 4px;
+    margin: 4px 0 0 !important;
+    padding: 4px 8px 4px 6px !important;
+    font-size: 9px !important;
+    letter-spacing: 0.06em !important;
+    line-height: 1;
+}
+
+/* Icon and text are flex items centred on the same line: the text box is
+   exactly its line (line-height 1), so align-items: center lines the
+   shield up with the letters instead of with extra leading. */
+.sidebar-header > p span {
+    display: block;
+    line-height: 1;
+}
+
+/* Small shield icon before the role, same icon-in-pill treatment as the
+   Books copy-list status pills. */
+.sidebar-header > p svg {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Appearance toggle: one row -- "APPEARANCE" label + a smaller switch.
+   The "Light mode / Dark mode" text is hidden visually (the sun/moon knob
+   already shows the mode) but kept for screen readers; the button also
+   carries aria-label "Switch to ... mode" and aria-pressed from admin.js. */
+.theme-toggle-wrap {
+    margin-top: 10px;
+}
+
+.theme-toggle-btn {
+    min-height: 0 !important;
+    padding: 5px 6px 5px 12px !important;
+    border-radius: 12px !important;
+}
+
+.theme-toggle-state {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.theme-toggle-switch {
+    width: 52px !important;
+    height: 26px !important;
+}
+
+.theme-toggle-knob {
+    width: 22px !important;
+    height: 22px !important;
+    top: 1px !important;
+    left: 1px !important;
+    transform: translateX(26px) !important;
+}
+
+.theme-toggle-btn[data-theme="light"] .theme-toggle-knob {
+    transform: translateX(0) !important;
+}
+
+.theme-toggle-icon {
+    width: 22px;
+    height: 22px;
+    margin-top: -11px;
+}
+
+.theme-toggle-icon--sun { left: 1px; }
+.theme-toggle-icon--moon { right: 1px; }
+
+.theme-toggle-icon svg {
+    width: 13px;
+    height: 13px;
+}
+

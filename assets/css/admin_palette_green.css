@@ -1138,3 +1138,31 @@ html[data-palette="green"][data-theme="light"] .overdue-preview-table tbody td {
 html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .copy-detail-status-available {
     color: #a9d1ff !important;
 }
+
+/* Books copy list: a soft lift so the nested box reads as a sub-component
+   of its book row, not another row in the flow. Border, caption and the
+   flat white surface are unchanged. */
+html[data-palette="green"][data-theme="light"] .book-copy-details-wrap {
+    background: #ffffff !important;
+    box-shadow: 0 6px 16px rgba(31, 76, 64, 0.12), 0 1px 3px rgba(31, 76, 64, 0.08) !important;
+}
+
+html[data-palette="green"][data-theme="dark"] .book-copy-details-wrap {
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.38), 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Light: the compact role badge's text one step deeper (was 4.3-4.6:1). */
+html[data-palette="green"][data-theme="light"] .sidebar-header > p {
+    color: #3f5a4d !important;
+}
+
+/* Light: sidebar wordmark in the established deep seal green. */
+html[data-palette="green"][data-theme="light"] .sidebar-header h2 {
+    color: #1f4c40 !important;
+}
+
+/* Light: Books copy list "Lost"/"Missing" pill text one step deeper
+   (#9a6500 was 4.2:1 on its amber tint). */
+html[data-palette="green"][data-theme="light"] .copy-detail-status-missing {
+    color: #7a5000 !important;
+}

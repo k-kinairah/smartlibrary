@@ -1497,7 +1497,6 @@ require 'layout_top.php';
                                 <div class="book-copy-details-wrap">
                                     <?php $copies = $copiesForRow; ?>
                                     <?php if (!empty($copies)): ?>
-                                        <p class="copy-detail-caption">Copies &middot; <?= count($copies) ?></p>
                                         <table class="copy-detail-table">
                                             <thead>
                                                 <tr>
@@ -1518,7 +1517,8 @@ require 'layout_top.php';
                                                             $copyStatusTextClass = 'copy-detail-status-borrowed';
                                                         } elseif ($copyStatusRaw === 'overdue') {
                                                             $copyStatusTextClass = 'copy-detail-status-overdue';
-                                                        } elseif ($copyStatusRaw === 'missing') {
+                                                        } elseif ($copyStatusRaw === 'missing' || $copyStatusRaw === 'lost') {
+                                                            // Lost copies share the amber "missing" pill instead of plain grey.
                                                             $copyStatusTextClass = 'copy-detail-status-missing';
                                                         } elseif ($copyStatusRaw === 'available') {
                                                             $copyStatusTextClass = 'copy-detail-status-available';
@@ -1555,11 +1555,33 @@ require 'layout_top.php';
                                                         // No active loan: one note across Borrow Status + Borrower
                                                         // instead of two "-" cells (Copy Status already says it).
                                                         $hasActiveLoan = $loanStatusRaw !== '' || $borrowerText !== '-';
+
+                                                        // Row state for the status edge bar + pill icon:
+                                                        // overdue > on loan > lost/missing > available.
+                                                        if ($loanStatusRaw === 'overdue') {
+                                                            $copyRowState = 'overdue';
+                                                        } elseif ($hasActiveLoan) {
+                                                            $copyRowState = 'loan';
+                                                        } elseif ($copyStatusRaw === 'lost' || $copyStatusRaw === 'missing') {
+                                                            $copyRowState = 'lost';
+                                                        } elseif ($copyStatusRaw === 'available') {
+                                                            $copyRowState = 'available';
+                                                        } else {
+                                                            $copyRowState = 'other';
+                                                        }
+                                                        $copyStatusIcons = [
+                                                            'available' => '<path d="m5 12.5 4.5 4.5L19 7.5"></path>',
+                                                            'loan' => '<circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path>',
+                                                            'lost' => '<path d="M12 4 21 19H3L12 4Z"></path><path d="M12 10v4"></path>',
+                                                        ];
+                                                        $copyIconKey = $copyStatusRaw === 'available' ? 'available'
+                                                            : (($copyStatusRaw === 'lost' || $copyStatusRaw === 'missing') ? 'lost'
+                                                            : (($copyStatusRaw === 'borrowed' || $copyStatusRaw === 'overdue') ? 'loan' : ''));
                                                     ?>
-                                                    <tr>
-                                                        <td><?= htmlspecialchars((string)($copy['accession_no'] ?? '-')) ?></td>
-                                                        <td><?= intval($copy['copy_id'] ?? 0) ?></td>
-                                                        <td><span class="<?= htmlspecialchars($copyStatusTextClass) ?>"><?= htmlspecialchars($copyStatusText) ?></span></td>
+                                                    <tr data-copy-state="<?= htmlspecialchars($copyRowState) ?>">
+                                                        <td class="copy-detail-accession"><?= htmlspecialchars((string)($copy['accession_no'] ?? '-')) ?></td>
+                                                        <td class="copy-detail-id"><?= intval($copy['copy_id'] ?? 0) ?></td>
+                                                        <td><span class="<?= htmlspecialchars($copyStatusTextClass) ?>"><?php if ($copyIconKey !== ''): ?><svg class="copy-detail-icon" viewBox="0 0 24 24" aria-hidden="true"><?= $copyStatusIcons[$copyIconKey] ?></svg><?php endif; ?><?= htmlspecialchars($copyStatusText) ?></span></td>
                                                         <?php if ($hasActiveLoan): ?>
                                                             <td><span class="<?= htmlspecialchars($borrowStatusClass) ?>"><?= htmlspecialchars($loanStatusText) ?></span></td>
                                                             <td><?= htmlspecialchars($borrowerText) ?></td>

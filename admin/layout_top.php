@@ -218,7 +218,7 @@ function stat_chip_meta(string $title): array {
         <div class="sidebar-header">
             <img src="../assets/images/stjude_logo.jpg" class="sidebar-logo" alt="St. Jude logo">
             <h2>SmartLib</h2>
-            <p><?= htmlspecialchars($roleLabel) ?></p>
+            <p class="sidebar-role"><?= admin_icon('shield') ?><span><?= htmlspecialchars($roleLabel) ?></span></p>
             <div class="theme-toggle-wrap">
                 <button
                     type="button"
