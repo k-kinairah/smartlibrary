@@ -17,13 +17,11 @@ function auth_safe_query(mysqli $conn, string $sql) {
     }
 }
 
-// True only when the request is coming from this same machine (XAMPP's
-// dev server, accessed as localhost/127.0.0.1). Used to show the 2FA code
-// on-screen as a local-development fallback when outgoing email isn't
-// configured -- PHP's mail() has no real mail server to talk to on a
-// default XAMPP install, so the actual verification email silently never
-// arrives. This never applies to a real network request, so it doesn't
-// weaken 2FA for anyone signing in from anywhere but this computer.
+// True when REMOTE_ADDR is this same machine. Not, on its own, proof that the
+// request is local: behind a same-server proxy every visitor is 127.0.0.1.
+// The on-screen 2FA-code fallback therefore uses
+// smartlib_dev_show_codes_on_screen() (config/mail_sender.php), which also
+// requires an explicit dev opt-in in config/mail_config.php.
 function auth_is_local_request(string $ip): bool {
     return in_array($ip, ['127.0.0.1', '::1', 'localhost'], true);
 }
@@ -494,6 +492,8 @@ function auth_disable_other_reset_tokens(mysqli $conn, int $userId): void {
     $stmt->close();
 }
 
+require_once __DIR__ . '/mail_sender.php';
+
 function auth_send_multipart_email(string $toEmail, string $subject, string $htmlBody, string $textBody, array $inlineImages = []): bool {
     $safeEmail = trim($toEmail);
     if ($safeEmail === '' || !filter_var($safeEmail, FILTER_VALIDATE_EMAIL)) {
@@ -509,8 +509,9 @@ function auth_send_multipart_email(string $toEmail, string $subject, string $htm
     $relatedBoundary = 'smartlib_auth_rel_' . bin2hex(random_bytes(8));
     $headers = [];
     $headers[] = 'MIME-Version: 1.0';
-    $headers[] = 'From: SMARTLIB <no-reply@smartlib.local>';
-    $headers[] = 'Reply-To: no-reply@smartlib.local';
+    foreach (smartlib_mail_sender_headers('SMARTLIB') as $senderHeader) {
+        $headers[] = $senderHeader;
+    }
     $headers[] = 'Content-Type: multipart/related; boundary="' . $relatedBoundary . '"';
 
     $message = "--{$relatedBoundary}\r\n"
@@ -564,9 +565,28 @@ function auth_send_multipart_email(string $toEmail, string $subject, string $htm
 
     $message .= "--{$relatedBoundary}--";
 
-    return (bool)@mail($safeEmail, $safeSubject, $message, implode("\r\n", $headers));
+    return smartlib_mail_send($safeEmail, $safeSubject, $message, $headers);
 }
+
+/**
+ * Absolute URL for a link that goes out in an email (e.g. the PIN-reset
+ * link). $path is relative to the app root ("/reset_pin.php?token=...").
+ *
+ * Uses SMARTLIB_BASE_URL from config/mail_config.php when set, so the link
+ * can't be pointed at another site by sending a forged Host header. Without
+ * it, falls back to the old Host-header-based URL -- fine on local XAMPP, but
+ * a live host must set SMARTLIB_BASE_URL.
+ */
 function auth_build_absolute_url(string $path): string {
+    $base = smartlib_configured_base_url();
+    if ($base !== '') {
+        return $base . '/' . ltrim($path, '/');
+    }
+    if (PHP_OS_FAMILY !== 'Windows') {
+        error_log('SmartLib: SMARTLIB_BASE_URL is not set in config/mail_config.php; emailed links are being built '
+            . 'from the request Host header, which a visitor can forge.');
+    }
+
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host = trim((string)($_SERVER['HTTP_HOST'] ?? 'localhost'));
 

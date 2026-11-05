@@ -1,6 +1,7 @@
 <?php
 session_start();
 require 'config/db_connect.php';
+require_once 'config/mail_sender.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -313,8 +314,9 @@ $textBody = "SMARTLIB OVERDUE REMINDER\n"
 $boundary = 'smartlib_' . bin2hex(random_bytes(8));
 $headers = [];
 $headers[] = 'MIME-Version: 1.0';
-$headers[] = 'From: SmartLib Kiosk <no-reply@smartlib.local>';
-$headers[] = 'Reply-To: no-reply@smartlib.local';
+foreach (smartlib_mail_sender_headers('SmartLib Kiosk') as $senderHeader) {
+    $headers[] = $senderHeader;
+}
 $headers[] = 'Content-Type: multipart/alternative; boundary="' . $boundary . '"';
 
 $message = "--{$boundary}\r\n"
@@ -327,7 +329,7 @@ $message = "--{$boundary}\r\n"
     . $htmlBody . "\r\n\r\n"
     . "--{$boundary}--";
 
-$sent = @mail($email, $subject, $message, implode("\r\n", $headers));
+$sent = smartlib_mail_send($email, $subject, $message, $headers);
 
 if (!$sent) {
     respond([

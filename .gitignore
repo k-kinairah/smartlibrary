@@ -23,6 +23,7 @@ Thumbs.db
 
 config/google_books_config.php
 config/db_config.php
+config/mail_config.php
 /smartlib_*.sql
 /_db_*.php
 assets/images/BANTILING*.pdf
