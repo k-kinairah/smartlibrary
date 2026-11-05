@@ -1033,3 +1033,108 @@ html[data-palette="green"][data-theme="light"] .reports-modal-card,
 html[data-palette="green"][data-theme="light"] .overdue-summary-card:not(.overdue-summary-card-alert) {
     border-top-color: rgba(55, 135, 114, 0.88) !important;
 }
+
+/* ---------------------------------------------------------------------
+   Light mode: table status badges and header row
+   ------------------------------------------------------------------- */
+
+/* Blue status pills that only used blue because it was the old default
+   -> the palette's status green (the same tone/text as the existing green
+   pills: 38,111,77 / #266f4d). Users "Active" and Books "Available" had no
+   green neighbour. Borrow Records "Returned", copy "Available" and Archives
+   "Updated" did -- green there meant Borrowed / Borrowed / Added -- so those
+   three states move to a neutral grey-ink pill (below) and every column
+   keeps distinct colours. Red and gold pills are untouched. */
+html[data-palette="green"][data-theme="light"] .borrow-table .borrow-record-status-returned,
+html[data-palette="green"][data-theme="light"] .borrow-record-status-returned {
+    --st-tone: 38, 111, 77;
+    --st-text: #266f4d;
+    color: #266f4d !important;
+}
+
+html[data-palette="green"][data-theme="light"] .archive-table td:nth-child(2) .archive-action-updated,
+html[data-palette="green"][data-theme="light"] .archive-action-updated {
+    --act-tone: 38, 111, 77;
+    --act-text: #266f4d;
+    color: #266f4d !important;
+}
+
+html[data-palette="green"][data-theme="light"] .copy-detail-status-available,
+html[data-palette="green"][data-theme="light"] .manage-books-table .badge.status-active,
+html[data-palette="green"][data-theme="light"] .user-status-active {
+    color: #266f4d !important;
+    background: rgba(38, 111, 77, 0.12) !important;
+    border-color: rgba(38, 111, 77, 0.32) !important;
+}
+
+/* The states green used to mean in those three columns: neutral grey ink. */
+html[data-palette="green"][data-theme="light"] .borrow-table .borrow-record-status-borrowed,
+html[data-palette="green"][data-theme="light"] .borrow-record-status-borrowed {
+    --st-tone: 86, 101, 94;
+    --st-text: #4a5852;
+    color: #4a5852 !important;
+}
+
+html[data-palette="green"][data-theme="light"] .archive-table td:nth-child(2) .archive-action-added,
+html[data-palette="green"][data-theme="light"] .archive-action-added {
+    --act-tone: 86, 101, 94;
+    --act-text: #4a5852;
+    color: #4a5852 !important;
+}
+
+html[data-palette="green"][data-theme="light"] .copy-detail-status-borrowed {
+    color: #4a5852 !important;
+    background: rgba(86, 101, 94, 0.12) !important;
+    border-color: rgba(86, 101, 94, 0.32) !important;
+}
+
+/* ---------------------------------------------------------------------
+   Light mode: flat white tables (every admin table, incl. the Dashboard's
+   Overdue & Fines table and the Books copy list in its modal)
+   Like the Reports cards: white surface, green only as lines.
+   ------------------------------------------------------------------- */
+
+/* Header row: flat white. Kept distinct by its bold labels and a 2px rule
+   in the card-frame green (88% -- 3.2:1+ against white, so it reads as a
+   real edge rather than a hairline). Text stays deep seal green. */
+html[data-palette="green"][data-theme="light"] .data-table thead th,
+html[data-palette="green"][data-theme="light"] .overdue-books-panel .overdue-preview-table thead th,
+html[data-palette="green"][data-theme="light"] .copy-detail-table thead th,
+html[data-palette="green"][data-theme="light"] .copy-detail-table th {
+    background: #ffffff !important;
+    color: #1f4c40 !important;
+    border-bottom: 2px solid rgba(55, 135, 114, 0.88) !important;
+}
+
+/* Data rows: no zebra / tinted fills -- white throughout, except the
+   existing hover highlight, which is left to show through. */
+html[data-palette="green"][data-theme="light"] .data-table tbody tr:not(:hover),
+html[data-palette="green"][data-theme="light"] .copy-detail-table tbody tr:not(:hover) {
+    background: #ffffff !important;
+}
+
+html[data-palette="green"][data-theme="light"] .data-table tbody td,
+html[data-palette="green"][data-theme="light"] .copy-detail-table tbody td,
+html[data-palette="green"][data-theme="light"] .book-copy-details-wrap {
+    background: transparent !important;
+}
+
+/* A subtle 1px green divider between rows instead of alternating fills. */
+html[data-palette="green"][data-theme="light"] .data-table:not(.overdue-preview-table) tbody td,
+html[data-palette="green"][data-theme="light"] .copy-detail-table tbody td {
+    border-top-color: transparent !important;
+    border-bottom: 1px solid rgba(55, 135, 114, 0.22) !important;
+}
+
+/* Overdue & Fines keeps its separate rounded row strips (8px apart); they
+   go white with a clearer outline instead of a divider. */
+html[data-palette="green"][data-theme="light"] .overdue-preview-table tbody td {
+    background: #ffffff !important;
+    border-color: rgba(55, 135, 114, 0.35) !important;
+}
+
+/* Blue dark: Books copy list "Available" pill text was #79b8ff on its own
+   blue tint (4.4:1). Lighter shade of the same blue: 5.75:1 or better. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="blue"] .copy-detail-status-available {
+    color: #a9d1ff !important;
+}
