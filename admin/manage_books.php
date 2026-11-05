@@ -1497,6 +1497,7 @@ require 'layout_top.php';
                                 <div class="book-copy-details-wrap">
                                     <?php $copies = $copiesForRow; ?>
                                     <?php if (!empty($copies)): ?>
+                                        <p class="copy-detail-caption">Copies &middot; <?= count($copies) ?></p>
                                         <table class="copy-detail-table">
                                             <thead>
                                                 <tr>
@@ -1550,13 +1551,21 @@ require 'layout_top.php';
                                                         } elseif ($borrowerId !== '') {
                                                             $borrowerText = $borrowerId;
                                                         }
+
+                                                        // No active loan: one note across Borrow Status + Borrower
+                                                        // instead of two "-" cells (Copy Status already says it).
+                                                        $hasActiveLoan = $loanStatusRaw !== '' || $borrowerText !== '-';
                                                     ?>
                                                     <tr>
                                                         <td><?= htmlspecialchars((string)($copy['accession_no'] ?? '-')) ?></td>
                                                         <td><?= intval($copy['copy_id'] ?? 0) ?></td>
                                                         <td><span class="<?= htmlspecialchars($copyStatusTextClass) ?>"><?= htmlspecialchars($copyStatusText) ?></span></td>
-                                                        <td><span class="<?= htmlspecialchars($borrowStatusClass) ?>"><?= htmlspecialchars($loanStatusText) ?></span></td>
-                                                        <td><?= htmlspecialchars($borrowerText) ?></td>
+                                                        <?php if ($hasActiveLoan): ?>
+                                                            <td><span class="<?= htmlspecialchars($borrowStatusClass) ?>"><?= htmlspecialchars($loanStatusText) ?></span></td>
+                                                            <td><?= htmlspecialchars($borrowerText) ?></td>
+                                                        <?php else: ?>
+                                                            <td colspan="2" class="copy-detail-no-loan"><span class="copy-detail-note">Not currently borrowed</span></td>
+                                                        <?php endif; ?>
                                                     </tr>
                                                 <?php endforeach; ?>
                                             </tbody>
