@@ -150,19 +150,31 @@ if ($genreRes) {
             <p class="carousel-reason">Available now</p>
         </section>
         <?php if (!isset($_SESSION['user_id'])): ?>
-        <section class="recommend-cta">
-            <div class="sparkle-icon">✨</div>
-            <h3>Unlock Personalized Recommendations</h3>
-            <p>Sign in to see recommendations tailored to your course and interests</p>
-            <button id="discover-signin" class="discover-signin-btn">Sign In Now</button>
+        <section class="recommend-cta recommend-cta--split" aria-label="Sign in or get your library card">
+            <div class="cta-path cta-path--signin">
+                <div class="sparkle-icon" aria-hidden="true">✨</div>
+                <p class="cta-path-kicker">Already have an account?</p>
+                <h3>Unlock Personalized Recommendations</h3>
+                <p>Sign in to see recommendations tailored to your course and interests</p>
+                <button id="discover-signin" class="discover-signin-btn">Sign In Now</button>
+            </div>
+            <div class="cta-path-or" aria-hidden="true"><span>or</span></div>
+            <div class="cta-path cta-path--card">
+                <div class="sparkle-icon" aria-hidden="true">🪪</div>
+                <p class="cta-path-kicker">New here?</p>
+                <h3>Get Your Library Card</h3>
+                <p>Sign up with your PHINMA email, then print your card to enter the library</p>
+                <a class="discover-signin-btn" href="library_card_signup.php">Get My Card</a>
+            </div>
         </section>
-        <?php endif; ?>
+        <?php else: ?>
         <section class="recommend-cta library-card-cta">
             <div class="sparkle-icon" aria-hidden="true">🪪</div>
             <h3>Get Your Library Card</h3>
             <p>Sign up with your PHINMA email, then print your card to enter the library</p>
             <a class="discover-signin-btn" href="library_card_signup.php">Get My Card</a>
         </section>
+        <?php endif; ?>
     </div>
 
     <footer class="discover-footer">

@@ -14922,3 +14922,169 @@ a.discover-signin-btn {
   font-size: 13.3333px;
   text-decoration: none;
 }
+
+/* Signed-out kiosk home: Sign In and Get Your Library Card merged into one
+   panel with two side-by-side paths (index.php, .recommend-cta--split).
+   They used to be two back-to-back copies of the same block, so they read
+   as duplicates. Each path now carries one half of the school's green/gold
+   palette: gold for Sign In (its existing look), seal green for the card.
+   Both paths share every size, so neither reads as the primary one.
+   Signed-in users still get the standalone .library-card-cta, untouched.
+
+   Every selector is scoped under .recommend-cta--split, and the
+   declarations that earlier rounds set with !important (the panel's
+   padding, .sparkle-icon's background/shadow/size and animation,
+   .discover-signin-btn's padding/background/shadow and the <=760px
+   full-width button) are matched here with !important, so this block
+   wins in every state without editing those rounds. */
+
+.recommend-cta.recommend-cta--split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: clamp(12px, 2vw, 22px);
+  text-align: center;
+}
+
+.recommend-cta--split .cta-path {
+  --cta-tone: 255, 216, 94;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  padding: clamp(18px, 2.4vw, 28px) clamp(14px, 2vw, 24px);
+  border-radius: clamp(14px, 1.6vw, 18px);
+  border: 1px solid rgba(var(--cta-tone), 0.36);
+  border-top: 3px solid rgba(var(--cta-tone), 0.85);
+  background: linear-gradient(180deg, rgba(var(--cta-tone), 0.12) 0%, rgba(var(--cta-tone), 0.03) 100%);
+}
+
+.recommend-cta--split .cta-path--card {
+  --cta-tone: 63, 207, 142;
+}
+
+.recommend-cta--split .cta-path-kicker {
+  margin: 4px 0 6px !important;
+  font-size: 12px !important;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(var(--cta-tone)) !important;
+}
+
+.recommend-cta--split .cta-path h3 {
+  font-size: clamp(22px, 2vw, 30px);
+  line-height: 1.2;
+}
+
+.recommend-cta--split .cta-path h3 + p {
+  max-width: 440px;
+  font-size: clamp(14px, 1.05vw, 17px);
+  line-height: 1.45;
+  margin-bottom: 18px !important;
+}
+
+/* Buttons sit on the same baseline even when one heading wraps. */
+.recommend-cta--split .discover-signin-btn {
+  margin-top: auto !important;
+  min-width: 200px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13.3333px;
+  text-align: center;
+}
+
+/* Green path: icon ring, glow, pulse and button. */
+.recommend-cta--split .cta-path--card .sparkle-icon {
+  border-color: #3fcf8e;
+  background: linear-gradient(160deg, rgba(63, 207, 142, 0.26) 0%, rgba(63, 207, 142, 0.06) 100%) !important;
+  box-shadow: 0 10px 22px rgba(20, 110, 70, 0.3), 0 1px 0 rgba(255, 255, 255, 0.14) inset !important;
+  animation-name: sparkleIconPulseGreen !important;
+}
+
+@keyframes sparkleIconPulseGreen {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(63, 207, 142, 0));
+  }
+  50% {
+    transform: scale(1.06);
+    filter: drop-shadow(0 0 10px rgba(63, 207, 142, 0.55));
+  }
+}
+
+.recommend-cta--split .cta-path--card .discover-signin-btn {
+  color: #05261a;
+  background: linear-gradient(135deg, #6fe6ae 0%, #2fb87a 100%) !important;
+  box-shadow: 0 14px 26px rgba(20, 110, 70, 0.34), 0 1px 0 rgba(255, 255, 255, 0.4) inset !important;
+}
+
+.recommend-cta--split .cta-path--card .discover-signin-btn:hover {
+  box-shadow: 0 18px 32px rgba(20, 110, 70, 0.4), 0 1px 0 rgba(255, 255, 255, 0.45) inset !important;
+}
+
+/* "or" between the paths: a vertical hairline with a small chip. */
+.recommend-cta--split .cta-path-or {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+}
+
+.recommend-cta--split .cta-path-or::before {
+  content: "";
+  position: absolute;
+  top: 8%;
+  bottom: 8%;
+  left: 50%;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(255, 216, 94, 0) 0%, rgba(255, 255, 255, 0.28) 50%, rgba(63, 207, 142, 0) 100%);
+}
+
+.recommend-cta--split .cta-path-or span {
+  position: relative;
+  padding: 5px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  background: #12304f;
+  color: #d5e4f2;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recommend-cta--split .cta-path--card .sparkle-icon {
+    animation: none !important;
+  }
+}
+
+/* Narrower than 760px: the paths stack, the hairline turns horizontal. */
+@media (max-width: 760px) {
+  .recommend-cta.recommend-cta--split {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px 12px !important;
+    gap: 10px;
+  }
+
+  .recommend-cta--split .cta-path-or {
+    width: auto;
+    height: 26px;
+  }
+
+  .recommend-cta--split .cta-path-or::before {
+    top: 50%;
+    bottom: auto;
+    left: 8%;
+    right: 8%;
+    width: auto;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255, 216, 94, 0) 0%, rgba(255, 255, 255, 0.28) 50%, rgba(63, 207, 142, 0) 100%);
+  }
+
+  .recommend-cta--split .discover-signin-btn {
+    min-width: 0;
+  }
+}
