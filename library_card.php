@@ -116,7 +116,7 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartLib | Library Card</title>
-    <link rel="icon" href="assets/images/phinma-icon.png" type="image/png">
+    <link rel="icon" href="assets/images/stjude_seal_64.png" type="image/png">
     <link rel="stylesheet" href="assets/css/library_card.css?v=<?= $cssVer ?>">
 </head>
 <body>

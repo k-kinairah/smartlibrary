@@ -164,11 +164,14 @@ body {
 
 
 
+/* The St. Jude seal at the top of the kiosk home footer. */
 .discover-footer img {
+    display: block;
     width: 52px;
     height: 52px;
     border-radius: 999px;
-    margin-bottom: 8px;
+    margin: 0 auto 8px;
+    box-shadow: 0 0 0 2px rgba(255, 216, 77, 0.45), 0 6px 16px rgba(0, 0, 0, 0.35);
 }
 
 
@@ -650,7 +653,6 @@ body,
   padding: 24px 16px 34px;
   font-size: 11px;
   background: rgba(9, 34, 26, 0.42);
-  border-top: 1px solid rgba(173, 216, 195, 0.20);
   color: #d8e8de;
 }
 
@@ -8095,13 +8097,31 @@ body,
 /* ---- Footer ---- */
 .discover-footer {
   background: linear-gradient(180deg, rgba(8, 30, 22, 0.2) 0%, rgba(8, 30, 22, 0.55) 100%) !important;
-  border-top: 1px solid rgba(112, 156, 209, 0.22) !important;
+  /* Gold accent line, the kiosk's primary accent (sign-in button, idle
+     glow). The only border-top on the footer; the base rule's green one
+     was removed so the two no longer compete. */
+  border-top: 1px solid rgba(255, 216, 77, 0.5) !important;
   padding: clamp(18px, 3vw, 26px) clamp(14px, 3vw, 20px) clamp(24px, 4vw, 34px) !important;
 }
 
 .discover-footer p {
   font-size: clamp(11px, 1vw, 13px) !important;
   line-height: 1.5 !important;
+}
+
+/* Branding line under the seal: same wording as the PDF report footer.
+   Address and contact lines below keep the smaller detail styling above. */
+.discover-footer .discover-footer-brand {
+  margin: 0 0 8px;
+  font-size: clamp(13px, 1.2vw, 15px) !important;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #f5f8fb;
+}
+
+/* Keep each contact item (site, phone numbers) whole on narrow screens. */
+.discover-footer p span {
+  white-space: nowrap;
 }
 
 /* ---- Structural responsive tweaks that fluid sizing alone can't cover ---- */

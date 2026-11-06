@@ -142,7 +142,7 @@ function stat_chip_meta(string $title): array {
         }());
     </script>
     <title>SmartLib Admin</title>
-    <link rel="icon" href="../assets/images/phinma-icon.png" type="image/png">
+    <link rel="icon" href="../assets/images/stjude_seal_64.png" type="image/png">
     <?php $adminCssVer = @filemtime(__DIR__ . '/../assets/css/admin.css') ?: time(); ?>
     <link rel="stylesheet" href="../assets/css/admin.css?v=<?= $adminCssVer ?>">
     <?php if ($adminPalettePilot): ?>

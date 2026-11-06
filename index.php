@@ -56,7 +56,7 @@ if ($genreRes) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartLib</title>
-    <link rel="icon" href="assets/images/phinma-icon.png" type="image/png">
+    <link rel="icon" href="assets/images/stjude_seal_64.png" type="image/png">
     <link rel="stylesheet" href="assets/css/kiosk.css?v=<?= $kioskCssVer ?>">
 </head>
 <body>
@@ -178,8 +178,10 @@ if ($genreRes) {
     </div>
 
     <footer class="discover-footer">
+        <img src="assets/images/stjude_seal_64.png" alt="St. Jude College seal" width="52" height="52">
+        <p class="discover-footer-brand">SmartLib · PHINMA-SJC Dasma Library</p>
         <p>Carlos Trinidad Avenue, Salitran IV, City of Dasmarinas, Cavite, Philippines</p>
-        <p>sjcdc.phinma.edu.ph | +63917 630 1064 | (046) 41-SJCDC or (046) 417-5232</p>
+        <p><span>sjcdc.phinma.edu.ph</span> | <span>+63917 630 1064</span> | <span>(046) 41-SJCDC</span> or <span>(046) 417-5232</span></p>
     </footer>
 </div>
 

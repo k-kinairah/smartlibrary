@@ -132,6 +132,7 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex">
     <title>SmartLib | Reset PIN</title>
+    <link rel="icon" href="assets/images/stjude_seal_64.png" type="image/png">
     <style>
         :root {
             --text: #eaf6ef;
