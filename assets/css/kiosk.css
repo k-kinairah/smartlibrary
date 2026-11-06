@@ -8135,7 +8135,7 @@ body,
   justify-content: center;
   gap: 10px;
   padding: 7px 14px;
-  margin: 0 0 22px;
+  margin: 0 0 11px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -8160,12 +8160,12 @@ body,
    tracking. Each half is a nowrap span, so on narrow screens it breaks
    after "SmartLib ·" rather than mid-name. */
 .discover-footer .discover-footer-brand {
-  margin: 0 0 18px;
+  margin: 0 0 9px;
   font-size: clamp(12px, 1.1vw, 14px) !important;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #f5f8fb;
+  color: #d8e8de;
 }
 
 /* Keep each contact item (site, phone numbers) whole on narrow screens. */
@@ -8182,11 +8182,11 @@ body,
   .discover-footer-brand-pill {
     padding: 6px 12px;
     gap: 8px;
-    margin-bottom: 18px;
+    margin-bottom: 9px;
   }
 
   .discover-footer .discover-footer-brand {
-    margin-bottom: 14px;
+    margin-bottom: 7px;
     letter-spacing: 0.1em;
   }
 }
