@@ -15175,3 +15175,249 @@ a.discover-signin-btn {
     min-width: 0;
   }
 }
+
+/* ============================================================
+   Kiosk home carousel panels: accent identity, cover glow, arrows,
+   colour-coded status line.
+   ------------------------------------------------------------
+   The four panels (course_highlights, new_arrivals, most_searched,
+   most_borrowed) were identical blue boxes. Each now has an accent
+   tone and icon, keyed off the data-panel-key the markup already
+   carries:
+     course_highlights  gold   (personalized; signed in only)
+     new_arrivals       green
+     most_searched      sky blue (the hero divider's blue, brightened)
+     most_borrowed      amber
+   Gold and green are the CTA/footer pairing; blue and amber stay in
+   the same brightness/saturation band.
+
+   Rules this block overrides. These were checked against what Chrome
+   actually applies, not the first rule found:
+     panel background         13231  .discover-panel (!important)
+     panel border             7976   (!important)
+     centre-cover box-shadow  11739  .carousel-books .center (!important)
+     carousel ambient glow    11710  .discover-carousel::before
+     carousel arrow columns   8002   .discover-carousel (!important)
+     arrow base               11786  bg/border/shadow; size 8030
+     arrow :hover             11796  bg/shadow; transform 8037
+     arrow :active            8043   transform
+     status line              7500   layout; colour 7993 (.discover-panel > p)
+   Every selector here is more specific than those, so source order no
+   longer matters for these properties.
+   ============================================================ */
+
+:root {
+  --ic-cap: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3 1 8.5 12 14l9-4.5V16h2V8.5L12 3zM5.5 12.3V16c0 1.9 2.9 3.5 6.5 3.5s6.5-1.6 6.5-3.5v-3.7L12 15.6l-6.5-3.3z'/%3E%3C/svg%3E");
+  --ic-sparkle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 2l2.2 6.3 6.3 2.2-6.3 2.2L10 19l-2.2-6.3L1.5 10.5l6.3-2.2L10 2zm9 11 1 2.7 2.7 1-2.7 1L19 21l-1-2.7-2.7-1 2.7-1L19 13z'/%3E%3C/svg%3E");
+  --ic-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.8' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='M15.6 15.6 21 21'/%3E%3C/svg%3E");
+  --ic-flame: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M13.7 1.6c-.3 4.1 2.4 5.6 4.3 8.4 1.5 2.2 2.2 4.6 1.6 7-.9 3.6-4.2 5.6-7.6 5.5C8.2 22.4 4.6 19.8 4.3 15.6 4.1 12.9 5.2 10.6 7 8.9c.1 1.9.8 3.3 2.2 4.1-.4-4.6 1.6-8.9 4.5-11.4zM12 21c2 0 3.6-1.5 3.6-3.4 0-1.6-.9-2.7-1.9-3.8-.2 1.1-.8 1.9-1.7 2.2.2-1.9-.3-3.5-1.3-4.7-1.4 1.6-2.3 3.4-2.3 5.6 0 2.4 1.6 4.1 3.6 4.1z' fill-rule='evenodd'/%3E%3C/svg%3E");
+  --ic-tag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M3 12.2V4a1 1 0 0 1 1-1h8.2a1 1 0 0 1 .7.3l8 8a1 1 0 0 1 0 1.4l-8.2 8.2a1 1 0 0 1-1.4 0l-8-8a1 1 0 0 1-.3-.7zM8 9.6a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2z'/%3E%3C/svg%3E");
+  --ic-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M8 12.4l2.8 2.8L16.2 9.8'/%3E%3C/svg%3E");
+}
+
+/* ---- 1. Per-panel accent identity ---- */
+.discover-panel[data-panel-key] {
+  --panel-accent: 108, 192, 245;
+  --panel-icon: var(--ic-search);
+  position: relative;
+  border-top-color: rgba(var(--panel-accent), 0.45) !important;
+  background:
+    radial-gradient(70% 42% at 50% 0%, rgba(var(--panel-accent), 0.13) 0%, rgba(var(--panel-accent), 0) 72%),
+    radial-gradient(120% 70% at 85% -10%, rgba(110, 175, 230, 0.22) 0%, rgba(110, 175, 230, 0) 55%),
+    linear-gradient(200deg, rgba(44, 84, 136, 0.85) 0%, rgba(22, 58, 94, 0.85) 42%, rgba(13, 36, 64, 0.85) 72%, rgba(8, 24, 42, 0.85) 100%) !important;
+}
+
+.discover-panel[data-panel-key="course_highlights"] {
+  --panel-accent: 255, 216, 77;
+  --panel-icon: var(--ic-cap);
+}
+
+.discover-panel[data-panel-key="new_arrivals"] {
+  --panel-accent: 63, 207, 142;
+  --panel-icon: var(--ic-sparkle);
+}
+
+.discover-panel[data-panel-key="most_searched"] {
+  --panel-accent: 108, 192, 245;
+  --panel-icon: var(--ic-search);
+}
+
+.discover-panel[data-panel-key="most_borrowed"] {
+  --panel-accent: 255, 159, 90;
+  --panel-icon: var(--ic-flame);
+}
+
+/* Short glowing accent bar on the panel's top edge -- the same 64x3
+   glowing bar as .discover-hero-divider and the footer, in the panel tone. */
+.discover-panel[data-panel-key]::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  width: 72px;
+  height: 3px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(var(--panel-accent), 0.55) 0%, rgb(var(--panel-accent)) 50%, rgba(var(--panel-accent), 0.55) 100%);
+  box-shadow: 0 0 16px rgba(var(--panel-accent), 0.6);
+  pointer-events: none;
+}
+
+/* Icon in front of the heading. hydratePanel() replaces the h2's text,
+   which leaves this pseudo-element in place. */
+.discover-panel[data-panel-key] h2::before {
+  content: "";
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-right: 0.38em;
+  vertical-align: -0.08em;
+  background-color: rgb(var(--panel-accent));
+  -webkit-mask: var(--panel-icon) center / contain no-repeat;
+  mask: var(--panel-icon) center / contain no-repeat;
+  filter: drop-shadow(0 0 10px rgba(var(--panel-accent), 0.55));
+}
+
+/* ---- 2. Glow behind the flagship (centre) cover ----
+   Retints the carousel's existing ambient glow (11710) to the panel
+   tone, layered the way the entry-scan idle glow is (accent core plus a
+   faint gold warmth), and gives it that screen's slow breathe. It sits
+   behind the covers (z-index 0 vs .carousel-books' 1), so the cover art
+   and title are untouched. */
+.discover-panel[data-panel-key] .discover-carousel::before {
+  background:
+    radial-gradient(42% 58% at 50% 50%, rgba(var(--panel-accent), 0.34) 0%, rgba(var(--panel-accent), 0) 70%),
+    radial-gradient(70% 80% at 50% 62%, rgba(255, 216, 77, 0.1) 0%, rgba(255, 216, 77, 0) 70%);
+  animation: kioskCoverBreathe 5.5s ease-in-out infinite;
+}
+
+@keyframes kioskCoverBreathe {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(0.97);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+
+.discover-panel[data-panel-key] .carousel-books .center {
+  box-shadow:
+    0 22px 50px rgba(0, 0, 0, 0.46),
+    0 0 0 1px rgba(255, 255, 255, 0.16) inset,
+    0 0 0 1px rgba(var(--panel-accent), 0.35),
+    0 0 34px rgba(var(--panel-accent), 0.36) !important;
+}
+
+/* ---- 3. Nav arrows: larger, high-contrast, gold on hover ----
+   The middle column is minmax(0, 1fr) rather than 1fr: the cover strip
+   has a fixed minimum width (5 covers ~296px), and with plain 1fr it
+   pushed the right arrow out of the panel on phones (already at 320px
+   before this pass, and at 390px once the arrows grew to 40px). */
+.discover-panel[data-panel-key] .discover-carousel {
+  grid-template-columns: clamp(40px, 5.6vw, 70px) minmax(0, 1fr) clamp(40px, 5.6vw, 70px) !important;
+}
+
+/* Under 440px the five covers can't fit between the arrows, so the two
+   outermost (already faded, ~30px slivers) are hidden; the centre cover
+   and one either side remain. Rotation still cycles through all five. */
+@media (max-width: 440px) {
+  .discover-panel[data-panel-key] .carousel-books img:nth-child(1),
+  .discover-panel[data-panel-key] .carousel-books img:nth-child(5) {
+    display: none !important;
+  }
+}
+
+.discover-panel[data-panel-key] .carousel-arrow {
+  display: inline-grid !important;
+  place-items: center;
+  padding: 0 !important;
+  width: clamp(40px, 5.6vw, 60px) !important;
+  height: clamp(40px, 5.6vw, 60px) !important;
+  font-size: clamp(22px, 2.4vw, 28px) !important;
+  font-weight: 700;
+  line-height: 1 !important;
+  color: #12304f !important;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.96) 0%, rgba(222, 233, 245, 0.88) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 12px 26px rgba(2, 10, 22, 0.42), 0 1px 0 rgba(255, 255, 255, 0.95) inset !important;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, color 0.18s ease, border-color 0.18s ease !important;
+}
+
+.discover-panel[data-panel-key] .carousel-arrow:hover {
+  color: #1f2a24 !important;
+  background: linear-gradient(135deg, #ffd85e 0%, #f1c40f 100%) !important;
+  border-color: rgba(255, 236, 160, 0.95) !important;
+  box-shadow: 0 14px 30px rgba(160, 120, 6, 0.42), 0 0 22px rgba(255, 216, 77, 0.5), 0 1px 0 rgba(255, 255, 255, 0.5) inset !important;
+  transform: translateY(-2px) scale(1.06) !important;
+}
+
+.discover-panel[data-panel-key] .carousel-arrow:active {
+  color: #1f2a24 !important;
+  background: linear-gradient(135deg, #f1c40f 0%, #d9a900 100%) !important;
+  border-color: rgba(255, 226, 120, 0.95) !important;
+  box-shadow: 0 6px 14px rgba(160, 120, 6, 0.4), 0 0 14px rgba(255, 216, 77, 0.45) !important;
+  transform: translateY(0) scale(0.95) !important;
+}
+
+.discover-panel[data-panel-key] .carousel-arrow:focus-visible {
+  outline: 3px solid rgba(255, 216, 77, 0.9) !important;
+  outline-offset: 3px;
+}
+
+/* ---- 4. Colour-coded status line ----
+   filters.js sets reason--<type> and data-reason-type from the
+   reason_type that recommend_books.php sends. Tones reuse the panel
+   accents: trending = Most Searched blue, borrowed = Most Borrowed
+   amber, new = New Arrivals green, personalized = the course gold.
+   genre gets a soft lilac in the same band; availability stays the
+   line's original muted mint. */
+.discover-panel .carousel-reason {
+  --reason-tone: 174, 215, 194;
+  --reason-icon: var(--ic-check);
+}
+
+.discover-panel .carousel-reason.reason--personalized { --reason-tone: 255, 216, 77;  --reason-icon: var(--ic-cap); }
+.discover-panel .carousel-reason.reason--trending     { --reason-tone: 108, 192, 245; --reason-icon: var(--ic-search); }
+.discover-panel .carousel-reason.reason--borrowed     { --reason-tone: 255, 159, 90;  --reason-icon: var(--ic-flame); }
+.discover-panel .carousel-reason.reason--new          { --reason-tone: 63, 207, 142;  --reason-icon: var(--ic-sparkle); }
+.discover-panel .carousel-reason.reason--genre        { --reason-tone: 165, 180, 252; --reason-icon: var(--ic-tag); }
+.discover-panel .carousel-reason.reason--availability { --reason-tone: 174, 215, 194; --reason-icon: var(--ic-check); }
+
+.discover-panel .carousel-reason[class*="reason--"] {
+  margin-top: 10px !important;
+  padding: 5px 13px 5px 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(var(--reason-tone), 0.38);
+  background: rgba(var(--reason-tone), 0.12);
+  color: rgb(var(--reason-tone)) !important;
+  font-size: clamp(14px, 1.1vw, 16px) !important;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.discover-panel .carousel-reason[class*="reason--"]::before {
+  content: "";
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.4em;
+  vertical-align: -0.15em;
+  background-color: currentColor;
+  -webkit-mask: var(--reason-icon) center / contain no-repeat;
+  mask: var(--reason-icon) center / contain no-repeat;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .discover-panel[data-panel-key] .discover-carousel::before {
+    animation: none;
+    opacity: 0.85;
+  }
+
+  .discover-panel[data-panel-key] .carousel-arrow:hover,
+  .discover-panel[data-panel-key] .carousel-arrow:active {
+    transform: none !important;
+  }
+}

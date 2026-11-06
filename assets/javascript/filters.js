@@ -2122,6 +2122,20 @@ document.addEventListener("DOMContentLoaded", () => {
         return `assets/covers/${value}`;
     };
 
+    // Status line under each carousel's centre book. recommend_books.php
+    // sends a reason_type slug with every reason, so the colour/icon come
+    // from data, never from matching the reason's English wording. Anything
+    // unknown or missing falls back to the neutral "availability" style.
+    const REASON_TYPES = ["personalized", "trending", "borrowed", "new", "genre", "availability"];
+    const setReasonLine = (el, text, type) => {
+        if (!el) return;
+        const slug = REASON_TYPES.includes(type) ? type : "availability";
+        el.textContent = text;
+        REASON_TYPES.forEach(t => el.classList.remove(`reason--${t}`));
+        el.classList.add(`reason--${slug}`);
+        el.dataset.reasonType = slug;
+    };
+
     const normalizeApiBook = (book) => {
         if (!book || typeof book !== "object") return null;
 
@@ -2130,7 +2144,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const cover = String(book.cover || fileFromSrc).trim();
         const title = String(book.title || "").trim();
         const author = String(book.author || "").trim();
+        const hasOwnReason = String(book.reason || "").trim() !== "";
         const reason = String(book.reason || book.availability_label || "").trim();
+        const reasonType = hasOwnReason ? String(book.reason_type || "").trim() : "availability";
         const availability = String(book.availability_label || "").trim();
         const parsedId = Number.parseInt(String(book.book_id ?? book.id ?? ""), 10);
 
@@ -2141,6 +2157,7 @@ document.addEventListener("DOMContentLoaded", () => {
             title,
             author,
             reason,
+            reasonType,
             availability,
             bookId: Number.isFinite(parsedId) && parsedId > 0 ? parsedId : null
         };
@@ -2191,6 +2208,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 title: img.dataset.title || meta.title || "Book",
                 author: img.dataset.author || meta.author || "Unknown Author",
                 reason: img.dataset.reason || img.dataset.availability || "",
+                reasonType: img.dataset.reason ? (img.dataset.reasonType || "") : "availability",
                 availability: img.dataset.availability || "",
                 bookId: Number.isFinite(parsedId) && parsedId > 0 ? parsedId : null
             };
@@ -2230,14 +2248,19 @@ document.addEventListener("DOMContentLoaded", () => {
             const titleAttr = book.title ? ` data-title="${escapeAttr(book.title)}"` : "";
             const authorAttr = book.author ? ` data-author="${escapeAttr(book.author)}"` : "";
             const reasonAttr = book.reason ? ` data-reason="${escapeAttr(book.reason)}"` : "";
+            const reasonTypeAttr = book.reasonType ? ` data-reason-type="${escapeAttr(book.reasonType)}"` : "";
             const availabilityAttr = book.availability ? ` data-availability="${escapeAttr(book.availability)}"` : "";
-            return `<img class="${cls}" data-cover="${escapeAttr(book.cover)}"${bookIdAttr}${titleAttr}${authorAttr}${reasonAttr}${availabilityAttr} src="${escapeAttr(book.src)}" alt="${escapeAttr(book.alt)}">`;
+            return `<img class="${cls}" data-cover="${escapeAttr(book.cover)}"${bookIdAttr}${titleAttr}${authorAttr}${reasonAttr}${reasonTypeAttr}${availabilityAttr} src="${escapeAttr(book.src)}" alt="${escapeAttr(book.alt)}">`;
         }).join("");
 
         const centerBook = books[centerIndex] || books[0];
         if (titleMetaNode) titleMetaNode.textContent = centerBook.title || "Book";
         if (authorMetaNode) authorMetaNode.textContent = centerBook.author || "Unknown Author";
-        if (reasonMetaNode) reasonMetaNode.textContent = centerBook.reason || centerBook.availability || "Available now";
+        setReasonLine(
+            reasonMetaNode,
+            centerBook.reason || centerBook.availability || "Available now",
+            centerBook.reason ? centerBook.reasonType : "availability"
+        );
     };
 
     const panels = Array.from(document.querySelectorAll(".discover-panel"));
@@ -2305,6 +2328,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     title: (img.dataset.title || meta.title || "Book").trim(),
                     author: (img.dataset.author || meta.author || "Unknown Author").trim(),
                     reason: (img.dataset.reason || img.dataset.availability || "").trim(),
+                    reasonType: img.dataset.reason ? (img.dataset.reasonType || "").trim() : "availability",
                     availability: (img.dataset.availability || "").trim(),
                     bookId: Number.isFinite(parsedBookId) && parsedBookId > 0 ? parsedBookId : null
                 };
@@ -2319,7 +2343,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (titleEl) titleEl.textContent = title;
                 if (authorEl) authorEl.textContent = author;
-                if (reasonEl) reasonEl.textContent = center.reason || center.availability || "Available now";
+                setReasonLine(
+                    reasonEl,
+                    center.reason || center.availability || "Available now",
+                    center.reason ? center.reasonType : "availability"
+                );
             };
 
             // Kiosk Polish v154: rotating used to rewrite each slot's image/dataset
@@ -2348,6 +2376,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     if (item.reason) img.dataset.reason = item.reason;
                     else img.removeAttribute("data-reason");
+
+                    if (item.reasonType) img.dataset.reasonType = item.reasonType;
+                    else img.removeAttribute("data-reason-type");
 
                     if (item.availability) img.dataset.availability = item.availability;
                     else img.removeAttribute("data-availability");

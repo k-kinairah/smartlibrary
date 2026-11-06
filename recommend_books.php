@@ -93,7 +93,7 @@ function recommendation_availability_label(int $available, int $total): string {
 
     return $available . ' of ' . $total . ' copies available';
 }
-function normalize_book(array $row, string $reason = ''): array {
+function normalize_book(array $row, string $reason = '', string $reasonType = ''): array {
     $bookId = (int)($row['book_id'] ?? 0);
     $title = trim((string)($row['title'] ?? 'Untitled'));
     $author = trim((string)($row['author'] ?? 'Unknown Author'));
@@ -108,6 +108,7 @@ function normalize_book(array $row, string $reason = ''): array {
         'cover' => $cover,
         'cover_url' => cover_url($cover, $bookId),
         'reason' => trim($reason),
+        'reason_type' => $reasonType !== '' ? $reasonType : 'availability',
         'available_copies' => $availableCopies,
         'total_copies' => $totalCopies,
         'availability_label' => recommendation_availability_label($availableCopies, $totalCopies)
@@ -456,7 +457,12 @@ function rank_rows_with_event_weights(array $rows, array $eventBundle, string $p
     return $rows;
 }
 
-function unique_take(array $rows, int $limit, array &$seenBookIds, string $reasonBuilder = ''): array {
+// $reasonBuilder is fixed reason text a caller wants on every book it takes;
+// $reasonTypeBuilder is that text's category. Each reason also carries a
+// reason_type slug (personalized, trending, borrowed, new, genre,
+// availability) so the kiosk can colour/icon the status line from data
+// rather than by matching the English wording.
+function unique_take(array $rows, int $limit, array &$seenBookIds, string $reasonBuilder = '', string $reasonTypeBuilder = 'personalized'): array {
     global $availabilityByBookId;
 
     $picked = [];
@@ -478,10 +484,12 @@ function unique_take(array $rows, int $limit, array &$seenBookIds, string $reaso
         $row['total_copies'] = $totalCopies;
 
         $reason = $reasonBuilder;
+        $reasonType = $reasonBuilder !== '' ? $reasonTypeBuilder : '';
         if ($reason === '' && isset($row['topic_score'])) {
             $topicScore = (int)$row['topic_score'];
             if ($topicScore > 0) {
                 $reason = 'Trending in current kiosk searches';
+                $reasonType = 'trending';
             }
         }
 
@@ -489,6 +497,7 @@ function unique_take(array $rows, int $limit, array &$seenBookIds, string $reaso
             $borrowCount = (int)$row['borrow_count'];
             if ($borrowCount > 0) {
                 $reason = "Borrowed {$borrowCount} " . ($borrowCount === 1 ? 'time' : 'times');
+                $reasonType = 'borrowed';
             }
         }
 
@@ -498,6 +507,7 @@ function unique_take(array $rows, int $limit, array &$seenBookIds, string $reaso
                 $ageDays = max(0, (int)floor((time() - strtotime($createdDay)) / 86400));
                 if ($ageDays <= 30) {
                     $reason = 'New arrival';
+                    $reasonType = 'new';
                 }
             }
         }
@@ -506,14 +516,16 @@ function unique_take(array $rows, int $limit, array &$seenBookIds, string $reaso
             $genre = trim((string)$row['genre_label']);
             if ($genre !== '') {
                 $reason = "Popular in {$genre}";
+                $reasonType = 'genre';
             }
         }
 
         if ($reason === '') {
             $reason = recommendation_availability_label($availableCopies, $totalCopies);
+            $reasonType = 'availability';
         }
 
-        $picked[] = normalize_book($row, $reason);
+        $picked[] = normalize_book($row, $reason, $reasonType);
         $seenBookIds[$bookId] = true;
 
         if (count($picked) >= $limit) {
@@ -822,26 +834,26 @@ if ($isPersonalized) {
     // which case it's dropped from the response entirely below) -- more
     // honest than padding, and it fills back in naturally as more books
     // get tagged and cross-linked.
-    $courseBooks = unique_take($courseRows, 5, $usedCourse, $courseReason);
+    $courseBooks = unique_take($courseRows, 5, $usedCourse, $courseReason, 'personalized');
 
     $courseSubtitle = $programName !== ''
         ? "AI highlights for {$programName} students"
         : 'AI highlights based on your course and activity';
 } else {
     $usedCourse = [];
-    $courseBooks = unique_take($searchDrivenRows, 5, $usedCourse, 'Trending in current kiosk searches');
+    $courseBooks = unique_take($searchDrivenRows, 5, $usedCourse, 'Trending in current kiosk searches', 'trending');
 
     if (count($courseBooks) < 5) {
         $courseBooks = array_merge(
             $courseBooks,
-            unique_take($courseRows, 5 - count($courseBooks), $usedCourse, 'AI trending pick')
+            unique_take($courseRows, 5 - count($courseBooks), $usedCourse, 'AI trending pick', 'trending')
         );
     }
 
     if (count($courseBooks) < 5) {
         $courseBooks = array_merge(
             $courseBooks,
-            unique_take($popularRows, 5 - count($courseBooks), $usedCourse, 'Campus favorite')
+            unique_take($popularRows, 5 - count($courseBooks), $usedCourse, 'Campus favorite', 'borrowed')
         );
     }
 
@@ -851,12 +863,12 @@ if ($isPersonalized) {
 }
 
 $usedMostSearched = [];
-$mostSearchedBooks = unique_take($searchDrivenRows, 5, $usedMostSearched, 'Trending in current kiosk searches');
+$mostSearchedBooks = unique_take($searchDrivenRows, 5, $usedMostSearched, 'Trending in current kiosk searches', 'trending');
 
 if (count($mostSearchedBooks) < 5) {
     $mostSearchedBooks = array_merge(
         $mostSearchedBooks,
-        unique_take($popularRows, 5 - count($mostSearchedBooks), $usedMostSearched, 'Popular on campus')
+        unique_take($popularRows, 5 - count($mostSearchedBooks), $usedMostSearched, 'Popular on campus', 'borrowed')
     );
 }
 
