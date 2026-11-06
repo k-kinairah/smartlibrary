@@ -178,10 +178,14 @@ if ($genreRes) {
     </div>
 
     <footer class="discover-footer">
-        <img src="assets/images/stjude_seal_64.png" alt="St. Jude College seal" width="52" height="52">
-        <p class="discover-footer-brand">SmartLib · PHINMA-SJC Dasma Library</p>
+        <div class="discover-footer-brand-pill">
+            <img src="assets/images/phinma-icon.png" alt="PHINMA Education" width="32" height="32">
+            <span class="discover-footer-brand-pill-divider" aria-hidden="true"></span>
+            <img src="assets/images/stjude_seal_64.png" alt="St. Jude College" width="32" height="32">
+        </div>
+        <p class="discover-footer-brand"><span>SmartLib&nbsp;·</span> <span>PHINMA-SJC Dasma Library</span></p>
         <p>Carlos Trinidad Avenue, Salitran IV, City of Dasmarinas, Cavite, Philippines</p>
-        <p><span>sjcdc.phinma.edu.ph</span> | <span>+63917 630 1064</span> | <span>(046) 41-SJCDC</span> or <span>(046) 417-5232</span></p>
+        <p><span>sjcdc.phinma.edu.ph</span>&nbsp;<span class="discover-footer-sep" aria-hidden="true">·</span> <span>+63917 630 1064</span>&nbsp;<span class="discover-footer-sep" aria-hidden="true">·</span> <span>(046) 41-SJCDC</span> or&nbsp;<span>(046) 417-5232</span></p>
     </footer>
 </div>
 

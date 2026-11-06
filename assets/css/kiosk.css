@@ -164,16 +164,6 @@ body {
 
 
 
-/* The St. Jude seal at the top of the kiosk home footer. */
-.discover-footer img {
-    display: block;
-    width: 52px;
-    height: 52px;
-    border-radius: 999px;
-    margin: 0 auto 8px;
-    box-shadow: 0 0 0 2px rgba(255, 216, 77, 0.45), 0 6px 16px rgba(0, 0, 0, 0.35);
-}
-
 
 
 .header {
@@ -8094,34 +8084,111 @@ body,
   filter: brightness(0.98) !important;
 }
 
-/* ---- Footer ---- */
+/* ---- Footer ----
+   Logo pill, all-caps branding line, then the address/contact details,
+   with a gold accent line on top. The only footer rules besides the base
+   .discover-footer / .discover-footer p near the top of this file. */
 .discover-footer {
+  position: relative;
   background: linear-gradient(180deg, rgba(8, 30, 22, 0.2) 0%, rgba(8, 30, 22, 0.55) 100%) !important;
-  /* Gold accent line, the kiosk's primary accent (sign-in button, idle
-     glow). The only border-top on the footer; the base rule's green one
-     was removed so the two no longer compete. */
-  border-top: 1px solid rgba(255, 216, 77, 0.5) !important;
-  padding: clamp(18px, 3vw, 26px) clamp(14px, 3vw, 20px) clamp(24px, 4vw, 34px) !important;
+  border-top: 0 !important;
+  padding: clamp(34px, 4.4vw, 46px) clamp(14px, 3vw, 20px) clamp(28px, 4vw, 40px) !important;
+}
+
+/* Accent line instead of a flat rule: a gold hairline that fades out
+   toward both edges, with a short glowing gold bar at its centre -- the
+   same 64x3 glowing bar as .discover-hero-divider, in the gold accent. */
+.discover-footer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 216, 77, 0) 0%, rgba(255, 216, 77, 0.5) 28%, rgba(255, 216, 77, 0.5) 72%, rgba(255, 216, 77, 0) 100%);
+}
+
+.discover-footer::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  width: 64px;
+  height: 3px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f1c40f 0%, #ffe07a 50%, #f1c40f 100%);
+  box-shadow: 0 0 16px rgba(255, 216, 77, 0.55);
 }
 
 .discover-footer p {
   font-size: clamp(11px, 1vw, 13px) !important;
-  line-height: 1.5 !important;
+  line-height: 1.6 !important;
 }
 
-/* Branding line under the seal: same wording as the PDF report footer.
-   Address and contact lines below keep the smaller detail styling above. */
+/* PHINMA + St. Jude logo pill. Same values as the search page's
+   .search-hero-brand--pill (Kiosk Polish v195), kept as its own class so
+   the two stay independently editable. */
+.discover-footer-brand-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 7px 14px;
+  margin: 0 0 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.discover-footer-brand-pill img {
+  display: block;
+  flex: none;
+  width: clamp(26px, 3vw, 32px);
+  height: clamp(26px, 3vw, 32px);
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(2, 10, 22, 0.38));
+}
+
+.discover-footer-brand-pill-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Branding line: the PDF report footer's wording, in caps with wide
+   tracking. Each half is a nowrap span, so on narrow screens it breaks
+   after "SmartLib ·" rather than mid-name. */
 .discover-footer .discover-footer-brand {
-  margin: 0 0 8px;
-  font-size: clamp(13px, 1.2vw, 15px) !important;
+  margin: 0 0 18px;
+  font-size: clamp(12px, 1.1vw, 14px) !important;
   font-weight: 800;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: #f5f8fb;
 }
 
 /* Keep each contact item (site, phone numbers) whole on narrow screens. */
 .discover-footer p span {
   white-space: nowrap;
+}
+
+.discover-footer .discover-footer-sep {
+  padding: 0 0.3em;
+  color: rgba(255, 216, 77, 0.7);
+}
+
+@media (max-width: 640px) {
+  .discover-footer-brand-pill {
+    padding: 6px 12px;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .discover-footer .discover-footer-brand {
+    margin-bottom: 14px;
+    letter-spacing: 0.1em;
+  }
 }
 
 /* ---- Structural responsive tweaks that fluid sizing alone can't cover ---- */
