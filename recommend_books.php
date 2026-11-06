@@ -488,7 +488,7 @@ function unique_take(array $rows, int $limit, array &$seenBookIds, string $reaso
         if ($reason === '' && isset($row['borrow_count'])) {
             $borrowCount = (int)$row['borrow_count'];
             if ($borrowCount > 0) {
-                $reason = "Borrowed {$borrowCount} times";
+                $reason = "Borrowed {$borrowCount} " . ($borrowCount === 1 ? 'time' : 'times');
             }
         }
 
