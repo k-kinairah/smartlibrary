@@ -15440,8 +15440,9 @@ a.discover-signin-btn {
    reason_type that recommend_books.php sends. Tones reuse the panel
    accents: trending = Most Searched blue, borrowed = Most Borrowed
    amber, new = New Arrivals green, personalized = the course gold.
-   genre gets a soft lilac in the same band; availability stays the
-   line's original muted mint. */
+   genre gets a soft lilac in the same band; availability is a vivid
+   lime green (88,197,34, hue ~100) at the same saturation as the rest,
+   kept clear of "new" (the New Arrivals mint, ~153) and of gold (~47). */
 .discover-panel .carousel-reason {
   --reason-tone: 174, 215, 194;
   --reason-icon: var(--ic-check);
@@ -15452,7 +15453,7 @@ a.discover-signin-btn {
 .discover-panel .carousel-reason.reason--borrowed     { --reason-tone: 255, 159, 90;  --reason-icon: var(--ic-flame); }
 .discover-panel .carousel-reason.reason--new          { --reason-tone: 63, 207, 142;  --reason-icon: var(--ic-sparkle); }
 .discover-panel .carousel-reason.reason--genre        { --reason-tone: 165, 180, 252; --reason-icon: var(--ic-tag); }
-.discover-panel .carousel-reason.reason--availability { --reason-tone: 174, 215, 194; --reason-icon: var(--ic-check); }
+.discover-panel .carousel-reason.reason--availability { --reason-tone: 88, 197, 34;   --reason-icon: var(--ic-check); }
 
 /* Availability is the one reason type that's a live status rather than
    a historical fact (trending/borrowed/new/genre describe something
@@ -15471,6 +15472,36 @@ a.discover-signin-btn {
   50% {
     opacity: 1;
     transform: scale(1.1);
+  }
+}
+
+/* Plus a "live" ping: a ring the shape of the pill (border-radius
+   inherits the pill's 16px) that expands outward and fades on the same
+   2.4s beat as the icon pulse. Ambient only -- not interactive. */
+.discover-panel .carousel-reason.reason--availability {
+  position: relative;
+}
+
+.discover-panel .carousel-reason.reason--availability::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid rgba(var(--reason-tone), 0.6);
+  opacity: 0.55;
+  pointer-events: none;
+  animation: kioskReasonPing 2.4s ease-out infinite;
+}
+
+@keyframes kioskReasonPing {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  70%,
+  100% {
+    transform: scale(1.14);
+    opacity: 0;
   }
 }
 
@@ -15515,5 +15546,10 @@ a.discover-signin-btn {
 
   .discover-panel .carousel-reason.reason--availability::before {
     animation: none;
+  }
+
+  .discover-panel .carousel-reason.reason--availability::after {
+    animation: none;
+    opacity: 0;
   }
 }

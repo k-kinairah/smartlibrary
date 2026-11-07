@@ -90,7 +90,7 @@ if ($genreRes) {
             </div>
             <h3 class="carousel-title">Calculus: Early Transcendentals</h3>
             <p class="carousel-author">James Stewart</p>
-            <p class="carousel-reason">Available now</p>
+            <p class="carousel-reason reason--availability" data-reason-type="availability">Available now</p>
         </section>
 
         <?php endif; ?>
@@ -111,7 +111,7 @@ if ($genreRes) {
             </div>
             <h3 class="carousel-title">Calculus: Early Transcendentals</h3>
             <p class="carousel-author">James Stewart</p>
-            <p class="carousel-reason">Available now</p>
+            <p class="carousel-reason reason--availability" data-reason-type="availability">Available now</p>
         </section>
         <section class="discover-panel" data-panel-key="most_searched">
             <h2>Most Searched</h2>
@@ -129,7 +129,7 @@ if ($genreRes) {
             </div>
             <h3 class="carousel-title">Introduction to Algorithms</h3>
             <p class="carousel-author">Thomas H. Cormen</p>
-            <p class="carousel-reason">Available now</p>
+            <p class="carousel-reason reason--availability" data-reason-type="availability">Available now</p>
         </section>
 <section class="discover-panel" data-panel-key="most_borrowed">
             <h2>Most Borrowed Books</h2>
@@ -147,7 +147,7 @@ if ($genreRes) {
             </div>
             <h3 class="carousel-title">Introduction to Algorithms</h3>
             <p class="carousel-author">Thomas H. Cormen</p>
-            <p class="carousel-reason">Available now</p>
+            <p class="carousel-reason reason--availability" data-reason-type="availability">Available now</p>
         </section>
         <?php if (!isset($_SESSION['user_id'])): ?>
         <section class="recommend-cta recommend-cta--split" aria-label="Sign in or get your library card">
