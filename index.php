@@ -179,9 +179,9 @@ if ($genreRes) {
 
     <footer class="discover-footer">
         <div class="discover-footer-brand-pill">
-            <img src="assets/images/phinma-icon.png" alt="PHINMA Education" width="32" height="32">
+            <img class="brand-mark-primary" src="assets/images/stjude_seal_64.png" alt="St. Jude College" width="40" height="40">
             <span class="discover-footer-brand-pill-divider" aria-hidden="true"></span>
-            <img src="assets/images/stjude_seal_64.png" alt="St. Jude College" width="32" height="32">
+            <img class="brand-mark-secondary" src="assets/images/phinma-icon.png" alt="PHINMA Education" width="26" height="26">
         </div>
         <p class="discover-footer-brand"><span>SmartLib&nbsp;·</span> <span>PHINMA-SJC Dasma Library</span></p>
         <p>Carlos Trinidad Avenue, Salitran IV, City of Dasmarinas, Cavite, Philippines&nbsp;<span class="discover-footer-sep" aria-hidden="true">·</span> <span>sjcdc.phinma.edu.ph</span>&nbsp;<span class="discover-footer-sep" aria-hidden="true">·</span> <span>+63917 630 1064</span>&nbsp;<span class="discover-footer-sep" aria-hidden="true">·</span> <span>(046) 41-SJCDC</span> or&nbsp;<span>(046) 417-5232</span></p>
@@ -305,9 +305,9 @@ if ($genreRes) {
                  full rationale. Supersedes the v194 (Option 2: Compact Banner Card)
                  trial markup that was here before; its unused CSS has since been removed. -->
             <div class="search-hero-brand search-hero-brand--pill">
-                <img src="assets/images/phinma-icon.png" alt="PHINMA Education" class="search-hero-brand-icon">
+                <img src="assets/images/stjude_seal_64.png" alt="St. Jude College" class="search-hero-brand-icon search-hero-brand-icon--primary">
                 <div class="search-hero-brand-pill-divider" aria-hidden="true"></div>
-                <img src="assets/images/stjude_seal_64.png" alt="St. Jude College" class="search-hero-brand-icon">
+                <img src="assets/images/phinma-icon.png" alt="PHINMA Education" class="search-hero-brand-icon search-hero-brand-icon--secondary">
             </div>
             <h2>Find What You're Looking For</h2>
             <p>Search our library by title, author, subject, or program</p>
@@ -416,7 +416,9 @@ if ($genreRes) {
     <div class="modal-panel account-modal-panel">
         <button class="close-btn" id="close-modal">&times;</button>
         <div class="account-brand-mark">
-            <img src="assets/images/phinma-dark-theme.png" alt="PHINMA Education">
+            <img class="account-brand-seal" src="assets/images/stjude_seal_64.png" alt="St. Jude College" width="56" height="56">
+            <span class="account-brand-divider" aria-hidden="true"></span>
+            <img class="account-brand-phinma" src="assets/images/phinma-dark-theme.png" alt="PHINMA Education">
         </div>
         <h3 class="modal-title">Welcome to SJCDC Library</h3>
         <p class="modal-subtitle">Sign in to borrow books and access personalized recommendations</p>
