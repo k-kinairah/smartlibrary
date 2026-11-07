@@ -15772,3 +15772,129 @@ html body .discover-footer .discover-footer-brand-pill {
   background: rgba(19, 36, 58, 0.04);
   border-color: var(--kiosk-page-line);
 }
+
+/* ============================================================
+   Text contrast inside the dark cards and modals
+   ------------------------------------------------------------
+   These were below WCAG AA before the white-page change and were left
+   as they were by it (each card/modal has its own opaque background).
+   Each colour below is the smallest step, in the same hue, that clears
+   4.5:1 against the darkest background that text was measured on in a
+   browser (1280 and 390px), plus a little margin.
+
+   White text on the green action buttons can't reach 4.5:1 on that
+   green at any shade, so those buttons switch to the dark green text the
+   kiosk's other green button ("Get My Card") already uses; the green
+   itself is unchanged.
+
+   Intentionally not changed: the close "x" and carousel/chip arrow
+   glyphs are icons inside buttons (WCAG 1.4.11 asks 3:1, which they
+   meet), the disabled left chip arrow is exempt, and the CTA's emoji
+   icons draw in their own colours.
+   ============================================================ */
+
+/* ---- Discover: library-card CTA kicker ("New here?") ---- */
+html body .recommend-cta--split .cta-path--card .cta-path-kicker {
+  color: #55d89c !important;
+}
+
+/* ---- Search: filter card label ---- */
+html body #search-view .filter-card .filter-label {
+  color: #d3eadd !important;
+}
+
+/* ---- Sign-in modal ---- */
+html body #account-modal .account-type-select .muted-sub {
+  color: #b8d3ef !important;
+}
+
+html body #account-modal .floating-field input::placeholder {
+  color: rgba(200, 235, 216, 0.85) !important;
+}
+
+/* ---- Book details modal ---- */
+html body #book-modal .book-modal-author-sub {
+  color: #eef4fc !important;
+}
+
+html body #book-modal .book-tag {
+  color: #e6f1ff !important;
+}
+
+html body #book-modal .book-info-label {
+  color: #d3e5f8 !important;
+}
+
+html body #book-modal .book-info-item.is-availability .book-info-label {
+  color: #88eaba !important;
+}
+
+html body #book-modal .book-info-item.is-availability .book-info-value {
+  color: #84eaaf !important;
+}
+
+html body #book-modal .book-description h3 {
+  color: #bcd7f3 !important;
+}
+
+html body #book-modal .find-book-btn,
+html body #book-modal .find-book-btn span {
+  color: #031a10 !important;
+}
+
+/* ---- Book location modal ---- */
+html body #location-modal .loc-head p,
+html body #location-modal .loc-guide-title-wrap p {
+  color: #f2f8f5 !important;
+}
+
+html body #location-modal .loc-step p,
+html body #location-modal .loc-step strong {
+  color: #ffffff !important;
+}
+
+html body #location-modal .loc-call-number {
+  color: #cff0dd !important;
+}
+
+html body #location-modal .loc-meta-label {
+  color: #d9ede2 !important;
+}
+
+html body #location-modal .loc-stock-chip.ok {
+  color: #031a10 !important;
+}
+
+/* ---- Receipt, checkout and logout confirmations ---- */
+html body #receipt-modal .receipt-success-head p {
+  color: #eefff5 !important;
+}
+
+html body #logout-confirm-modal .logout-confirm-text,
+html body #checkout-confirm-modal .checkout-confirm-text {
+  color: #e7fbef !important;
+}
+
+html body #receipt-modal .primary-btn,
+html body #checkout-confirm-modal .checkout-confirm-confirm {
+  color: #031a10 !important;
+}
+
+/* ---- Search filter card: chip scroll arrows and "Clear" ----
+   Measured only behind the glyphs: the white chevron fell to ~2.6:1 on the
+   glass button's light top highlight (icons need 3:1), and "Clear" dropped
+   to 3.8:1 on the darkest part of its green gradient. A lighter-touch
+   glass keeps the chevron above 3:1 everywhere on the button; "Clear" text
+   goes to a near-black green (the green itself is unchanged). */
+html body #search-view .chip-scroll-btn {
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+  box-shadow: 0 6px 14px rgba(2, 16, 11, 0.26), 0 1px 0 rgba(255, 255, 255, 0.22) inset;
+}
+
+html body #search-view .chip-scroll-btn:hover:not(:disabled) {
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.14) 100%);
+}
+
+html body #search-view #clear-active {
+  color: #020c06 !important;
+}
