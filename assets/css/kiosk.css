@@ -15553,3 +15553,23 @@ a.discover-signin-btn {
     opacity: 0;
   }
 }
+
+/* Search results on the narrowest phones (under 359px).
+   The grid is repeat(auto-fill, minmax(150px, 1fr)), so below a 359px
+   screen it collapses to one full-width column. Each cover then becomes
+   ~287px wide but keeps the base .book-cover rule's fixed 245px height,
+   which overrides #search-view .book-cover's 0.7 aspect ratio, and
+   object-fit: cover crops 28-37% off every cover (the masthead and author
+   line on generated covers). Keep the same two-column grid used from
+   359px up, and let the 0.7 aspect ratio size the cover instead of the
+   fixed height. Wider screens are unchanged. */
+@media (max-width: 358px) {
+  #search-view .book-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px !important;
+  }
+
+  #search-view .book-cover {
+    height: auto;
+  }
+}
