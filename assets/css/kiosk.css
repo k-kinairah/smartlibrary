@@ -15573,3 +15573,202 @@ a.discover-signin-btn {
     height: auto;
   }
 }
+
+/* ============================================================
+   White page shell (phase 1 of 2)
+   ------------------------------------------------------------
+   The kiosk's page background moves from the navy-to-forest gradient to
+   an off-white. Only the shell changes: the carousel panels, the CTA
+   cards, the search filter card and the floating search dock keep their
+   own dark backgrounds and read as dark cards floating on a light page.
+   Logos and the PHINMA blue/yellow accents are deliberately untouched
+   here (phase 2).
+
+   Everything that sat directly on the old dark page and was styled
+   light-on-transparent is recoloured below for WCAG AA (>= 4.5:1, or
+   3:1 for large text) against --kiosk-page-bg -- measured from the
+   rendered page, not estimated.
+
+   Selectors are prefixed with `html body` so they outrank the many
+   earlier !important rules on these same elements (e.g. #discover-view
+   at 13174/13224, #search-view at 5842/7690/13168, the search inputs at
+   7949/10513) without editing those rounds.
+   ============================================================ */
+
+:root {
+  --kiosk-page-bg: #f4f6f9;
+  --kiosk-page-ink: #13243a;          /* headings / primary text on the page */
+  --kiosk-page-ink-muted: #4a5a6c;    /* secondary text on the page */
+  --kiosk-page-placeholder: #5b6b7d;  /* input placeholders on white fields */
+  --kiosk-page-line: rgba(19, 36, 58, 0.14);
+  --kiosk-page-line-strong: rgba(19, 36, 58, 0.24);
+  --kiosk-page-field: #ffffff;
+  --kiosk-page-focus: #2e67a6;
+}
+
+/* ---- Page background ---- */
+html body,
+html body #discover-view,
+html body #search-view {
+  background: var(--kiosk-page-bg) !important;
+}
+
+/* ---- Discover hero ---- */
+html body .discover-hero h1 {
+  color: var(--kiosk-page-ink) !important;
+  text-shadow: none !important;
+}
+
+html body .discover-hero > p {
+  color: var(--kiosk-page-ink-muted) !important;
+  text-shadow: none !important;
+}
+
+/* "AI-Powered Recommendations" pill: same blue family, but a light tint
+   with dark text instead of light text on translucent blue. */
+html body .discover-hero .discover-pill {
+  color: #1d4f86 !important;
+  background: linear-gradient(135deg, rgba(46, 103, 166, 0.12) 0%, rgba(46, 103, 166, 0.06) 100%) !important;
+  border-color: rgba(46, 103, 166, 0.3) !important;
+}
+
+/* ---- Search fields (both views): white field, dark text and icon ---- */
+html body .discover-search-wrap input {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%234a5a6c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") no-repeat clamp(16px, 2vw, 20px) center / 18px 18px, var(--kiosk-page-field) !important;
+  color: var(--kiosk-page-ink) !important;
+  border: 1px solid var(--kiosk-page-line-strong) !important;
+  box-shadow: 0 6px 18px rgba(19, 36, 58, 0.08) !important;
+}
+
+html body #search-view .search-filters-top .top-search-card {
+  background: var(--kiosk-page-field) !important;
+  border: 1px solid var(--kiosk-page-line-strong) !important;
+  box-shadow: 0 6px 18px rgba(19, 36, 58, 0.08) !important;
+}
+
+html body #search-view .search-filters-top #advanced-search-input {
+  color: var(--kiosk-page-ink) !important;
+}
+
+html body .discover-search-wrap input::placeholder,
+html body #search-view .search-filters-top #advanced-search-input::placeholder {
+  color: var(--kiosk-page-placeholder) !important;
+  opacity: 1;
+}
+
+html body #search-view .search-filters-top .advanced-search-icon {
+  color: var(--kiosk-page-ink-muted) !important;
+}
+
+html body .discover-search-wrap input:hover,
+html body #search-view .search-filters-top .top-search-card:hover {
+  border-color: rgba(46, 103, 166, 0.45) !important;
+}
+
+html body .discover-search-wrap input:focus,
+html body #search-view .search-filters-top .top-search-card:focus-within {
+  border-color: var(--kiosk-page-focus) !important;
+  box-shadow: 0 8px 22px rgba(19, 36, 58, 0.1), 0 0 0 3px rgba(46, 103, 166, 0.22) !important;
+}
+
+/* The synthetic typing caret in both search fields was mint (#bfe6cf),
+   ~1.3:1 on a white field. */
+html body .typing-caret {
+  background: var(--kiosk-page-ink);
+  box-shadow: none;
+}
+
+/* ---- Search view hero ---- */
+html body #search-view .search-hero h2 {
+  color: var(--kiosk-page-ink) !important;
+  text-shadow: none !important;
+}
+
+html body #search-view .search-hero > p {
+  color: var(--kiosk-page-ink-muted) !important;
+}
+
+/* Logo pill: only its glass frame changes (white glass was invisible on
+   white); the logos themselves are untouched. */
+html body #search-view .search-hero-brand--pill {
+  background: rgba(19, 36, 58, 0.04);
+  border-color: var(--kiosk-page-line);
+}
+
+/* ---- Search results header and the author line under each cover ---- */
+html body #search-view .results-head,
+html body #search-view .results-head #search-title {
+  color: var(--kiosk-page-ink) !important;
+}
+
+html body #search-view .results-head #results-count {
+  color: var(--kiosk-page-ink-muted) !important;
+}
+
+/* Primary ink rather than muted: the cover's drop shadow spills into this
+   line, so it sits on a light grey haze, not the plain page colour. */
+html body #search-view #book-grid .book-card .book-subtitle,
+html body #search-view #book-grid .book-card .book-title {
+  color: var(--kiosk-page-ink) !important;
+}
+
+/* ---- Dark cards stay the colour they were ----
+   The carousel panels, the sign-in/library-card CTA and the search filter
+   card are only 85-90% opaque. Over the old dark page that read as solid;
+   over white they washed out to a lighter blue and the text inside them
+   lost contrast (panel subtitles 4.5 -> 3.8:1, "Active filters:" 4.5 ->
+   3.7:1). These are the same gradients at full opacity, i.e. what they
+   actually rendered as before. The panels' per-key accent wash and the
+   blue corner highlight are kept on top. */
+html body .discover-panel[data-panel-key] {
+  background:
+    radial-gradient(70% 42% at 50% 0%, rgba(var(--panel-accent), 0.13) 0%, rgba(var(--panel-accent), 0) 72%),
+    radial-gradient(120% 70% at 85% -10%, rgba(110, 175, 230, 0.22) 0%, rgba(110, 175, 230, 0) 55%),
+    linear-gradient(200deg, rgb(44, 84, 136) 0%, rgb(22, 58, 94) 42%, rgb(13, 36, 64) 72%, rgb(8, 24, 42) 100%) !important;
+}
+
+html body .recommend-cta {
+  background:
+    radial-gradient(120% 70% at 85% -10%, rgba(110, 175, 230, 0.22) 0%, rgba(110, 175, 230, 0) 55%),
+    linear-gradient(200deg, rgb(44, 84, 136) 0%, rgb(22, 58, 94) 42%, rgb(13, 36, 64) 72%, rgb(8, 24, 42) 100%) !important;
+}
+
+html body #search-view .filter-card.filter-core {
+  background: linear-gradient(165deg, rgb(51, 106, 162) 0%, rgb(33, 83, 132) 100%) !important;
+}
+
+html body #search-view #book-grid .no-results {
+  color: var(--kiosk-page-ink-muted) !important;
+}
+
+/* The two small icons drawn as inline SVG (magnifier before "Search
+   Results", person before each author line) had their stroke colour baked
+   in as pale mint; same SVGs, stroke changed to the page's muted ink. */
+html body #search-view .results-head .section-title::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234a5a6c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='M20 20l-4.6-4.6'/%3E%3C/svg%3E");
+  opacity: 1;
+}
+
+html body #search-view .book-subtitle::before {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234a5a6c' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='3.4'/%3E%3Cpath d='M5 19c0-3.2 2.8-5.2 7-5.2s7 2 7 5.2'/%3E%3C/svg%3E") no-repeat center / contain;
+  opacity: 1;
+}
+
+/* ---- Footer: same content and gold accent line, dark text ---- */
+html body .discover-footer {
+  background: linear-gradient(180deg, rgba(19, 36, 58, 0) 0%, rgba(19, 36, 58, 0.035) 100%) !important;
+  color: var(--kiosk-page-ink-muted) !important;
+}
+
+html body .discover-footer p {
+  color: var(--kiosk-page-ink-muted) !important;
+}
+
+html body .discover-footer .discover-footer-brand {
+  color: var(--kiosk-page-ink) !important;
+}
+
+html body .discover-footer .discover-footer-brand-pill {
+  background: rgba(19, 36, 58, 0.04);
+  border-color: var(--kiosk-page-line);
+}
