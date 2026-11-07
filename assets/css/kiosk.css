@@ -15213,6 +15213,7 @@ a.discover-signin-btn {
   --ic-flame: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M13.7 1.6c-.3 4.1 2.4 5.6 4.3 8.4 1.5 2.2 2.2 4.6 1.6 7-.9 3.6-4.2 5.6-7.6 5.5C8.2 22.4 4.6 19.8 4.3 15.6 4.1 12.9 5.2 10.6 7 8.9c.1 1.9.8 3.3 2.2 4.1-.4-4.6 1.6-8.9 4.5-11.4zM12 21c2 0 3.6-1.5 3.6-3.4 0-1.6-.9-2.7-1.9-3.8-.2 1.1-.8 1.9-1.7 2.2.2-1.9-.3-3.5-1.3-4.7-1.4 1.6-2.3 3.4-2.3 5.6 0 2.4 1.6 4.1 3.6 4.1z' fill-rule='evenodd'/%3E%3C/svg%3E");
   --ic-tag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M3 12.2V4a1 1 0 0 1 1-1h8.2a1 1 0 0 1 .7.3l8 8a1 1 0 0 1 0 1.4l-8.2 8.2a1 1 0 0 1-1.4 0l-8-8a1 1 0 0 1-.3-.7zM8 9.6a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2z'/%3E%3C/svg%3E");
   --ic-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M8 12.4l2.8 2.8L16.2 9.8'/%3E%3C/svg%3E");
+  --ic-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8.5 5l7 7-7 7'/%3E%3C/svg%3E");
 }
 
 /* ---- 1. Per-panel accent identity ---- */
@@ -15336,14 +15337,79 @@ a.discover-signin-btn {
   padding: 0 !important;
   width: clamp(40px, 5.6vw, 60px) !important;
   height: clamp(40px, 5.6vw, 60px) !important;
-  font-size: clamp(22px, 2.4vw, 28px) !important;
+  font-size: 0 !important;
   font-weight: 700;
   line-height: 1 !important;
-  color: #12304f !important;
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.96) 0%, rgba(222, 233, 245, 0.88) 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.92) !important;
-  box-shadow: 0 12px 26px rgba(2, 10, 22, 0.42), 0 1px 0 rgba(255, 255, 255, 0.95) inset !important;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, color 0.18s ease, border-color 0.18s ease !important;
+  position: relative;
+  color: rgb(var(--panel-accent)) !important;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 100%) !important;
+  border: 1px solid rgba(var(--panel-accent), 0.4) !important;
+  box-shadow: 0 10px 24px rgba(2, 10, 22, 0.5), 0 0 0 1px rgba(var(--panel-accent), 0.22), 0 1px 0 rgba(255, 255, 255, 0.14) inset !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, color 0.18s ease, border-color 0.18s ease, background 0.18s ease !important;
+}
+
+/* Text glyph (›/‹) is kept in the markup for the accessible name but
+   visually replaced by a crisper masked chevron (same technique as the
+   reason-line icons below). :first-of-type is the prev button in each
+   panel's two-button pair, so it's mirrored instead of needing a second
+   icon asset. The icon is absolutely centred rather than a grid item:
+   the zero-size text glyph is still an anonymous grid item, so with
+   place-items the two shared the grid and the chevron sat off-centre. */
+.discover-panel[data-panel-key] .carousel-arrow::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: clamp(14px, 1.7vw, 19px);
+  height: clamp(14px, 1.7vw, 19px);
+  background-color: currentColor;
+  -webkit-mask: var(--ic-chevron) center / contain no-repeat;
+  mask: var(--ic-chevron) center / contain no-repeat;
+}
+
+.discover-panel[data-panel-key] .carousel-arrow:first-of-type::before {
+  transform: translate(-50%, -50%) scaleX(-1);
+}
+
+/* Idle presence: this is a touchscreen kiosk, so the gold :hover state
+   below almost never actually gets seen -- without it the button just
+   sat there as a flat, static circle next to every other panel element
+   that's glowing or breathing. Tint the rest state toward the panel's
+   own accent (same --panel-accent as the heading/cover glow) and give
+   it the same slow breathe as the flagship cover, so it reads as part
+   of the panel instead of a leftover default button.
+   The glow lives on its own ::after layer and the animation fades that
+   layer's opacity. Animating the button's own box-shadow never ran: that
+   box-shadow has to be !important to beat the legacy .carousel-arrow
+   rule (~11786), and an animation can't override an !important value. */
+.discover-panel[data-panel-key] .carousel-arrow::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  box-shadow: 0 0 16px rgba(var(--panel-accent), 0.4);
+  opacity: 0.5;
+  pointer-events: none;
+  animation: kioskArrowBreathe 5.5s ease-in-out infinite;
+}
+
+@keyframes kioskArrowBreathe {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* On hover/press the gold state has its own glow; hide the accent ring so
+   the two don't stack. opacity needs !important here: a paused animation
+   keeps applying its current frame, and animated values beat normal
+   declarations, so a plain opacity: 0 left the ring at whatever brightness
+   the breathe had reached. */
+.discover-panel[data-panel-key] .carousel-arrow:hover::after,
+.discover-panel[data-panel-key] .carousel-arrow:active::after {
+  animation-play-state: paused;
+  opacity: 0 !important;
 }
 
 .discover-panel[data-panel-key] .carousel-arrow:hover {
@@ -15352,6 +15418,7 @@ a.discover-signin-btn {
   border-color: rgba(255, 236, 160, 0.95) !important;
   box-shadow: 0 14px 30px rgba(160, 120, 6, 0.42), 0 0 22px rgba(255, 216, 77, 0.5), 0 1px 0 rgba(255, 255, 255, 0.5) inset !important;
   transform: translateY(-2px) scale(1.06) !important;
+  animation-play-state: paused;
 }
 
 .discover-panel[data-panel-key] .carousel-arrow:active {
@@ -15360,6 +15427,7 @@ a.discover-signin-btn {
   border-color: rgba(255, 226, 120, 0.95) !important;
   box-shadow: 0 6px 14px rgba(160, 120, 6, 0.4), 0 0 14px rgba(255, 216, 77, 0.45) !important;
   transform: translateY(0) scale(0.95) !important;
+  animation-play-state: paused;
 }
 
 .discover-panel[data-panel-key] .carousel-arrow:focus-visible {
@@ -15385,6 +15453,26 @@ a.discover-signin-btn {
 .discover-panel .carousel-reason.reason--new          { --reason-tone: 63, 207, 142;  --reason-icon: var(--ic-sparkle); }
 .discover-panel .carousel-reason.reason--genre        { --reason-tone: 165, 180, 252; --reason-icon: var(--ic-tag); }
 .discover-panel .carousel-reason.reason--availability { --reason-tone: 174, 215, 194; --reason-icon: var(--ic-check); }
+
+/* Availability is the one reason type that's a live status rather than
+   a historical fact (trending/borrowed/new/genre describe something
+   that already happened) -- a quiet pulse on just its icon reads as
+   "live" and gives the line some life without animating all six types. */
+.discover-panel .carousel-reason.reason--availability::before {
+  animation: kioskReasonPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes kioskReasonPulse {
+  0%,
+  100% {
+    opacity: 0.78;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
 
 .discover-panel .carousel-reason[class*="reason--"] {
   margin-top: 10px !important;
@@ -15416,8 +15504,16 @@ a.discover-signin-btn {
     opacity: 0.85;
   }
 
+  .discover-panel[data-panel-key] .carousel-arrow::after {
+    animation: none;
+  }
+
   .discover-panel[data-panel-key] .carousel-arrow:hover,
   .discover-panel[data-panel-key] .carousel-arrow:active {
     transform: none !important;
+  }
+
+  .discover-panel .carousel-reason.reason--availability::before {
+    animation: none;
   }
 }
