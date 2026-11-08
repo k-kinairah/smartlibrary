@@ -16273,3 +16273,114 @@ html body #search-view .active-filter-row > span::before {
 html body #search-view #year_published-box .custom-select-option.is-selected::after {
   color: #1f6b48;
 }
+
+/* ============================================================
+   SJCDC rebrand phase 5: gold-foil editorial finish
+   ------------------------------------------------------------
+   Layered on phase 4's white cards (carousel panels, search filter card,
+   CTA cards) without touching any of its colours:
+   - a thin gold hairline border, and a gold -> seal green -> gold band
+     across the top (replaces phase 4's flat 4px green top rule);
+   - a corner watermark that is the book-cover "engraved arcs" motif
+     (config/book_cover.php: 200x300 box, circles r = 24..300 step 8,
+     stroke 1, group opacity 0.55, centred just past a corner) mirrored to
+     the top-right; gold stroke at 0.33 x 0.55 gives about the same ~11%
+     shift the cover lines make on their own background, and the rings
+     fade out by r = 200 so none is cut off at the tile edge;
+   - serif headings (panel titles, carousel book titles, CTA titles);
+   - a short gold rule under each panel's subtitle.
+   ============================================================ */
+
+:root {
+  --kiosk-foil-arcs: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 300'%3E%3Cdefs%3E%3CradialGradient id='f' cx='214' cy='-18' r='200' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%23fff'/%3E%3Cstop offset='0.7' stop-color='%23fff'/%3E%3Cstop offset='1' stop-color='%23fff' stop-opacity='0'/%3E%3C/radialGradient%3E%3Cmask id='m'%3E%3Crect width='200' height='300' fill='url(%23f)'/%3E%3C/mask%3E%3C/defs%3E%3Cg mask='url(%23m)' fill='none' stroke='%23d89a2b' stroke-opacity='0.33' stroke-width='1' opacity='0.55'%3E%3Ccircle cx='214' cy='-18' r='24'/%3E%3Ccircle cx='214' cy='-18' r='32'/%3E%3Ccircle cx='214' cy='-18' r='40'/%3E%3Ccircle cx='214' cy='-18' r='48'/%3E%3Ccircle cx='214' cy='-18' r='56'/%3E%3Ccircle cx='214' cy='-18' r='64'/%3E%3Ccircle cx='214' cy='-18' r='72'/%3E%3Ccircle cx='214' cy='-18' r='80'/%3E%3Ccircle cx='214' cy='-18' r='88'/%3E%3Ccircle cx='214' cy='-18' r='96'/%3E%3Ccircle cx='214' cy='-18' r='104'/%3E%3Ccircle cx='214' cy='-18' r='112'/%3E%3Ccircle cx='214' cy='-18' r='120'/%3E%3Ccircle cx='214' cy='-18' r='128'/%3E%3Ccircle cx='214' cy='-18' r='136'/%3E%3Ccircle cx='214' cy='-18' r='144'/%3E%3Ccircle cx='214' cy='-18' r='152'/%3E%3Ccircle cx='214' cy='-18' r='160'/%3E%3Ccircle cx='214' cy='-18' r='168'/%3E%3Ccircle cx='214' cy='-18' r='176'/%3E%3Ccircle cx='214' cy='-18' r='184'/%3E%3Ccircle cx='214' cy='-18' r='192'/%3E%3Ccircle cx='214' cy='-18' r='200'/%3E%3Ccircle cx='214' cy='-18' r='208'/%3E%3Ccircle cx='214' cy='-18' r='216'/%3E%3Ccircle cx='214' cy='-18' r='224'/%3E%3Ccircle cx='214' cy='-18' r='232'/%3E%3Ccircle cx='214' cy='-18' r='240'/%3E%3Ccircle cx='214' cy='-18' r='248'/%3E%3Ccircle cx='214' cy='-18' r='256'/%3E%3Ccircle cx='214' cy='-18' r='264'/%3E%3Ccircle cx='214' cy='-18' r='272'/%3E%3Ccircle cx='214' cy='-18' r='280'/%3E%3Ccircle cx='214' cy='-18' r='288'/%3E%3Ccircle cx='214' cy='-18' r='296'/%3E%3C/g%3E%3C/svg%3E");
+  --kiosk-foil-band: linear-gradient(90deg, rgba(216, 154, 43, 0.9), rgba(26, 78, 66, 0.9), rgba(216, 154, 43, 0.9));
+  --kiosk-foil-line: rgba(216, 154, 43, 0.55);
+  --kiosk-wm-panel: clamp(150px, 19vw, 230px);
+  --kiosk-wm-filter: clamp(120px, 15vw, 180px);
+  --kiosk-wm-cta: clamp(90px, 12vw, 130px);
+}
+
+/* ---- Card frame: hairline, top band, corner arcs ---- */
+html body .discover-panel[data-panel-key] {
+  border: 1px solid var(--kiosk-foil-line) !important;
+  background:
+    var(--kiosk-foil-band) top left / 100% 4px no-repeat,
+    var(--kiosk-foil-arcs) top right / var(--kiosk-wm-panel) calc(var(--kiosk-wm-panel) * 1.5) no-repeat,
+    #ffffff !important;
+}
+
+/* The phase-3 glowing accent bar would sit on top of the new band; each
+   panel's identity still shows in its heading icon. */
+html body .discover-panel[data-panel-key]::before {
+  display: none;
+}
+
+html body #search-view .filter-card.filter-core {
+  border: 1px solid var(--kiosk-foil-line) !important;
+  background:
+    var(--kiosk-foil-band) top left / 100% 4px no-repeat,
+    var(--kiosk-foil-arcs) top right / var(--kiosk-wm-filter) calc(var(--kiosk-wm-filter) * 1.5) no-repeat,
+    #ffffff !important;
+}
+
+html body .recommend-cta {
+  border: 1px solid var(--kiosk-foil-line) !important;
+  background:
+    var(--kiosk-foil-band) top left / 100% 4px no-repeat,
+    #ffffff !important;
+}
+
+/* CTA paths keep their gold / green wash and border; each gets its own
+   smaller arc watermark. */
+html body .recommend-cta--split .cta-path--signin {
+  background:
+    var(--kiosk-foil-arcs) top right / var(--kiosk-wm-cta) calc(var(--kiosk-wm-cta) * 1.5) no-repeat,
+    linear-gradient(180deg, rgba(255, 216, 94, 0.24) 0%, rgba(255, 216, 94, 0.1) 100%);
+}
+
+html body .recommend-cta--split .cta-path--card {
+  background:
+    var(--kiosk-foil-arcs) top right / var(--kiosk-wm-cta) calc(var(--kiosk-wm-cta) * 1.5) no-repeat,
+    linear-gradient(180deg, rgba(63, 207, 142, 0.18) 0%, rgba(63, 207, 142, 0.07) 100%);
+}
+
+/* ---- Serif headings (body text keeps its font) ---- */
+html body .discover-panel[data-panel-key] h2,
+html body .discover-panel[data-panel-key] .carousel-title,
+html body .recommend-cta h3 {
+  font-family: Georgia, 'Times New Roman', serif !important;
+  letter-spacing: 0.01em !important;
+}
+
+/* ---- Gold rule under each panel subtitle ---- */
+html body .discover-panel[data-panel-key] > h2 + p::after {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 1.5px;
+  margin: 10px auto 0;
+  border-radius: 1px;
+  background: rgba(216, 154, 43, 0.9);
+}
+
+/* Smaller watermarks on phones so the arcs stay in the corner. */
+@media (max-width: 760px) {
+  :root {
+    --kiosk-wm-panel: 130px;
+    --kiosk-wm-filter: 110px;
+    --kiosk-wm-cta: 84px;
+  }
+}
+
+/* Phase 5, narrow phones: Georgia sets ~5% wider than Manrope, and the
+   1px hairline takes 2px from the panel. Give the serif title and the
+   reason pill that room back so they fit as they did in phase 4. */
+@media (max-width: 440px) {
+  html body .discover-panel[data-panel-key] .carousel-title {
+    font-size: 17px !important;
+    letter-spacing: 0 !important;
+  }
+  html body .discover-panel[data-panel-key] .carousel-reason {
+    max-width: 100% !important;
+  }
+}
