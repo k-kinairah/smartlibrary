@@ -75,6 +75,7 @@ if ($genreRes) {
 
         <?php if (isset($_SESSION['user_id'])): ?>
         <section class="discover-panel" data-panel-key="course_highlights">
+            <span class="panel-kicker">Picked for your course</span>
             <h2>Course-Specific Highlights</h2>
             <p>AI picks matched to your course and borrowing activity</p>
             <div class="discover-carousel">
@@ -96,6 +97,7 @@ if ($genreRes) {
         <?php endif; ?>
 
         <section class="discover-panel" data-panel-key="new_arrivals">
+            <span class="panel-kicker">Newly added</span>
             <h2>New Arrivals</h2>
             <p>Latest books and journals added to our collection</p>
             <div class="discover-carousel">
@@ -114,6 +116,7 @@ if ($genreRes) {
             <p class="carousel-reason reason--availability" data-reason-type="availability">Available now</p>
         </section>
         <section class="discover-panel" data-panel-key="most_searched">
+            <span class="panel-kicker">Trending now</span>
             <h2>Most Searched</h2>
             <p>Topics and titles students are actively looking for</p>
             <div class="discover-carousel">
@@ -132,6 +135,7 @@ if ($genreRes) {
             <p class="carousel-reason reason--availability" data-reason-type="availability">Available now</p>
         </section>
 <section class="discover-panel" data-panel-key="most_borrowed">
+            <span class="panel-kicker">Reader favorites</span>
             <h2>Most Borrowed Books</h2>
             <p>Popular titles frequently checked out by students</p>
             <div class="discover-carousel">

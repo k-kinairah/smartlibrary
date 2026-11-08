@@ -16459,3 +16459,82 @@ html body .recommend-cta--split .cta-path--card {
     radial-gradient(90% 55% at 50% 0%, rgba(63, 207, 142, 0.12) 0%, rgba(63, 207, 142, 0) 70%),
     linear-gradient(180deg, rgba(63, 207, 142, 0.18) 0%, rgba(63, 207, 142, 0.07) 100%);
 }
+
+/* ============================================================
+   SJCDC rebrand phase 7: museum-plaque headings
+   ------------------------------------------------------------
+   Quieter, more editorial heading treatment for the carousel panels and
+   CTA cards. Phase 6's frame glow, border, band and inner wash are
+   unchanged.
+   - a small letter-spaced gold kicker above each panel heading. The
+     tested gold #b9892f is 3.1:1 on white (3.0:1 on the wash), below
+     AA for 11px text, so it uses the same hue darkened to #8d6824
+     (5.1:1 on white, 4.8:1 on the wash);
+   - the panel and CTA headings go from bold to regular serif with
+     0.6px tracking;
+   - a double rule under the subtitle (60px seal green over 30px gold)
+     replaces phase 5's single gold rule;
+   - the corner arc watermark is removed from the panels, the filter
+     card and the CTA paths.
+   ============================================================ */
+
+html body .discover-panel[data-panel-key] .panel-kicker {
+  display: block;
+  margin: 0 0 6px;
+  color: #8d6824;
+  font-family: Manrope, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 2.5px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* Headings: regular weight, slight tracking. */
+html body .discover-panel[data-panel-key] h2,
+html body .recommend-cta h3 {
+  font-weight: 400 !important;
+  letter-spacing: 0.6px !important;
+}
+
+/* CTA kickers already exist; match the kicker typography and keep their
+   own gold / green inks. */
+html body .recommend-cta--split .cta-path-kicker {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 2.5px !important;
+}
+
+/* Double rule under the subtitle: 60px seal green, then 30px gold. */
+html body .discover-panel[data-panel-key] > h2 + p::after {
+  width: 60px;
+  height: 4px;
+  margin: 10px auto 0;
+  border-radius: 0;
+  background:
+    linear-gradient(#1a4e42, #1a4e42) center top / 60px 1px no-repeat,
+    linear-gradient(#d89a2b, #d89a2b) center bottom / 30px 1px no-repeat;
+}
+
+/* No arc watermark: band + inner wash + white only. */
+html body .discover-panel[data-panel-key],
+html body #search-view .filter-card.filter-core,
+html body .recommend-cta {
+  background:
+    var(--kiosk-foil-band) top left / 100% 4px no-repeat,
+    var(--kiosk-frame-wash),
+    #ffffff !important;
+}
+
+html body .recommend-cta--split .cta-path--signin {
+  background:
+    radial-gradient(90% 55% at 50% 0%, rgba(255, 216, 94, 0.16) 0%, rgba(255, 216, 94, 0) 70%),
+    linear-gradient(180deg, rgba(255, 216, 94, 0.24) 0%, rgba(255, 216, 94, 0.1) 100%);
+}
+
+html body .recommend-cta--split .cta-path--card {
+  background:
+    radial-gradient(90% 55% at 50% 0%, rgba(63, 207, 142, 0.12) 0%, rgba(63, 207, 142, 0) 70%),
+    linear-gradient(180deg, rgba(63, 207, 142, 0.18) 0%, rgba(63, 207, 142, 0.07) 100%);
+}
