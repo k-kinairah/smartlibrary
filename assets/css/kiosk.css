@@ -16744,3 +16744,30 @@ html body .discover-footer-brand-pill-divider {
     rgba(26, 78, 66, 0.9) 72%,
     rgba(26, 78, 66, 0) 100%);
 }
+
+/* Same gold -> green fading divider, two more places:
+   - search filter card, between the chip row and "Active filters": the
+     1px top border keeps its 1px thickness and becomes a horizontal
+     gold-to-seal-green gradient with transparent ends (border-image);
+   - sign-in modal, between the seal and the PHINMA icon: the modal is
+     dark green, so the line fades from gold into light mint (#66e3ab,
+     the mint used on dark cards) instead of seal green, which would
+     disappear there. */
+html body #search-view .active-filter-row {
+  border-top: 1px solid transparent !important;
+  border-image: linear-gradient(90deg,
+    rgba(216, 154, 43, 0) 0%,
+    rgba(216, 154, 43, 0.9) 22%,
+    rgba(26, 78, 66, 0.75) 78%,
+    rgba(26, 78, 66, 0) 100%) 1 !important;
+}
+
+html body #account-modal .account-brand-mark .account-brand-divider {
+  width: 2px !important;
+  border-radius: 2px;
+  background: linear-gradient(180deg,
+    rgba(216, 154, 43, 0) 0%,
+    rgba(232, 177, 74, 0.95) 28%,
+    rgba(102, 227, 171, 0.85) 72%,
+    rgba(102, 227, 171, 0) 100%) !important;
+}
