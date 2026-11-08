@@ -16538,3 +16538,74 @@ html body .recommend-cta--split .cta-path--card {
     radial-gradient(90% 55% at 50% 0%, rgba(63, 207, 142, 0.12) 0%, rgba(63, 207, 142, 0) 70%),
     linear-gradient(180deg, rgba(63, 207, 142, 0.18) 0%, rgba(63, 207, 142, 0.07) 100%);
 }
+
+/* ============================================================
+   SJCDC rebrand phase 8: printer's rule between carousel and title
+   ------------------------------------------------------------
+   A small ornament (fading gold segments either side of a faceted gold
+   gem) between each carousel panel's covers and the book title. It is
+   decorative markup (aria-hidden) and changes no text colour. The
+   phase-7 double rule under the subtitle is a separate element and is
+   unchanged. Segments shorten on narrower cards so the ornament keeps
+   roughly the same weight against the card width.
+   ============================================================ */
+
+html body .discover-panel[data-panel-key] .carousel-divider {
+  --rule-seg: 64px;
+  --rule-gem: 9px;
+  --rule-gap: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0 0;
+  pointer-events: none;
+}
+
+html body .discover-panel[data-panel-key] .carousel-divider .seg-left,
+html body .discover-panel[data-panel-key] .carousel-divider .seg-right {
+  display: block;
+  width: var(--rule-seg);
+  height: 2px;
+  border-radius: 2px;
+}
+
+html body .discover-panel[data-panel-key] .carousel-divider .seg-left {
+  background: linear-gradient(90deg, rgba(216, 154, 43, 0) 0%, #c8912f 40%, #ffe9a8 100%);
+}
+
+html body .discover-panel[data-panel-key] .carousel-divider .seg-right {
+  background: linear-gradient(90deg, #ffe9a8 0%, #c8912f 60%, rgba(216, 154, 43, 0) 100%);
+}
+
+html body .discover-panel[data-panel-key] .carousel-divider .gem {
+  display: block;
+  flex: none;
+  width: var(--rule-gem);
+  height: var(--rule-gem);
+  margin: 0 var(--rule-gap);
+  border-radius: 1.5px;
+  background: linear-gradient(135deg, #fff3cf 0%, #d89a2b 45%, #a9711a 100%);
+  transform: rotate(45deg);
+  box-shadow: 0 1px 4px rgba(184, 131, 27, 0.65), 0 0 12px rgba(216, 154, 43, 0.45);
+}
+
+html body .discover-panel[data-panel-key] .carousel-title {
+  margin-top: 18px !important;
+}
+
+@media (max-width: 760px) {
+  html body .discover-panel[data-panel-key] .carousel-divider {
+    --rule-seg: 48px;
+  }
+}
+
+@media (max-width: 440px) {
+  html body .discover-panel[data-panel-key] .carousel-divider {
+    --rule-seg: 40px;
+    --rule-gem: 8px;
+    --rule-gap: 6px;
+  }
+  html body .discover-panel[data-panel-key] .carousel-title {
+    margin-top: 14px !important;
+  }
+}

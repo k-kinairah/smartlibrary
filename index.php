@@ -89,6 +89,7 @@ if ($genreRes) {
                 </div>
                 <button class="carousel-arrow">&#8250;</button>
             </div>
+            <div class="carousel-divider" aria-hidden="true"><span class="seg-left"></span><span class="gem"></span><span class="seg-right"></span></div>
             <h3 class="carousel-title">Calculus: Early Transcendentals</h3>
             <p class="carousel-author">James Stewart</p>
             <p class="carousel-reason reason--availability" data-reason-type="availability">Available now</p>
@@ -111,6 +112,7 @@ if ($genreRes) {
                 </div>
                 <button class="carousel-arrow">&#8250;</button>
             </div>
+            <div class="carousel-divider" aria-hidden="true"><span class="seg-left"></span><span class="gem"></span><span class="seg-right"></span></div>
             <h3 class="carousel-title">Calculus: Early Transcendentals</h3>
             <p class="carousel-author">James Stewart</p>
             <p class="carousel-reason reason--availability" data-reason-type="availability">Available now</p>
@@ -130,6 +132,7 @@ if ($genreRes) {
                 </div>
                 <button class="carousel-arrow">&#8250;</button>
             </div>
+            <div class="carousel-divider" aria-hidden="true"><span class="seg-left"></span><span class="gem"></span><span class="seg-right"></span></div>
             <h3 class="carousel-title">Introduction to Algorithms</h3>
             <p class="carousel-author">Thomas H. Cormen</p>
             <p class="carousel-reason reason--availability" data-reason-type="availability">Available now</p>
@@ -149,6 +152,7 @@ if ($genreRes) {
                 </div>
                 <button class="carousel-arrow">&#8250;</button>
             </div>
+            <div class="carousel-divider" aria-hidden="true"><span class="seg-left"></span><span class="gem"></span><span class="seg-right"></span></div>
             <h3 class="carousel-title">Introduction to Algorithms</h3>
             <p class="carousel-author">Thomas H. Cormen</p>
             <p class="carousel-reason reason--availability" data-reason-type="availability">Available now</p>
