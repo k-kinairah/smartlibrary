@@ -22,13 +22,13 @@ body {
     margin: 0;
     font-family: "Manrope", sans-serif;
     color: var(--ink);
-    background: linear-gradient(180deg, #0e432a 0%, #125235 34%, #184c40 68%, #143a32 100%);
+    background: linear-gradient(180deg, #0e432a 0%, #125235 34%, #184b42 68%, #15383d 100%);
 }
 
 .hidden { display: none !important; }
 
 #discover-view {
-    background: linear-gradient(180deg, #0e432a 0%, #145838 36%, #1c5044 70%, #163e34 100%);
+    background: linear-gradient(180deg, #0e432a 0%, #145838 36%, #1c5046 70%, #173c41 100%);
 }
 
 .discover-section {
@@ -5842,7 +5842,7 @@ body,
 #search-view {
   min-height: 100vh !important;
   background: radial-gradient(1200px 520px at 0% -15%, rgba(82, 158, 141, 0.2) 0%, rgba(82, 158, 141, 0.02) 58%, rgba(82, 158, 141, 0) 80%),
-    linear-gradient(180deg, #09211c 0%, #0b2a23 42%, #0e352c 100%) !important;
+    linear-gradient(180deg, #0a2024 0%, #0b2928 42%, #0e342d 100%) !important;
 }
 
 
@@ -5879,7 +5879,7 @@ body,
 #search-view .filter-top-tab.active {
   border-color: #d2dfd7 !important;
   box-shadow: 0 5px 12px rgba(11, 49, 41, 0.35) !important;
-  background: linear-gradient(180deg, #519988 0%, #35806e 100%) !important;
+  background: linear-gradient(180deg, #51988b 0%, #387d87 100%) !important;
   color: #f2fbff !important;
 }
 
@@ -5963,7 +5963,7 @@ body,
   height: 46px !important;
   border-radius: 11px !important;
   border: 1px solid rgba(104, 147, 137, 0.48) !important;
-  background: linear-gradient(180deg, rgba(25, 60, 52, 0.9) 0%, rgba(19, 50, 43, 0.9) 100%) !important;
+  background: linear-gradient(180deg, rgba(25, 59, 53, 0.9) 0%, rgba(20, 49, 53, 0.9) 100%) !important;
   color: #e5f4f1 !important;
   font-weight: 600 !important;
   box-shadow: none !important;
@@ -6043,7 +6043,7 @@ body,
 #search-view .filter-card.filter-core {
   border-radius: 16px !important;
   padding: 14px 16px !important;
-  background: linear-gradient(165deg, rgba(49, 118, 103, 0.92) 0%, rgba(38, 102, 88, 0.92) 56%, rgba(29, 89, 76, 0.92) 100%) !important;
+  background: linear-gradient(165deg, rgba(49, 118, 105, 0.92) 0%, rgba(38, 102, 97, 0.92) 56%, rgba(31, 87, 94, 0.92) 100%) !important;
   border: 1px solid rgba(129, 182, 169, 0.46) !important;
   box-shadow: 0 12px 24px rgba(5, 27, 22, 0.26),
     0 1px 0 rgba(159, 200, 191, 0.2) inset !important;
@@ -6135,7 +6135,7 @@ body,
   overflow: visible !important;
   border-top: 1px solid #d3e1d8 !important;
   backdrop-filter: blur(10px) saturate(120%) !important;
-  background: linear-gradient(165deg, rgba(56, 128, 111, 0.95) 0%, rgba(40, 109, 93, 0.95) 58%, rgba(30, 91, 77, 0.95) 100%) !important;
+  background: linear-gradient(165deg, rgba(56, 127, 114, 0.95) 0%, rgba(40, 108, 103, 0.95) 58%, rgba(32, 89, 96, 0.95) 100%) !important;
   border-bottom: 0 !important;
   box-shadow: 0 8px 18px rgba(6, 28, 23, 0.24) !important;
 }
@@ -6304,7 +6304,7 @@ body,
   padding: 0 16px !important;
   border-radius: 42px !important;
   min-height: 74px !important;
-  background: linear-gradient(165deg, rgba(133, 188, 176, 0.96) 0%, rgba(122, 178, 165, 0.95) 56%, rgba(110, 168, 154, 0.95) 100%) !important;
+  background: linear-gradient(165deg, rgba(132, 188, 178, 0.96) 0%, rgba(121, 178, 173, 0.95) 56%, rgba(116, 165, 172, 0.95) 100%) !important;
   border: 1px solid rgba(211, 237, 231, 0.72) !important;
   box-shadow: 0 10px 20px rgba(11, 42, 35, 0.16),
     0 1px 0 rgba(243, 251, 255, 0.45) inset !important;
@@ -6664,7 +6664,7 @@ body,
 }
 
 #search-view .search-header .user-profile-icon {
-  background: linear-gradient(145deg, #57a794 0%, #328572 100%) !important;
+  background: linear-gradient(145deg, #57a798 0%, #35828d 100%) !important;
   border: 1px solid rgba(197, 229, 221, 0.72) !important;
   box-shadow: 0 10px 20px rgba(7, 37, 30, 0.28), 0 1px 0 rgba(231, 247, 243, 0.28) inset !important;
 }
@@ -6693,7 +6693,7 @@ body,
   min-width: 336px !important;
   padding: 11px !important;
   border-radius: 18px !important;
-  background: linear-gradient(168deg, rgba(23, 70, 59, 0.96) 0%, rgba(18, 59, 50, 0.96) 55%, rgba(15, 50, 42, 0.96) 100%) !important;
+  background: linear-gradient(168deg, rgba(23, 70, 61, 0.96) 0%, rgba(18, 59, 56, 0.96) 55%, rgba(16, 49, 53, 0.96) 100%) !important;
   border: 1px solid rgba(128, 181, 168, 0.5) !important;
   box-shadow: 0 20px 34px rgba(5, 26, 22, 0.38),
     0 1px 0 rgba(184, 224, 214, 0.2) inset !important;
@@ -8832,7 +8832,7 @@ html:has(.modal:not(.hidden)) {
   border-radius: 999px !important;
   padding: 12px 28px !important;
   border: 1px solid rgba(100, 169, 154, 0.55) !important;
-  background: linear-gradient(135deg, #205b4e 0%, #10382f 100%) !important;
+  background: linear-gradient(135deg, #205b50 0%, #11363b 100%) !important;
   box-shadow:
     0 14px 26px rgba(8, 34, 28, 0.4),
     0 1px 0 rgba(255, 255, 255, 0.35) inset !important;
@@ -9770,7 +9770,7 @@ html:has(.modal:not(.hidden)) {
 
 #book-modal .find-book-btn {
   border: 1px solid rgba(100, 169, 154, 0.55) !important;
-  background: linear-gradient(135deg, #205b4e 0%, #10382f 100%) !important;
+  background: linear-gradient(135deg, #205b50 0%, #11363b 100%) !important;
   color: #e2f5f0 !important;
   box-shadow: 0 6px 14px rgba(8, 34, 28, 0.38), 0 1px 0 rgba(255, 255, 255, 0.3) inset !important;
   transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease;
@@ -10994,7 +10994,7 @@ body {
   padding: 12px !important;
   gap: 6px !important;
   border-radius: 22px !important;
-  background: linear-gradient(165deg, rgba(64, 129, 114, 0.98) 0%, rgba(43, 107, 93, 0.97) 45%, rgba(25, 83, 70, 0.98) 100%) !important;
+  background: linear-gradient(165deg, rgba(64, 128, 117, 0.98) 0%, rgba(43, 106, 100, 0.97) 45%, rgba(27, 81, 88, 0.98) 100%) !important;
   border: 1px solid rgba(172, 217, 207, 0.55) !important;
   box-shadow:
     0 30px 56px rgba(2, 8, 16, 0.6),
@@ -11065,7 +11065,7 @@ body {
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  background: linear-gradient(165deg, rgba(64, 129, 114, 0.98) 0%, rgba(43, 107, 93, 0.97) 45%, rgba(25, 83, 70, 0.98) 100%) !important;
+  background: linear-gradient(165deg, rgba(64, 128, 117, 0.98) 0%, rgba(43, 106, 100, 0.97) 45%, rgba(27, 81, 88, 0.98) 100%) !important;
   border: 1px solid rgba(172, 217, 207, 0.55) !important;
   box-shadow:
     0 30px 60px rgba(2, 8, 16, 0.6),
@@ -11627,7 +11627,7 @@ body {
    The icon (svg stroke #eaf1ff) already reads fine against this
    blue and is left untouched. */
 #book-modal .find-book-btn {
-  background: linear-gradient(135deg, #2b695b 0%, #194b40 55%, #0d2e27 100%) !important;
+  background: linear-gradient(135deg, #2b695d 0%, #194b46 55%, #0e2c31 100%) !important;
   border: 1px solid rgba(132, 193, 179, 0.55) !important;
   color: #e2f5f0 !important;
   box-shadow: 0 8px 18px rgba(8, 34, 28, 0.4),
@@ -11636,7 +11636,7 @@ body {
 }
 
 #book-modal .find-book-btn:hover {
-  background: linear-gradient(135deg, #438576 0%, #205b4e 55%, #123f35 100%) !important;
+  background: linear-gradient(135deg, #438578 0%, #205b57 55%, #133d43 100%) !important;
   border-color: rgba(156, 206, 195, 0.7) !important;
   color: #e2f5f0 !important;
   box-shadow: 0 12px 24px rgba(8, 34, 28, 0.48),
@@ -12411,7 +12411,7 @@ body {
    theme. */
 
 #search-view .user-menu-dropdown {
-  background: linear-gradient(165deg, #2b695b 0%, #194b40 55%, #0d2e27 100%) !important;
+  background: linear-gradient(165deg, #2b695d 0%, #194b46 55%, #0e2c31 100%) !important;
   border: 1px solid rgba(132, 193, 179, 0.55) !important;
   box-shadow:
     0 30px 56px rgba(2, 8, 16, 0.6),
@@ -12426,7 +12426,7 @@ body {
 
 #search-view .user-menu-item:hover {
   border-color: rgba(172, 216, 206, 0.62) !important;
-  background: linear-gradient(180deg, rgba(67, 133, 118, 0.44) 0%, rgba(25, 75, 64, 0.32) 100%) !important;
+  background: linear-gradient(180deg, rgba(67, 133, 120, 0.44) 0%, rgba(27, 74, 80, 0.32) 100%) !important;
 }
 
 #search-view .user-menu-item .menu-item-icon {
@@ -12489,7 +12489,7 @@ body {
   border-radius: 20px !important;
   background:
     radial-gradient(120% 90% at 88% 4%, rgba(110, 183, 166, 0.55) 0%, rgba(110, 183, 166, 0) 55%),
-    linear-gradient(200deg, #438576 0%, #194b40 45%, #0d2e27 100%) !important;
+    linear-gradient(200deg, #438578 0%, #194b48 45%, #0e2c31 100%) !important;
 }
 
 #search-view .user-menu-profile {
@@ -12654,14 +12654,14 @@ body {
 #my-books-modal .my-books-modal-panel {
   background:
     radial-gradient(130% 160% at 12% -8%, rgba(42, 91, 80, 0.35) 0%, rgba(25, 75, 64, 0) 55%),
-    linear-gradient(180deg, rgba(13, 36, 31, 0.98) 0%, rgba(25, 75, 64, 0.98) 28%, rgba(17, 50, 42, 0.98) 60%, rgba(8, 27, 22, 0.98) 100%) !important;
+    linear-gradient(180deg, rgba(13, 36, 36, 0.98) 0%, rgba(25, 75, 65, 0.98) 28%, rgba(17, 49, 47, 0.98) 60%, rgba(9, 27, 29, 0.98) 100%) !important;
 }
 
 @media (max-width: 760px) {
   #my-books-modal .my-books-modal-panel {
     background:
       radial-gradient(130% 160% at 12% -8%, rgba(42, 91, 80, 0.35) 0%, rgba(25, 75, 64, 0) 55%),
-      linear-gradient(180deg, rgba(13, 36, 31, 0.98) 0%, rgba(25, 75, 64, 0.98) 28%, rgba(17, 50, 42, 0.98) 60%, rgba(8, 27, 22, 0.98) 100%) !important;
+      linear-gradient(180deg, rgba(13, 36, 36, 0.98) 0%, rgba(25, 75, 65, 0.98) 28%, rgba(17, 49, 47, 0.98) 60%, rgba(9, 27, 29, 0.98) 100%) !important;
   }
 }
 
@@ -13106,7 +13106,7 @@ body {
 #search-view .search-header {
   background:
     radial-gradient(120% 90% at 88% 4%, rgba(110, 183, 166, 0.4) 0%, rgba(110, 183, 166, 0) 55%),
-    linear-gradient(200deg, #438576 0%, #194b40 45%, #0d2e27 100%) !important;
+    linear-gradient(200deg, #438578 0%, #194b48 45%, #0e2c31 100%) !important;
   border: 1.5px solid rgba(132, 193, 179, 0.55) !important;
   box-shadow:
     0 20px 46px rgba(2, 11, 9, 0.5),
@@ -13168,13 +13168,13 @@ body {
 #search-view {
   background:
     radial-gradient(120% 65% at 85% -10%, rgba(110, 183, 166, 0.22) 0%, rgba(110, 183, 166, 0) 55%),
-    linear-gradient(200deg, #275c50 0%, #153f36 42%, #0c2822 72%, #071b16 100%) !important;
+    linear-gradient(200deg, #275c52 0%, #153f3a 42%, #0c2728 72%, #081a1d 100%) !important;
 }
 
 #discover-view {
   background:
     radial-gradient(120% 65% at 85% -10%, rgba(120, 220, 170, 0.16) 0%, rgba(120, 220, 170, 0) 55%),
-    linear-gradient(180deg, #0e432a 0%, #145838 36%, #1c5044 70%, #163e34 100%) !important;
+    linear-gradient(180deg, #0e432a 0%, #145838 36%, #1c5046 70%, #173c41 100%) !important;
 }
 
 /* ============================================================
@@ -13224,14 +13224,14 @@ body {
 #discover-view {
   background:
     radial-gradient(120% 65% at 85% -10%, rgba(110, 183, 166, 0.22) 0%, rgba(110, 183, 166, 0) 55%),
-    linear-gradient(200deg, #275c50 0%, #153f36 42%, #0c2822 72%, #071b16 100%) !important;
+    linear-gradient(200deg, #275c52 0%, #153f3a 42%, #0c2728 72%, #081a1d 100%) !important;
 }
 
 .discover-panel,
 .recommend-cta {
   background:
     radial-gradient(120% 70% at 85% -10%, rgba(110, 183, 166, 0.22) 0%, rgba(110, 183, 166, 0) 55%),
-    linear-gradient(200deg, rgba(39, 92, 80, 0.85) 0%, rgba(21, 63, 54, 0.85) 42%, rgba(12, 40, 34, 0.85) 72%, rgba(7, 27, 22, 0.85) 100%) !important;
+    linear-gradient(200deg, rgba(39, 92, 82, 0.85) 0%, rgba(21, 63, 58, 0.85) 42%, rgba(12, 39, 40, 0.85) 72%, rgba(8, 26, 29, 0.85) 100%) !important;
 }
 
 /* ============================================================
@@ -13263,7 +13263,7 @@ body {
 
 #search-view .filter-top-tab.active {
   border-color: rgba(132, 193, 179, 0.55) !important;
-  background: linear-gradient(150deg, #438576 0%, #275c50 55%, #153f36 100%) !important;
+  background: linear-gradient(150deg, #438578 0%, #275c58 55%, #163e43 100%) !important;
   color: #f2f8ff !important;
   box-shadow:
     0 10px 22px rgba(2, 13, 11, 0.48),
@@ -13314,7 +13314,7 @@ body {
 
 #search-view #year_published-box .custom-select-trigger {
   border-color: rgba(132, 193, 179, 0.45);
-  background: linear-gradient(150deg, #275c50 0%, #153e35 55%, #0c2822 100%);
+  background: linear-gradient(150deg, #275c52 0%, #153e3b 55%, #0d272b 100%);
 }
 
 #search-view #year_published-box .custom-select-trigger:hover {
@@ -13987,7 +13987,7 @@ body {
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  background: linear-gradient(165deg, rgba(64, 129, 114, 0.98) 0%, rgba(43, 107, 93, 0.97) 45%, rgba(25, 83, 70, 0.98) 100%) !important;
+  background: linear-gradient(165deg, rgba(64, 128, 117, 0.98) 0%, rgba(43, 106, 100, 0.97) 45%, rgba(27, 81, 88, 0.98) 100%) !important;
   border: 1px solid rgba(172, 217, 207, 0.55) !important;
   box-shadow:
     0 30px 60px rgba(2, 8, 16, 0.6),
@@ -14145,7 +14145,7 @@ body {
 
 #book-modal .modal-panel,
 #location-modal .location-modal-panel {
-  background: linear-gradient(165deg, rgba(64, 129, 114, 0.98) 0%, rgba(43, 107, 93, 0.97) 45%, rgba(25, 83, 70, 0.98) 100%) !important;
+  background: linear-gradient(165deg, rgba(64, 128, 117, 0.98) 0%, rgba(43, 106, 100, 0.97) 45%, rgba(27, 81, 88, 0.98) 100%) !important;
   border: 1px solid rgba(172, 217, 207, 0.55) !important;
   box-shadow:
     0 30px 60px rgba(2, 8, 16, 0.6),
@@ -14238,7 +14238,7 @@ body {
    is the only property changed; border/shadow (already reworked
    in v179) are left alone. */
 #search-view .filter-card.filter-core {
-  background: linear-gradient(165deg, rgba(53, 116, 101, 0.9) 0%, rgba(35, 96, 81, 0.9) 100%) !important;
+  background: linear-gradient(165deg, rgba(53, 115, 104, 0.9) 0%, rgba(37, 93, 101, 0.9) 100%) !important;
 }
 
 /* ============================================================
@@ -14321,7 +14321,7 @@ body {
 #account-modal .account-modal-panel {
   background:
     radial-gradient(130% 160% at 12% -8%, rgba(67, 133, 118, 0.35) 0%, rgba(13, 46, 39, 0) 55%),
-    linear-gradient(165deg, #2b695b 0%, #194b40 55%, #0d2e27 100%) !important;
+    linear-gradient(165deg, #2b695d 0%, #194b46 55%, #0e2c31 100%) !important;
   border: 1px solid rgba(132, 193, 179, 0.55) !important;
   box-shadow:
     0 30px 64px rgba(2, 11, 9, 0.55),
@@ -14364,7 +14364,7 @@ body {
 }
 
 #account-modal .account-type-menu {
-  background: linear-gradient(180deg, rgba(24, 61, 52, 0.99) 0%, rgba(13, 46, 39, 0.99) 100%) !important;
+  background: linear-gradient(180deg, rgba(24, 60, 54, 0.99) 0%, rgba(14, 44, 49, 0.99) 100%) !important;
 }
 
 #account-modal .account-type-option,
@@ -14401,7 +14401,7 @@ body {
 }
 
 #account-modal .primary-btn {
-  background: linear-gradient(180deg, #4e9887 0%, #2b695b 30%, #194b40 65%, #10382f 100%) !important;
+  background: linear-gradient(180deg, #4e988a 0%, #2b6962 30%, #194a4b 65%, #11363b 100%) !important;
   border: 1px solid rgba(156, 206, 195, 0.5) !important;
   box-shadow:
     0 18px 34px rgba(4, 18, 15, 0.42),
@@ -14538,7 +14538,7 @@ body {
 #my-books-modal .my-books-modal-panel {
   background:
     radial-gradient(130% 160% at 12% -8%, rgba(67, 133, 118, 0.35) 0%, rgba(13, 46, 39, 0) 55%),
-    linear-gradient(165deg, #2b695b 0%, #194b40 55%, #0d2e27 100%) !important;
+    linear-gradient(165deg, #2b695d 0%, #194b46 55%, #0e2c31 100%) !important;
   border: 1px solid rgba(132, 193, 179, 0.55) !important;
   box-shadow:
     0 30px 64px rgba(2, 11, 9, 0.55),
@@ -14551,7 +14551,7 @@ body {
   #my-books-modal .my-books-modal-panel {
     background:
       radial-gradient(130% 160% at 12% -8%, rgba(67, 133, 118, 0.35) 0%, rgba(13, 46, 39, 0) 55%),
-      linear-gradient(165deg, #2b695b 0%, #194b40 55%, #0d2e27 100%) !important;
+      linear-gradient(165deg, #2b695d 0%, #194b46 55%, #0e2c31 100%) !important;
   }
 }
 
@@ -15225,7 +15225,7 @@ a.discover-signin-btn {
   background:
     radial-gradient(70% 42% at 50% 0%, rgba(var(--panel-accent), 0.13) 0%, rgba(var(--panel-accent), 0) 72%),
     radial-gradient(120% 70% at 85% -10%, rgba(110, 183, 166, 0.22) 0%, rgba(110, 183, 166, 0) 55%),
-    linear-gradient(200deg, rgba(39, 92, 80, 0.85) 0%, rgba(21, 63, 54, 0.85) 42%, rgba(12, 40, 34, 0.85) 72%, rgba(7, 27, 22, 0.85) 100%) !important;
+    linear-gradient(200deg, rgba(39, 92, 82, 0.85) 0%, rgba(21, 63, 58, 0.85) 42%, rgba(12, 39, 40, 0.85) 72%, rgba(8, 26, 29, 0.85) 100%) !important;
 }
 
 .discover-panel[data-panel-key="course_highlights"] {
@@ -15596,7 +15596,7 @@ a.discover-signin-btn {
    ============================================================ */
 
 :root {
-  --kiosk-page-bg: #f4f6f9;
+  --kiosk-page-bg: #f4f8f6;
   --kiosk-page-ink: #102822;          /* headings / primary text on the page */
   --kiosk-page-ink-muted: #465e58;    /* secondary text on the page */
   --kiosk-page-placeholder: #586d68;  /* input placeholders on white fields */
@@ -15606,11 +15606,18 @@ a.discover-signin-btn {
   --kiosk-page-focus: #2f6f61;
 }
 
-/* ---- Page background ---- */
+/* ---- Page background ----
+   Phase 3: a soft tint instead of flat off-white, so the dark cards sit
+   in a lit space rather than floating on blank white -- seal green from
+   the top right and the bottom, a faint warm gold from the top left. */
 html body,
 html body #discover-view,
 html body #search-view {
-  background: var(--kiosk-page-bg) !important;
+  background:
+    radial-gradient(65% 45% at 90% -5%, rgba(26, 78, 66, 0.22) 0%, rgba(26, 78, 66, 0) 62%),
+    radial-gradient(55% 40% at 5% 10%, rgba(216, 154, 43, 0.16) 0%, rgba(216, 154, 43, 0) 60%),
+    radial-gradient(80% 55% at 50% 105%, rgba(26, 78, 66, 0.14) 0%, rgba(26, 78, 66, 0) 65%),
+    var(--kiosk-page-bg) !important;
 }
 
 /* ---- Discover hero ---- */
@@ -15724,17 +15731,17 @@ html body .discover-panel[data-panel-key] {
   background:
     radial-gradient(70% 42% at 50% 0%, rgba(var(--panel-accent), 0.13) 0%, rgba(var(--panel-accent), 0) 72%),
     radial-gradient(120% 70% at 85% -10%, rgba(110, 183, 166, 0.22) 0%, rgba(110, 183, 166, 0) 55%),
-    linear-gradient(200deg, rgb(39, 92, 80) 0%, rgb(21, 63, 54) 42%, rgb(12, 40, 34) 72%, rgb(7, 27, 22) 100%) !important;
+    linear-gradient(200deg, rgb(39, 92, 82) 0%, rgb(21, 63, 58) 42%, rgb(12, 39, 40) 72%, rgb(8, 26, 29) 100%) !important;
 }
 
 html body .recommend-cta {
   background:
     radial-gradient(120% 70% at 85% -10%, rgba(110, 183, 166, 0.22) 0%, rgba(110, 183, 166, 0) 55%),
-    linear-gradient(200deg, rgb(39, 92, 80) 0%, rgb(21, 63, 54) 42%, rgb(12, 40, 34) 72%, rgb(7, 27, 22) 100%) !important;
+    linear-gradient(200deg, rgb(39, 92, 82) 0%, rgb(21, 63, 58) 42%, rgb(12, 39, 40) 72%, rgb(8, 26, 29) 100%) !important;
 }
 
 html body #search-view .filter-card.filter-core {
-  background: linear-gradient(165deg, rgb(52, 114, 99) 0%, rgb(32, 90, 77) 100%) !important;
+  background: linear-gradient(165deg, rgb(52, 114, 102) 0%, rgb(34, 88, 96) 100%) !important;
 }
 
 html body #search-view #book-grid .no-results {
@@ -15795,7 +15802,7 @@ html body .discover-footer .discover-footer-brand-pill {
 
 /* ---- Discover: library-card CTA kicker ("New here?") ---- */
 html body .recommend-cta--split .cta-path--card .cta-path-kicker {
-  color: #55d89c !important;
+  color: #66e3ab !important;
 }
 
 /* ---- Search: filter card label ---- */
@@ -15917,35 +15924,35 @@ html body #search-view #clear-active {
    lime availability pill.
 
    Logos: wherever the PHINMA icon and the St. Jude seal appear
-   together, the seal comes first and is the larger mark; PHINMA stays,
-   smaller, as the secondary mark (the accreditation relationship).
+   together, the seal comes first; since phase 3 both marks are the same
+   visual weight (PHINMA kept for the accreditation relationship).
+   Phase 3 also re-widened the hue inside every gradient phase 2
+   converted: lightest stop teal-green (~169 deg) to darkest cool
+   near-black green (~187 deg), each stop at its original luminance.
    ============================================================ */
 
-/* Footer and search-hero logo pills: seal primary, PHINMA secondary. */
+/* Footer and search-hero logo pills: seal first, both marks at equal
+   visual weight (phase 3; phase 2 had PHINMA smaller). */
 .discover-footer-brand-pill img.brand-mark-primary,
-.search-hero-brand--pill .search-hero-brand-icon--primary {
-  width: clamp(34px, 3.6vw, 40px);
-  height: clamp(34px, 3.6vw, 40px);
-}
-
+.search-hero-brand--pill .search-hero-brand-icon--primary,
 .discover-footer-brand-pill img.brand-mark-secondary,
 .search-hero-brand--pill .search-hero-brand-icon--secondary {
-  width: clamp(20px, 2.2vw, 24px);
-  height: clamp(20px, 2.2vw, 24px);
-  opacity: 0.9;
+  width: clamp(28px, 3.2vw, 34px);
+  height: clamp(28px, 3.2vw, 34px);
+  opacity: 1;
 }
 
-/* Sign-in modal: seal added as the primary mark beside the PHINMA
-   Education wordmark, which drops to secondary size (it was the only
-   mark here, at 200px wide). */
+/* Sign-in modal: seal beside the PHINMA Education wordmark at equal
+   visual weight -- the wordmark is wide (462x147), so it's matched to
+   the seal by height, not width. */
 html body #account-modal .account-brand-mark {
   gap: 14px;
   max-width: 300px !important;
 }
 
 html body #account-modal .account-brand-mark .account-brand-seal {
-  width: 56px !important;
-  height: 56px !important;
+  width: 52px !important;
+  height: 52px !important;
   flex: 0 0 auto;
   border-radius: 50%;
 }
@@ -15957,9 +15964,28 @@ html body #account-modal .account-brand-mark .account-brand-divider {
 }
 
 html body #account-modal .account-brand-mark .account-brand-phinma {
-  width: 128px !important;
+  height: 52px !important;
+  width: auto !important;
   flex: 0 0 auto;
-  opacity: 0.92 !important;
+  opacity: 1 !important;
+}
+
+/* Grounding shadow (phase 3): a faint seal-green hairline and a soft,
+   offset green shadow so the dark cards sit on the tinted page instead
+   of floating. Each keeps its existing inner top highlight. */
+html body .discover-panel[data-panel-key],
+html body .recommend-cta {
+  box-shadow:
+    0 0 0 1px rgba(26, 78, 66, 0.08),
+    0 30px 60px -20px rgba(26, 78, 66, 0.35),
+    0 1px 0 rgba(173, 216, 195, 0.12) inset !important;
+}
+
+html body #search-view .filter-card.filter-core {
+  box-shadow:
+    0 0 0 1px rgba(26, 78, 66, 0.08),
+    0 24px 48px -18px rgba(26, 78, 66, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.08) inset !important;
 }
 
 /* Footer separators: the deferred phase-1 item. The gold dots were
