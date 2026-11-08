@@ -16010,3 +16010,266 @@ html body #search-view .search-header .user-info span {
 html body #my-books-modal .my-books-subtitle {
   color: #d3ebe5 !important;
 }
+
+/* ============================================================
+   SJCDC rebrand phase 4: light content cards
+   ------------------------------------------------------------
+   The carousel panels, the search filter card and the CTA cards flip
+   from dark-green cards to white cards with a seal-green accent. The
+   seven modals, the dock and the account dropdown keep their dark
+   treatment (out of scope for this pass).
+
+   Accent inks: the panel accents and reason-pill tones were bright
+   tints made for dark cards and all fail on white (1.4-2.2:1). On the
+   light cards each uses an "ink" version -- same hue, darkened just
+   enough to clear 5:1 on its own 12% pill tint (~6:1 on white):
+     course/personalized gold  rgb(123,96,0)   trending/sky  rgb(11,104,163)
+     borrowed/amber            rgb(166,70,0)    new/mint      rgb(28,112,74)
+     genre/lilac               rgb(39,75,248)   available/lime rgb(50,112,19)
+   The bright originals still drive the glows (cover halo, arrow breathe
+   ring, top accent bar) and everything inside the dark modals.
+   ============================================================ */
+
+:root {
+  --kiosk-card-ink: #16302a;        /* headings, book titles */
+  --kiosk-card-ink-muted: #4a6a5f;  /* subtitles, labels */
+  --kiosk-card-ink-soft: #577065;   /* author lines */
+  --kiosk-card-line: rgba(26, 78, 66, 0.14);
+  --kiosk-card-control: #f0f5f2;    /* light control fill: arrows, chips */
+  --kiosk-card-shadow: 0 0 0 1px rgba(26, 78, 66, 0.10), 0 24px 48px -24px rgba(26, 78, 66, 0.25);
+}
+
+/* ---- Carousel panels ---- */
+html body .discover-panel[data-panel-key] {
+  background: #ffffff !important;
+  border: 0 !important;
+  border-top: 4px solid #1a4e42 !important;
+  box-shadow: var(--kiosk-card-shadow) !important;
+}
+
+html body .discover-panel[data-panel-key="course_highlights"] { --panel-ink: 123, 96, 0; }
+html body .discover-panel[data-panel-key="new_arrivals"]      { --panel-ink: 28, 112, 74; }
+html body .discover-panel[data-panel-key="most_searched"]     { --panel-ink: 11, 104, 163; }
+html body .discover-panel[data-panel-key="most_borrowed"]     { --panel-ink: 166, 70, 0; }
+
+html body .discover-panel[data-panel-key] h2 {
+  color: var(--kiosk-card-ink) !important;
+  text-shadow: none !important;
+}
+
+html body .discover-panel[data-panel-key] h2::before {
+  background-color: rgb(var(--panel-ink));
+  filter: none;
+}
+
+html body .discover-panel[data-panel-key] > p {
+  color: var(--kiosk-card-ink-muted) !important;
+}
+
+html body .discover-panel[data-panel-key] .carousel-title {
+  color: var(--kiosk-card-ink) !important;
+  text-shadow: none !important;
+}
+
+html body .discover-panel[data-panel-key] .carousel-author {
+  color: var(--kiosk-card-ink-soft) !important;
+}
+
+/* Cover halo: the same breathing glow, toned down for a white card. */
+html body .discover-panel[data-panel-key] .discover-carousel::before {
+  background:
+    radial-gradient(42% 58% at 50% 50%, rgba(var(--panel-accent), 0.2) 0%, rgba(var(--panel-accent), 0) 70%),
+    radial-gradient(70% 80% at 50% 62%, rgba(255, 216, 77, 0.08) 0%, rgba(255, 216, 77, 0) 70%);
+}
+
+html body .discover-panel[data-panel-key] .carousel-books .center {
+  box-shadow:
+    0 18px 36px rgba(26, 78, 66, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.4) inset,
+    0 0 0 1px rgba(var(--panel-accent), 0.35),
+    0 0 26px rgba(var(--panel-accent), 0.24) !important;
+}
+
+/* Side covers: the dim/fade was tuned for a dark backdrop -- low opacity
+   let the white card show through as a washed, pinkish grey. On white,
+   depth comes from scale (unchanged), a soft green drop shadow and
+   reduced saturation instead; the covers stay opaque. :not(.carousel-swap)
+   keeps the brief fade-out during rotation working. */
+html body .discover-panel[data-panel-key] .carousel-books img:nth-child(2):not(.carousel-swap),
+html body .discover-panel[data-panel-key] .carousel-books img:nth-child(4):not(.carousel-swap) {
+  opacity: 1 !important;
+  filter: saturate(0.85) drop-shadow(0 8px 12px rgba(26, 78, 66, 0.18));
+}
+
+html body .discover-panel[data-panel-key] .carousel-books img:nth-child(1):not(.carousel-swap),
+html body .discover-panel[data-panel-key] .carousel-books img:nth-child(5):not(.carousel-swap) {
+  opacity: 1 !important;
+  filter: saturate(0.6) brightness(1.04) drop-shadow(0 6px 10px rgba(26, 78, 66, 0.14));
+}
+
+/* Arrows: light fill, seal-green chevron and rim. The gold hover/press
+   and the breathe ring (::after) are unchanged. */
+html body .discover-panel[data-panel-key] .carousel-arrow {
+  color: #1a4e42 !important;
+  background: var(--kiosk-card-control) !important;
+  border: 1px solid #1a4e42 !important;
+  box-shadow: 0 6px 14px rgba(26, 78, 66, 0.16) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Reason pills: ink tones on the light cards (see header). */
+html body .discover-panel[data-panel-key] .carousel-reason.reason--personalized { --reason-tone: 123, 96, 0; }
+html body .discover-panel[data-panel-key] .carousel-reason.reason--trending     { --reason-tone: 11, 104, 163; }
+html body .discover-panel[data-panel-key] .carousel-reason.reason--borrowed     { --reason-tone: 166, 70, 0; }
+html body .discover-panel[data-panel-key] .carousel-reason.reason--new          { --reason-tone: 28, 112, 74; }
+html body .discover-panel[data-panel-key] .carousel-reason.reason--genre        { --reason-tone: 39, 75, 248; }
+html body .discover-panel[data-panel-key] .carousel-reason.reason--availability { --reason-tone: 50, 112, 19; }
+
+/* ---- Search filter card ---- */
+html body #search-view .filter-card.filter-core {
+  background: #ffffff !important;
+  border: 0 !important;
+  border-top: 4px solid #1a4e42 !important;
+  box-shadow: var(--kiosk-card-shadow) !important;
+}
+
+html body #search-view .filter-top-tabs {
+  background: #eef4f1 !important;
+  border: 1px solid var(--kiosk-card-line) !important;
+}
+
+html body #search-view .filter-top-tab:not(.active) {
+  color: var(--kiosk-card-ink-muted) !important;
+}
+
+html body #search-view .filter-card .filter-label,
+html body #search-view #year_published-box .year-range-label {
+  color: var(--kiosk-card-ink-muted) !important;
+}
+
+html body #search-view #genre-box .chip:not(.active):not(.chip-active) {
+  color: var(--kiosk-card-ink) !important;
+  background: var(--kiosk-card-control) !important;
+  border-color: rgba(26, 78, 66, 0.2) !important;
+}
+
+html body #search-view .chip-scroll-btn {
+  color: #1a4e42;
+  background: var(--kiosk-card-control);
+  border-color: rgba(26, 78, 66, 0.35);
+  box-shadow: 0 4px 10px rgba(26, 78, 66, 0.12);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html body #search-view .chip-scroll-btn:hover:not(:disabled) {
+  background: #e3ede8;
+}
+
+html body #search-view .active-filter-row {
+  border-color: var(--kiosk-card-line) !important;
+}
+
+html body #search-view .active-filter-row > span,
+html body #search-view #active-filters .active-chip,
+html body #search-view #active-filters .active-chip .remove-x {
+  color: var(--kiosk-card-ink) !important;
+}
+
+html body #search-view #active-filters .active-chip .remove-x:hover {
+  color: var(--kiosk-card-ink) !important;
+  background: rgba(26, 78, 66, 0.1);
+}
+
+/* Year tab: the "Any" dropdowns become light fields with a light list. */
+html body #search-view #year_published-box .custom-select-trigger {
+  color: var(--kiosk-card-ink) !important;
+  background: #ffffff !important;
+  border-color: rgba(26, 78, 66, 0.3) !important;
+  box-shadow: 0 2px 6px rgba(26, 78, 66, 0.08) !important;
+}
+
+html body #search-view #year_published-box .custom-select-panel {
+  background: #ffffff !important;
+  border-color: var(--kiosk-card-line) !important;
+  box-shadow: 0 18px 36px -12px rgba(26, 78, 66, 0.3) !important;
+}
+
+html body #search-view #year_published-box .custom-select-option {
+  color: var(--kiosk-card-ink) !important;
+}
+
+html body #search-view #year_published-box .custom-select-option:hover,
+html body #search-view #year_published-box .custom-select-option.is-selected {
+  color: var(--kiosk-card-ink) !important;
+  background: rgba(26, 78, 66, 0.1) !important;
+}
+
+/* ---- CTA cards: tinted, not plain white, so they still read as calls
+   to action. Each path keeps its gold / green border. ---- */
+html body .recommend-cta {
+  background: #ffffff !important;
+  border: 0 !important;
+  box-shadow: var(--kiosk-card-shadow) !important;
+}
+
+html body .recommend-cta--split .cta-path--signin {
+  background: linear-gradient(180deg, rgba(255, 216, 94, 0.24) 0%, rgba(255, 216, 94, 0.1) 100%);
+}
+
+html body .recommend-cta--split .cta-path--card {
+  background: linear-gradient(180deg, rgba(63, 207, 142, 0.18) 0%, rgba(63, 207, 142, 0.07) 100%);
+}
+
+html body .recommend-cta h3 {
+  color: var(--kiosk-card-ink) !important;
+  text-shadow: none !important;
+}
+
+html body .recommend-cta p {
+  color: var(--kiosk-card-ink-muted) !important;
+}
+
+html body .recommend-cta--split .cta-path--signin .cta-path-kicker {
+  color: #7a5c00 !important;
+}
+
+html body .recommend-cta--split .cta-path--card .cta-path-kicker {
+  color: #1f6b48 !important;
+}
+
+html body .recommend-cta--split .cta-path-or::before {
+  background: linear-gradient(180deg, rgba(26, 78, 66, 0) 0%, rgba(26, 78, 66, 0.22) 50%, rgba(26, 78, 66, 0) 100%);
+}
+
+html body .recommend-cta--split .cta-path-or span {
+  color: var(--kiosk-card-ink-muted);
+  background: #ffffff;
+  border-color: rgba(26, 78, 66, 0.22);
+}
+
+@media (max-width: 760px) {
+  html body .recommend-cta--split .cta-path-or::before {
+    background: linear-gradient(90deg, rgba(26, 78, 66, 0) 0%, rgba(26, 78, 66, 0.22) 50%, rgba(26, 78, 66, 0) 100%);
+  }
+}
+
+/* Filter-card icons drawn as inline SVG with light strokes baked in
+   (they vanished on the white card): the 20 genre-chip icons
+   (stroke #eafff2) render dark on unselected chips -- the gold selected
+   chip already has its own dark icons; the "Active filters" funnel and
+   the selected-year check get the card's muted ink. */
+html body #search-view #genre-box .chip:not(.chip-active)::before {
+  filter: brightness(0);
+  opacity: 0.68;
+}
+
+html body #search-view .active-filter-row > span::before {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234a6a5f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 5h16l-6.2 7.2v6.1l-3.6 1.8v-7.9z'/%3E%3C/svg%3E") no-repeat center / contain;
+  opacity: 1;
+}
+
+html body #search-view #year_published-box .custom-select-option.is-selected::after {
+  color: #1f6b48;
+}
