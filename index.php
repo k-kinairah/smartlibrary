@@ -432,7 +432,7 @@ if ($genreRes) {
         <div class="account-brand-mark">
             <img class="account-brand-seal" src="assets/images/stjude_seal_64.png" alt="St. Jude College" width="56" height="56">
             <span class="account-brand-divider" aria-hidden="true"></span>
-            <img class="account-brand-phinma" src="assets/images/phinma-dark-theme.png" alt="PHINMA Education">
+            <img class="account-brand-phinma" src="assets/images/phinma-icon.png" alt="PHINMA Education">
         </div>
         <h3 class="modal-title">Welcome to SJCDC Library</h3>
         <p class="modal-subtitle">Sign in to borrow books and access personalized recommendations</p>
