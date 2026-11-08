@@ -64,7 +64,13 @@ if ($genreRes) {
 <div id="discover-view">
     <div class="discover-section" id="discover-section">
         <div class="discover-hero">
-            <div class="discover-pill">✨ AI-Powered Recommendations</div>
+            <div class="discover-pill">
+                <span class="discover-pill-glow" aria-hidden="true"></span>
+                <span class="discover-pill-emboss" aria-hidden="true"></span>
+                <span class="discover-pill-sheen" aria-hidden="true"></span>
+                <span class="discover-pill-gem" aria-hidden="true"><span class="discover-pill-spark"></span></span>
+                <span class="discover-pill-text">AI-Powered Recommendations</span>
+            </div>
             <h1>Discover Your Next Read</h1>
             <p>Personalized book suggestions curated just for you</p>
             <div class="discover-hero-divider" aria-hidden="true"></div>
