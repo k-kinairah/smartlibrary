@@ -16714,3 +16714,33 @@ html body .discover-hero .discover-pill {
   position: relative;
   z-index: 1;
 }
+
+/* ============================================================
+   Find This Book icon + logo-pill divider
+   ------------------------------------------------------------
+   - The Find This Book label is near-black (#031a10) on the green
+     button, but an older rule still stroked the pin icon white; the
+     icon now matches the label.
+   - The divider between the seal and the PHINMA icon in the logo pills
+     (search hero and footer) was white at 18% from the dark theme, so
+     it vanished on the light pill. It is now a 2px gold-to-seal-green
+     line that fades out at both ends, the same gold/green pairing as
+     the card bands.
+   ============================================================ */
+
+html body #book-modal .find-book-btn svg {
+  stroke: #031a10 !important;
+}
+
+html body .search-hero-brand-pill-divider,
+html body .discover-footer-brand-pill-divider {
+  flex: none;
+  width: 2px;
+  height: 24px;
+  border-radius: 2px;
+  background: linear-gradient(180deg,
+    rgba(216, 154, 43, 0) 0%,
+    rgba(216, 154, 43, 0.95) 28%,
+    rgba(26, 78, 66, 0.9) 72%,
+    rgba(26, 78, 66, 0) 100%);
+}
