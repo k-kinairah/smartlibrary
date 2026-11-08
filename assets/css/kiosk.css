@@ -16384,3 +16384,78 @@ html body .discover-panel[data-panel-key] > h2 + p::after {
     max-width: 100% !important;
   }
 }
+
+/* ============================================================
+   SJCDC rebrand phase 6: backlit frame glow
+   ------------------------------------------------------------
+   Replaces the card shadow (phase 4's --kiosk-card-shadow) with a tight
+   glow that hugs the gold frame, plus a faint top-down green wash inside
+   the card. The grounding shadow underneath stays short and neutral so
+   no coloured haze collects in the gap between stacked cards. The
+   halo is 12px/1px rather than 22px/3px: the cards stack 24px apart,
+   and at 22px two neighbouring halos met and filled the gap with mint
+   (midline chroma 32 vs 8); at 12px the gap stays neutral. The
+   phase-5 hairline, band, arcs and serif type are unchanged.
+   ============================================================ */
+
+:root {
+  --kiosk-frame-glow:
+    0 0 0 1px rgba(216, 154, 43, 0.85),
+    0 0 0 3px rgba(45, 201, 140, 0.22),
+    0 0 12px 1px rgba(45, 201, 140, 0.45),
+    0 8px 20px -14px rgba(26, 78, 66, 0.15);
+  --kiosk-frame-wash: radial-gradient(90% 60% at 50% 0%, rgba(45, 201, 140, 0.08) 0%, rgba(45, 201, 140, 0) 70%);
+}
+
+html body .discover-panel[data-panel-key],
+html body #search-view .filter-card.filter-core,
+html body .recommend-cta {
+  box-shadow: var(--kiosk-frame-glow) !important;
+}
+
+html body .discover-panel[data-panel-key] {
+  background:
+    var(--kiosk-foil-band) top left / 100% 4px no-repeat,
+    var(--kiosk-foil-arcs) top right / var(--kiosk-wm-panel) calc(var(--kiosk-wm-panel) * 1.5) no-repeat,
+    var(--kiosk-frame-wash),
+    #ffffff !important;
+}
+
+html body #search-view .filter-card.filter-core {
+  background:
+    var(--kiosk-foil-band) top left / 100% 4px no-repeat,
+    var(--kiosk-foil-arcs) top right / var(--kiosk-wm-filter) calc(var(--kiosk-wm-filter) * 1.5) no-repeat,
+    var(--kiosk-frame-wash),
+    #ffffff !important;
+}
+
+html body .recommend-cta {
+  background:
+    var(--kiosk-foil-band) top left / 100% 4px no-repeat,
+    var(--kiosk-frame-wash),
+    #ffffff !important;
+}
+
+/* CTA paths: a smaller frame glow in each path's own colour (gold for
+   sign-in, green for the library card); their washes and borders stay
+   as they are, with a faint top highlight in the same tone. They sit
+   inside the CTA card, so they get no grounding shadow of their own. */
+html body .recommend-cta--split .cta-path--signin {
+  box-shadow:
+    0 0 0 2px rgba(216, 154, 43, 0.16),
+    0 0 12px 1px rgba(216, 154, 43, 0.3);
+  background:
+    var(--kiosk-foil-arcs) top right / var(--kiosk-wm-cta) calc(var(--kiosk-wm-cta) * 1.5) no-repeat,
+    radial-gradient(90% 55% at 50% 0%, rgba(255, 216, 94, 0.16) 0%, rgba(255, 216, 94, 0) 70%),
+    linear-gradient(180deg, rgba(255, 216, 94, 0.24) 0%, rgba(255, 216, 94, 0.1) 100%);
+}
+
+html body .recommend-cta--split .cta-path--card {
+  box-shadow:
+    0 0 0 2px rgba(45, 201, 140, 0.16),
+    0 0 12px 1px rgba(45, 201, 140, 0.3);
+  background:
+    var(--kiosk-foil-arcs) top right / var(--kiosk-wm-cta) calc(var(--kiosk-wm-cta) * 1.5) no-repeat,
+    radial-gradient(90% 55% at 50% 0%, rgba(63, 207, 142, 0.12) 0%, rgba(63, 207, 142, 0) 70%),
+    linear-gradient(180deg, rgba(63, 207, 142, 0.18) 0%, rgba(63, 207, 142, 0.07) 100%);
+}
