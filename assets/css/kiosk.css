@@ -16771,3 +16771,242 @@ html body #account-modal .account-brand-mark .account-brand-divider {
     rgba(102, 227, 171, 0.85) 72%,
     rgba(102, 227, 171, 0) 100%) !important;
 }
+
+/* ============================================================
+   Glassmorphism: page backdrop, discover panels, filter card, search
+   header
+   ------------------------------------------------------------
+   Values are as live-tested; only the selectors are adapted to outrank
+   the earlier !important layers (html body ... [data-panel-key],
+   #search-view ...). Additions needed for the glass to work:
+   - #discover-view / #search-view painted the phase-3 page tint over
+     the body, so they go transparent and the body's fixed colour blobs
+     show through both views;
+   - phase 7 left a solid #ffffff background-color under the panel and
+     filter-card images, which would block the blur; it is now
+     transparent, so a browser without backdrop-filter shows just the
+     semi-transparent gradient;
+   - the panel ::before was phase 3's hidden 72x3 accent bar; it is
+     re-sized to cover the panel as the glossy sheen, and the panel's
+     direct children sit above it (position: relative; z-index: 1).
+   ============================================================ */
+
+/* Backdrop: colourful blobs for the glass panels to blur against. */
+html body {
+  background:
+    radial-gradient(55% 42% at 88% -2%, rgba(26, 78, 66, 1) 0%, rgba(26, 78, 66, 0) 70%),
+    radial-gradient(48% 38% at 2% 0%, rgba(216, 154, 43, 0.9) 0%, rgba(216, 154, 43, 0) 66%),
+    radial-gradient(62% 48% at 48% 50%, rgba(63, 207, 142, 0.85) 0%, rgba(63, 207, 142, 0) 70%),
+    radial-gradient(52% 40% at 10% 100%, rgba(216, 154, 43, 0.78) 0%, rgba(216, 154, 43, 0) 64%),
+    radial-gradient(50% 38% at 95% 98%, rgba(26, 78, 66, 0.95) 0%, rgba(26, 78, 66, 0) 66%),
+    radial-gradient(40% 30% at 55% 8%, rgba(47, 111, 97, 0.65) 0%, rgba(47, 111, 97, 0) 65%),
+    rgb(244, 248, 246) !important;
+  background-attachment: fixed, fixed, fixed, fixed, fixed, fixed, scroll !important;
+}
+
+html body #discover-view,
+html body #search-view {
+  background: transparent !important;
+}
+
+/* Discover panels: gold-to-green frosted glass. */
+html body .discover-panel[data-panel-key] {
+  background-color: transparent !important;
+  background-image:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%),
+    linear-gradient(120deg, rgba(216, 154, 43, 0.75) 0%, rgba(255, 255, 255, 0.4) 28%, rgba(26, 78, 66, 0.65) 55%, rgba(63, 207, 142, 0.6) 78%, rgba(216, 154, 43, 0.5) 100%) !important;
+  background-size: auto !important;
+  background-position: 0 0 !important;
+  background-repeat: no-repeat !important;
+  backdrop-filter: blur(32px) saturate(220%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(220%) !important;
+  box-shadow:
+    0 40px 80px -14px rgba(16, 54, 46, 0.34),
+    0 0 50px 2px rgba(216, 154, 43, 0.14),
+    0 0 70px 6px rgba(63, 207, 142, 0.14),
+    0 0 1px rgba(255, 255, 255, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* Glossy diagonal sheen. */
+html body .discover-panel[data-panel-key]::before {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0;
+  top: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  transform: none;
+  box-shadow: none;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 26%, rgba(255, 255, 255, 0) 74%, rgba(255, 255, 255, 0.2) 100%);
+}
+
+html body .discover-panel[data-panel-key] > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Subtitle: keeps its contrast over the mid-tone part of the gradient. */
+html body .discover-panel[data-panel-key] > p {
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9), 0 1px 8px rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Search filter card: same glass formula. */
+html body #search-view .filter-card.filter-core {
+  background-color: transparent !important;
+  background-image:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%),
+    linear-gradient(120deg, rgba(216, 154, 43, 0.75) 0%, rgba(255, 255, 255, 0.4) 28%, rgba(26, 78, 66, 0.65) 55%, rgba(63, 207, 142, 0.6) 78%, rgba(216, 154, 43, 0.5) 100%) !important;
+  background-size: auto !important;
+  background-position: 0 0 !important;
+  background-repeat: no-repeat !important;
+  backdrop-filter: blur(32px) saturate(220%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(220%) !important;
+  box-shadow:
+    0 40px 80px -14px rgba(16, 54, 46, 0.34),
+    0 0 50px 2px rgba(216, 154, 43, 0.14),
+    0 0 70px 6px rgba(63, 207, 142, 0.14),
+    0 0 1px rgba(255, 255, 255, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Search-view header (floating dock): translucent green glass. */
+html body #search-view .header.search-header {
+  background: linear-gradient(135deg, rgba(58, 122, 105, 0.72) 0%, rgba(22, 68, 62, 0.68) 50%, rgba(10, 34, 30, 0.75) 100%) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  box-shadow: 0 16px 40px rgba(2, 11, 9, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 0 1px rgba(255, 255, 255, 0.45) !important;
+}
+
+/* ============================================================
+   Glassmorphism: per-element contrast fixes
+   ------------------------------------------------------------
+   The glass backdrop, panel / filter-card gradients and blur, the sheen
+   and the header glass above are unchanged. Only text that measured
+   below WCAG AA on the glass gets its own backing:
+   - pills and kickers become solid chips: each reason pill keeps its
+     12% tone tint, now over near-opaque white (the chip it was on the
+     white cards); kickers get a white chip;
+   - text straight on the glass or the page blobs gets a scrim fitted to
+     the text box (light, --kiosk-scrim), not the full panel width;
+   - the search dock is dark glass with light text, so its title and
+     tagline get a dark scrim instead.
+   ============================================================ */
+
+:root {
+  --kiosk-scrim: rgba(255, 255, 255, 0.62);
+  --kiosk-scrim-dark: rgba(8, 30, 26, 0.5);
+}
+
+/* ---- Pills / chips ---- */
+html body .discover-panel[data-panel-key] .carousel-reason[class*="reason--"] {
+  background:
+    linear-gradient(rgba(var(--reason-tone), 0.12), rgba(var(--reason-tone), 0.12)),
+    rgba(255, 255, 255, 0.95) !important;
+}
+
+html body .discover-panel[data-panel-key] .panel-kicker {
+  width: fit-content;
+  margin: 0 auto 6px;
+  padding: 3px 8px 3px 10.5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* ---- Light text scrims, fitted to the text ---- */
+html body .discover-panel[data-panel-key] > h2 + p,
+html body .discover-panel[data-panel-key] .carousel-author,
+html body .discover-hero > p,
+html body .discover-footer > p:not(.discover-footer-brand),
+html body #search-view .search-hero > p,
+html body #search-view .book-meta .book-subtitle,
+html body #search-view .filter-card .filter-label,
+html body #search-view #year_published-box .year-range-label,
+html body #search-view #results-count {
+  width: fit-content;
+  max-width: 100%;
+  padding: 2px 10px;
+  border-radius: 8px;
+  background: var(--kiosk-scrim);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* Centred lines keep their centring once they shrink to fit. */
+html body .discover-panel[data-panel-key] > h2 + p,
+html body .discover-panel[data-panel-key] .carousel-author,
+html body .discover-hero > p,
+html body .discover-footer > p:not(.discover-footer-brand),
+html body #search-view .search-hero > p {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+html body #search-view .book-meta .book-subtitle {
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+
+/* The subtitle's double rule sits just below its scrim, not inside it;
+   the subtitle's bottom margin keeps the old spacing (10px + 4px). */
+html body .discover-panel[data-panel-key] > h2 + p {
+  margin-bottom: 14px !important;
+}
+
+html body .discover-panel[data-panel-key] > h2 + p::after {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 10px);
+  margin: 0;
+  transform: translateX(-50%);
+}
+
+/* ---- Search dock (dark glass): dark scrim behind the light text ---- */
+html body #search-view .search-header .title h2,
+html body #search-view .search-header .title p {
+  width: fit-content;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: var(--kiosk-scrim-dark);
+}
+
+/* Scrim follow-ups: an older rule strips #results-count's padding and
+   background with !important; and the author lines (#577065) and Year
+   labels (#4a6a5f) use lighter inks than the other scrimmed text, so
+   their scrim is stronger (78%) to clear 4.5:1 over the darkest part
+   of the glass. */
+html body #search-view .results-head #results-count {
+  padding: 2px 10px !important;
+  border-radius: 8px !important;
+  background: var(--kiosk-scrim) !important;
+}
+
+html body .discover-panel[data-panel-key] .carousel-author,
+html body #search-view .book-meta .book-subtitle,
+html body #search-view #year_published-box .year-range-label {
+  background: rgba(255, 255, 255, 0.78);
+}
+
+/* Final scrim strengths, set from the measured worst case at 1280/390/
+   340: general text scrim 72%; author lines 88% (lightest ink, over the
+   darkest part of the panel gradient); results count 78%. */
+:root {
+  --kiosk-scrim: rgba(255, 255, 255, 0.72);
+}
+
+html body .discover-panel[data-panel-key] .carousel-author,
+html body #search-view .book-meta .book-subtitle {
+  background: rgba(255, 255, 255, 0.88);
+}
+
+html body #search-view .results-head #results-count {
+  background: rgba(255, 255, 255, 0.78) !important;
+}
