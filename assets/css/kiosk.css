@@ -17163,6 +17163,25 @@ html body .discover-footer .discover-footer-brand span {
   text-shadow: var(--kiosk-glow-light) !important;
 }
 
+/* KNOWN, INTENTIONAL AA GAP: search-grid author names measure 2.42:1 at
+   worst (needs 4.5:1). The page backdrop is background-attachment:
+   fixed, so as the grid scrolls the background behind a name swings
+   from the dark seal-green blob corner, rgb(56,80,75), to near-white.
+   Black passes on the light end but not the dark; white is the
+   reverse; the best single grey reaches 2.90:1. No static text colour
+   clears both ends. Real fixes (a backing shape, a different blob
+   layout behind the grid, or per-item JS colour switching) were judged
+   not worth it for this secondary text. Pure black is the best
+   static choice. */
 html body #search-view #book-grid .book-card .book-meta .book-subtitle {
   color: #000000 !important;
+}
+
+/* Dock title "SmartLib": bold 19px puts it in WCAG large text (>= 18.66px
+   bold, 3:1). Its worst case is 4.27:1 in white over the brightest
+   content showing through the dock glass, which is short of 4.5:1 for
+   small text but clears 3:1. */
+html body #search-view .search-header .title h2 {
+  font-size: 19px !important;
+  font-weight: 700 !important;
 }
