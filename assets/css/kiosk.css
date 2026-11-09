@@ -16791,17 +16791,18 @@ html body #account-modal .account-brand-mark .account-brand-divider {
      direct children sit above it (position: relative; z-index: 1).
    ============================================================ */
 
-/* Backdrop: colourful blobs for the glass panels to blur against. */
+/* Backdrop: deep-green blobs for the glass panels to blur against.
+   Supersedes the earlier gold / mint aurora: the two gold blobs are
+   gone, the centre blob is the Sign In pill's teal-green rgb(32,91,80)
+   instead of bright mint, and the top-centre blob deepens to
+   rgb(17,54,59). Each blob layer is fixed; the base colour scrolls. */
 html body {
   background:
-    radial-gradient(55% 42% at 88% -2%, rgba(26, 78, 66, 1) 0%, rgba(26, 78, 66, 0) 70%),
-    radial-gradient(48% 38% at 2% 0%, rgba(216, 154, 43, 0.9) 0%, rgba(216, 154, 43, 0) 66%),
-    radial-gradient(62% 48% at 48% 50%, rgba(63, 207, 142, 0.85) 0%, rgba(63, 207, 142, 0) 70%),
-    radial-gradient(52% 40% at 10% 100%, rgba(216, 154, 43, 0.78) 0%, rgba(216, 154, 43, 0) 64%),
-    radial-gradient(50% 38% at 95% 98%, rgba(26, 78, 66, 0.95) 0%, rgba(26, 78, 66, 0) 66%),
-    radial-gradient(40% 30% at 55% 8%, rgba(47, 111, 97, 0.65) 0%, rgba(47, 111, 97, 0) 65%),
-    rgb(244, 248, 246) !important;
-  background-attachment: fixed, fixed, fixed, fixed, fixed, fixed, scroll !important;
+    radial-gradient(55% 42% at 88% -2%, rgb(26, 78, 66) 0%, rgba(26, 78, 66, 0) 70%) fixed,
+    radial-gradient(62% 48% at 48% 50%, rgba(32, 91, 80, 0.75) 0%, rgba(32, 91, 80, 0) 70%) fixed,
+    radial-gradient(50% 38% at 95% 98%, rgba(26, 78, 66, 0.95) 0%, rgba(26, 78, 66, 0) 66%) fixed,
+    radial-gradient(40% 30% at 55% 8%, rgba(17, 54, 59, 0.6) 0%, rgba(17, 54, 59, 0) 65%) fixed,
+    scroll rgb(244, 248, 246) !important;
 }
 
 html body #discover-view,
@@ -17276,4 +17277,59 @@ html body #account-modal .modal-subtitle,
 html body #account-modal .account-form > label,
 html body #account-modal .account-type-select .muted-sub {
   color: rgb(210, 234, 228) !important;
+}
+
+/* Deep-green backdrop: re-tuned glow-text colours. The darker centre and
+   top blobs pulled these below AA at their worst scroll position, so each
+   steps darker in its own hue (same method: real-viewport scroll sweep,
+   text-shadow off). */
+html body .discover-panel[data-panel-key] h2 {
+  color: rgb(16, 35, 31) !important;
+}
+
+html body .discover-panel[data-panel-key] .panel-kicker {
+  color: rgb(66, 47, 13) !important;
+}
+
+html body .discover-panel[data-panel-key] > h2 + p {
+  color: rgb(21, 30, 27) !important;
+}
+
+html body .discover-panel[data-panel-key] .carousel-author {
+  color: rgb(5, 7, 6) !important;
+}
+
+html body .discover-hero > p {
+  color: rgb(51, 69, 65) !important;
+}
+
+html body .discover-footer > p:not(.discover-footer-brand),
+html body .discover-footer > p:not(.discover-footer-brand) span:not(.discover-footer-sep) {
+  color: rgb(46, 61, 57) !important;
+}
+
+html body #search-view .search-hero > p {
+  color: rgb(56, 74, 70) !important;
+}
+
+html body #search-view .results-head #results-count {
+  color: rgb(29, 39, 37) !important;
+}
+
+/* KNOWN, INTENTIONAL AA GAP: dock tagline "Self-Service Library System"
+   (11px, pure white; shown only in the search view at desktop width,
+   hidden on phones). The dock glass lightens where bright content
+   scrolls behind it, so the text needs its own dark halo. Measured
+   against the pixels within 1px of the letters, at the worst scroll
+   position: 3.35 -> 4.11:1 at worst, 3.47 -> 5.09:1 typical (4.5:1
+   needed). It stops there because at 11px the two requirements trade
+   off: a halo tight enough not to smudge cannot fully darken the thin
+   gaps inside letterforms and the blur's outer taper, and a halo wide
+   enough to darken them is the smudge. Six stacked full-black layers
+   reached only 4.38:1 and looked heavy, so the tight halo stays. */
+html body #search-view .search-header .title p {
+  text-shadow:
+    0 0 2px rgba(0, 0, 0, 0.9),
+    0 0 4px rgba(0, 0, 0, 0.75),
+    0 1px 1px rgba(0, 0, 0, 0.6) !important;
 }
