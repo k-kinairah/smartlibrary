@@ -17185,3 +17185,67 @@ html body #search-view .search-header .title h2 {
   font-size: 19px !important;
   font-weight: 700 !important;
 }
+
+/* ============================================================
+   Search filter card: white frosted base + corner accent glow
+   ------------------------------------------------------------
+   Replaces the gold-to-green glass gradient on the filter card with a
+   white frosted base and one green glow in the bottom-right corner,
+   colour-matched to the Genre toggle's darkest stop rgb(22,62,67).
+   Only background-image changes; the blur, border and shadow stay.
+   ============================================================ */
+html body #search-view .filter-card.filter-core {
+  background-image:
+    radial-gradient(45% 70% at 100% 100%, rgba(22, 62, 67, 0.4) 0%, rgba(22, 62, 67, 0) 70%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.56) 0%, rgba(255, 255, 255, 0.4) 100%) !important;
+}
+
+/* ============================================================
+   Modal glassmorphism
+   ------------------------------------------------------------
+   Translucent green glass over each modal's scrim, a stronger blur, a
+   gold -> white -> green gradient border (border-box background layer)
+   and a soft diagonal sheen. Selectors carry html body to outrank the
+   earlier modal rules.
+   ============================================================ */
+html body #account-modal .account-modal-panel,
+html body #book-modal .modal-panel,
+html body #location-modal .location-modal-panel,
+html body #receipt-modal .receipt-modal-panel,
+html body #my-books-modal .my-books-modal-panel {
+  position: relative !important;
+  border: 1px solid transparent !important;
+  background-image:
+    linear-gradient(135deg, rgba(58, 122, 105, 0.8) 0%, rgba(22, 68, 62, 0.76) 50%, rgba(10, 34, 30, 0.82) 100%),
+    linear-gradient(120deg, rgba(216, 154, 43, 0.55) 0%, rgba(255, 255, 255, 0.42) 25%, rgba(63, 207, 142, 0.5) 55%, rgba(216, 154, 43, 0.5) 100%) !important;
+  background-origin: border-box !important;
+  background-clip: padding-box, border-box !important;
+  backdrop-filter: blur(30px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(190%) !important;
+  box-shadow:
+    0 30px 64px rgba(2, 11, 9, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 1px rgba(255, 255, 255, 0.5),
+    inset 0 0 40px rgba(63, 207, 142, 0.06) !important;
+}
+
+/* Diagonal sheen, fading out by ~32% width, so the scrolling panels
+   (account, book, location, receipt) need no overflow:hidden. An
+   absolutely positioned ::before with z-index:auto would paint over the
+   panel's in-flow content (headings, text), so it takes z-index:-1:
+   backdrop-filter already makes each panel its own stacking context,
+   which keeps the sheen above the panel background and below all of
+   its content. */
+html body #account-modal .account-modal-panel::before,
+html body #book-modal .modal-panel::before,
+html body #location-modal .location-modal-panel::before,
+html body #receipt-modal .receipt-modal-panel::before,
+html body #my-books-modal .my-books-modal-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.06) 18%, rgba(255, 255, 255, 0) 32%);
+  pointer-events: none;
+}
