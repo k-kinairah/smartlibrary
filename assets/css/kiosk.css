@@ -17010,3 +17010,129 @@ html body #search-view .book-meta .book-subtitle {
 html body #search-view .results-head #results-count {
   background: rgba(255, 255, 255, 0.78) !important;
 }
+
+/* ============================================================
+   Glass text: glow instead of chips / scrims
+   ------------------------------------------------------------
+   Plain text on the glass and the page blobs drops the chip / scrim
+   backings for a darker base colour plus a soft white glow. Each base
+   colour is chosen to clear WCAG AA on its own against the darkest
+   background measured behind that element (text-shadow off); the glow
+   is extra. The reason pills keep their solid chips. The dock title and
+   tagline are light text on dark glass, so they get a dark glow.
+   ============================================================ */
+
+:root {
+  --kiosk-glow-light:
+    0 0 2px rgba(255, 255, 255, 0.95),
+    0 0 5px rgba(255, 255, 255, 0.95),
+    0 0 10px rgba(255, 255, 255, 0.85),
+    0 1px 1px rgba(255, 255, 255, 0.95);
+  --kiosk-glow-dark:
+    0 0 2px rgba(10, 30, 25, 0.8),
+    0 0 5px rgba(10, 30, 25, 0.8),
+    0 0 10px rgba(10, 30, 25, 0.65),
+    0 1px 1px rgba(10, 30, 25, 0.8);
+}
+
+html body .discover-panel[data-panel-key] .panel-kicker,
+html body .discover-panel[data-panel-key] > h2 + p,
+html body .discover-panel[data-panel-key] .carousel-author,
+html body .discover-hero > p,
+html body .discover-footer > p:not(.discover-footer-brand),
+html body #search-view .search-hero > p,
+html body #search-view .book-meta .book-subtitle,
+html body #search-view .filter-card .filter-label,
+html body #search-view #year_published-box .year-range-label,
+html body #search-view .results-head #results-count,
+html body #search-view .search-header .title h2,
+html body #search-view .search-header .title p {
+  width: auto !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+
+html body .discover-panel[data-panel-key] .panel-kicker,
+html body .discover-panel[data-panel-key] > h2 + p,
+html body .discover-panel[data-panel-key] .carousel-author,
+html body .discover-hero > p,
+html body .discover-footer > p:not(.discover-footer-brand),
+html body .discover-footer > p:not(.discover-footer-brand) span,
+html body #search-view .search-hero > p,
+html body #search-view .book-meta .book-subtitle,
+html body #search-view .filter-card .filter-label,
+html body #search-view #year_published-box .year-range-label,
+html body #search-view .results-head #results-count {
+  text-shadow: var(--kiosk-glow-light) !important;
+}
+
+html body #search-view .search-header .title h2,
+html body #search-view .search-header .title p {
+  text-shadow: var(--kiosk-glow-dark) !important;
+}
+
+/* Base colours for the glow text. Each is the element's own hue,
+   darkened until it clears AA with text-shadow off, against the darkest
+   background measured behind it while scrolling a real 800px-tall
+   viewport at 1280 / 390 / 340 (the backdrop is fixed, so text passes
+   over different blobs as the page scrolls). The tested kicker, subtitle
+   and author colours measured 3.1, 3.5 and 3.0:1 there, so they go a
+   step darker. Where even black or white cannot reach 4.5:1 (search-grid
+   authors, dock title) the colour is the strongest available. */
+html body .discover-panel[data-panel-key] .panel-kicker {
+  color: rgb(77, 55, 15) !important;
+}
+
+html body .discover-panel[data-panel-key] > h2 + p {
+  color: rgb(23, 33, 30) !important;
+}
+
+html body .discover-panel[data-panel-key] .carousel-author {
+  color: rgb(18, 26, 23) !important;
+}
+
+html body .discover-hero > p {
+  color: rgb(54, 73, 68) !important;
+}
+
+html body .discover-footer > p:not(.discover-footer-brand),
+html body .discover-footer > p:not(.discover-footer-brand) span:not(.discover-footer-sep) {
+  color: rgb(60, 80, 75) !important;
+}
+
+html body .discover-footer .discover-footer-sep {
+  color: rgb(0, 0, 0) !important;
+}
+
+html body #search-view .search-hero > p {
+  color: rgb(59, 79, 74) !important;
+}
+
+html body #search-view .filter-card .filter-label {
+  color: rgb(51, 73, 65) !important;
+}
+
+html body #search-view #year_published-box .year-range-label {
+  color: rgb(30, 43, 38) !important;
+}
+
+html body #search-view .results-head #results-count {
+  color: rgb(39, 53, 49) !important;
+}
+
+html body #search-view .book-meta .book-subtitle {
+  color: rgb(6, 16, 13) !important;
+}
+
+/* Dock: light text on dark glass. Pushed to white (darkening a light
+   colour would lower its contrast); the dark glow does the rest. */
+html body #search-view .search-header .title h2,
+html body #search-view .search-header .title p {
+  color: #ffffff !important;
+}
+
+/* Search-grid authors: match the two-ID rule that sets their colour. */
+html body #search-view #book-grid .book-card .book-meta .book-subtitle {
+  color: rgb(6, 16, 13) !important;
+}
