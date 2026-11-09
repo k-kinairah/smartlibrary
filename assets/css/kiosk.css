@@ -17136,3 +17136,33 @@ html body #search-view .search-header .title p {
 html body #search-view #book-grid .book-card .book-meta .book-subtitle {
   color: rgb(6, 16, 13) !important;
 }
+
+/* Glow text, round 2: the remaining text found below AA on the glass
+   (same scroll-sweep worst case, text-shadow off). Darker base colour
+   in each element's own hue plus the white glow; no backing shapes.
+   Search-grid authors go to pure black, the strongest available (the
+   dock title is already pure white). */
+html body .discover-panel[data-panel-key] .carousel-title {
+  color: rgb(7, 15, 13) !important;
+  text-shadow: var(--kiosk-glow-light) !important;
+}
+
+html body #search-view .active-filter-row > span {
+  color: rgb(5, 11, 10) !important;
+  text-shadow: var(--kiosk-glow-light) !important;
+}
+
+html body #search-view .results-head #search-title {
+  color: rgb(12, 29, 25) !important;
+  text-shadow: var(--kiosk-glow-light) !important;
+}
+
+html body .discover-footer .discover-footer-brand,
+html body .discover-footer .discover-footer-brand span {
+  color: rgb(15, 37, 32) !important;
+  text-shadow: var(--kiosk-glow-light) !important;
+}
+
+html body #search-view #book-grid .book-card .book-meta .book-subtitle {
+  color: #000000 !important;
+}
