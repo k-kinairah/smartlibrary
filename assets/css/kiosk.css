@@ -17249,3 +17249,31 @@ html body #my-books-modal .my-books-modal-panel::before {
   background: linear-gradient(120deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.06) 18%, rgba(255, 255, 255, 0) 32%);
   pointer-events: none;
 }
+
+/* Sign-in modal: its backdrop is transparent (the others are dark), so
+   at 76-82% the glass took on bright page sections and the muted labels
+   ("Account Type", subtitle, "3 books - 7 days") fell to 3.0-3.9:1.
+   Same colours and gradient border, glass raised to 92-94% opacity. */
+html body #account-modal .account-modal-panel {
+  background-image:
+    linear-gradient(135deg, rgba(58, 122, 105, 0.92) 0%, rgba(22, 68, 62, 0.92) 50%, rgba(10, 34, 30, 0.94) 100%),
+    linear-gradient(120deg, rgba(216, 154, 43, 0.55) 0%, rgba(255, 255, 255, 0.42) 25%, rgba(63, 207, 142, 0.5) 55%, rgba(216, 154, 43, 0.5) 100%) !important;
+}
+
+/* Sign-in modal, AA follow-up: 92-94% opacity alone left the muted
+   labels at 3.4-3.8:1 at 1280, because they sit near the gradient's
+   light top-left stop rgb(58,122,105). For this modal only, that stop
+   deepens to rgb(40,98,86), and the three muted labels lighten within
+   their own hue, rgb(182-184,215-216,207-209) -> rgb(210,234,228),
+   staying a step below the near-white headings. */
+html body #account-modal .account-modal-panel {
+  background-image:
+    linear-gradient(135deg, rgba(40, 98, 86, 0.92) 0%, rgba(22, 68, 62, 0.92) 50%, rgba(10, 34, 30, 0.94) 100%),
+    linear-gradient(120deg, rgba(216, 154, 43, 0.55) 0%, rgba(255, 255, 255, 0.42) 25%, rgba(63, 207, 142, 0.5) 55%, rgba(216, 154, 43, 0.5) 100%) !important;
+}
+
+html body #account-modal .modal-subtitle,
+html body #account-modal .account-form > label,
+html body #account-modal .account-type-select .muted-sub {
+  color: rgb(210, 234, 228) !important;
+}
