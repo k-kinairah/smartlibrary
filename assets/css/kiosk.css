@@ -17347,3 +17347,35 @@ html body #search-view .search-filters-top .top-search-card {
     inset 0 1px 0 rgba(255,255,255,0.8),
     inset 0 0 0 1px rgba(47,111,97,0.18) !important;
 }
+
+/* Kiosk Polish — search suggestions: hover feedback, item spacing, subtle glass sheen */
+#search-view .search-suggestions-panel,
+#search-view .search-filters-top .top-search-card > .search-suggestions-panel,
+#search-view .search-filters-top .top-search-card > .search-suggestions-panel.is-open {
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 40%),
+    radial-gradient(60% 50% at 100% 0%, rgba(63,207,142,0.14) 0%, rgba(63,207,142,0) 70%),
+    linear-gradient(165deg, rgba(16,54,39,0.98) 0%, rgba(10,40,29,0.98) 100%) !important;
+  border: 1px solid rgba(255,255,255,0.16) !important;
+}
+
+#search-view .search-suggestion-item {
+  margin-bottom: 2px !important;
+  transition: background-color 0.15s ease, color 0.15s ease !important;
+}
+
+#search-view .search-suggestion-item:last-child {
+  margin-bottom: 0 !important;
+}
+
+#search-view .search-suggestion-item:hover,
+#search-view .search-suggestion-item:focus-visible,
+#search-view .search-suggestion-item.is-active {
+  background: rgba(255,255,255,0.08) !important;
+}
+
+#search-view .search-suggestion-item:hover .search-suggestion-icon,
+#search-view .search-suggestion-item:focus-visible .search-suggestion-icon,
+#search-view .search-suggestion-item.is-active .search-suggestion-icon {
+  color: rgb(63,207,142) !important;
+}

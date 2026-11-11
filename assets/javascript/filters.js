@@ -213,6 +213,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 e.preventDefault();
             });
 
+            // Keep a single highlighted row: arrow keys move .is-active, so
+            // Tab focus and mouse hover move it too instead of lighting a
+            // second row alongside it.
+            const syncActive = () => {
+                const idx = Number.parseInt(btn.dataset.index || "-1", 10);
+                if (!Number.isFinite(idx) || idx === activeSuggestionIndex) return;
+                activeSuggestionIndex = idx;
+                highlightActiveSuggestion();
+            };
+            btn.addEventListener("focus", syncActive);
+            btn.addEventListener("mouseenter", syncActive);
+
             btn.addEventListener("click", () => {
                 const idx = Number.parseInt(btn.dataset.index || "-1", 10);
                 if (!Number.isFinite(idx) || idx < 0 || idx >= suggestionItems.length) return;
