@@ -17449,3 +17449,23 @@ html body #search-view .search-filters-top .top-search-card {
     inset 0 1px 0 rgba(255,255,255,0.85),
     inset 0 0 0 1px rgba(47,111,97,0.22) !important;
 }
+
+/* Kiosk Polish — discover search box: light frosted glass */
+html body .discover-search-wrap input {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%234a5a6c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E"),
+    linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(237,249,246,0.45) 100%),
+    radial-gradient(70% 90% at 0% 0%, rgba(63,207,142,0.18) 0%, rgba(63,207,142,0) 70%) !important;
+  background-repeat: no-repeat, no-repeat, no-repeat !important;
+  background-position: clamp(16px, 2vw, 20px) center, 0 0, 0 0 !important;
+  background-size: 18px 18px, auto, auto !important;
+  background-color: rgba(255,255,255,0.3) !important;
+  backdrop-filter: blur(16px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
+  border: 1px solid rgba(255,255,255,0.7) !important;
+  box-shadow:
+    rgba(16,40,34,0.12) 0px 10px 24px,
+    inset 0 1px 0 rgba(255,255,255,0.8),
+    inset 0 0 0 1px rgba(47,111,97,0.18) !important;
+  color: rgb(16,40,34) !important;
+}
