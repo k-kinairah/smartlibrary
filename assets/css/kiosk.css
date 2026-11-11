@@ -17469,3 +17469,28 @@ html body .discover-search-wrap input {
     inset 0 0 0 1px rgba(47,111,97,0.18) !important;
   color: rgb(16,40,34) !important;
 }
+
+/* Kiosk Polish — main background: two-corner radiating lines + soft
+   gradient wash ("Q" from the design exploration). Supersedes the 4-blob
+   aurora rule at line ~16799 (same selector/!important, wins by being
+   later). That old block is left in place as dead code, matching this
+   file's existing convention.
+   Base flat colour rgb(244,248,246) is UNCHANGED on purpose -- keeping it
+   lets the existing contrast numbers for the search bar, dropdown, and
+   discover box stand as a starting point; they still need to be re-checked
+   against the new wash (see below), but at least the base they're measured
+   against hasn't also moved. */
+html body {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='620' viewBox='0 0 900 620' preserveAspectRatio='none'%3E%3Cg stroke='%232f6f61' stroke-width='0.75' stroke-opacity='0.14'%3E%3Cline x1='0' y1='620' x2='140' y2='0' vector-effect='non-scaling-stroke'/%3E%3Cline x1='0' y1='620' x2='340' y2='0' vector-effect='non-scaling-stroke'/%3E%3Cline x1='0' y1='620' x2='540' y2='0' vector-effect='non-scaling-stroke'/%3E%3Cline x1='0' y1='620' x2='900' y2='200' vector-effect='non-scaling-stroke'/%3E%3Cline x1='0' y1='620' x2='900' y2='420' vector-effect='non-scaling-stroke'/%3E%3C/g%3E%3Cg stroke='%2317895f' stroke-width='0.75' stroke-opacity='0.14'%3E%3Cline x1='900' y1='0' x2='760' y2='620' vector-effect='non-scaling-stroke'/%3E%3Cline x1='900' y1='0' x2='560' y2='620' vector-effect='non-scaling-stroke'/%3E%3Cline x1='900' y1='0' x2='360' y2='620' vector-effect='non-scaling-stroke'/%3E%3Cline x1='900' y1='0' x2='0' y2='420' vector-effect='non-scaling-stroke'/%3E%3Cline x1='900' y1='0' x2='0' y2='200' vector-effect='non-scaling-stroke'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(75% 70% at 8% 100%, rgba(23, 105, 79, 0.16) 0%, rgba(23, 105, 79, 0) 65%),
+    radial-gradient(75% 70% at 92% 0%, rgba(63, 207, 142, 0.18) 0%, rgba(63, 207, 142, 0) 65%) !important;
+  background-repeat: no-repeat, no-repeat, no-repeat !important;
+  background-position: center center, 0 0, 0 0 !important;
+  /* The ray SVG has preserveAspectRatio='none' (stretches to the full
+     viewport so both fans start at the real screen corners) and
+     non-scaling strokes (lines stay 0.75px when stretched). */
+  background-size: 100% 100%, auto, auto !important;
+  background-attachment: fixed, fixed, fixed !important;
+  background-color: rgb(244, 248, 246) !important;
+}
