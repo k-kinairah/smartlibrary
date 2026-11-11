@@ -17494,3 +17494,24 @@ html body {
   background-attachment: fixed, fixed, fixed !important;
   background-color: rgb(244, 248, 246) !important;
 }
+
+/* Kiosk Polish — "Discover Your Next Read" heading: full gradient sheen
+   ("U1" from the design exploration), teal/mint only, no gold or white in
+   the gradient stops (keeps the earlier no-gold decision, and avoids any
+   stop washing out against the light page). The two light stops are
+   #1c8058 / #1a8a5c, not #2fa876 / #3fcf8e: the brighter pair measured
+   2.8:1 and 1.57:1 behind the letters, below the 3:1 large-text floor;
+   these measure 3.43:1 or better at 1366x900, 1366x700 and 390x844.
+   Wrapped in @supports so a
+   browser without background-clip: text just keeps the existing solid-ink
+   heading from line 15624 instead of going invisible. */
+@supports ((background-clip: text) or (-webkit-background-clip: text)) {
+  html body .discover-hero h1 {
+    background: linear-gradient(120deg, #0f3b2f 0%, #1c8058 26%, #0d4a38 52%, #1a8a5c 74%, #11543f 100%) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    color: transparent !important;
+    text-shadow: none !important;
+  }
+}
