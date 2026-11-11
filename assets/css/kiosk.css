@@ -17419,3 +17419,33 @@ html body #search-view .search-filters-top .top-search-card {
 #search-view .search-suggestion-item.is-active .search-suggestion-icon {
   color: rgb(21,110,77) !important;
 }
+
+/* Kiosk Polish — search suggestions: smaller, closer to the search input's
+   own text size (input is clamp(14px, 1.3vw, 20px); suggestions were
+   clamp(16px, 1.8vw, 22px) at weight 600, 40px rows, 18px icons). */
+#search-view .search-suggestion-item {
+  font-size: clamp(14px, 1.2vw, 18px) !important;
+  font-weight: 500 !important;
+  min-height: 34px !important;
+  padding: 6px 10px !important;
+}
+
+#search-view .search-suggestion-icon {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+/* Kiosk Polish — search bar: glass through translucency and tint, not blur
+   (the bar's backdrop-filter was removed so the dropdown inside it can
+   blur). Lower white, stronger mint corner glow, crisper edges. */
+html body #search-view .search-filters-top .top-search-card {
+  background-image:
+    linear-gradient(135deg, rgba(255,255,255,0.46) 0%, rgba(237,249,246,0.38) 100%),
+    radial-gradient(70% 90% at 0% 0%, rgba(63,207,142,0.22) 0%, rgba(63,207,142,0) 70%) !important;
+  background-color: rgba(255,255,255,0.28) !important;
+  border: 1px solid rgba(255,255,255,0.75) !important;
+  box-shadow:
+    rgba(16,40,34,0.14) 0px 12px 28px,
+    inset 0 1px 0 rgba(255,255,255,0.85),
+    inset 0 0 0 1px rgba(47,111,97,0.22) !important;
+}
