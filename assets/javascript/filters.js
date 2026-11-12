@@ -1813,75 +1813,54 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     };
 
+    // Kiosk Polish v197: centered "certificate" layout (styles in kiosk.css).
+    // Same field set as before, restructured: a flanking-line label per
+    // section, the key field as a hero line (name, title), and the rest as a
+    // divided strip (codes and dates never wrap; names and titles may). The
+    // print window and the email keep their own templates.
+    const receiptFlankLabel = (tone, text) => `
+            <div class="receipt-flank-label receipt-flank-${tone}">
+                <span class="receipt-flank-line"></span>
+                <span class="receipt-flank-text">${text}</span>
+                <span class="receipt-flank-line"></span>
+            </div>`;
+
+    const receiptStrip = (fields) => `
+            <div class="receipt-strip">${fields.map(([label, value, extraClass]) => `
+                <div class="receipt-strip-col${extraClass ? ` ${extraClass}` : ""}">
+                    <span class="receipt-strip-label">${label}</span>
+                    <span class="receipt-strip-value">${escapeHtml(value)}</span>
+                </div>`).join("")}
+            </div>`;
+
     const renderReceipt = (data) => {
         if (!receiptContent) return;
 
         receiptContent.innerHTML = `
+            <span class="receipt-corner receipt-corner--tl" aria-hidden="true"></span>
+            <span class="receipt-corner receipt-corner--tr" aria-hidden="true"></span>
+            <span class="receipt-corner receipt-corner--bl" aria-hidden="true"></span>
+            <span class="receipt-corner receipt-corner--br" aria-hidden="true"></span>
+
             <div class="receipt-paper-head">
                 <img class="receipt-brand-logo" src="${escapeHtml(RECEIPT_LOGO_SRC)}" alt="SJCDC Logo">
                 <div>${escapeHtml(data.kiosk)}</div>
                 <div>${escapeHtml(data.library)}</div>
                 <div>${escapeHtml(data.issuedAt)}</div>
             </div>
-
-            <div class="receipt-divider"></div>
-
-            <div class="receipt-section-title">
-                <span class="receipt-section-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" role="presentation">
-                        <circle cx="12" cy="8" r="3.2"></circle>
-                        <path d="M6.2 18.2c.9-2.7 3-4.2 5.8-4.2s4.9 1.5 5.8 4.2"></path>
-                    </svg>
-                </span>
-                Student Information
-            </div>
-            <div class="receipt-grid">
-                <span>Name:</span><span>${escapeHtml(data.userName)}</span>
-                <span>ID Number:</span><span>${escapeHtml(data.userId)}</span>
-                <span>Course:</span><span>${escapeHtml(data.course)}</span>
-            </div>
-
-            <div class="receipt-divider"></div>
-
-            <div class="receipt-section-title">
-                <span class="receipt-section-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" role="presentation">
-                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                    </svg>
-                </span>
-                Book Information
-            </div>
-            <div class="receipt-grid">
-                <span>Title:</span><span>${escapeHtml(data.title)}</span>
-                <span>Author:</span><span>${escapeHtml(data.author)}</span>
-                <span>Accession Number:</span><span>${escapeHtml(data.accession)}</span>
-                <span>ISBN:</span><span>${escapeHtml(data.isbn)}</span>
-            </div>
-
-            <div class="receipt-divider"></div>
-
-            <div class="receipt-section-title">
-                <span class="receipt-section-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" role="presentation">
-                        <circle cx="12" cy="12" r="8.5"></circle>
-                        <path d="M12 7.5V12l3.2 2"></path>
-                    </svg>
-                </span>
-                Loan Details
-            </div>
-            <div class="receipt-grid">
-                <span>Borrowed:</span><span>${escapeHtml(data.borrowedDate)}</span>
-                <span>Due Date:</span><span>${escapeHtml(data.dueDate)}</span>
-            </div>
-
-            <div class="receipt-divider"></div>
-
+${receiptFlankLabel("student", "Student Information")}
+            <div class="receipt-hero receipt-hero--student">${escapeHtml(data.userName)}</div>
+${receiptStrip([["ID Number", data.userId, "receipt-strip-col--nowrap"], ["Course", data.course, "receipt-strip-col--wide"]])}
+${receiptFlankLabel("book", "Book Information")}
+            <div class="receipt-hero receipt-hero--book">${escapeHtml(data.title)}</div>
+${receiptStrip([["Author", data.author, "receipt-strip-col--wide"], ["Accession No.", data.accession, "receipt-strip-col--nowrap"], ["ISBN", data.isbn, "receipt-strip-col--nowrap"]])}
+${receiptFlankLabel("loan", "Loan Details")}
+${receiptStrip([["Borrowed", data.borrowedDate, "receipt-strip-col--nowrap"], ["Due Date", data.dueDate, "receipt-strip-col--due receipt-strip-col--nowrap"]])}
+${receiptFlankLabel("verify", "Verification")}
             <div class="receipt-barcode">${data.barcodeSvg || ""}</div>
             <div class="receipt-barcode-text">${escapeHtml(data.barcode)}</div>
 
-            <div class="receipt-divider"></div>
-
+            <div class="receipt-note-rule" aria-hidden="true"></div>
             <div class="receipt-note">Please return this book on or before the due date</div>
             <div class="receipt-note">Late returns may incur fines</div>
         `;

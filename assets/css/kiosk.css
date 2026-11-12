@@ -17833,3 +17833,217 @@ html body .receipt-status-modal.is-warning .receipt-status-card {
 html body .receipt-status-modal .receipt-status-card::after {
   display: none !important;
 }
+
+/* ============================================================
+   Kiosk Polish v197 (Receipt: Centered "Certificate" Layout)
+   ------------------------------------------------------------
+   renderReceipt() (filters.js) now outputs a centred layout instead
+   of left-aligned label:value rows: a flanking-line label per
+   section (colour-coded), the key field as a hero line (name, title)
+   with a short colour rule, the remaining fields as a divided strip,
+   a "Verification" label over the barcode tray, and italic notes
+   under a short fade rule. The paper gets a triple-ring frame and
+   four corner brackets. The icon-circle section badges, the
+   .receipt-grid rows and the .receipt-divider lines are no longer
+   rendered; their rules above are left in place as dead code.
+
+   Colours: the Student label is #127350, not the mockup's #17895f,
+   which is 4.37:1 on white (this is 10px text and needs 4.5:1).
+   Book #1f5f8c, Loan #6f3fa8, Verification #48655d and the Due Date
+   value #4a1f6b all clear 4.5:1 as given.
+
+   Kept from the earlier passes: the seal's drop-shadow glow, the
+   glass barcode tray, the paper's corner wash, #48655d muted text.
+   ============================================================ */
+html body #receipt-modal .receipt-paper {
+  position: relative !important;
+  border: 0 !important;
+  box-shadow:
+    0 0 0 4px #ffffff,
+    0 0 0 5px #d8e4df,
+    0 0 0 7px rgba(23, 137, 95, 0.14),
+    0 18px 36px rgba(16, 68, 54, 0.3) !important;
+  text-align: center !important;
+}
+
+/* Corner brackets: an L of two borders, with a small dot at the corner. */
+html body #receipt-modal .receipt-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 0 solid #8fae9f;
+  pointer-events: none;
+}
+
+html body #receipt-modal .receipt-corner::after {
+  content: "";
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #17895f;
+}
+
+html body #receipt-modal .receipt-corner--tl { top: 7px; left: 7px; border-top-width: 1.5px; border-left-width: 1.5px; }
+html body #receipt-modal .receipt-corner--tr { top: 7px; right: 7px; border-top-width: 1.5px; border-right-width: 1.5px; }
+html body #receipt-modal .receipt-corner--bl { bottom: 7px; left: 7px; border-bottom-width: 1.5px; border-left-width: 1.5px; }
+html body #receipt-modal .receipt-corner--br { bottom: 7px; right: 7px; border-bottom-width: 1.5px; border-right-width: 1.5px; }
+html body #receipt-modal .receipt-corner--tl::after { top: -3px; left: -3px; }
+html body #receipt-modal .receipt-corner--tr::after { top: -3px; right: -3px; }
+html body #receipt-modal .receipt-corner--bl::after { bottom: -3px; left: -3px; }
+html body #receipt-modal .receipt-corner--br::after { bottom: -3px; right: -3px; }
+
+/* Section label: line, text, line. */
+html body #receipt-modal .receipt-flank-label {
+  --flank: #48655d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 9px 0 4px;
+  color: var(--flank);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+html body #receipt-modal .receipt-flank-student { --flank: #127350; }
+html body #receipt-modal .receipt-flank-book    { --flank: #1f5f8c; }
+html body #receipt-modal .receipt-flank-loan    { --flank: #6f3fa8; }
+html body #receipt-modal .receipt-flank-verify  { --flank: #48655d; }
+
+html body #receipt-modal .receipt-flank-line {
+  flex: 0 0 34px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--flank) 100%);
+}
+
+html body #receipt-modal .receipt-flank-text + .receipt-flank-line {
+  background: linear-gradient(90deg, var(--flank) 0%, transparent 100%);
+}
+
+/* Hero line (name, title) with a short colour rule under it. */
+html body #receipt-modal .receipt-hero {
+  color: #1c3e36;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+html body #receipt-modal .receipt-hero::after {
+  content: "";
+  display: block;
+  width: 38px;
+  height: 2px;
+  margin: 4px auto 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #0e4435, #3fcf8e);
+}
+
+html body #receipt-modal .receipt-hero--book::after {
+  background: linear-gradient(90deg, #123450, #4fa8dc);
+}
+
+/* Secondary fields: label over value, columns divided by a hairline. */
+html body #receipt-modal .receipt-strip {
+  display: flex;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+html body #receipt-modal .receipt-strip-col {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 0 12px;
+  border-left: 1px solid #e1e8e4;
+}
+
+html body #receipt-modal .receipt-strip-col:first-child {
+  border-left: 0;
+}
+
+/* Codes and dates (ID, accession, ISBN, dates) keep their width and never
+   break; a long author or course in the same strip wraps instead. */
+html body #receipt-modal .receipt-strip-col--nowrap {
+  flex-shrink: 0;
+}
+
+html body #receipt-modal .receipt-strip-col--nowrap .receipt-strip-value {
+  white-space: nowrap;
+}
+
+/* Phones: the free-text fields (author, course) take a full row of their
+   own, so they wrap across the paper's width instead of being squeezed
+   into a narrow column beside the codes. */
+@media (max-width: 480px) {
+  html body #receipt-modal .receipt-strip {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  html body #receipt-modal .receipt-strip-col--wide {
+    flex: 1 0 100%;
+    border-left: 0;
+  }
+
+  html body #receipt-modal .receipt-strip-col--wide + .receipt-strip-col {
+    border-left: 0;
+  }
+}
+
+html body #receipt-modal .receipt-strip-label,
+html body #receipt-modal .receipt-strip-value {
+  display: block;
+}
+
+html body #receipt-modal .receipt-strip-label {
+  color: #48655d;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+html body #receipt-modal .receipt-strip-value {
+  color: #1c3e36;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  /* break-word, not anywhere: a long author wraps between words, but an
+     ISBN or accession number next to it is never split mid-number. */
+  overflow-wrap: break-word;
+}
+
+html body #receipt-modal .receipt-strip-col--due .receipt-strip-label {
+  color: #6f3fa8;
+}
+
+html body #receipt-modal .receipt-strip-col--due .receipt-strip-value {
+  color: #4a1f6b;
+}
+
+/* Barcode tray sits right under its "Verification" label. */
+html body #receipt-modal .receipt-barcode {
+  margin-top: 0 !important;
+}
+
+/* Notes: italic, no tinted strip, under a short fade rule. */
+html body #receipt-modal .receipt-note-rule {
+  height: 1px;
+  max-width: 160px;
+  margin: 8px auto 5px;
+  background: linear-gradient(90deg, transparent 0%, #d8e3e0 20%, #d8e3e0 80%, transparent 100%);
+}
+
+html body #receipt-modal .receipt-note {
+  background: none !important;
+  padding: 0 !important;
+  margin: 1px 0 !important;
+  font-style: italic !important;
+  text-align: center !important;
+}
