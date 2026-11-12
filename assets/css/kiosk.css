@@ -17602,3 +17602,67 @@ html body .discover-panel[data-panel-key] .carousel-reason.reason--genre::before
     linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 45%),
     linear-gradient(140deg, rgba(var(--reason-tone), 1) 0%, rgba(var(--reason-tone), 0.55) 100%) !important;
 }
+
+/* Kiosk Polish — "Receipt Sent" status card: Signature treatment.
+   Gradient ring on the card (third background layer on the border box),
+   gloss on the icon badge, a soft mint glow from the card's top-left,
+   and a shine on the button. The card's two existing fill layers and all
+   of its colours are unchanged. */
+html body .receipt-status-modal .receipt-status-card {
+  border: 1px solid transparent !important;
+  background:
+    radial-gradient(120% 140% at 14% 0%, rgba(242, 250, 255, 0.97) 0%, rgba(234, 245, 242, 0.95) 42%, rgba(226, 240, 236, 0.94) 100%),
+    linear-gradient(165deg, rgba(230, 243, 240, 0.95) 0%, rgba(217, 234, 230, 0.95) 100%),
+    linear-gradient(120deg, rgba(23, 105, 79, 0.55) 0%, rgba(63, 207, 142, 0.55) 100%) !important;
+  background-origin: padding-box, padding-box, border-box !important;
+  background-clip: padding-box, padding-box, border-box !important;
+}
+
+/* The card is its own stacking context (position + z-index), so this
+   z-index:-1 layer paints above the card's fill and below its content. */
+html body .receipt-status-modal .receipt-status-card::after {
+  content: "";
+  position: absolute;
+  inset: -30px;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(55% 55% at 25% 15%, rgba(63, 207, 142, 0.3) 0%, rgba(63, 207, 142, 0) 70%);
+  pointer-events: none;
+}
+
+html body .receipt-status-modal .receipt-status-icon {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+html body .receipt-status-modal .receipt-status-icon::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 45%);
+  pointer-events: none;
+}
+
+/* An absolutely positioned ::before paints after the badge's in-flow SVG,
+   so the icon is lifted above the gloss explicitly. */
+html body .receipt-status-modal .receipt-status-icon svg {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* isolation gives the button its own stacking context so the shine can
+   sit at z-index:-1: above the button's gradient, below its label. */
+html body .receipt-status-modal .receipt-status-btn {
+  position: relative !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+}
+
+html body .receipt-status-modal .receipt-status-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 35%);
+  pointer-events: none;
+}
