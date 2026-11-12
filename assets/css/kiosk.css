@@ -17758,3 +17758,78 @@ html body #receipt-modal .receipt-grid span:nth-child(odd),
 html body #receipt-modal .receipt-note {
   color: #48655d !important;
 }
+
+/* Kiosk Polish — "Receipt Sent" card: same glass as the other modals.
+   Replaces this card's corner wash and its teal ring with the "Modal
+   glassmorphism" treatment (translucent green glass, blur 30px /
+   saturate 190%, gold-white-green ring on the border box, diagonal
+   sheen). Two layers, so origin/clip go back to the two-entry form.
+   The glass is dark, so the title, message and close button switch to
+   the light colours the receipt modal itself uses; the old dark-ink
+   title colours (including the warning/error ones) would sit at ~1:1
+   on it. The icon badge and button keep their per-state colours. */
+html body .receipt-status-modal .receipt-status-card {
+  border: 1px solid transparent !important;
+  background: none !important;
+  background-image:
+    linear-gradient(135deg, rgba(58, 122, 105, 0.8) 0%, rgba(22, 68, 62, 0.76) 50%, rgba(10, 34, 30, 0.82) 100%),
+    linear-gradient(120deg, rgba(216, 154, 43, 0.55) 0%, rgba(255, 255, 255, 0.42) 25%, rgba(63, 207, 142, 0.5) 55%, rgba(216, 154, 43, 0.5) 100%) !important;
+  background-origin: border-box !important;
+  background-clip: padding-box, border-box !important;
+  backdrop-filter: blur(30px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(190%) !important;
+  box-shadow:
+    0 30px 64px rgba(2, 11, 9, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 1px rgba(255, 255, 255, 0.5),
+    inset 0 0 40px rgba(63, 207, 142, 0.06) !important;
+}
+
+/* The card is already its own stacking context, so z-index:-1 keeps the
+   sheen above the glass and below the content (same as the modals). */
+html body .receipt-status-modal .receipt-status-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.06) 18%, rgba(255, 255, 255, 0) 32%);
+  pointer-events: none;
+}
+
+html body .receipt-status-modal .receipt-status-title,
+html body .receipt-status-modal.is-warning .receipt-status-title,
+html body .receipt-status-modal.is-error .receipt-status-title {
+  color: #eefff5 !important;
+}
+
+html body .receipt-status-modal .receipt-status-message,
+html body .receipt-status-modal.is-warning .receipt-status-message {
+  color: rgb(210, 234, 228) !important;
+}
+
+html body .receipt-status-modal .receipt-status-close {
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #eafff2 !important;
+}
+
+/* The borrow-limit warning state has its own cream card (v43,
+   ".receipt-status-modal.is-warning .receipt-status-card", which outranks
+   the rule above), so it gets the same glass explicitly. */
+html body .receipt-status-modal.is-warning .receipt-status-card {
+  border: 1px solid transparent !important;
+  background: none !important;
+  background-image:
+    linear-gradient(135deg, rgba(58, 122, 105, 0.8) 0%, rgba(22, 68, 62, 0.76) 50%, rgba(10, 34, 30, 0.82) 100%),
+    linear-gradient(120deg, rgba(216, 154, 43, 0.55) 0%, rgba(255, 255, 255, 0.42) 25%, rgba(63, 207, 142, 0.5) 55%, rgba(216, 154, 43, 0.5) 100%) !important;
+  background-origin: border-box !important;
+  background-clip: padding-box, border-box !important;
+}
+
+/* Part A's mint glow (::after, inset -30px) showed as a pale box
+   outside the card's top-left once the card turned to glass over the
+   dark scrim; the glass sheen replaces it. */
+html body .receipt-status-modal .receipt-status-card::after {
+  display: none !important;
+}
