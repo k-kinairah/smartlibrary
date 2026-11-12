@@ -40,7 +40,7 @@
  * nearly invisible for long ones.
  */
 
-const BOOK_COVER_VERSION = 3;
+const BOOK_COVER_VERSION = 4;
 
 const BOOK_COVER_FONT_SERIF = "Georgia, 'Times New Roman', serif";
 const BOOK_COVER_FONT_SANS = 'Arial, Helvetica, sans-serif';
@@ -442,7 +442,12 @@ function book_cover_svg(string $title, string $author = '', string $categoryGrou
     $headerX = $cx - $headerW / 2;
     $headerTextX = $headerX + $sealSize + $headerGap;
 
-    $seal = __DIR__ . '/../assets/images/stjude_seal_64.png';
+    // Inlined as a data URI because covers load via <img>, and an SVG used as
+    // an image can't fetch external files (a URL href renders nothing). The
+    // 42px PNG (2x the 21-unit draw size) keeps each cover ~3KB lighter than
+    // embedding the 64px original. Keep it truecolor: a palette PNG loses the
+    // soft alpha and shows black corners.
+    $seal = __DIR__ . '/../assets/images/stjude_seal_42.png';
     if (is_readable($seal)) {
         $out[] = '<image x="' . round($headerX, 2) . '" y="40" width="' . $sealSize . '" height="' . $sealSize . '" href="data:image/png;base64,' . base64_encode((string)file_get_contents($seal)) . '"/>';
     }
