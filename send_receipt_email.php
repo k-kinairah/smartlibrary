@@ -27,6 +27,70 @@ function receipt_date(?string $value, string $format): string {
     return $ts !== false ? date($format, $ts) : 'N/A';
 }
 
+/**
+ * Code 39 barcode as a PNG file (same encoding as makeBarcodeSvg() in
+ * filters.js), for the email only: inline SVG is stripped by Gmail and
+ * Outlook. Drawn at 2x (narrow bar 4px, wide 10px, 112px tall) so it stays
+ * crisp on high-density screens when shown at half size. Returns
+ * [path, width, height] of a temp file the caller deletes, or null if GD is
+ * missing or anything fails -- the email then shows the code as text only.
+ */
+function receipt_barcode_png(string $value): ?array {
+    if (!function_exists('imagecreatetruecolor') || !function_exists('imagepng')) {
+        return null;
+    }
+    static $patterns = [
+        '0' => 'nnnwwnwnn', '1' => 'wnnwnnnnw', '2' => 'nnwwnnnnw', '3' => 'wnwwnnnnn',
+        '4' => 'nnnwwnnnw', '5' => 'wnnwwnnnn', '6' => 'nnwwwnnnn', '7' => 'nnnwnnwnw',
+        '8' => 'wnnwnnwnn', '9' => 'nnwwnnwnn', 'A' => 'wnnnnwnnw', 'B' => 'nnwnnwnnw',
+        'C' => 'wnwnnwnnn', 'D' => 'nnnnwwnnw', 'E' => 'wnnnwwnnn', 'F' => 'nnwnwwnnn',
+        'G' => 'nnnnnwwnw', 'H' => 'wnnnnwwnn', 'I' => 'nnwnnwwnn', 'J' => 'nnnnwwwnn',
+        'K' => 'wnnnnnnww', 'L' => 'nnwnnnnww', 'M' => 'wnwnnnnwn', 'N' => 'nnnnwnnww',
+        'O' => 'wnnnwnnwn', 'P' => 'nnwnwnnwn', 'Q' => 'nnnnnnwww', 'R' => 'wnnnnnwwn',
+        'S' => 'nnwnnnwwn', 'T' => 'nnnnwnwwn', 'U' => 'wwnnnnnnw', 'V' => 'nwwnnnnnw',
+        'W' => 'wwwnnnnnn', 'X' => 'nwnnwnnnw', 'Y' => 'wwnnwnnnn', 'Z' => 'nwwnwnnnn',
+        '-' => 'nwnnnnwnw', '.' => 'wwnnnnwnn', ' ' => 'nwwnnnwnn', '$' => 'nwnwnwnnn',
+        '/' => 'nwnwnnnwn', '+' => 'nwnnnwnwn', '%' => 'nnnwnwnwn', '*' => 'nwnnwnwnn',
+    ];
+    $normalized = trim((string)preg_replace('/[^0-9A-Z\-. $\/+%]/', '', strtoupper($value)));
+    if ($normalized === '') {
+        return null;
+    }
+    $encoded = '*' . $normalized . '*';
+    $narrow = 4; $wide = 10; $gap = 4; $quiet = 24; $height = 112;
+
+    $width = $quiet * 2;
+    foreach (str_split($encoded) as $ch) {
+        foreach (str_split($patterns[$ch] ?? $patterns['-']) as $unit) {
+            $width += $unit === 'w' ? $wide : $narrow;
+        }
+        $width += $gap;
+    }
+
+    $img = @imagecreatetruecolor($width, $height);
+    if (!$img) {
+        return null;
+    }
+    imagefilledrectangle($img, 0, 0, $width - 1, $height - 1, imagecolorallocate($img, 255, 255, 255));
+    $ink = imagecolorallocate($img, 0x10, 0x2b, 0x22);
+    $x = $quiet;
+    foreach (str_split($encoded) as $ch) {
+        foreach (str_split($patterns[$ch] ?? $patterns['-']) as $i => $unit) {
+            $w = $unit === 'w' ? $wide : $narrow;
+            if ($i % 2 === 0) {
+                imagefilledrectangle($img, $x, 0, $x + $w - 1, $height - 1, $ink);
+            }
+            $x += $w;
+        }
+        $x += $gap;
+    }
+
+    $path = rtrim(sys_get_temp_dir(), '\\/') . DIRECTORY_SEPARATOR . 'smartlib-barcode-' . bin2hex(random_bytes(6)) . '.png';
+    $ok = @imagepng($img, $path);
+    imagedestroy($img);
+    return $ok ? [$path, $width, $height] : null;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond(['status' => 'error', 'message' => 'Invalid request method.'], 405);
 }
@@ -129,15 +193,40 @@ $hLibrary = h($library);
 
 $subject = 'SmartLib Receipt - ' . $title;
 
+// Brand colours for this template. Email clients only get solid colours,
+// plain borders and background-color; the one gradient (header) sits on a
+// solid background-color, so clients that drop background-image show the
+// same flat green as before. No backdrop-filter, masks, text-clip or
+// gradient rings: Outlook and many mobile clients drop them.
+$brand = '#164436';       // header, card border, due-date callout
+$brandLight = '#1e5e4a';  // header gradient end
+$accent = '#17895f';      // section badges and left accent bars
+
+$inlineImages = [];
+
 // Same logo badge as the 2FA email (login_handler.php): the embedded school
 // logo when AUTH_EMAIL_EMBED_IMAGES is on, otherwise an "SL" text badge.
-$inlineImages = [];
-$logoBadgeHtml = '<div style="display:inline-block;margin:0 auto 8px;width:42px;height:42px;line-height:42px;border-radius:50%;background:#ffffff;color:#164436;font-weight:700;">SL</div>';
+// The ring is #738f86, i.e. 40% white over the header green, written as a
+// solid colour because Outlook ignores rgba() borders.
+$logoBadgeHtml = '<div style="display:inline-block;margin:0 auto 8px;width:42px;height:42px;line-height:42px;border-radius:50%;border:2px solid #738f86;background:#ffffff;color:' . $brand . ';font-weight:700;">SL</div>';
 $logoPath = __DIR__ . '/assets/images/stjude_logo.jpg';
 if (AUTH_EMAIL_EMBED_IMAGES && is_file($logoPath) && is_readable($logoPath)) {
     $inlineImages[] = ['cid' => 'smartlib_logo', 'path' => $logoPath, 'mime' => 'image/jpeg'];
-    $logoBadgeHtml = '<img src="cid:smartlib_logo" alt="SmartLib" style="display:block;margin:0 auto 8px;width:52px;height:52px;border-radius:50%;border:2px solid rgba(255,255,255,0.75);background:#ffffff;object-fit:cover;">';
+    $logoBadgeHtml = '<img src="cid:smartlib_logo" alt="SmartLib" style="display:block;margin:0 auto 8px;width:52px;height:52px;border-radius:50%;border:2px solid #738f86;background:#ffffff;object-fit:cover;">';
 }
+
+// Section badges: 40x40 PNGs (shown at 20px) of the same person/book/clock
+// icons as the in-app receipt, white on a flat $accent circle. PNG because
+// Gmail and Outlook strip inline SVG. Sent as inline (cid) attachments.
+$badgeHtml = static function (string $name) use (&$inlineImages): string {
+    $path = __DIR__ . '/assets/images/email/receipt-badge-' . $name . '.png';
+    if (!is_file($path)) {
+        return '';
+    }
+    $cid = 'receipt_badge_' . $name;
+    $inlineImages[] = ['cid' => $cid, 'path' => $path, 'mime' => 'image/png'];
+    return '<img src="cid:' . $cid . '" width="20" height="20" alt="" style="display:block;width:20px;height:20px;border:0;">';
+};
 
 // One label/value row; both arguments must already be HTML-escaped.
 $row = static function (string $label, string $value, bool $first = false): string {
@@ -148,20 +237,49 @@ $row = static function (string $label, string $value, bool $first = false): stri
         . '</tr>';
 };
 
-// A titled, rounded section box; $rowsHtml must already be escaped.
-$section = static function (string $heading, string $rowsHtml): string {
-    return '<div style="margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#1f6f5c;">' . $heading . '</div>'
-        . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;border:1px solid #d6e4de;border-radius:10px;background:#f7fbf9;margin:0 0 18px;">'
+// A titled, rounded section box with a badge and a 3px left accent bar;
+// $rowsHtml must already be escaped.
+$section = static function (string $heading, string $badge, string $rowsHtml) use ($accent): string {
+    return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 7px;"><tr>'
+        . ($badge !== '' ? '<td width="20" style="width:20px;padding:0 8px 0 0;vertical-align:middle;">' . $badge . '</td>' : '')
+        . '<td style="vertical-align:middle;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#1f6f5c;">' . $heading . '</td>'
+        . '</tr></table>'
+        . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;border:1px solid #d6e4de;border-left:3px solid ' . $accent . ';border-radius:10px;background:#f7fbf9;margin:0 0 18px;">'
         . $rowsHtml
         . '</table>';
 };
 
-$studentSection = $section('Student Information',
+// Barcode: a PNG of the transaction ID (see receipt_barcode_png), with the
+// code underneath as a caption so it is still readable if images are off.
+$barcodeFile = receipt_barcode_png($transactionId);
+$barcodeImg = '';
+if ($barcodeFile !== null) {
+    [$barcodePath, $barcodeW, $barcodeH] = $barcodeFile;
+    $inlineImages[] = ['cid' => 'receipt_barcode', 'path' => $barcodePath, 'mime' => 'image/png'];
+    $shownW = min(intdiv($barcodeW, 2), 500);
+    $shownH = (int)round($barcodeH * $shownW / $barcodeW);
+    $barcodeImg = '<img src="cid:receipt_barcode" width="' . $shownW . '" height="' . $shownH . '" alt="Barcode ' . $hTxn . '" style="display:block;margin:0 auto;width:100%;max-width:' . $shownW . 'px;height:auto;border:0;">';
+}
+$barcodeRow = '<tr><td colspan="2" align="center" style="padding:12px 14px;border-top:1px solid #e3ece8;">'
+    . '<div style="background:#ffffff;border:1px dashed #b9d3c9;border-radius:8px;padding:10px;">'
+    . $barcodeImg
+    . '<div style="margin-top:' . ($barcodeImg !== '' ? '6' : '0') . 'px;font-family:Consolas,Menlo,monospace;font-size:13px;letter-spacing:1px;color:#102822;font-weight:600;">' . $hTxn . '</div>'
+    . '</div></td></tr>';
+
+$studentSection = $section('Student Information', $badgeHtml('student'),
     $row('Name', $hName, true) . $row('ID Number', $hId) . $row('Course', $hCourse));
-$bookSection = $section('Book Information',
+$bookSection = $section('Book Information', $badgeHtml('book'),
     $row('Title', $hTitle, true) . $row('Author', $hAuthor) . $row('Accession Number', $hAccession) . $row('ISBN', $hIsbn));
-$loanSection = $section('Loan Details',
-    $row('Borrowed', $hBorrowed, true) . $row('Due Date', $hDue) . $row('Transaction ID', '<span style="font-family:Consolas,Menlo,monospace;letter-spacing:.5px;">' . $hTxn . '</span>'));
+$loanSection = $section('Loan Details', $badgeHtml('loan'),
+    $row('Borrowed', $hBorrowed, true) . $barcodeRow);
+
+// Due date: its own solid block (bgcolor too, for old Outlook). Mint
+// #9ff0c8 on the header green measures about 8:1; the white label about 11:1.
+$dueCallout = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="' . $brand . '" style="background-color:' . $brand . ';border-radius:10px;margin:0 0 18px;">'
+    . '<tr><td align="center" style="padding:14px 16px;">'
+    . '<div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#ffffff;">Due Date</div>'
+    . '<div style="margin-top:4px;font-size:24px;font-weight:800;color:#9ff0c8;">' . $hDue . '</div>'
+    . '</td></tr></table>';
 
 $htmlBody = <<<HTML
 <!doctype html>
@@ -175,19 +293,20 @@ $htmlBody = <<<HTML
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef4f1;padding:24px 12px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:620px;background:#ffffff;border:1px solid #d6e4de;border-radius:12px;overflow:hidden;box-shadow:0 6px 18px rgba(16,40,34,0.08);">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:620px;background:#ffffff;border:1px solid {$brand};border-radius:12px;overflow:hidden;box-shadow:0 6px 18px rgba(16,40,34,0.08);">
           <tr>
-            <td style="background:#164436;padding:20px 24px;color:#ffffff;text-align:center;">
+            <td bgcolor="{$brand}" style="background-color:{$brand};background-image:linear-gradient(135deg, {$brand} 0%, {$brandLight} 100%);padding:20px 24px;color:#ffffff;text-align:center;">
               {$logoBadgeHtml}
               <div style="font-size:18px;font-weight:700;letter-spacing:.3px;color:#ffffff;">SmartLib Borrowing Receipt</div>
               <div style="font-size:12px;margin-top:4px;color:#cfe9df;">{$hLibrary} &middot; Issued {$hIssued}</div>
             </td>
           </tr>
           <tr>
-            <td style="padding:24px 24px 6px;">
+            <td style="padding:24px 24px 0;">
               {$studentSection}
               {$bookSection}
               {$loanSection}
+              {$dueCallout}
             </td>
           </tr>
           <tr>
@@ -217,11 +336,14 @@ $textBody = "SMARTLIB BORROWING RECEIPT\n"
     . "ISBN: {$isbn}\n\n"
     . "LOAN DETAILS\n"
     . "Borrowed: {$borrowedDate}\n"
-    . "Due Date: {$dueDate}\n"
     . "Transaction ID: {$transactionId}\n\n"
+    . "DUE DATE: {$dueDate}\n\n"
     . "Please return this book on or before the due date. Late returns may incur fines.";
 
 $sent = auth_send_multipart_email($email, $subject, $htmlBody, $textBody, $inlineImages);
+if ($barcodeFile !== null) {
+    @unlink($barcodeFile[0]);
+}
 
 if (!$sent) {
     respond([
