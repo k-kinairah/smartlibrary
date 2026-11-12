@@ -17666,3 +17666,60 @@ html body .receipt-status-modal .receipt-status-btn::before {
   background: linear-gradient(120deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 35%);
   pointer-events: none;
 }
+
+/* Kiosk Polish — in-app borrowing receipt: Signature details.
+   Glow around the seal (follows the image's own alpha), duotone section
+   badges with a gloss and white icons, dividers that fade out at both
+   ends, and a light glass barcode tray. No sizes or spacing change, so
+   the v183 no-scroll fit is unaffected. */
+html body #receipt-modal .receipt-brand-logo {
+  filter: drop-shadow(0 0 10px rgba(63, 207, 142, 0.4)) !important;
+}
+
+html body #receipt-modal .receipt-section-icon {
+  position: relative !important;
+  overflow: hidden !important;
+  /* Light end #2a9d6e, not #3fcf8e: with the brighter mint the white icon
+     dropped to 2.79:1 where it crosses the light corner; this keeps it at
+     3.8:1 or better, in line with the blue and amber badges below. */
+  background: linear-gradient(140deg, #0e4435 0%, #17895f 45%, #2a9d6e 100%) !important;
+}
+
+html body #receipt-modal .receipt-section-icon::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 45%);
+  pointer-events: none;
+}
+
+/* The absolutely positioned gloss would otherwise paint over the in-flow
+   SVG, so the icon is lifted above it. */
+html body #receipt-modal .receipt-section-icon svg {
+  position: relative !important;
+  z-index: 1 !important;
+  stroke: #ffffff !important;
+}
+
+/* Per-section tone: Student green (above), Book blue, Loan amber. The
+   JS gives the three titles no distinguishing class, and they share a
+   parent with the other receipt divs, so ":nth-child(n of S)" counts
+   only the section titles. Browsers without it keep the green. */
+html body #receipt-modal .receipt-section-title:nth-child(2 of .receipt-section-title) .receipt-section-icon {
+  background: linear-gradient(140deg, #08304f 0%, #0b68a3 45%, #4fa3e0 100%) !important;
+}
+
+html body #receipt-modal .receipt-section-title:nth-child(3 of .receipt-section-title) .receipt-section-icon {
+  background: linear-gradient(140deg, #5a2600 0%, #a64600 45%, #e0843a 100%) !important;
+}
+
+html body #receipt-modal .receipt-divider {
+  height: 1px !important;
+  border-top: 0 !important;
+  background: linear-gradient(90deg, transparent 0%, #d8e3e0 20%, #d8e3e0 80%, transparent 100%) !important;
+}
+
+html body #receipt-modal .receipt-barcode {
+  background: linear-gradient(135deg, rgba(63, 207, 142, 0.08) 0%, rgba(255, 255, 255, 0.6) 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
