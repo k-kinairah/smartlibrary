@@ -196,8 +196,9 @@ $subject = 'SmartLib Receipt - ' . $title;
 // Brand colours for this template. Email clients only get solid colours,
 // plain borders and background-color; the one gradient (header) sits on a
 // solid background-color, so clients that drop background-image show the
-// same flat green as before. No backdrop-filter, masks, text-clip or
-// gradient rings: Outlook and many mobile clients drop them.
+// same flat green as before. The body's faint corner wash works the same
+// way over white. No backdrop-filter, masks, text-clip or gradient rings:
+// Outlook and many mobile clients drop them.
 $brand = '#164436';       // header, card border, due-date callout
 $brandLight = '#1e5e4a';  // header gradient end
 $accent = '#17895f';      // section badges and left accent bars
@@ -302,15 +303,11 @@ $htmlBody = <<<HTML
             </td>
           </tr>
           <tr>
-            <td style="padding:24px 24px 0;">
+            <td bgcolor="#ffffff" style="background-color:#ffffff;background-image:radial-gradient(70% 50% at 100% 0%, rgba(63,207,142,0.06) 0%, rgba(63,207,142,0) 70%), radial-gradient(70% 50% at 0% 100%, rgba(23,105,79,0.05) 0%, rgba(23,105,79,0) 70%);padding:24px 24px 22px;">
               {$studentSection}
               {$bookSection}
               {$loanSection}
               {$dueCallout}
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:0 24px 22px;">
               <div style="background:#eef6f2;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.6;color:#2c4a42;">Please return this book on or before the due date. Late returns may incur fines.</div>
             </td>
           </tr>

@@ -17723,3 +17723,38 @@ html body #receipt-modal .receipt-barcode {
   background: linear-gradient(135deg, rgba(63, 207, 142, 0.08) 0%, rgba(255, 255, 255, 0.6) 100%) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
 }
+
+/* Kiosk Polish — receipt surfaces: subtle corner wash. The page
+   background's two tones (teal bottom-left, mint top-right) at a much
+   lower opacity, so the receipt paper and the "Receipt Sent" card read
+   as the same family as the page and the emailed receipt. */
+html body #receipt-modal .receipt-paper {
+  background:
+    radial-gradient(70% 60% at 100% 0%, rgba(63, 207, 142, 0.07) 0%, rgba(63, 207, 142, 0) 70%),
+    radial-gradient(70% 60% at 0% 100%, rgba(23, 105, 79, 0.06) 0%, rgba(23, 105, 79, 0) 70%),
+    linear-gradient(180deg, #ffffff 0%, #eef4fb 100%) !important;
+}
+
+/* Five layers: two washes, the card's original two fill layers
+   (unchanged), then the gradient ring on the border box. The
+   origin/clip lists must keep one entry per layer or the ring breaks. */
+html body .receipt-status-modal .receipt-status-card {
+  background:
+    radial-gradient(70% 60% at 100% 0%, rgba(63, 207, 142, 0.08) 0%, rgba(63, 207, 142, 0) 70%),
+    radial-gradient(70% 60% at 0% 100%, rgba(23, 105, 79, 0.07) 0%, rgba(23, 105, 79, 0) 70%),
+    radial-gradient(120% 140% at 14% 0%, rgba(242, 250, 255, 0.97) 0%, rgba(234, 245, 242, 0.95) 42%, rgba(226, 240, 236, 0.94) 100%),
+    linear-gradient(165deg, rgba(230, 243, 240, 0.95) 0%, rgba(217, 234, 230, 0.95) 100%),
+    linear-gradient(120deg, rgba(23, 105, 79, 0.55) 0%, rgba(63, 207, 142, 0.55) 100%) !important;
+  background-origin: padding-box, padding-box, padding-box, padding-box, border-box !important;
+  background-clip: padding-box, padding-box, padding-box, padding-box, border-box !important;
+}
+
+/* Receipt muted text: #5a7a72 -> #48655d. The field labels and notes
+   already measured 4.37:1 / 3.99:1 against the paper (below the 4.5:1
+   this 10-13px text needs), and the corner wash took ~0.2 more off.
+   #48655d keeps them visibly secondary to the #1c3e36 values. */
+html body #receipt-modal .receipt-paper-head,
+html body #receipt-modal .receipt-grid span:nth-child(odd),
+html body #receipt-modal .receipt-note {
+  color: #48655d !important;
+}
