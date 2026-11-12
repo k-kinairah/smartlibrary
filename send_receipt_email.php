@@ -193,15 +193,22 @@ $hLibrary = h($library);
 
 $subject = 'SmartLib Receipt - ' . $title;
 
-// Brand colours for this template. Email clients only get solid colours,
-// plain borders and background-color; the one gradient (header) sits on a
-// solid background-color, so clients that drop background-image show the
-// same flat green as before. The body's faint corner wash works the same
-// way over white. No backdrop-filter, masks, text-clip or gradient rings:
-// Outlook and many mobile clients drop them.
-$brand = '#164436';       // header, card border, due-date callout
+// Brand colours for this template. Email clients only get tables, solid
+// colours, plain borders and background-color; the one gradient (header)
+// sits on a solid background-color, so clients that drop background-image
+// show the same flat green as before. The body's faint corner wash works the
+// same way over white. No flexbox, absolute positioning, backdrop-filter,
+// masks, text-clip or gradient rings: Outlook drops them. box-shadow and
+// border-radius are decoration only (Outlook shows square, unshadowed).
+$brand = '#164436';       // header, inner card border, due-date callout
 $brandLight = '#1e5e4a';  // header gradient end
-$accent = '#17895f';      // section badges and left accent bars
+
+// Section tones, same as the in-app receipt (Kiosk Polish v197). All four
+// clear 4.5:1 on the white body at the 11px used here.
+$toneStudent = '#127350';
+$toneBook = '#1f5f8c';
+$toneLoan = '#6f3fa8';
+$toneVerify = '#48655d';
 
 $inlineImages = [];
 
@@ -216,38 +223,48 @@ if (AUTH_EMAIL_EMBED_IMAGES && is_file($logoPath) && is_readable($logoPath)) {
     $logoBadgeHtml = '<img src="cid:smartlib_logo" alt="SmartLib" style="display:block;margin:0 auto 8px;width:52px;height:52px;border-radius:50%;border:2px solid #738f86;background:#ffffff;object-fit:cover;">';
 }
 
-// Section badges: 40x40 PNGs (shown at 20px) of the same person/book/clock
-// icons as the in-app receipt, white on a flat $accent circle. PNG because
-// Gmail and Outlook strip inline SVG. Sent as inline (cid) attachments.
-$badgeHtml = static function (string $name) use (&$inlineImages): string {
-    $path = __DIR__ . '/assets/images/email/receipt-badge-' . $name . '.png';
-    if (!is_file($path)) {
-        return '';
+// Vertical gap. Margins on tables are unreliable in Outlook; a sized block is not.
+$gap = static function (int $px): string {
+    return '<div style="height:' . $px . 'px;line-height:' . $px . 'px;font-size:1px;">&nbsp;</div>';
+};
+
+// A solid 1px (or 2px) rule as a table cell: bgcolor + background-color, so
+// it shows in every client. $width in px.
+$ruleCell = static function (int $width, int $height, string $color): string {
+    return '<td width="' . $width . '" height="' . $height . '" bgcolor="' . $color . '" style="width:' . $width . 'px;height:' . $height . 'px;line-height:' . $height . 'px;font-size:1px;background-color:' . $color . ';">&nbsp;</td>';
+};
+
+// Centred section label: rule, uppercase text, rule (a 3-column table).
+// $heading is a fixed string, not user data.
+$flankLabel = static function (string $heading, string $color) use ($ruleCell): string {
+    $line = '<td style="vertical-align:middle;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>' . $ruleCell(36, 1, $color) . '</tr></table></td>';
+    return '<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;"><tr>'
+        . $line
+        . '<td style="vertical-align:middle;padding:0 10px;font-size:11px;line-height:16px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;color:' . $color . ';">' . $heading . '</td>'
+        . $line
+        . '</tr></table>';
+};
+
+// Centred bold line with a short solid rule under it. $value must already be
+// HTML-escaped.
+$hero = static function (string $value, string $ruleColor) use ($ruleCell, $gap): string {
+    return '<div style="text-align:center;font-size:18px;line-height:24px;font-weight:700;color:#102822;">' . $value . '</div>'
+        . $gap(5)
+        . '<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;"><tr>' . $ruleCell(36, 2, $ruleColor) . '</tr></table>';
+};
+
+// Centred strip of label-over-value cells, divided by a hairline on every
+// cell but the first. Each field is [label, escaped value, nowrap?]; codes
+// and dates are nowrap so they are never split, names and authors may wrap.
+$strip = static function (array $fields): string {
+    $cells = '';
+    foreach ($fields as $i => [$label, $value, $nowrap]) {
+        $cells .= '<td align="center" style="padding:0 14px;text-align:center;vertical-align:top;' . ($i > 0 ? 'border-left:1px solid #e1e8e4;' : '') . '">'
+            . '<div style="font-size:11px;line-height:15px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;color:#48655d;">' . $label . '</div>'
+            . '<div style="font-size:14px;line-height:20px;font-weight:700;color:#102822;' . ($nowrap ? 'white-space:nowrap;' : '') . '">' . $value . '</div>'
+            . '</td>';
     }
-    $cid = 'receipt_badge_' . $name;
-    $inlineImages[] = ['cid' => $cid, 'path' => $path, 'mime' => 'image/png'];
-    return '<img src="cid:' . $cid . '" width="20" height="20" alt="" style="display:block;width:20px;height:20px;border:0;">';
-};
-
-// One label/value row; both arguments must already be HTML-escaped.
-$row = static function (string $label, string $value, bool $first = false): string {
-    $border = $first ? '' : 'border-top:1px solid #e3ece8;';
-    return '<tr>'
-        . '<td style="padding:9px 14px;' . $border . 'font-size:14px;color:#5a7a72;width:40%;">' . $label . '</td>'
-        . '<td style="padding:9px 14px;' . $border . 'font-size:14px;color:#102822;font-weight:600;">' . $value . '</td>'
-        . '</tr>';
-};
-
-// A titled, rounded section box with a badge and a 3px left accent bar;
-// $rowsHtml must already be escaped.
-$section = static function (string $heading, string $badge, string $rowsHtml) use ($accent): string {
-    return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 7px;"><tr>'
-        . ($badge !== '' ? '<td width="20" style="width:20px;padding:0 8px 0 0;vertical-align:middle;">' . $badge . '</td>' : '')
-        . '<td style="vertical-align:middle;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#1f6f5c;">' . $heading . '</td>'
-        . '</tr></table>'
-        . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;border:1px solid #d6e4de;border-left:3px solid ' . $accent . ';border-radius:10px;background:#f7fbf9;margin:0 0 18px;">'
-        . $rowsHtml
-        . '</table>';
+    return '<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;"><tr>' . $cells . '</tr></table>';
 };
 
 // Barcode: a PNG of the transaction ID (see receipt_barcode_png), with the
@@ -261,26 +278,34 @@ if ($barcodeFile !== null) {
     $shownH = (int)round($barcodeH * $shownW / $barcodeW);
     $barcodeImg = '<img src="cid:receipt_barcode" width="' . $shownW . '" height="' . $shownH . '" alt="Barcode ' . $hTxn . '" style="display:block;margin:0 auto;width:100%;max-width:' . $shownW . 'px;height:auto;border:0;">';
 }
-$barcodeRow = '<tr><td colspan="2" align="center" style="padding:12px 14px;border-top:1px solid #e3ece8;">'
-    . '<div style="background:#ffffff;border:1px dashed #b9d3c9;border-radius:8px;padding:10px;">'
+$barcodeTray = '<div style="background:#ffffff;border:1px dashed #b9d3c9;border-radius:8px;padding:10px;text-align:center;">'
     . $barcodeImg
     . '<div style="margin-top:' . ($barcodeImg !== '' ? '6' : '0') . 'px;font-family:Consolas,Menlo,monospace;font-size:13px;letter-spacing:1px;color:#102822;font-weight:600;">' . $hTxn . '</div>'
-    . '</div></td></tr>';
+    . '</div>';
 
-$studentSection = $section('Student Information', $badgeHtml('student'),
-    $row('Name', $hName, true) . $row('ID Number', $hId) . $row('Course', $hCourse));
-$bookSection = $section('Book Information', $badgeHtml('book'),
-    $row('Title', $hTitle, true) . $row('Author', $hAuthor) . $row('Accession Number', $hAccession) . $row('ISBN', $hIsbn));
-$loanSection = $section('Loan Details', $badgeHtml('loan'),
-    $row('Borrowed', $hBorrowed, true) . $barcodeRow);
+$studentSection = $flankLabel('Student Information', $toneStudent) . $gap(6)
+    . $hero($hName, $toneStudent) . $gap(10)
+    . $strip([['ID Number', $hId, true], ['Course', $hCourse, false]]);
+$bookSection = $flankLabel('Book Information', $toneBook) . $gap(6)
+    . $hero($hTitle, $toneBook) . $gap(10)
+    // Author gets its own row: three no-wrap columns side by side are wider
+    // than a phone screen, and email cannot rely on media queries.
+    . $strip([['Author', $hAuthor, false]]) . $gap(8)
+    . $strip([['Accession No.', $hAccession, true], ['ISBN', $hIsbn, true]]);
+$loanSection = $flankLabel('Loan Details', $toneLoan) . $gap(8)
+    . $strip([['Borrowed', $hBorrowed, true]]);
+$verifySection = $flankLabel('Verification', $toneVerify) . $gap(8) . $barcodeTray;
 
 // Due date: its own solid block (bgcolor too, for old Outlook). Mint
 // #9ff0c8 on the header green measures about 8:1; the white label about 11:1.
-$dueCallout = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="' . $brand . '" style="background-color:' . $brand . ';border-radius:10px;margin:0 0 18px;">'
+$dueCallout = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="' . $brand . '" style="background-color:' . $brand . ';border-radius:10px;">'
     . '<tr><td align="center" style="padding:14px 16px;">'
     . '<div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#ffffff;">Due Date</div>'
     . '<div style="margin-top:4px;font-size:24px;font-weight:800;color:#9ff0c8;">' . $hDue . '</div>'
     . '</td></tr></table>';
+
+$g12 = $gap(12);
+$g20 = $gap(20);
 
 $htmlBody = <<<HTML
 <!doctype html>
@@ -294,21 +319,33 @@ $htmlBody = <<<HTML
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef4f1;padding:24px 12px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:620px;background:#ffffff;border:1px solid {$brand};border-radius:12px;overflow:hidden;box-shadow:0 6px 18px rgba(16,40,34,0.08);">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:630px;border-collapse:separate;">
           <tr>
-            <td bgcolor="{$brand}" style="background-color:{$brand};background-image:linear-gradient(135deg, {$brand} 0%, {$brandLight} 100%);padding:20px 24px;color:#ffffff;text-align:center;">
-              {$logoBadgeHtml}
-              <div style="font-size:18px;font-weight:700;letter-spacing:.3px;color:#ffffff;">SmartLib Borrowing Receipt</div>
-              <div style="font-size:12px;margin-top:4px;color:#cfe9df;">{$hLibrary} &middot; Issued {$hIssued}</div>
-            </td>
-          </tr>
-          <tr>
-            <td bgcolor="#ffffff" style="background-color:#ffffff;background-image:radial-gradient(70% 50% at 100% 0%, rgba(63,207,142,0.06) 0%, rgba(63,207,142,0) 70%), radial-gradient(70% 50% at 0% 100%, rgba(23,105,79,0.05) 0%, rgba(23,105,79,0) 70%);padding:24px 24px 22px;">
-              {$studentSection}
-              {$bookSection}
-              {$loanSection}
-              {$dueCallout}
-              <div style="background:#eef6f2;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.6;color:#2c4a42;">Please return this book on or before the due date. Late returns may incur fines.</div>
+            <td bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #d8e4df;border-radius:16px;padding:4px;box-shadow:0 6px 18px rgba(16,40,34,0.08);">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border:1px solid {$brand};border-radius:12px;overflow:hidden;border-collapse:separate;">
+                <tr>
+                  <td bgcolor="{$brand}" style="background-color:{$brand};background-image:linear-gradient(135deg, {$brand} 0%, {$brandLight} 100%);padding:20px 24px;color:#ffffff;text-align:center;">
+                    {$logoBadgeHtml}
+                    <div style="font-size:18px;font-weight:700;letter-spacing:.3px;color:#ffffff;">SmartLib Borrowing Receipt</div>
+                    <div style="font-size:12px;margin-top:4px;color:#cfe9df;">{$hLibrary} &middot; Issued {$hIssued}</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td bgcolor="#ffffff" style="background-color:#ffffff;background-image:radial-gradient(70% 50% at 100% 0%, rgba(63,207,142,0.06) 0%, rgba(63,207,142,0) 70%), radial-gradient(70% 50% at 0% 100%, rgba(23,105,79,0.05) 0%, rgba(23,105,79,0) 70%);padding:24px 24px 22px;">
+                    {$studentSection}
+                    {$g20}
+                    {$bookSection}
+                    {$g20}
+                    {$loanSection}
+                    {$g12}
+                    {$dueCallout}
+                    {$g20}
+                    {$verifySection}
+                    {$g20}
+                    <div style="background:#eef6f2;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.6;font-style:italic;text-align:center;color:#2c4a42;">Please return this book on or before the due date. Late returns may incur fines.</div>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
         </table>
@@ -333,8 +370,9 @@ $textBody = "SMARTLIB BORROWING RECEIPT\n"
     . "ISBN: {$isbn}\n\n"
     . "LOAN DETAILS\n"
     . "Borrowed: {$borrowedDate}\n"
-    . "Transaction ID: {$transactionId}\n\n"
     . "DUE DATE: {$dueDate}\n\n"
+    . "VERIFICATION\n"
+    . "Transaction ID: {$transactionId}\n\n"
     . "Please return this book on or before the due date. Late returns may incur fines.";
 
 $sent = auth_send_multipart_email($email, $subject, $htmlBody, $textBody, $inlineImages);
