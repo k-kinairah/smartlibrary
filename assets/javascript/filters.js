@@ -125,6 +125,9 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     let totalBooks = 0;
+    // The full catalog (#book-grid, inside the display:none #search-view) is
+    // only fetched the first time search opens -- see showSearchView().
+    let booksInitialized = false;
 
     const discoverView = document.getElementById("discover-view");
     const searchView = document.getElementById("search-view");
@@ -611,8 +614,14 @@ document.addEventListener("DOMContentLoaded", () => {
             if (seed.trim() !== "") {
                 if (advancedSearchInput) advancedSearchInput.value = seed;
                 activeFilters.search = seed;
+                // Mark initialized and fetch once, filtered by the seed --
+                // calling ensureBooksLoaded() too would race an unfiltered
+                // fetch against this one, and it could land last.
+                booksInitialized = true;
+                computeTotalBooks();
                 loadBooks();
             } else {
+                ensureBooksLoaded();
                 if (advancedSearchInput) advancedSearchInput.focus();
             }
         });
@@ -734,12 +743,19 @@ document.addEventListener("DOMContentLoaded", () => {
             container.appendChild(chip);
         }
     }
-function loadBooks() {
+    // Only the newest loadBooks() response may render. The full catalog now
+    // loads when search first opens, so a quick first keystroke fires a small
+    // filtered fetch while the ~3MB unfiltered one is still in flight -- if
+    // the unfiltered one landed last it would overwrite the typed results.
+    let loadBooksSeq = 0;
+    function loadBooks() {
         const params = buildParams();
+        const seq = ++loadBooksSeq;
 
         fetch("fetch_books.php?" + params.toString())
             .then(res => res.text())
             .then(html => {
+                if (seq !== loadBooksSeq) return;
                 if (bookGrid) bookGrid.innerHTML = html;
                 updateResultCount();
             });
@@ -1533,12 +1549,25 @@ let signinCountdownEndTs = 0;
         document.getElementById("book-modal")?.classList.add("hidden");
     });
 
+    // Deferred full-catalog load: this used to run on every page load,
+    // fetching fetch_books.php twice (~3.3MB) and rendering 2000+ books --
+    // each with a real cover <img> that the browser requested even though
+    // #search-view was still display:none. Now it waits for search to open.
+    function ensureBooksLoaded() {
+        if (booksInitialized) return;
+        booksInitialized = true;
+        computeTotalBooks();
+        loadBooks();
+    }
+
     window.smartlibRefreshBooks = () => {
+        // Nothing to refresh until search has been opened once; the first
+        // open fetches fresh data anyway. Without this guard, a checkout from
+        // a homepage carousel would bring the eager full-catalog load back.
+        if (!booksInitialized) return;
         computeTotalBooks();
         loadBooks();
     };
-
-    window.smartlibRefreshBooks();
 });
 
 

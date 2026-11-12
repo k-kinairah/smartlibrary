@@ -271,7 +271,7 @@ if ($res && $resultCount > 0) {
 
         echo "
         <div class='book-card' data-id='{$bookId}'>
-            <img class='book-cover' src='{$cover}' alt='Book cover'>
+            <img class='book-cover' src='{$cover}' alt='Book cover' loading='lazy' decoding='async'>
             {$heartHtml}
             <div class='book-meta'>
                 <div class='book-title'>{$title}</div>
