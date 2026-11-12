@@ -64,6 +64,17 @@ $todayCount = entry_log_today_count($conn);
 $recent = entry_log_recent($conn);
 $staffName = trim((string)($_SESSION['name'] ?? ''));
 $avatarIcon = '<span class="scan-avatar" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5"></path></svg></span>';
+// Initials for the avatar circle (first and last word of the name); the
+// generic icon when there is no name to take them from.
+$avatarFor = static function (string $name) use ($avatarIcon): string {
+    $words = preg_split('/\s+/u', trim($name), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    if (!$words) {
+        return $avatarIcon;
+    }
+    $first = static fn(string $w): string => function_exists('mb_substr') ? mb_substr($w, 0, 1) : substr($w, 0, 1);
+    $initials = $first($words[0]) . (count($words) > 1 ? $first($words[count($words) - 1]) : '');
+    return '<span class="scan-avatar" aria-hidden="true">' . htmlspecialchars(function_exists('mb_strtoupper') ? mb_strtoupper($initials) : strtoupper($initials)) . '</span>';
+};
 $cssVer = @filemtime(__DIR__ . '/../assets/css/entry_scan.css') ?: time();
 ?>
 <!DOCTYPE html>
@@ -103,28 +114,30 @@ $cssVer = @filemtime(__DIR__ . '/../assets/css/entry_scan.css') ?: time();
     <main class="scan-main">
         <section id="scan-status" class="scan-status is-ready" role="status" aria-live="polite"></section>
 
-        <form id="scan-form" class="scan-form" autocomplete="off">
-            <label for="scan-input">Card barcode</label>
-            <input id="scan-input" class="scan-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" autofocus>
-        </form>
-
-        <button type="button" id="manual-toggle" class="scan-manual-toggle">Lost or unreadable card? Type the ID</button>
-        <form id="manual-form" class="scan-manual" autocomplete="off" hidden>
-            <label for="manual-input">School ID number</label>
-            <div class="scan-manual-row">
-                <input id="manual-input" type="text" maxlength="24" autocomplete="off" spellcheck="false" placeholder="e.g. 20232243 or 10-2526-001953">
-                <button type="submit">Log entry</button>
-                <button type="button" id="manual-cancel" class="is-ghost">Cancel</button>
-            </div>
-        </form>
+        <div class="scan-bar">
+            <svg class="scan-bar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5v14M6.5 5v14M10 5v14M13 5v14M17 5v14M21 5v14"></path></svg>
+            <form id="scan-form" class="scan-form" autocomplete="off">
+                <label for="scan-input">Card barcode</label>
+                <input id="scan-input" class="scan-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Waiting for a scan" autofocus>
+            </form>
+            <button type="button" id="manual-toggle" class="scan-manual-toggle">Lost or unreadable card? Type the ID</button>
+            <form id="manual-form" class="scan-manual" autocomplete="off" hidden>
+                <label for="manual-input">School ID number</label>
+                <div class="scan-manual-row">
+                    <input id="manual-input" type="text" maxlength="24" autocomplete="off" spellcheck="false" placeholder="e.g. 20232243 or 10-2526-001953">
+                    <button type="submit">Log entry</button>
+                    <button type="button" id="manual-cancel" class="is-ghost">Cancel</button>
+                </div>
+            </form>
+        </div>
     </main>
 
     <aside class="scan-recent" id="recent-panel">
-        <div class="scan-recent-head"><i class="scan-recent-live" aria-hidden="true"></i><h2>Latest entries</h2></div>
+        <div class="scan-recent-head"><i class="scan-recent-live" aria-hidden="true"></i><h2>Latest entries</h2><span class="scan-recent-pill">Live</span></div>
         <ol id="recent-list">
             <?php foreach ($recent as $row): ?>
                 <li>
-                    <?= $avatarIcon ?>
+                    <?= $avatarFor($row['name']) ?>
                     <span class="scan-recent-text">
                         <span class="scan-recent-name"><?= htmlspecialchars($row['name'] !== '' ? $row['name'] : $row['user_number']) ?></span>
                         <span class="scan-recent-meta"><?= htmlspecialchars($row['role']) ?> &middot; <?= htmlspecialchars($row['time']) ?></span>
@@ -328,7 +341,17 @@ $cssVer = @filemtime(__DIR__ . '/../assets/css/entry_scan.css') ?: time();
     function addRecent(data) {
         const li = document.createElement('li');
         li.className = 'is-new';
-        const avatar = document.getElementById('avatar-icon').content.cloneNode(true);
+        // Initials when there is a name; the generic icon otherwise.
+        const words = (data.name || '').trim().split(/\s+/).filter(Boolean);
+        let avatar;
+        if (words.length) {
+            avatar = document.createElement('span');
+            avatar.className = 'scan-avatar';
+            avatar.setAttribute('aria-hidden', 'true');
+            avatar.textContent = (Array.from(words[0])[0] + (words.length > 1 ? Array.from(words[words.length - 1])[0] : '')).toUpperCase();
+        } else {
+            avatar = document.getElementById('avatar-icon').content.cloneNode(true);
+        }
         const text = document.createElement('span');
         text.className = 'scan-recent-text';
         const name = document.createElement('span');
