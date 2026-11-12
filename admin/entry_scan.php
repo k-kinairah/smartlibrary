@@ -203,6 +203,24 @@ $cssVer = @filemtime(__DIR__ . '/../assets/css/entry_scan.css') ?: time();
     </div>
 </template>
 
+<template id="warn-graphic">
+    <div class="scan-state-badge is-warn">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+    </div>
+</template>
+
+<template id="error-graphic">
+    <div class="scan-state-badge is-error">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"></path></svg>
+    </div>
+</template>
+
+<template id="signed-out-graphic">
+    <div class="scan-state-badge is-error">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"></path></svg>
+    </div>
+</template>
+
 <script>
 (function () {
     const csrfToken = <?= json_encode($csrfToken) ?>;

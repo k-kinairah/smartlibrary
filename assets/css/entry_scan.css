@@ -682,6 +682,62 @@ body::after {
     background: linear-gradient(135deg, rgba(176, 44, 58, 0.86), rgba(118, 24, 36, 0.90));
 }
 
+/* Badge above the text in the amber and red states: a glass circle with a
+   clock (already logged) or a cross (error, signed out), arriving the same
+   way as the success badge. */
+.scan-state-badge {
+    position: relative;
+    width: 84px;
+    height: 84px;
+    flex-shrink: 0;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.5);
+    background: radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.30), rgba(255, 255, 255, 0.08) 48%, rgba(0, 0, 0, 0.16) 100%);
+    box-shadow:
+        inset 0 2px 6px rgba(255, 255, 255, 0.22),
+        inset 0 -10px 20px rgba(0, 0, 0, 0.2),
+        0 10px 26px rgba(0, 0, 0, 0.22);
+    animation: es-badge-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.scan-state-badge svg {
+    width: 38px;
+    height: 38px;
+    fill: none;
+    stroke: #ffffff;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.scan-state-badge.is-warn {
+    border-color: rgba(255, 216, 77, 0.75);
+    box-shadow:
+        inset 0 2px 6px rgba(255, 255, 255, 0.22),
+        inset 0 -10px 20px rgba(0, 0, 0, 0.2),
+        0 0 26px rgba(255, 216, 77, 0.28);
+}
+
+.scan-state-badge.is-warn svg {
+    stroke: #ffe9a3;
+}
+
+.scan-state-badge.is-error {
+    border-color: rgba(255, 170, 178, 0.75);
+    box-shadow:
+        inset 0 2px 6px rgba(255, 255, 255, 0.22),
+        inset 0 -10px 20px rgba(0, 0, 0, 0.2),
+        0 0 26px rgba(255, 138, 149, 0.26);
+}
+
+.scan-state-badge.is-error svg {
+    stroke: #ffe1e4;
+}
+
 /* ---- Listening bar: scan field and manual entry ---- */
 
 /* A slim pill over the bottom of the status panel. It is a sibling of the
