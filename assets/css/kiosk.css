@@ -18066,22 +18066,42 @@ html body #receipt-modal .receipt-note {
    border-box ring from "Modal glassmorphism".
    ============================================================ */
 
-/* Spotlight backdrop: deep navy-teal ink, a lighter pool behind the
-   panel and near-black edges; the page behind is blurred and desaturated
-   so cover art dissolves into soft colour. Blur stays at 16px (the panel
-   already runs blur(28px) on the kiosk GPU). Fades in over 200ms each
-   time the modal is shown (it goes from display:none). */
+/* "Daylight glass" backdrop: the home page's New Arrivals colours (warm
+   gold -> cream -> sage -> mint) over a dark-green veil, with a static
+   diagonal light streak on top. The page behind is blurred (20px max for
+   the kiosk GPU) and dimmed. Fades in over 200ms each time the modal is
+   shown (it goes from display:none). */
 html body #book-modal .modal-backdrop {
-  background: radial-gradient(ellipse 75% 65% at 50% 50%, rgba(12, 52, 66, 0.55) 0%, rgba(4, 16, 26, 0.86) 55%, rgba(1, 6, 12, 0.95) 100%) !important;
-  backdrop-filter: blur(16px) saturate(0.6) brightness(0.8) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(0.6) brightness(0.8) !important;
+  background:
+    linear-gradient(112deg, transparent 34%, rgba(255, 255, 255, 0.1) 42%, rgba(255, 255, 255, 0.34) 48%, rgba(255, 255, 255, 0.12) 54%, transparent 62%),
+    linear-gradient(120deg, rgba(234, 209, 159, 0.62) 0%, rgba(243, 241, 228, 0.3) 26%, rgba(112, 160, 139, 0.62) 52%, rgba(140, 227, 185, 0.62) 78%, rgba(224, 213, 168, 0.55) 100%),
+    linear-gradient(rgba(5, 32, 28, 0.55), rgba(5, 32, 28, 0.55)) !important;
+  backdrop-filter: blur(20px) saturate(1.1) brightness(0.55) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.1) brightness(0.55) !important;
   animation: bm2BackdropIn 0.2s ease-out both !important;
 }
 
+/* Without backdrop-filter the page would show through sharp, so the veil
+   rises to 0.88. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   html body #book-modal .modal-backdrop {
-    background: radial-gradient(ellipse 75% 65% at 50% 50%, rgba(12, 52, 66, 0.92) 0%, rgba(4, 16, 26, 0.94) 55%, rgba(1, 6, 12, 0.97) 100%) !important;
+    background:
+      linear-gradient(112deg, transparent 34%, rgba(255, 255, 255, 0.1) 42%, rgba(255, 255, 255, 0.34) 48%, rgba(255, 255, 255, 0.12) 54%, transparent 62%),
+      linear-gradient(120deg, rgba(234, 209, 159, 0.62) 0%, rgba(243, 241, 228, 0.3) 26%, rgba(112, 160, 139, 0.62) 52%, rgba(140, 227, 185, 0.62) 78%, rgba(224, 213, 168, 0.55) 100%),
+      linear-gradient(rgba(5, 32, 28, 0.88), rgba(5, 32, 28, 0.88)) !important;
   }
+}
+
+/* Fine grain so the large soft gradients don't band. */
+html body #book-modal .modal-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
 }
 
 html body #book-modal .modal-panel {
@@ -18110,12 +18130,12 @@ html body #book-modal .modal-panel {
   background-clip: border-box !important;
   backdrop-filter: blur(28px) saturate(185%) !important;
   -webkit-backdrop-filter: blur(28px) saturate(185%) !important;
-  /* Halo: a hairline, a deep drop and a soft emerald glow so the light
-     panel separates from the dark backdrop. */
+  /* Halo for the light "Daylight glass" backdrop: a bright hairline, a
+     deep green-black drop and a soft white glow. */
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.16),
-    0 34px 90px rgba(0, 0, 0, 0.55),
-    0 0 110px rgba(40, 200, 150, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.6),
+    0 44px 96px rgba(3, 30, 24, 0.6),
+    0 0 90px rgba(255, 255, 255, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.95),
     inset 0 0 40px rgba(255, 255, 255, 0.35) !important;
 }
