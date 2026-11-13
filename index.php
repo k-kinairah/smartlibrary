@@ -438,45 +438,6 @@ if ($genreRes) {
         <p class="modal-subtitle">Sign in to borrow books and access personalized recommendations</p>
 
         <form id="signin-form" class="modal-form account-form">
-            <label>Account Type</label>
-            <div class="account-type-picker">
-                <button type="button" class="account-type-select" id="signin-account-type-toggle" aria-expanded="false">
-                    <span class="account-type-leading-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" role="presentation">
-                            <path d="M8 8V7a4 4 0 0 1 8 0v1"></path>
-                            <rect x="4" y="8" width="16" height="11" rx="3"></rect>
-                            <path d="M4 13h16"></path>
-                            <path d="M12 11v4"></path>
-                        </svg>
-                    </span>
-                    <div class="account-type-text">
-                        <strong id="signin-account-type-label">Student</strong>
-                        <div class="muted-sub" id="signin-account-type-sub">3 books at a time</div>
-                    </div>
-                    <span class="chev-circle" aria-hidden="true">
-                        <svg class="chev" viewBox="0 0 24 24" role="presentation">
-                            <path d="M7 10l5 5 5-5"></path>
-                        </svg>
-                    </span>
-                </button>
-
-                <div id="signin-account-type-menu" class="account-type-menu hidden">
-                    <button type="button" class="account-type-option active" data-type="student" data-label="Student" data-sub="3 books at a time" data-id-label="Student ID" data-id-placeholder="20232243" data-secret-label="PIN" data-secret-placeholder="2026">
-                        <span class="option-title">Student</span>
-                        <span class="option-sub">Borrow up to 3 books at a time</span>
-                    </button>
-                    <button type="button" class="account-type-option" data-type="faculty" data-label="Faculty" data-sub="5 books - up to 30 days" data-id-label="Faculty ID" data-id-placeholder="Your faculty ID" data-secret-label="PIN" data-secret-placeholder="2026">
-                        <span class="option-title">Faculty</span>
-                        <span class="option-sub">Borrow up to 5 books for up to 30 days</span>
-                    </button>
-                    <button type="button" class="account-type-option" data-type="librarian" data-label="Librarian" data-sub="5 books at a time" data-id-label="Librarian ID" data-id-placeholder="Your librarian ID" data-secret-label="Password" data-secret-placeholder="Enter your password">
-                        <span class="option-title">Librarian</span>
-                        <span class="option-sub">Staff access - up to 5 books at a time</span>
-                    </button>
-                </div>
-            </div>
-            <input type="hidden" id="signin-account-type" value="student">
-
             <div class="floating-field">
                 <span class="floating-field-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" role="presentation">
@@ -484,7 +445,7 @@ if ($genreRes) {
                         <path d="M5 19c0-3.2 2.8-5.2 7-5.2s7 2 7 5.2"></path>
                     </svg>
                 </span>
-                <label id="signin-identifier-label" class="floating-label">Student ID</label>
+                <label id="signin-identifier-label" class="floating-label">School ID</label>
                 <input type="text" id="signin-identifier" placeholder="20232243">
             </div>
 
@@ -533,7 +494,7 @@ if ($genreRes) {
             <button type="button" id="signin-btn" class="primary-btn">Sign In</button>
 
             <div class="signin-links-row">
-                <button type="button" id="signin-forgot-pin" class="signin-text-btn">Forgot your <span id="signin-forgot-label">PIN</span>?</button>
+                <button type="button" id="signin-forgot-pin" class="signin-text-btn">Forgot your PIN?</button>
             </div>
 
             <div id="signin-msg" class="form-msg"></div>

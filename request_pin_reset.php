@@ -18,16 +18,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // Same ID normalization as login_handler.php (dashes as printed on the card).
 $identifier = library_card_normalize_id((string)($_POST['identifier'] ?? ''));
-$accountType = strtolower(trim((string)($_POST['account_type'] ?? 'student')));
+// The account's real role decides; a posted account_type is ignored.
 $clientIp = auth_client_ip();
 $genericSuccess = [
     'status' => 'success',
     'message' => 'If this account exists, a reset link was sent.'
 ];
 
-if (!in_array($accountType, ['student', 'faculty', 'librarian'], true)) {
-    $accountType = 'student';
-}
 
 if ($identifier === '') {
     respond_json($genericSuccess);
@@ -70,14 +67,10 @@ if (!$user) {
 $rawRole = strtolower(trim((string)($user['role'] ?? 'student')));
 $status = strtolower(trim((string)($user['status'] ?? 'active')));
 
-$roleAllowed = false;
-if ($accountType === 'student') {
-    $roleAllowed = ($rawRole === 'student');
-} elseif ($accountType === 'faculty') {
-    $roleAllowed = ($rawRole === 'faculty');
-} elseif ($accountType === 'librarian') {
-    $roleAllowed = in_array($rawRole, ['librarian', 'admin'], true);
-}
+// Same roles as before (student, faculty, librarian/admin all get a reset
+// link); anything else gets the same generic response.
+$normalizedRole = in_array($rawRole, ['admin', 'librarian'], true) ? 'librarian' : $rawRole;
+$roleAllowed = in_array($normalizedRole, ['student', 'faculty', 'librarian'], true);
 
 if (!$roleAllowed || ($status !== '' && $status !== 'active')) {
     respond_json($genericSuccess);
@@ -102,7 +95,7 @@ $tokenInfo = auth_create_reset_token(
     $conn,
     (int)($user['user_id'] ?? 0),
     (string)($user['user_number'] ?? ''),
-    $accountType,
+    $normalizedRole,
     $email,
     $clientIp
 );

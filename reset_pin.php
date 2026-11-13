@@ -115,8 +115,8 @@ if (!$linkDead && $messageType === 'error') {
 }
 
 // After a successful reset, open the kiosk sign-in for the right account type.
-$signinType = $done ? strtolower((string)($tokenRow['account_type'] ?? '')) : '';
-$signinHref = 'index.php?signin=' . (in_array($signinType, ['student', 'faculty', 'librarian'], true) ? $signinType : 'open');
+// ?signin=<anything> just opens the sign-in modal; the link never names a role.
+$signinHref = 'index.php?signin=1';
 
 $messageIcons = [
     'success' => '<path d="m6.5 12.5 3.6 3.6 7.4-8"></path>',

@@ -90,12 +90,15 @@ if (!smartlib_csrf_verify('signin_csrf', $_POST['csrf_token'] ?? '')) {
 // typing their ID exactly as printed must still match.
 $identifier = library_card_normalize_id((string)($_POST['identifier'] ?? ''));
 $password = trim((string)($_POST['password'] ?? ''));
-$accountType = strtolower(trim((string)($_POST['account_type'] ?? 'student')));
 $clientIp = auth_client_ip();
+// The role comes only from library_users.role for this ID. A posted
+// account_type (from the old Account Type dropdown) is ignored.
 
-if (!in_array($accountType, ['student', 'faculty', 'librarian'], true)) {
-    $accountType = 'student';
-}
+// Checked against when the ID doesn't exist (or has no PIN yet), so those
+// cases take about as long as a wrong PIN and response time doesn't reveal
+// which IDs exist. Same bcrypt cost (10) as the stored PINs; it matches
+// nothing (a random secret).
+const SMARTLIB_DUMMY_PIN_HASH = '$2y$10$w6V8b/CFpVbXan6nzJwkF.ApK.jFFHQlS8LYmjpXr5Wjr7LXALPmq';
 
 if ($identifier === '' || $password === '') {
     respond_json(['status' => 'error', 'message' => 'Please provide your ID and PIN.'], 422);
@@ -133,53 +136,41 @@ $user = $result ? $result->fetch_assoc() : null;
 $stmt->close();
 
 if (!$user) {
-    auth_record_login_attempt($conn, $identifier, $accountType, $clientIp, false, 'user_not_found');
-    respond_json(['status' => 'error', 'message' => 'Invalid credentials.'], 401);
-}
-
-// Hashed PINs only. The old plaintext-compare fallback (with upgrade-on-login)
-// was removed for launch; password_verify() returns false for anything that
-// isn't a valid hash, so a NULL/plaintext column simply can't sign in and the
-// user has to go through reset_pin.php.
-$storedPassword = (string)($user['password'] ?? '');
-$isValid = $storedPassword !== '' && password_verify($password, $storedPassword);
-
-if (!$isValid) {
-    auth_record_login_attempt($conn, $identifier, $accountType, $clientIp, false, 'invalid_password');
+    password_verify($password, SMARTLIB_DUMMY_PIN_HASH);
+    auth_record_login_attempt($conn, $identifier, 'unknown', $clientIp, false, 'user_not_found');
     respond_json(['status' => 'error', 'message' => 'Invalid credentials.'], 401);
 }
 
 $rawRole = strtolower(trim((string)($user['role'] ?? 'student')));
+$normalizedRole = in_array($rawRole, ['admin', 'librarian'], true) ? 'librarian' : $rawRole;
 $status = strtolower(trim((string)($user['status'] ?? 'active')));
 
+// Hashed PINs only. The old plaintext-compare fallback (with upgrade-on-login)
+// was removed for launch; password_verify() returns false for anything that
+// isn't a valid hash, so a NULL/plaintext column simply can't sign in and the
+// user has to go through reset_pin.php. An empty PIN still runs one bcrypt
+// check (the dummy) so it takes as long as a wrong PIN.
+$storedPassword = (string)($user['password'] ?? '');
+$isValid = $storedPassword !== ''
+    ? password_verify($password, $storedPassword)
+    : (password_verify($password, SMARTLIB_DUMMY_PIN_HASH) && false);
+
+if (!$isValid) {
+    auth_record_login_attempt($conn, $identifier, $normalizedRole, $clientIp, false, 'invalid_password');
+    respond_json(['status' => 'error', 'message' => 'Invalid credentials.'], 401);
+}
+
 if ($status !== '' && $status !== 'active') {
-    auth_record_login_attempt($conn, $identifier, $accountType, $clientIp, false, 'inactive_account');
+    auth_record_login_attempt($conn, $identifier, $normalizedRole, $clientIp, false, 'inactive_account');
     respond_json(['status' => 'error', 'message' => 'This account is inactive. Please contact the librarian.'], 403);
 }
 
-$roleAllowed = false;
-if ($accountType === 'student') {
-    $roleAllowed = ($rawRole === 'student');
-} elseif ($accountType === 'faculty') {
-    $roleAllowed = ($rawRole === 'faculty');
-} elseif ($accountType === 'librarian') {
-    $roleAllowed = in_array($rawRole, ['librarian', 'admin'], true);
+// Only these roles can use the kiosk sign-in (same set the old dropdown
+// allowed). Anything else gets the generic message, never its role.
+if (!in_array($normalizedRole, ['student', 'faculty', 'librarian'], true)) {
+    auth_record_login_attempt($conn, $identifier, $normalizedRole, $clientIp, false, 'role_not_allowed');
+    respond_json(['status' => 'error', 'message' => 'Invalid credentials.'], 401);
 }
-
-if (!$roleAllowed) {
-    auth_record_login_attempt($conn, $identifier, $accountType, $clientIp, false, 'role_mismatch');
-
-    $accountLabel = 'student';
-    if ($accountType === 'faculty') {
-        $accountLabel = 'faculty';
-    } elseif ($accountType === 'librarian') {
-        $accountLabel = 'librarian';
-    }
-
-    respond_json(['status' => 'error', 'message' => "This ID is not a {$accountLabel} account."], 403);
-}
-
-$normalizedRole = in_array($rawRole, ['admin', 'librarian'], true) ? 'librarian' : $rawRole;
 
 if ($normalizedRole === 'librarian') {
     $userId = (int)($user['user_id'] ?? 0);
@@ -192,7 +183,7 @@ if ($normalizedRole === 'librarian') {
     if ($userEmail === '' || !filter_var($userEmail, FILTER_VALIDATE_EMAIL)) {
         respond_json([
             'status' => 'error',
-            'message' => 'This librarian/admin account has no valid email for 2FA. Please update email in Users first.'
+            'message' => 'This account has no valid email for its verification code. Please contact the system administrator.'
         ], 422);
     }
 
@@ -200,7 +191,7 @@ if ($normalizedRole === 'librarian') {
         $conn,
         $userId,
         (string)($user['user_number'] ?? ''),
-        $accountType,
+        $normalizedRole,
         $userEmail,
         $clientIp
     );
@@ -273,7 +264,7 @@ $_SESSION['pending_2fa'] = [
         'challenge_id' => (int)($challenge['challenge_id'] ?? 0),
         'user_id' => $userId,
         'identifier' => $identifier,
-        'account_type' => $accountType,
+        'account_type' => $normalizedRole,
         'user' => [
             'user_id' => $userId,
             'user_number' => (string)($user['user_number'] ?? ''),
@@ -312,7 +303,7 @@ $_SESSION['pending_2fa'] = [
 
 auth_finalize_session_login($user, $normalizedRole);
 auth_clear_failed_login_attempts($conn, $identifier, $clientIp);
-auth_record_login_attempt($conn, $identifier, $accountType, $clientIp, true, 'login_success');
+auth_record_login_attempt($conn, $identifier, $normalizedRole, $clientIp, true, 'login_success');
 
 respond_json([
     'status' => 'success',

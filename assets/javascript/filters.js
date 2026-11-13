@@ -261,21 +261,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 renderSuggestions(items);
             })
             .catch(() => {
-                if (expectsTwoFactor) {
-                    pendingTwoFactor = true;
-                    signinOtpWrap?.classList.remove("hidden");
-                    signinForgotPinBtn?.classList.add("hidden");
-                    if (signinHelper) {
-                        signinHelper.textContent = "Enter the 6-digit verification code from your email.";
-                    }
-                    setSigninBusy(false, "Verify Code");
-                    if (signinOtpInput) signinOtpInput.focus();
-                    setSigninMessage("Code may have been sent. Enter the 6-digit code to continue.");
-                    return;
-                }
-
-                resetTwoFactorState(false);
-                setSigninMessage("Login failed.");
+                // A failed suggestion lookup just closes the list. (This used
+                // to hold a stray copy of the sign-in error handler, which
+                // threw a ReferenceError here: none of its names exist in
+                // this scope.)
+                if (requestToken === suggestionFetchToken) closeSuggestions();
             });
     };
 
@@ -991,11 +981,6 @@ document.getElementById("clear-filters")?.addEventListener("click", clearAllFilt
     const modal = document.getElementById("account-modal");
     const modalBackdrop = modal?.querySelector(".modal-backdrop") || null;
 
-    const accountTypeToggle = document.getElementById("signin-account-type-toggle");
-    const accountTypeMenu = document.getElementById("signin-account-type-menu");
-    const accountTypeHidden = document.getElementById("signin-account-type");
-    const accountTypeLabel = document.getElementById("signin-account-type-label");
-    const accountTypeSub = document.getElementById("signin-account-type-sub");
     const signinIdentifierLabel = document.getElementById("signin-identifier-label");
     const signinIdentifierInput = document.getElementById("signin-identifier");
     const signinPasswordInput = document.getElementById("signin-password");
@@ -1005,7 +990,6 @@ document.getElementById("clear-filters")?.addEventListener("click", clearAllFilt
     const signinOtpInput = document.getElementById("signin-otp");
     const signinHelper = document.getElementById("signin-helper");
     const signinForgotPinBtn = document.getElementById("signin-forgot-pin");
-    const signinForgotLabel = document.getElementById("signin-forgot-label");
     const signinMsgBox = document.getElementById("signin-msg");
     const signinBtn = document.getElementById("signin-btn");
 
@@ -1063,9 +1047,8 @@ let signinCountdownEndTs = 0;
         signinBtn.textContent = label;
     };
 
-    // Student/Faculty sign in with a numeric PIN; Librarian/Admin accounts use a
-    // full password (see admin/manage_users.php). This reads whichever label is
-    // currently showing so messages/aria-labels say the right thing either way.
+    // One fixed "PIN" field for every account; the server decides what the
+    // account is (staff type their password here).
     const currentSecretLabel = () => signinPasswordLabel?.textContent || "PIN";
 
     const setSigninPasswordVisibility = (visible) => {
@@ -1099,8 +1082,6 @@ let signinCountdownEndTs = 0;
 
     const hideAccountModal = () => {
         modal?.classList.add("hidden");
-        accountTypeMenu?.classList.add("hidden");
-        accountTypeToggle?.setAttribute("aria-expanded", "false");
         setSigninPasswordVisibility(false);
         resetTwoFactorState(true);
     };
@@ -1119,77 +1100,9 @@ let signinCountdownEndTs = 0;
         showAccountModal();
     });
 
-    const applyAccountType = (optionEl) => {
-        if (!optionEl) return;
-
-        const selectedType = optionEl.dataset.type || "student";
-        const selectedLabel = optionEl.dataset.label || "Student";
-        const selectedSub = optionEl.dataset.sub || "";
-        const idLabel = optionEl.dataset.idLabel || "Student ID";
-        const idPlaceholder = optionEl.dataset.idPlaceholder || "20232243";
-        const secretLabel = optionEl.dataset.secretLabel || "PIN";
-        const secretPlaceholder = optionEl.dataset.secretPlaceholder || "2026";
-
-        if (accountTypeHidden) accountTypeHidden.value = selectedType;
-        if (accountTypeLabel) accountTypeLabel.textContent = selectedLabel;
-        if (accountTypeSub) accountTypeSub.textContent = selectedSub;
-        if (signinIdentifierLabel) signinIdentifierLabel.textContent = idLabel;
-        if (signinIdentifierInput) signinIdentifierInput.placeholder = idPlaceholder;
-        if (signinPasswordLabel) signinPasswordLabel.textContent = secretLabel;
-        if (signinPasswordInput) signinPasswordInput.placeholder = secretPlaceholder;
-        if (signinForgotLabel) signinForgotLabel.textContent = secretLabel;
-        if (signinPasswordToggle) {
-            const isVisible = signinPasswordInput?.type === "text";
-            signinPasswordToggle.setAttribute("aria-label", isVisible ? `Hide ${secretLabel}` : `Show ${secretLabel}`);
-        }
-
-        accountTypeMenu?.querySelectorAll(".account-type-option").forEach(btn => {
-            btn.classList.toggle("active", btn === optionEl);
-        });
-
-        accountTypeMenu?.classList.add("hidden");
-        accountTypeToggle?.setAttribute("aria-expanded", "false");
-        resetTwoFactorState(true);
-    };
-
-    if (accountTypeToggle && accountTypeMenu) {
-        accountTypeToggle.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const opening = accountTypeMenu.classList.contains("hidden");
-            accountTypeMenu.classList.toggle("hidden", !opening);
-            accountTypeToggle.setAttribute("aria-expanded", opening ? "true" : "false");
-        });
-
-        accountTypeMenu.querySelectorAll(".account-type-option").forEach(option => {
-            option.addEventListener("click", (e) => {
-                e.preventDefault();
-                applyAccountType(option);
-            });
-        });
-
-        document.addEventListener("click", (e) => {
-            if (!modal || modal.classList.contains("hidden")) return;
-            if (!accountTypeMenu.contains(e.target) && !accountTypeToggle.contains(e.target)) {
-                accountTypeMenu.classList.add("hidden");
-                accountTypeToggle.setAttribute("aria-expanded", "false");
-            }
-        });
-
-        const initialOption =
-            accountTypeMenu.querySelector(`.account-type-option[data-type="${accountTypeHidden?.value || "student"}"]`) ||
-            accountTypeMenu.querySelector(".account-type-option.active") ||
-            accountTypeMenu.querySelector(".account-type-option");
-
-        applyAccountType(initialOption);
-    }
-
     try {
-        const signinTarget = new URLSearchParams(window.location.search).get("signin");
-        if (signinTarget) {
-            const normalizedTarget = signinTarget.toLowerCase();
-            const targetOption = accountTypeMenu?.querySelector(`.account-type-option[data-type="${normalizedTarget}"]`);
-            if (targetOption) applyAccountType(targetOption);
+        // ?signin=<anything> just opens the sign-in modal (the value is ignored).
+        if (new URLSearchParams(window.location.search).has("signin")) {
             showAccountModal();
         }
     } catch (_err) {
@@ -1199,9 +1112,7 @@ let signinCountdownEndTs = 0;
     const submitPasswordStep = () => {
         const identifier = signinIdentifierInput?.value.trim() || "";
         const password = signinPasswordInput?.value.trim() || "";
-        const accountType = (accountTypeHidden?.value || "student").trim();
         const idLabel = signinIdentifierLabel?.textContent || "ID";
-        const expectsTwoFactor = accountType === "librarian";
 
         clearSigninCountdown();
         setSigninMessage("");
@@ -1211,21 +1122,15 @@ let signinCountdownEndTs = 0;
             return;
         }
 
-        if (expectsTwoFactor) {
-            signinOtpWrap?.classList.remove("hidden");
-            signinForgotPinBtn?.classList.add("hidden");
-            if (signinHelper) signinHelper.textContent = "Checking account and sending verification code...";
-            setSigninBusy(true, "Sending Code...");
-        } else {
-            setSigninBusy(true, "Signing In...");
-        }
+        // The code field appears only when the server answers "2fa_required".
+        setSigninBusy(true, "Signing In...");
 
         fetch("login_handler.php", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             credentials: "same-origin",
             cache: "no-store",
-            body: new URLSearchParams({ identifier, password, account_type: accountType, csrf_token: window.SMARTLIB_SIGNIN_CSRF || "" })
+            body: new URLSearchParams({ identifier, password, csrf_token: window.SMARTLIB_SIGNIN_CSRF || "" })
         })
             .then(async (res) => {
                 const raw = await res.text();
@@ -1243,22 +1148,6 @@ let signinCountdownEndTs = 0;
                 }
 
                 if (data.status === "2fa_required") {
-                    pendingTwoFactor = true;
-                    signinOtpWrap?.classList.remove("hidden");
-                    signinForgotPinBtn?.classList.add("hidden");
-                    if (signinHelper) {
-                        signinHelper.textContent = "Enter the 6-digit code sent to your email to continue.";
-                    }
-                    setSigninBusy(false, "Verify Code");
-                    if (signinPasswordInput) signinPasswordInput.value = "";
-                    if (signinOtpInput) signinOtpInput.focus();
-                    clearSigninCountdown();
-                    setSigninMessage(data.message || "Verification code required.");
-                    return;
-                }
-
-                const maybeCodeSent = expectsTwoFactor && /verification code sent/i.test(String(data.message || ""));
-                if (maybeCodeSent) {
                     pendingTwoFactor = true;
                     signinOtpWrap?.classList.remove("hidden");
                     signinForgotPinBtn?.classList.add("hidden");
@@ -1355,7 +1244,6 @@ let signinCountdownEndTs = 0;
 
     signinForgotPinBtn?.addEventListener("click", () => {
         const identifier = signinIdentifierInput?.value.trim() || "";
-        const accountType = (accountTypeHidden?.value || "student").trim();
         const idLabel = signinIdentifierLabel?.textContent || "ID";
 
         if (!identifier) {
@@ -1367,7 +1255,7 @@ let signinCountdownEndTs = 0;
         fetch("request_pin_reset.php", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: new URLSearchParams({ identifier, account_type: accountType })
+            body: new URLSearchParams({ identifier })
         })
             .then(res => res.json())
             .then(data => {
