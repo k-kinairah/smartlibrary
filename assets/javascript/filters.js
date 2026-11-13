@@ -2984,7 +2984,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (err) {
             myBooksContent.innerHTML = `
                 <div class="my-books-empty error">
-                    <strong>Could not load your checked out books.</strong>
+                    <strong>Could not load your borrowed books.</strong>
                     <p>${esc(err?.message || 'Please try again.')}</p>
                 </div>
             `;

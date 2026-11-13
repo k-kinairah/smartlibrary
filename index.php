@@ -146,7 +146,7 @@ if ($genreRes) {
 <section class="discover-panel" data-panel-key="most_borrowed">
             <span class="panel-kicker">Reader favorites</span>
             <h2>Most Borrowed Books</h2>
-            <p>Popular titles frequently checked out by students</p>
+            <p>Popular titles frequently borrowed by students</p>
             <div class="discover-carousel">
                 <button class="carousel-arrow">&#8249;</button>
                 <div class="carousel-books">

@@ -903,7 +903,7 @@ if ($isPersonalized) {
     $panels[] = [
         'key' => 'most_borrowed',
         'title' => 'Most Borrowed Books',
-        'subtitle' => 'Popular titles frequently checked out by students',
+        'subtitle' => 'Popular titles frequently borrowed by students',
         'books' => $mostBorrowedBooks
     ];
 } else {
@@ -923,7 +923,7 @@ if ($isPersonalized) {
         [
             'key' => 'most_borrowed',
             'title' => 'Most Borrowed Books',
-            'subtitle' => 'Popular titles frequently checked out by students',
+            'subtitle' => 'Popular titles frequently borrowed by students',
             'books' => $mostBorrowedBooks
         ]
     ];
