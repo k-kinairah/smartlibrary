@@ -18,6 +18,7 @@ if (!smartlib_active_staff_session($conn)) {
 require_once '../config/admin_audit.php';
 require_once '../config/csrf.php';
 require_once '../config/library_card_helpers.php';
+require_once '../config/auth_security.php'; // staff password rule (auth_staff_password_problem)
 
 $buildManageUsersUrl = static function (array $params): string {
     $clean = [];
@@ -98,6 +99,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_user'])) {
         $flash = ['type' => 'error', 'message' => 'Please enter a valid email address.'];
     } elseif (in_array($role, ['student', 'faculty'], true) && !preg_match('/^\d{4,}$/', $pin)) {
         $flash = ['type' => 'error', 'message' => 'For Student/Faculty accounts, PIN must be at least 4 digits.'];
+    } elseif (in_array($role, ['librarian', 'admin'], true) && ($staffProblem = auth_staff_password_problem($pin, $userNumber)) !== '') {
+        // Same rule as a staff reset link: staff sign in with a password + 2FA.
+        $flash = ['type' => 'error', 'message' => 'For Librarian/Admin accounts: ' . $staffProblem];
     } else {
         $dupStmt = $conn->prepare("SELECT user_id FROM library_users WHERE user_number = ? LIMIT 1");
         if ($dupStmt) {
@@ -228,6 +232,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
         ) {
             $editPinPopupMessage = 'For Student/Faculty accounts, new PIN must be at least 4 digits.';
             $flash = ['type' => 'error', 'message' => $editPinPopupMessage];
+        }
+
+        // Staff (librarian/admin) passwords follow the staff reset rule. An
+        // account being moved into a staff role from student/faculty must get
+        // a new password here, or its numeric PIN would become a staff password.
+        if ($flash['message'] === '' && in_array($role, ['librarian', 'admin'], true)) {
+            if ($newPin !== '') {
+                $staffProblem = auth_staff_password_problem($newPin, $userNumber);
+                if ($staffProblem !== '') {
+                    $editPinPopupMessage = 'For Librarian/Admin accounts: ' . $staffProblem;
+                    $flash = ['type' => 'error', 'message' => $editPinPopupMessage];
+                }
+            } else {
+                $oldRole = '';
+                $oldRoleStmt = $conn->prepare('SELECT role FROM library_users WHERE user_id = ? LIMIT 1');
+                if ($oldRoleStmt) {
+                    $oldRoleStmt->bind_param('i', $editUserId);
+                    $oldRoleStmt->execute();
+                    $oldRoleRow = $oldRoleStmt->get_result()->fetch_assoc();
+                    $oldRoleStmt->close();
+                    $oldRole = strtolower(trim((string)($oldRoleRow['role'] ?? '')));
+                }
+                if (!in_array($oldRole, ['librarian', 'admin'], true)) {
+                    $editPinPopupMessage = 'To make this account a Librarian/Admin, set a new password (at least '
+                        . AUTH_STAFF_PASSWORD_MIN . ' characters with a letter and a number).';
+                    $flash = ['type' => 'error', 'message' => $editPinPopupMessage];
+                }
+            }
         }
 
         if ($flash['message'] === '') {
@@ -668,7 +700,7 @@ require 'layout_top.php';
             <input type="text" name="user_number" placeholder="Student/Faculty/Librarian ID" required>
             <input type="email" name="email" placeholder="Email" required>
             <input type="password" name="pin" placeholder="PIN / Password" required>
-            <small class="pin-rule-note" id="createPinHint">Student/Faculty: at least 4 digits. Librarian: secure password can include letters, numbers, and symbols.</small>
+            <small class="pin-rule-note" id="createPinHint">Student/Faculty: at least 4 digits. Librarian/Admin: at least <?= (int)AUTH_STAFF_PASSWORD_MIN ?> characters with a letter and a number.</small>
 
             <select name="program_id">
                 <option value="">No Program</option>
@@ -710,7 +742,7 @@ require 'layout_top.php';
             <input type="text" name="edit_user_number" placeholder="Student/Faculty/Librarian ID" value="<?= htmlspecialchars((string)($editUserData['user_number'] ?? '')) ?>" required>
             <input type="email" name="edit_email" placeholder="Email (optional)" value="<?= htmlspecialchars((string)($editUserData['email'] ?? '')) ?>">
             <input type="password" name="edit_pin" placeholder="New PIN / Password (optional)" autocomplete="new-password">
-            <small class="pin-rule-note" id="editPinHint">Leave blank to keep current PIN/password. Student/Faculty: at least 4 digits. Librarian: secure password can include letters, numbers, and symbols.</small>
+            <small class="pin-rule-note" id="editPinHint">Leave blank to keep current PIN/password. Student/Faculty: at least 4 digits. Librarian/Admin: at least <?= (int)AUTH_STAFF_PASSWORD_MIN ?> characters with a letter and a number.</small>
 
             <select name="edit_program_id">
                 <option value="">No Program</option>
@@ -773,6 +805,23 @@ function roleNeedsNumericPin(roleValue) {
     return role === 'student' || role === 'faculty';
 }
 
+const STAFF_PASSWORD_MIN = <?= (int)AUTH_STAFF_PASSWORD_MIN ?>;
+
+// Mirrors auth_staff_password_problem() so staff see the rule before
+// submitting; the server still checks everything.
+function staffPasswordProblem(value, userNumber) {
+    if (new TextEncoder().encode(value).length > <?= (int)AUTH_STAFF_PASSWORD_MAX_BYTES ?>) {
+        return 'Password must be at most <?= (int)AUTH_STAFF_PASSWORD_MAX_BYTES ?> characters.';
+    }
+    if ([...value].length < STAFF_PASSWORD_MIN || !/\p{L}/u.test(value) || !/\d/.test(value)) {
+        return 'Password must be at least ' + STAFF_PASSWORD_MIN + ' characters with a letter and a number.';
+    }
+    if (userNumber && value.toLowerCase() === String(userNumber).trim().toLowerCase()) {
+        return 'Password must not be the same as your ID.';
+    }
+    return '';
+}
+
 function updatePinHint(hintEl, roleValue, isEditForm) {
     if (!hintEl) return;
 
@@ -783,8 +832,8 @@ function updatePinHint(hintEl, roleValue, isEditForm) {
         hintEl.classList.add('is-strict');
     } else {
         hintEl.textContent = isEditForm
-            ? 'Leave blank to keep current password. Librarian can use a secure password (letters, numbers, symbols).'
-            : 'For Librarian accounts, use a secure password (letters, numbers, symbols).';
+            ? 'Leave blank to keep current password. New Librarian/Admin password: at least ' + STAFF_PASSWORD_MIN + ' characters with a letter and a number.'
+            : 'For Librarian/Admin accounts: at least ' + STAFF_PASSWORD_MIN + ' characters with a letter and a number.';
         hintEl.classList.remove('is-strict');
     }
 }
@@ -842,6 +891,20 @@ if (createUserForm) {
         const pinValue = createPin.value.trim();
         createPin.setCustomValidity('');
 
+        const staffMsg = roleNeedsNumericPin(createRole.value)
+            ? ''
+            : staffPasswordProblem(pinValue, createUserForm.querySelector('input[name="user_number"]')?.value || '');
+        if (staffMsg) {
+            const msg = 'For Librarian/Admin accounts: ' + staffMsg;
+            e.preventDefault();
+            createPin.setCustomValidity(msg);
+            createPin.reportValidity();
+            window.alert(msg);
+            createPin.focus();
+            createPin.select();
+            return;
+        }
+
         if (roleNeedsNumericPin(createRole.value) && !/^\d{4,}$/.test(pinValue)) {
             const msg = 'For Student/Faculty accounts, PIN must be at least 4 digits.';
             e.preventDefault();
@@ -873,6 +936,20 @@ if (editUserForm) {
         if (!pinInput || !editRole) return;
         const newPin = pinInput.value.trim();
         pinInput.setCustomValidity('');
+
+        const staffMsg = newPin !== '' && !roleNeedsNumericPin(editRole.value)
+            ? staffPasswordProblem(newPin, editUserForm.querySelector('input[name="edit_user_number"]')?.value || '')
+            : '';
+        if (staffMsg) {
+            const msg = 'For Librarian/Admin accounts: ' + staffMsg;
+            e.preventDefault();
+            pinInput.setCustomValidity(msg);
+            pinInput.reportValidity();
+            window.alert(msg);
+            pinInput.focus();
+            pinInput.select();
+            return;
+        }
 
         if (newPin !== '' && roleNeedsNumericPin(editRole.value) && !/^\d{4,}$/.test(newPin)) {
             const msg = 'For Student/Faculty accounts, new PIN must be at least 4 digits.';
