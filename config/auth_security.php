@@ -1,6 +1,9 @@
 <?php
 
 const AUTH_LOGIN_FAIL_LIMIT = 5;
+// Per-IP limit is much higher than the per-ID one: the kiosk is one IP for
+// every patron, so 5 typos by different people must not lock everyone out.
+const AUTH_LOGIN_IP_FAIL_LIMIT = 30;
 const AUTH_LOGIN_LOCK_MINUTES = 5;
 const AUTH_2FA_CODE_TTL_MINUTES = 10;
 const AUTH_2FA_MAX_ATTEMPTS = 5;
@@ -103,7 +106,7 @@ function auth_record_login_attempt(mysqli $conn, string $identifier, string $acc
     $stmt->close();
 }
 
-function auth_login_lock_status(mysqli $conn, string $identifier, string $ip, int $limit = AUTH_LOGIN_FAIL_LIMIT, int $windowMinutes = AUTH_LOGIN_LOCK_MINUTES): array {
+function auth_login_lock_status(mysqli $conn, string $identifier, string $ip, int $limit = AUTH_LOGIN_FAIL_LIMIT, int $windowMinutes = AUTH_LOGIN_LOCK_MINUTES, int $ipLimit = AUTH_LOGIN_IP_FAIL_LIMIT): array {
     $identifier = trim($identifier);
     $ip = trim($ip);
     $windowSeconds = max(60, $windowMinutes * 60);
@@ -177,7 +180,7 @@ function auth_login_lock_status(mysqli $conn, string $identifier, string $ip, in
         $unlockAt = $userUnlockAt;
     }
 
-    if ($ipFails >= $limit && $ipUnlockAt > $now) {
+    if ($ipFails >= $ipLimit && $ipUnlockAt > $now) {
         $locked = true;
         if ($unlockAt === 0 || $ipUnlockAt > $unlockAt) {
             $unlockAt = $ipUnlockAt;
@@ -196,21 +199,27 @@ function auth_login_lock_status(mysqli $conn, string $identifier, string $ip, in
         'user_fail_count' => $userFails,
         'ip_fail_count' => $ipFails,
         'limit' => $limit,
+        'ip_limit' => $ipLimit,
         'window_minutes' => $windowMinutes
     ];
 }
+// A successful sign-in clears failures for THAT ID only. It used to clear
+// every failure from the IP as well, so on the shared kiosk anyone could
+// reset the guess counter on someone else's ID by signing in to their own
+// account. IP failures now just age out of the window. ($ip is kept in the
+// signature for the existing callers.)
 function auth_clear_failed_login_attempts(mysqli $conn, string $identifier, string $ip): void {
     $stmt = $conn->prepare(
         "DELETE FROM auth_login_attempts
          WHERE success = 0
-           AND (user_number = ? OR ip_address = ?)"
+           AND user_number = ?"
     );
 
     if (!$stmt) {
         return;
     }
 
-    $stmt->bind_param('ss', $identifier, $ip);
+    $stmt->bind_param('s', $identifier);
     $stmt->execute();
     $stmt->close();
 }
