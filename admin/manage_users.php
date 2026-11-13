@@ -20,6 +20,13 @@ require_once '../config/csrf.php';
 require_once '../config/library_card_helpers.php';
 require_once '../config/auth_security.php'; // staff password rule (auth_staff_password_problem)
 
+// Shown (server and browser) when a Student/Faculty account is moved to a
+// staff role without a new password in the same save.
+function smartlib_staff_promotion_message(): string {
+    return 'To make this account a Librarian, set a new password in the same save (at least '
+        . AUTH_STAFF_PASSWORD_MIN . ' characters with a letter and a number).';
+}
+
 $buildManageUsersUrl = static function (array $params): string {
     $clean = [];
     foreach ($params as $key => $value) {
@@ -255,8 +262,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
                     $oldRole = strtolower(trim((string)($oldRoleRow['role'] ?? '')));
                 }
                 if (!in_array($oldRole, ['librarian', 'admin'], true)) {
-                    $editPinPopupMessage = 'To make this account a Librarian/Admin, set a new password (at least '
-                        . AUTH_STAFF_PASSWORD_MIN . ' characters with a letter and a number).';
+                    $editPinPopupMessage = smartlib_staff_promotion_message();
                     $flash = ['type' => 'error', 'message' => $editPinPopupMessage];
                 }
             }
@@ -752,7 +758,24 @@ require 'layout_top.php';
                 <?php endforeach; ?>
             </select>
 
-            <select name="edit_role" required>
+            <?php
+            // Role as stored right now (not what a failed save posted), so the
+            // form knows whether choosing Librarian is a promotion.
+            $editOriginalRole = '';
+            if ((int)($editUserData['user_id'] ?? 0) > 0) {
+                $origStmt = $conn->prepare('SELECT role FROM library_users WHERE user_id = ? LIMIT 1');
+                if ($origStmt) {
+                    $origId = (int)$editUserData['user_id'];
+                    $origStmt->bind_param('i', $origId);
+                    $origStmt->execute();
+                    $origRow = $origStmt->get_result()->fetch_assoc();
+                    $origStmt->close();
+                    $editOriginalRole = strtolower(trim((string)($origRow['role'] ?? '')));
+                }
+            }
+            $editWasStaff = in_array($editOriginalRole, ['librarian', 'admin'], true);
+            ?>
+            <select name="edit_role" required data-was-staff="<?= $editWasStaff ? '1' : '0' ?>">
                 <option value="student" <?= (($editUserData['role'] ?? '') === 'student') ? 'selected' : '' ?>>Student</option>
                 <option value="faculty" <?= (($editUserData['role'] ?? '') === 'faculty') ? 'selected' : '' ?>>Faculty</option>
                 <option value="librarian" <?= (($editUserData['role'] ?? '') === 'librarian') ? 'selected' : '' ?>>Librarian</option>
@@ -822,8 +845,17 @@ function staffPasswordProblem(value, userNumber) {
     return '';
 }
 
-function updatePinHint(hintEl, roleValue, isEditForm) {
+const STAFF_PROMOTION_MESSAGE = <?= json_encode(smartlib_staff_promotion_message()) ?>;
+
+// wasStaff: edit form only -- whether the account is a librarian/admin now.
+function updatePinHint(hintEl, roleValue, isEditForm, wasStaff) {
     if (!hintEl) return;
+
+    if (isEditForm && !roleNeedsNumericPin(roleValue) && wasStaff === false) {
+        hintEl.textContent = 'Required: ' + STAFF_PROMOTION_MESSAGE.charAt(0).toLowerCase() + STAFF_PROMOTION_MESSAGE.slice(1);
+        hintEl.classList.add('is-strict');
+        return;
+    }
 
     if (roleNeedsNumericPin(roleValue)) {
         hintEl.textContent = isEditForm
@@ -921,14 +953,15 @@ if (editUserForm) {
     const editRole = editUserForm.querySelector('select[name="edit_role"]');
     const pinInput = editUserForm.querySelector('input[name="edit_pin"]');
     const editHint = document.getElementById('editPinHint');
+    const editWasStaff = editRole ? editRole.dataset.wasStaff === '1' : true;
 
     applyOptionalEmailValidation(editUserForm, 'input[name="edit_email"]');
 
     if (editRole) {
-        updatePinHint(editHint, editRole.value, true);
+        updatePinHint(editHint, editRole.value, true, editWasStaff);
         editRole.addEventListener('change', function () {
             if (pinInput) pinInput.setCustomValidity('');
-            updatePinHint(editHint, editRole.value, true);
+            updatePinHint(editHint, editRole.value, true, editWasStaff);
         });
     }
 
@@ -937,11 +970,17 @@ if (editUserForm) {
         const newPin = pinInput.value.trim();
         pinInput.setCustomValidity('');
 
-        const staffMsg = newPin !== '' && !roleNeedsNumericPin(editRole.value)
-            ? staffPasswordProblem(newPin, editUserForm.querySelector('input[name="edit_user_number"]')?.value || '')
-            : '';
+        let staffMsg = '';
+        if (!roleNeedsNumericPin(editRole.value)) {
+            if (newPin !== '') {
+                const problem = staffPasswordProblem(newPin, editUserForm.querySelector('input[name="edit_user_number"]')?.value || '');
+                if (problem) staffMsg = 'For Librarian/Admin accounts: ' + problem;
+            } else if (!editWasStaff) {
+                staffMsg = STAFF_PROMOTION_MESSAGE;
+            }
+        }
         if (staffMsg) {
-            const msg = 'For Librarian/Admin accounts: ' + staffMsg;
+            const msg = staffMsg;
             e.preventDefault();
             pinInput.setCustomValidity(msg);
             pinInput.reportValidity();
