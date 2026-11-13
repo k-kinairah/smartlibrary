@@ -75,6 +75,24 @@ function get_or_create_location_id(
     return $newId;
 }
 
+/**
+ * Section dropdown options as value => label. A stored section that is no
+ * longer in the list (e.g. "General Collection" from before the 2026-11
+ * section rules) is kept as the first option, marked "(old section)", so
+ * saving a book unchanged never drops or changes its section.
+ */
+function manage_books_section_options(array $sections, string $current): array {
+    $options = [];
+    $current = trim($current);
+    if ($current !== '' && !in_array($current, $sections, true)) {
+        $options[$current] = $current . ' (old section)';
+    }
+    foreach ($sections as $sec) {
+        $options[(string)$sec] = (string)$sec;
+    }
+    return $options;
+}
+
 function build_legacy_location_text(string $section, string $classCode, string $shelf, string $row, string $position, string $callNumber): string {
     $locationParts = [];
     if ($section !== '') $locationParts[] = 'Section: ' . $section;

@@ -44,12 +44,14 @@ if ($programs instanceof mysqli_result) {
     }
 }
 
+// Loan sections (config/loan_policy.php decides days / room use only).
 $librarySections = [
-    'General Collection',
-    'Reference Collection',
-    'Filipiniana Collection',
-    'Reserved Collection',
-    'Periodicals Collection'
+    'Circulation',
+    'Filipiniana',
+    'Fiction',
+    'Reference',
+    'Thesis',
+    'SHS'
 ];
 
 $libraryClassNames = [
@@ -1248,7 +1250,7 @@ $editForm = [
     'category_id' => (int)($editBook['category_id'] ?? 0),
     'program_id' => (int)($editBook['program_id'] ?? 0),
     'cover' => (string)($editBook['cover'] ?? ''),
-    'location_section' => 'General Collection',
+    'location_section' => 'Circulation',
     'location_class' => 'T',
     'location_shelf' => 'YA-05',
     'location_row' => 'First row',
@@ -1679,8 +1681,8 @@ require 'layout_top.php';
 
                 <select name="location_section" required>
                     <option value="">Select Section</option>
-                    <?php foreach ($librarySections as $sec): ?>
-                        <option value="<?= htmlspecialchars($sec) ?>" <?= ((string)($addBookForm['location_section'] ?? '') === (string)$sec) ? 'selected' : '' ?>><?= htmlspecialchars($sec) ?></option>
+                    <?php foreach (manage_books_section_options($librarySections, (string)($addBookForm['location_section'] ?? '')) as $sec => $secLabel): ?>
+                        <option value="<?= htmlspecialchars((string)$sec) ?>" <?= ((string)($addBookForm['location_section'] ?? '') === (string)$sec) ? 'selected' : '' ?>><?= htmlspecialchars($secLabel) ?></option>
                     <?php endforeach; ?>
                 </select>
 
@@ -1858,8 +1860,8 @@ require 'layout_top.php';
                             <span class="edit-field-label">Section</span>
                             <select name="location_section" required>
                                 <option value="">Select Section</option>
-                                <?php foreach ($librarySections as $sec): ?>
-                                    <option value="<?= htmlspecialchars($sec) ?>" <?= ((string)($editForm['location_section'] ?? '') === (string)$sec) ? 'selected' : '' ?>><?= htmlspecialchars($sec) ?></option>
+                                <?php foreach (manage_books_section_options($librarySections, (string)($editForm['location_section'] ?? '')) as $sec => $secLabel): ?>
+                                    <option value="<?= htmlspecialchars((string)$sec) ?>" <?= ((string)($editForm['location_section'] ?? '') === (string)$sec) ? 'selected' : '' ?>><?= htmlspecialchars($secLabel) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </label>
