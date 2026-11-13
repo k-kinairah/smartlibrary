@@ -11,6 +11,7 @@ FROM (
     SELECT
         b.location_id,
         CASE
+            WHEN LOWER(TRIM(b.call_number)) REGEXP '^fil-ref([^a-z]|$)' THEN 'Reference'
             WHEN LOWER(TRIM(b.call_number)) REGEXP '^fil([^a-z]|$)' THEN 'Filipiniana'
             WHEN LOWER(TRIM(b.call_number)) REGEXP '^fic([^a-z]|$)' THEN 'Fiction'
             WHEN LOWER(TRIM(b.call_number)) REGEXP '^ref([^a-z]|$)' THEN 'Reference'
@@ -21,14 +22,14 @@ FROM (
 GROUP BY t.target_section
 ORDER BY books DESC;
 
--- 2. The Ref books (become Room use only). Check with the librarian.
+-- 2. The Ref and Fil-Ref books (become Room use only). Check with the librarian.
 SELECT b.book_id, b.title, b.call_number
 FROM books b
-WHERE LOWER(TRIM(b.call_number)) REGEXP '^ref([^a-z]|$)'
+WHERE LOWER(TRIM(b.call_number)) REGEXP '^(fil-)?ref([^a-z]|$)'
 ORDER BY b.book_id;
 
--- 3. Edge cases worth a look: "Fil-Ref" call numbers go to Filipiniana
---    (7 days), NOT Reference, under the current mapping.
+-- 3. Call numbers whose prefix has punctuation (e.g. "Fil-Ref", which now
+--    maps to Reference). Anything else listed here needs a decision.
 SELECT b.book_id, b.title, b.call_number
 FROM books b
 WHERE LOWER(TRIM(b.call_number)) REGEXP '^(fil|fic|ref)[^a-z ]'

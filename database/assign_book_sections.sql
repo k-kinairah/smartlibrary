@@ -4,7 +4,8 @@
 -- the librarian first.
 --
 -- Mapping by books.call_number prefix (the leading letters, any case):
---   Fil / FIL / FIl (including "Fil-Ref")  -> Filipiniana
+--   Fil-Ref                                -> Reference   (room use only)
+--   Fil / FIL / FIl                        -> Filipiniana
 --   Fic                                    -> Fiction
 --   Ref                                    -> Reference   (room use only)
 --   everything else (GEN, NULL, LC letters) -> Circulation
@@ -47,6 +48,7 @@ SELECT
     b.book_id,
     b.location_id,
     CASE
+        WHEN LOWER(TRIM(b.call_number)) REGEXP '^fil-ref([^a-z]|$)' THEN 'Reference'
         WHEN LOWER(TRIM(b.call_number)) REGEXP '^fil([^a-z]|$)' THEN 'Filipiniana'
         WHEN LOWER(TRIM(b.call_number)) REGEXP '^fic([^a-z]|$)' THEN 'Fiction'
         WHEN LOWER(TRIM(b.call_number)) REGEXP '^ref([^a-z]|$)' THEN 'Reference'
@@ -127,7 +129,7 @@ COMMIT;
 DROP TEMPORARY TABLE IF EXISTS tmp_book_section;
 
 -- Verification: books per section (expected from the dry run on 2026-11-14:
--- Circulation 1,018 / Filipiniana 909 / Fiction 81 / Reference 7).
+-- Circulation 1,018 / Filipiniana 907 / Fiction 81 / Reference 9).
 SELECT COALESCE(l.section, '(no location)') AS section, COUNT(*) AS books
 FROM books b
 LEFT JOIN library_locations l ON l.location_id = b.location_id
