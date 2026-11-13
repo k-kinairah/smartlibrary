@@ -615,6 +615,43 @@ function auth_build_absolute_url(string $path): string {
     return $scheme . '://' . $host . $cleanPath;
 }
 
+// Staff (librarian/admin) sign in with a real password plus 2FA, so a reset
+// link must not let them fall back to a short numeric PIN. Decided by the
+// account's role in library_users, never by anything the client sends.
+const AUTH_STAFF_PASSWORD_MIN = 10;
+const AUTH_STAFF_PASSWORD_MAX_BYTES = 72; // bcrypt ignores anything past 72 bytes
+
+function auth_user_is_staff(mysqli $conn, int $userId): bool {
+    if ($userId <= 0) {
+        return false;
+    }
+    $stmt = $conn->prepare('SELECT role FROM library_users WHERE user_id = ? LIMIT 1');
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res ? $res->fetch_assoc() : null;
+    $stmt->close();
+    return in_array(strtolower(trim((string)($row['role'] ?? ''))), ['librarian', 'admin'], true);
+}
+
+// '' when acceptable, otherwise the message to show.
+function auth_staff_password_problem(string $password, string $userNumber = ''): string {
+    if (strlen($password) > AUTH_STAFF_PASSWORD_MAX_BYTES) {
+        return 'Password must be at most ' . AUTH_STAFF_PASSWORD_MAX_BYTES . ' characters.';
+    }
+    $length = function_exists('mb_strlen') ? mb_strlen($password, 'UTF-8') : strlen($password);
+    if ($length < AUTH_STAFF_PASSWORD_MIN || !preg_match('/\pL/u', $password) || !preg_match('/\d/', $password)) {
+        return 'Password must be at least ' . AUTH_STAFF_PASSWORD_MIN . ' characters with a letter and a number.';
+    }
+    if ($userNumber !== '' && strcasecmp($password, $userNumber) === 0) {
+        return 'Password must not be the same as your ID.';
+    }
+    return '';
+}
+
 function auth_finalize_session_login(array $user, string $normalizedRole): void {
     session_regenerate_id(true);
 

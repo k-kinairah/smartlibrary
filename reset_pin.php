@@ -14,6 +14,13 @@ $message = '';
 $messageType = 'info';
 $done = false;
 
+// Librarian/admin accounts set a real password here (they sign in with a
+// password plus 2FA); students and faculty set a numeric PIN as before.
+$linkRow = ($token !== '' && strlen($token) >= 20) ? auth_get_valid_reset_token($conn, $token) : null;
+$isStaffReset = $linkRow ? auth_user_is_staff($conn, (int)($linkRow['user_id'] ?? 0)) : false;
+$secretWord = $isStaffReset ? 'password' : 'PIN';
+$newSecretError = false;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $newPin = trim((string)($_POST['new_pin'] ?? ''));
     $confirmPin = trim((string)($_POST['confirm_pin'] ?? ''));
@@ -27,14 +34,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'This reset link is invalid, expired, or already used. Request a new one.';
             $messageType = 'error';
         } elseif ($newPin === '' || $confirmPin === '') {
-            $message = 'Please fill in both PIN fields.';
+            $message = "Please fill in both {$secretWord} fields.";
             $messageType = 'error';
         } elseif ($newPin !== $confirmPin) {
-            $message = 'PIN confirmation does not match.';
+            $message = ucfirst($secretWord) . ' confirmation does not match.';
             $messageType = 'error';
-        } elseif (!preg_match('/^\d{4,}$/', $newPin)) {
+        } elseif (auth_user_is_staff($conn, (int)($tokenRow['user_id'] ?? 0))
+            && ($staffProblem = auth_staff_password_problem($newPin, (string)($tokenRow['user_number'] ?? ''))) !== '') {
+            $message = $staffProblem;
+            $messageType = 'error';
+            $newSecretError = true;
+        } elseif (!auth_user_is_staff($conn, (int)($tokenRow['user_id'] ?? 0)) && !preg_match('/^\d{4,}$/', $newPin)) {
             $message = 'PIN must be at least 4 digits.';
             $messageType = 'error';
+            $newSecretError = true;
         } else {
             $userId = (int)($tokenRow['user_id'] ?? 0);
             $tokenId = (int)($tokenRow['token_id'] ?? 0);
@@ -70,8 +83,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
 
                         $message = $affected >= 0
-                            ? 'Your PIN has been reset successfully. You can now sign in.'
-                            : 'PIN updated. You can now sign in.';
+                            ? "Your {$secretWord} has been reset successfully. You can now sign in."
+                            : ucfirst($secretWord) . ' updated. You can now sign in.';
                         $messageType = 'success';
                         $done = true;
                     }
@@ -105,17 +118,17 @@ if ($linkDead && $message === '') {
 // Which field a server-side PIN error belongs to, so it can be outlined.
 $fieldError = ['new' => false, 'confirm' => false];
 if (!$linkDead && $messageType === 'error') {
-    if ($message === 'Please fill in both PIN fields.') {
+    if ($message === "Please fill in both {$secretWord} fields.") {
         $fieldError = ['new' => true, 'confirm' => true];
-    } elseif ($message === 'PIN confirmation does not match.') {
+    } elseif ($message === ucfirst($secretWord) . ' confirmation does not match.') {
         $fieldError['confirm'] = true;
-    } elseif ($message === 'PIN must be at least 4 digits.') {
+    } elseif ($newSecretError) {
         $fieldError['new'] = true;
     }
 }
 
-// After a successful reset, open the kiosk sign-in for the right account type.
-// ?signin=<anything> just opens the sign-in modal; the link never names a role.
+// After a successful reset, open the kiosk sign-in. ?signin=<anything> just
+// opens the sign-in modal; the link never names a role.
 $signinHref = 'index.php?signin=1';
 
 $messageIcons = [
@@ -124,6 +137,14 @@ $messageIcons = [
     'info' => '<path d="M12 11v6"></path><path d="M12 7.3h.01"></path>',
 ];
 $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
+
+$secretTitle = ucfirst($secretWord);
+$secretRule = $isStaffReset
+    ? 'At least ' . AUTH_STAFF_PASSWORD_MIN . ' characters, with a letter and a number'
+    : 'At least 4 digits, numbers only';
+$secretAttrs = $isStaffReset
+    ? 'autocomplete="new-password" maxlength="' . AUTH_STAFF_PASSWORD_MAX_BYTES . '"'
+    : 'inputmode="numeric" pattern="[0-9]{4,}" autocomplete="new-password" maxlength="20"';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -458,9 +479,13 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
         </div>
     </div>
 
-    <h1>Reset PIN</h1>
+    <h1>Reset <?= htmlspecialchars($secretTitle) ?></h1>
     <?php if (!$done && !$linkDead): ?>
-        <p class="sub">Use a new PIN (at least 4 digits). This reset link can only be used once.</p>
+        <?php if ($isStaffReset): ?>
+            <p class="sub">Use a new password: at least <?= (int)AUTH_STAFF_PASSWORD_MIN ?> characters with a letter and a number. This reset link can only be used once.</p>
+        <?php else: ?>
+            <p class="sub">Use a new PIN (at least 4 digits). This reset link can only be used once.</p>
+        <?php endif; ?>
     <?php endif; ?>
 
     <?php if ($message !== ''): ?>
@@ -471,23 +496,23 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
     <?php endif; ?>
 
     <?php if ($done): ?>
-        <a class="btn" href="<?= htmlspecialchars($signinHref) ?>">Sign in with your new PIN</a>
+        <a class="btn" href="<?= htmlspecialchars($signinHref) ?>">Sign in with your new <?= htmlspecialchars($secretWord) ?></a>
     <?php elseif ($linkDead): ?>
         <p class="help">Reset links work once and expire after a while. To get a new one, open sign-in on SmartLib and choose <strong>Forgot your PIN?</strong></p>
         <a class="btn" href="<?= htmlspecialchars($signinHref) ?>">Go to SmartLib sign-in</a>
     <?php else: ?>
-        <form method="POST" id="reset-pin-form" novalidate>
+        <form method="POST" id="reset-pin-form" data-mode="<?= $isStaffReset ? 'staff' : 'pin' ?>" novalidate>
             <input type="hidden" name="token" value="<?= htmlspecialchars($token) ?>">
             <div class="field<?= $fieldError['new'] ? ' is-bad' : '' ?>" id="new_pin_field">
-                <label for="new_pin">New PIN</label>
+                <label for="new_pin">New <?= htmlspecialchars($secretTitle) ?></label>
                 <div class="password-field-wrap">
-                    <input id="new_pin" name="new_pin" type="password" inputmode="numeric" pattern="[0-9]{4,}" autocomplete="new-password" maxlength="20" placeholder="Enter new PIN" aria-describedby="new_pin_rule" <?= $fieldError['new'] ? 'aria-invalid="true"' : '' ?> required>
+                    <input id="new_pin" name="new_pin" type="password" <?= $secretAttrs ?> placeholder="Enter new <?= htmlspecialchars($secretWord) ?>" aria-describedby="new_pin_rule" <?= $fieldError['new'] ? 'aria-invalid="true"' : '' ?> required>
                     <button
                         type="button"
                         id="new_pin_toggle"
                         class="password-toggle-btn"
                         aria-controls="new_pin"
-                        aria-label="Show PIN"
+                        aria-label="Show <?= htmlspecialchars($secretWord) ?>"
                         aria-pressed="false">
                         <svg class="icon-eye" viewBox="0 0 24 24" role="presentation" aria-hidden="true">
                             <path d="M1.5 12s3.6-6.5 10.5-6.5S22.5 12 22.5 12s-3.6 6.5-10.5 6.5S1.5 12 1.5 12z"></path>
@@ -501,18 +526,18 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
                         </svg>
                     </button>
                 </div>
-                <div class="rule<?= $fieldError['new'] ? ' is-bad' : '' ?>" id="new_pin_rule" aria-live="polite">At least 4 digits, numbers only</div>
+                <div class="rule<?= $fieldError['new'] ? ' is-bad' : '' ?>" id="new_pin_rule" aria-live="polite"><?= htmlspecialchars($newSecretError ? $message : $secretRule) ?></div>
             </div>
             <div class="field<?= $fieldError['confirm'] ? ' is-bad' : '' ?>" id="confirm_pin_field">
-                <label for="confirm_pin">Confirm New PIN</label>
+                <label for="confirm_pin">Confirm New <?= htmlspecialchars($secretTitle) ?></label>
                 <div class="password-field-wrap">
-                    <input id="confirm_pin" name="confirm_pin" type="password" inputmode="numeric" pattern="[0-9]{4,}" autocomplete="new-password" maxlength="20" placeholder="Confirm new PIN" aria-describedby="confirm_pin_rule" <?= $fieldError['confirm'] ? 'aria-invalid="true"' : '' ?> required>
+                    <input id="confirm_pin" name="confirm_pin" type="password" <?= $secretAttrs ?> placeholder="Confirm new <?= htmlspecialchars($secretWord) ?>" aria-describedby="confirm_pin_rule" <?= $fieldError['confirm'] ? 'aria-invalid="true"' : '' ?> required>
                     <button
                         type="button"
                         id="confirm_pin_toggle"
                         class="password-toggle-btn"
                         aria-controls="confirm_pin"
-                        aria-label="Show PIN"
+                        aria-label="Show <?= htmlspecialchars($secretWord) ?>"
                         aria-pressed="false">
                         <svg class="icon-eye" viewBox="0 0 24 24" role="presentation" aria-hidden="true">
                             <path d="M1.5 12s3.6-6.5 10.5-6.5S22.5 12 22.5 12s-3.6 6.5-10.5 6.5S1.5 12 1.5 12z"></path>
@@ -526,9 +551,9 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
                         </svg>
                     </button>
                 </div>
-                <div class="rule<?= $fieldError['confirm'] ? ' is-bad' : '' ?>" id="confirm_pin_rule" aria-live="polite"<?= $fieldError['confirm'] ? '' : ' hidden' ?>><?= $fieldError['confirm'] && $message === 'PIN confirmation does not match.' ? "PINs don't match" : 'Type the same PIN again' ?></div>
+                <div class="rule<?= $fieldError['confirm'] ? ' is-bad' : '' ?>" id="confirm_pin_rule" aria-live="polite"<?= $fieldError['confirm'] ? '' : ' hidden' ?>><?= $fieldError['confirm'] && $message === ucfirst($secretWord) . ' confirmation does not match.' ? htmlspecialchars("{$secretTitle}s don't match") : htmlspecialchars("Type the same {$secretWord} again") ?></div>
             </div>
-            <button type="submit" class="btn">Update PIN</button>
+            <button type="submit" class="btn">Update <?= htmlspecialchars($secretTitle) ?></button>
         </form>
     <?php endif; ?>
 
@@ -536,6 +561,12 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
 </main>
 <script>
 (function () {
+    // Staff (librarian/admin) links set a password, everyone else a PIN.
+    const STAFF = document.getElementById('reset-pin-form')?.dataset.mode === 'staff';
+    const WORD = STAFF ? 'password' : 'PIN';
+    const TITLE = STAFF ? 'Password' : 'PIN';
+    const STAFF_MIN = <?= (int)AUTH_STAFF_PASSWORD_MIN ?>;
+
     function wirePasswordToggle(inputId, buttonId) {
         const input = document.getElementById(inputId);
         const button = document.getElementById(buttonId);
@@ -545,7 +576,7 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
             input.type = visible ? 'text' : 'password';
             button.classList.toggle('is-visible', visible);
             button.setAttribute('aria-pressed', visible ? 'true' : 'false');
-            button.setAttribute('aria-label', visible ? 'Hide PIN' : 'Show PIN');
+            button.setAttribute('aria-label', (visible ? 'Hide ' : 'Show ') + WORD);
         }
 
         button.addEventListener('click', function () {
@@ -556,9 +587,9 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
     wirePasswordToggle('new_pin', 'new_pin_toggle');
     wirePasswordToggle('confirm_pin', 'confirm_pin_toggle');
 
-    // Live feedback while typing. Mirrors the server's rule (/^\d{4,}$/, and
-    // both entries equal) only to guide the patron -- the server still
-    // checks everything on submit.
+    // Live feedback while typing. Mirrors the server's rules (PIN: /^\d{4,}$/;
+    // staff password: 10+ characters with a letter and a number; both entries
+    // equal) only to guide the user -- the server still checks everything.
     const form = document.getElementById('reset-pin-form');
     const pin = document.getElementById('new_pin');
     const confirm = document.getElementById('confirm_pin');
@@ -568,7 +599,7 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
     const confirmField = document.getElementById('confirm_pin_field');
     const pinRule = document.getElementById('new_pin_rule');
     const confirmRule = document.getElementById('confirm_pin_rule');
-    const MIN = 4;
+    const MIN = STAFF ? STAFF_MIN : 4;
 
     function setState(field, rule, input, state, text) {
         field.classList.toggle('is-ok', state === 'ok');
@@ -585,7 +616,27 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
 
     // forceErrors: on submit, an empty or short entry counts as an error
     // instead of a gentle reminder.
+    function checkStaffPassword(forceErrors) {
+        const v = pin.value;
+        const rule = 'At least ' + STAFF_MIN + ' characters, with a letter and a number';
+        if (v === '') {
+            setState(pinField, pinRule, pin, forceErrors ? 'bad' : 'neutral', forceErrors ? 'Enter a new password (' + rule.toLowerCase() + ')' : rule);
+            return false;
+        }
+        const missing = [];
+        if (v.length < STAFF_MIN) missing.push((STAFF_MIN - v.length) + ' more character' + (STAFF_MIN - v.length === 1 ? '' : 's'));
+        if (!/\p{L}/u.test(v)) missing.push('a letter');
+        if (!/\d/.test(v)) missing.push('a number');
+        if (missing.length) {
+            setState(pinField, pinRule, pin, forceErrors ? 'bad' : 'neutral', 'Still needed: ' + missing.join(', '));
+            return false;
+        }
+        setState(pinField, pinRule, pin, 'ok', rule);
+        return true;
+    }
+
     function checkPin(forceErrors) {
+        if (STAFF) return checkStaffPassword(forceErrors);
         const v = pin.value;
         if (v === '') {
             setState(pinField, pinRule, pin, forceErrors ? 'bad' : 'neutral', forceErrors ? 'Enter a new PIN (at least 4 digits)' : 'At least 4 digits, numbers only');
@@ -609,7 +660,7 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
         const b = confirm.value;
         if (b === '') {
             confirmRule.hidden = !forceErrors;
-            setState(confirmField, confirmRule, confirm, forceErrors ? 'bad' : 'neutral', forceErrors ? 'Type the same PIN again' : null);
+            setState(confirmField, confirmRule, confirm, forceErrors ? 'bad' : 'neutral', forceErrors ? 'Type the same ' + WORD + ' again' : null);
             return false;
         }
         confirmRule.hidden = false;
@@ -617,14 +668,14 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
         // or the PIN, or as soon as it stops being the start of the PIN.
         const enough = b.length >= a.length || b.length >= MIN || a.indexOf(b) !== 0;
         if (!enough && !forceErrors) {
-            setState(confirmField, confirmRule, confirm, 'neutral', 'Type the same PIN again');
+            setState(confirmField, confirmRule, confirm, 'neutral', 'Type the same ' + WORD + ' again');
             return false;
         }
         if (a !== '' && a === b) {
-            setState(confirmField, confirmRule, confirm, 'ok', 'PINs match');
+            setState(confirmField, confirmRule, confirm, 'ok', TITLE + 's match');
             return true;
         }
-        setState(confirmField, confirmRule, confirm, 'bad', "PINs don't match");
+        setState(confirmField, confirmRule, confirm, 'bad', TITLE + "s don't match");
         return false;
     }
 
