@@ -598,6 +598,10 @@ $callDisplay = trim($locationCall) !== '' ? $locationCall : '—';
 // One line beside the section: long call numbers step the font down.
 $callLength = function_exists('mb_strlen') ? mb_strlen(trim($locationCall), 'UTF-8') : strlen(trim($locationCall));
 $callSizeClass = $callLength >= 27 ? ' bm2-call-sm' : ($callLength >= 21 ? ' bm2-call-md' : '');
+// Long titles wrap to the column (they no longer widen the panel), so they
+// step down by length: over 50 chars 28px, over 90 24px, over 150 21px.
+$titleLength = function_exists('mb_strlen') ? mb_strlen(trim($title), 'UTF-8') : strlen(trim($title));
+$titleSizeClass = $titleLength > 150 ? ' bm2-title-xs' : ($titleLength > 90 ? ' bm2-title-sm' : ($titleLength > 50 ? ' bm2-title-md' : ''));
 
 echo "
 <div class='book-modal-v2" . ($isUnavailable ? ' bm2-is-unavailable' : '') . ($isRoomOnly ? ' bm2-is-room-only' : '') . "'
@@ -638,7 +642,7 @@ echo "
                 <div class='bm2-tags'>" . $tagsHtml . "</div>
             </div>
 
-            <h2 class='book-modal-title'>" . h($title) . "</h2>
+            <h2 class='book-modal-title" . $titleSizeClass . "'>" . h($title) . "</h2>
             <p class='book-modal-author-sub'>" . h($author) . "</p>
 
             <div class='bm2-loc'>

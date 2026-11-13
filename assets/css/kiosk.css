@@ -18066,10 +18066,22 @@ html body #receipt-modal .receipt-note {
    border-box ring from "Modal glassmorphism".
    ============================================================ */
 
-/* Darker scrim (was 0.52) so the light panel stands clear of the page;
-   the shared v57 blur(5px) stays. */
+/* Spotlight backdrop: deep navy-teal ink, a lighter pool behind the
+   panel and near-black edges; the page behind is blurred and desaturated
+   so cover art dissolves into soft colour. Blur stays at 16px (the panel
+   already runs blur(28px) on the kiosk GPU). Fades in over 200ms each
+   time the modal is shown (it goes from display:none). */
 html body #book-modal .modal-backdrop {
-  background: rgba(0, 10, 6, 0.8) !important;
+  background: radial-gradient(ellipse 75% 65% at 50% 50%, rgba(12, 52, 66, 0.55) 0%, rgba(4, 16, 26, 0.86) 55%, rgba(1, 6, 12, 0.95) 100%) !important;
+  backdrop-filter: blur(16px) saturate(0.6) brightness(0.8) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(0.6) brightness(0.8) !important;
+  animation: bm2BackdropIn 0.2s ease-out both !important;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html body #book-modal .modal-backdrop {
+    background: radial-gradient(ellipse 75% 65% at 50% 50%, rgba(12, 52, 66, 0.92) 0%, rgba(4, 16, 26, 0.94) 55%, rgba(1, 6, 12, 0.97) 100%) !important;
+  }
 }
 
 html body #book-modal .modal-panel {
@@ -18098,8 +18110,12 @@ html body #book-modal .modal-panel {
   background-clip: border-box !important;
   backdrop-filter: blur(28px) saturate(185%) !important;
   -webkit-backdrop-filter: blur(28px) saturate(185%) !important;
+  /* Halo: a hairline, a deep drop and a soft emerald glow so the light
+     panel separates from the dark backdrop. */
   box-shadow:
-    0 28px 60px rgba(20, 90, 80, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.16),
+    0 34px 90px rgba(0, 0, 0, 0.55),
+    0 0 110px rgba(40, 200, 150, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.95),
     inset 0 0 40px rgba(255, 255, 255, 0.35) !important;
 }
@@ -18789,6 +18805,11 @@ html body #book-modal .bm2-room-note::before {
 }
 
 /* ---------- motion ---------- */
+@keyframes bm2BackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @keyframes bm2Float {
   from { transform: translateY(0); }
   to { transform: translateY(-5px); }
@@ -18806,6 +18827,7 @@ html body #book-modal .bm2-room-note::before {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html body #book-modal .modal-backdrop,
   html body #book-modal .bm2-cover-frame,
   html body #book-modal .bm2-dot.is-on,
   html body #book-modal .bm2-foot .checkout-btn::after {
@@ -18818,12 +18840,19 @@ html body #book-modal .bm2-room-note::before {
 }
 
 /* ---------- 960px and up: the panel hugs its content ---------- */
-/* Width comes from the title, the "Where to find it" tile and the
-   Published | ISBN strip (the description is contained above), plus the
-   footer's one-row width; capped at 1040px. The right column's content
-   never goes below 520px (+ its 34/38px padding), so short books don't
-   squeeze the description into a narrow strip. */
+/* Width comes only from the "Where to find it" tile and the
+   Published | ISBN strip, plus the footer's one-row width and a 520px
+   floor for the right column's content (+ its 34/38px padding); capped at
+   1040px. Seal/tag row, title and author are contained (as is the
+   description) so they wrap to that width instead of widening it. Most
+   books therefore open at the same ~880px. */
 @media (min-width: 960px) {
+  html body #book-modal .bm2-top,
+  html body #book-modal .book-modal-v2 .book-modal-title,
+  html body #book-modal .book-modal-v2 .book-modal-author-sub {
+    contain: inline-size !important;
+  }
+
   html body #book-modal .modal-panel {
     width: fit-content !important;
     max-width: min(1040px, calc(100vw - 48px)) !important;
@@ -18831,6 +18860,22 @@ html body #book-modal .bm2-room-note::before {
 
   html body #book-modal .bm2-right {
     min-width: 592px !important;
+  }
+}
+
+/* Long titles step down (get_book.php sets the class by length: over 50
+   chars 28px, over 90 24px, over 150 21px). Phones keep their own 26px. */
+@media (min-width: 560px) {
+  html body #book-modal .book-modal-v2 .book-modal-title.bm2-title-md {
+    font-size: 28px !important;
+  }
+
+  html body #book-modal .book-modal-v2 .book-modal-title.bm2-title-sm {
+    font-size: 24px !important;
+  }
+
+  html body #book-modal .book-modal-v2 .book-modal-title.bm2-title-xs {
+    font-size: 21px !important;
   }
 }
 
