@@ -2,6 +2,7 @@
 session_start();
 require 'config/db_connect.php';
 require_once 'config/borrow_fine_rules.php';
+require_once 'config/loan_policy.php';
 
 header('Content-Type: application/json');
 
@@ -19,22 +20,29 @@ require_once 'config/session_guard.php';
 $userId = smartlib_active_session_user_id($conn); // 0 if signed out, inactive or deleted
 $userRole = strtolower(trim((string)($_SESSION['role'] ?? '')));
 if ($userId <= 0) {
-    respond(['status' => 'error', 'message' => 'Please sign in first before checking out a book.'], 401);
+    respond(['status' => 'error', 'message' => 'Please sign in first before borrowing a book.'], 401);
 }
 
 $allowedBorrowerRoles = ['student', 'faculty', 'librarian', 'admin'];
 if (!in_array($userRole, $allowedBorrowerRoles, true)) {
-    respond(['status' => 'error', 'message' => 'This account type is not allowed to check out from kiosk.'], 403);
+    respond(['status' => 'error', 'message' => 'This account type is not allowed to borrow from the kiosk.'], 403);
 }
-
-$loanPolicy = smartlib_loan_policy_for_role($userRole);
-$loanDays = (int)($loanPolicy['days'] ?? 7);
-$maxBorrows = (int)($loanPolicy['max_borrows'] ?? 3);
 
 $bookId = (int)($_POST['book_id'] ?? 0);
 if ($bookId <= 0) {
     respond(['status' => 'error', 'message' => 'Invalid book selection.'], 422);
 }
+
+// Loan length follows the book's section (config/loan_policy.php); borrow
+// limit still follows the role. Room-use-only books are refused here,
+// before any copy is locked or any row is written.
+$bookSection = smartlib_resolve_book_section($conn, $bookId);
+$loanPolicy = smartlib_loan_policy_for_book($userRole, $bookSection);
+if (!empty($loanPolicy['room_only'])) {
+    respond(['status' => 'error', 'message' => 'This book is for room use only and cannot be borrowed.'], 403);
+}
+$loanDays = (int)($loanPolicy['days'] ?? 7);
+$maxBorrows = (int)($loanPolicy['max_borrows'] ?? 3);
 
 $activeBorrowStmt = $conn->prepare(
     "SELECT COUNT(*) AS active_borrows
@@ -101,7 +109,7 @@ try {
 
     if ($updatedRows !== 1) {
         $conn->rollback();
-        respond(['status' => 'error', 'message' => 'Checkout conflict detected. Please try again.']);
+        respond(['status' => 'error', 'message' => 'Borrowing conflict detected. Please try again.']);
     }
 
     $borrowedDateDb = date('Y-m-d');
@@ -206,7 +214,7 @@ try {
 
     respond([
         'status' => 'success',
-        'message' => 'Book checked out successfully.',
+        'message' => 'Book borrowed successfully.',
         'receipt' => [
             'record_id' => $recordId,
             'book_id' => $bookId,
@@ -235,7 +243,7 @@ try {
 
     respond([
         'status' => 'error',
-        'message' => 'Checkout failed. Please try again.'
+        'message' => 'Borrowing failed. Please try again.'
     ], 500);
 }
 

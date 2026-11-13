@@ -1,6 +1,7 @@
 <?php
 require 'config/db_connect.php';
 require_once 'config/book_cover.php';
+require_once 'config/loan_policy.php';
 session_start();
 
 function h($value) {
@@ -121,8 +122,10 @@ function guess_class_code($genre, $course = '') {
 function parse_location_meta($rawLocation, $genre = '', $course = '') {
     $guessedClass = guess_class_code($genre, $course);
 
+    // Section logic lives in config/loan_policy.php so checkout/renew use
+    // exactly the same rules as this modal.
     $meta = [
-        'section' => 'General Collection',
+        'section' => smartlib_legacy_location_section((string)$rawLocation),
         'class_code' => $guessedClass,
         'class_name' => class_name_from_code($guessedClass),
         'shelf' => 'YA-05',
@@ -139,11 +142,6 @@ function parse_location_meta($rawLocation, $genre = '', $course = '') {
     foreach (explode('|', $raw) as $partRaw) {
         $part = trim((string)$partRaw);
         if ($part === '') continue;
-
-        if (stripos($part, 'Section:') === 0) {
-            $meta['section'] = trim(substr($part, strlen('Section:')));
-            continue;
-        }
 
         if (stripos($part, 'Class:') === 0) {
             $classPart = trim(substr($part, strlen('Class:')));
@@ -186,12 +184,6 @@ function parse_location_meta($rawLocation, $genre = '', $course = '') {
 
     if (preg_match('/\b(EYE\s+LEVEL|UPPER\s+SHELF|MIDDLE\s+SHELF|LOWER\s+SHELF|BOTTOM\s+SHELF)\b/i', $raw, $m)) {
         $meta['position'] = ucwords(strtolower($m[1]));
-    }
-
-    if ($meta['section'] === 'General Collection') {
-        if (stripos($raw, 'reference') !== false) $meta['section'] = 'Reference Collection';
-        if (stripos($raw, 'filipiniana') !== false) $meta['section'] = 'Filipiniana Collection';
-        if (stripos($raw, 'periodical') !== false) $meta['section'] = 'Periodicals Collection';
     }
 
     if ($meta['call_number'] === '' && preg_match('/\b([A-Z]{1,3}\s?\d{1,4}(?:\.\d+)?\s?[A-Z]?\d{0,4}(?:\s?\d{4})?)\b/', $raw, $m)) {
@@ -523,8 +515,9 @@ $hasStructuredLocation =
     trim((string)pick($book, ['loc_class_code'], '')) !== '' ||
     trim((string)pick($book, ['loc_shelf_code'], '')) !== '';
 
+$locationSection = smartlib_book_section_from_row($book);
+
 if ($hasStructuredLocation) {
-    $locationSection = (string)pick($book, ['loc_section'], (string)$legacyLocationMeta['section']);
     $rawClassCode = (string)pick($book, ['loc_class_code'], (string)$legacyLocationMeta['class_code']);
     $locationClassCode = strtoupper(trim($rawClassCode));
     if ($locationClassCode === '') {
@@ -537,7 +530,6 @@ if ($hasStructuredLocation) {
     $locationPosition = (string)pick($book, ['loc_position_label'], (string)$legacyLocationMeta['position']);
     $locationCall = (string)pick($book, ['db_call_number', 'call_number'], (string)$legacyLocationMeta['call_number']);
 } else {
-    $locationSection = (string)$legacyLocationMeta['section'];
     $locationClassCode = (string)$legacyLocationMeta['class_code'];
     $locationClassName = (string)$legacyLocationMeta['class_name'];
     $locationShelf = (string)$legacyLocationMeta['shelf'];

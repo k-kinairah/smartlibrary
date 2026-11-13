@@ -2,6 +2,7 @@
 session_start();
 require 'config/db_connect.php';
 require_once 'config/borrow_fine_rules.php';
+require_once 'config/loan_policy.php';
 
 header('Content-Type: application/json');
 
@@ -36,7 +37,7 @@ smartlib_ensure_borrow_renewal_columns($conn);
 sync_overdue_status_and_fines($conn, $userId);
 
 $policy = smartlib_loan_policy_for_role($userRole);
-$loanDays = max(1, (int)($policy['days'] ?? 7));
+$roleLoanDays = max(1, (int)($policy['days'] ?? 7));
 $maxRenewals = max(0, (int)($policy['max_renewals'] ?? 1));
 
 try {
@@ -45,6 +46,7 @@ try {
     $stmt = $conn->prepare(
         "SELECT br.record_id, br.user_id, br.due_date, br.date_returned, br.status, br.fine,
                 COALESCE(br.renew_count, 0) AS renew_count,
+                bc.book_id,
                 b.title
          FROM borrow_records br
          LEFT JOIN book_copies bc ON bc.copy_id = br.copy_id
@@ -96,6 +98,14 @@ try {
         $conn->rollback();
         respond(['status' => 'error', 'message' => 'This loan has already used its renewal.'], 422);
     }
+
+    // Renewal adds the book's section loan length (config/loan_policy.php).
+    // A book reclassified as room-use-only after it was borrowed keeps the
+    // old role days so the existing loan can still be renewed.
+    $bookPolicy = smartlib_loan_policy_for_book($userRole, smartlib_resolve_book_section($conn, (int)($record['book_id'] ?? 0)));
+    $loanDays = !empty($bookPolicy['room_only'])
+        ? $roleLoanDays
+        : max(1, (int)($bookPolicy['days'] ?? $roleLoanDays));
 
     $newDueDate = $dueDate->modify('+' . $loanDays . ' days')->format('Y-m-d');
     $update = $conn->prepare(
