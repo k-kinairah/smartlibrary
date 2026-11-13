@@ -595,6 +595,9 @@ if ($isRoomOnly) {
 }
 
 $callDisplay = trim($locationCall) !== '' ? $locationCall : '—';
+// One line beside the section: long call numbers step the font down.
+$callLength = function_exists('mb_strlen') ? mb_strlen(trim($locationCall), 'UTF-8') : strlen(trim($locationCall));
+$callSizeClass = $callLength >= 27 ? ' bm2-call-sm' : ($callLength >= 21 ? ' bm2-call-md' : '');
 
 echo "
 <div class='book-modal-v2" . ($isUnavailable ? ' bm2-is-unavailable' : '') . ($isRoomOnly ? ' bm2-is-room-only' : '') . "'
@@ -647,7 +650,7 @@ echo "
                     </div>
                     <div class='bm2-loc-col bm2-loc-call'>
                         <div class='bm2-label'>Call number</div>
-                        <div class='bm2-loc-value'>" . h($callDisplay) . "</div>
+                        <div class='bm2-loc-value" . $callSizeClass . "'>" . h($callDisplay) . "</div>
                     </div>
                 </div>
             </div>

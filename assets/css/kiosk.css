@@ -18081,7 +18081,7 @@ html body #book-modal .modal-panel {
   position: relative !important;
   display: flex !important;
   flex-direction: column !important;
-  width: 812px !important;
+  width: 1040px !important;
   max-width: calc(100vw - 48px) !important;
   max-height: calc(100dvh - 40px) !important;
   height: auto !important;
@@ -18199,7 +18199,7 @@ html body #book-modal .bm2-left {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 36px 24px !important;
+  padding: 26px 0 24px !important;
   background: radial-gradient(70% 55% at 50% 45%, rgba(14, 134, 96, 0.22), transparent 72%) !important;
   border-right: 1px solid var(--bm2-line) !important;
 }
@@ -18248,7 +18248,7 @@ html body #book-modal .bm2-cover-frame .fav-heart-btn-lg {
 
 html body #book-modal .bm2-right {
   min-width: 0 !important;
-  padding: 26px 34px 26px 32px !important;
+  padding: 26px 38px 16px 34px !important;
 }
 
 /* ---------- seal + tag chips ---------- */
@@ -18258,7 +18258,7 @@ html body #book-modal .bm2-top {
   flex-wrap: wrap !important;
   gap: 12px !important;
   padding-right: 52px !important;
-  margin: 0 0 14px !important;
+  margin: 0 !important;
 }
 
 html body #book-modal .bm2-seal {
@@ -18310,7 +18310,7 @@ html body #book-modal .bm2-tags .book-tag::before {
 
 /* ---------- title + author ---------- */
 html body #book-modal .book-modal-v2 .book-modal-title {
-  margin: 0 !important;
+  margin: 14px 0 0 !important;
   padding: 0 !important;
   font-size: 32px !important;
   font-weight: 700 !important;
@@ -18332,7 +18332,7 @@ html body #book-modal .book-modal-title::before {
 }
 
 html body #book-modal .book-modal-v2 .book-modal-author-sub {
-  margin: 6px 0 22px !important;
+  margin: 4px 0 0 !important;
   padding: 0 !important;
   font-size: 17px !important;
   font-weight: 500 !important;
@@ -18379,8 +18379,14 @@ html body #book-modal .bm2-icon svg {
 }
 
 /* ---------- "Where to find it" tile ---------- */
+/* The tile is only as wide as section + call number need (never wider
+   than the column), and the two stay on one line side by side. */
 html body #book-modal .bm2-loc {
-  padding: 14px 18px 16px !important;
+  box-sizing: border-box !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin-top: 16px !important;
+  padding: 12px 22px 14px 18px !important;
   border-radius: 16px !important;
   background: linear-gradient(135deg, rgba(14, 134, 96, 0.12), rgba(80, 190, 230, 0.12)) !important;
   border: 1px solid rgba(14, 134, 96, 0.34) !important;
@@ -18403,18 +18409,22 @@ html body #book-modal .bm2-loc-head .bm2-icon {
 }
 
 html body #book-modal .bm2-loc-cols {
-  display: grid !important;
-  grid-template-columns: minmax(0, auto) minmax(0, 1fr) !important;
-  margin-top: 10px !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  white-space: nowrap !important;
+  margin-top: 8px !important;
 }
 
 html body #book-modal .bm2-loc-col {
+  flex: 0 0 auto !important;
   min-width: 0 !important;
-  padding-right: 20px !important;
+  padding-right: 24px !important;
 }
 
 html body #book-modal .bm2-loc-col.bm2-loc-call {
-  padding: 0 0 0 20px !important;
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  padding: 0 0 0 24px !important;
   border-left: 1px dashed rgba(14, 134, 96, 0.5) !important;
 }
 
@@ -18425,16 +18435,27 @@ html body #book-modal .bm2-loc-value {
   line-height: 1.22 !important;
   font-variant-numeric: tabular-nums !important;
   color: var(--bm2-strong) !important;
-  overflow-wrap: anywhere !important;
+  white-space: nowrap !important;
+  overflow-wrap: normal !important;
   min-width: 0 !important;
+}
+
+/* Long call numbers step down (get_book.php sets the class by length:
+   up to 20 chars 22px, 21-26 chars 19px, 27+ chars 16.5px). */
+html body #book-modal .bm2-loc-value.bm2-call-md {
+  font-size: 19px !important;
+}
+
+html body #book-modal .bm2-loc-value.bm2-call-sm {
+  font-size: 16.5px !important;
 }
 
 /* ---------- Published | ISBN strip ---------- */
 html body #book-modal .bm2-strip {
   display: grid !important;
   grid-template-columns: minmax(0, auto) minmax(0, 1fr) !important;
-  margin-top: 20px !important;
-  padding: 16px 0 !important;
+  margin-top: 14px !important;
+  padding: 12px 0 !important;
   border-top: 1px solid var(--bm2-line) !important;
   border-bottom: 1px solid var(--bm2-line) !important;
 }
@@ -18473,7 +18494,7 @@ html body #book-modal .bm2-strip-value {
 
 /* ---------- About this book ---------- */
 html body #book-modal .book-modal-v2 .book-description {
-  margin: 18px 0 0 !important;
+  margin: 14px 0 0 !important;
   padding: 0 !important;
   border: 0 !important;
   background: none !important;
@@ -18493,13 +18514,48 @@ html body #book-modal .book-modal-v2 .book-description h3::after {
   display: none !important;
 }
 
+/* Three lines (3 x 16px x 1.6 = 76.8px), the rest scrolls inside the
+   paragraph with a thin mint bar. No fade mask: it pulled the third line
+   below 4.5:1. */
 html body #book-modal .book-modal-v2 .book-description p {
   margin: 0 !important;
+  max-height: 77px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  padding: 0 10px 0 0 !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
+  /* .bm2-body's scrollbar-color is inherited and would switch Chrome to
+     its standard 15px bar; auto here keeps the 6px ::-webkit-scrollbar. */
+  scrollbar-width: auto !important;
+  scrollbar-color: auto !important;
   font-size: 16px !important;
   line-height: 1.6 !important;
   font-weight: 500 !important;
   color: var(--bm2-text) !important;
   overflow-wrap: anywhere !important;
+}
+
+html body #book-modal .book-modal-v2 .book-description p::-webkit-scrollbar {
+  width: 6px;
+}
+
+html body #book-modal .book-modal-v2 .book-description p::-webkit-scrollbar-track {
+  background: rgba(14, 134, 96, 0.12);
+  border-radius: 3px;
+}
+
+html body #book-modal .book-modal-v2 .book-description p::-webkit-scrollbar-thumb {
+  background: rgba(14, 134, 96, 0.6);
+  border-radius: 3px;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  html body #book-modal .book-modal-v2 .book-description p {
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(14, 134, 96, 0.6) rgba(14, 134, 96, 0.12) !important;
+  }
 }
 
 /* ---------- footer bar ---------- */
@@ -18509,7 +18565,7 @@ html body #book-modal .bm2-foot {
   align-items: center !important;
   justify-content: space-between !important;
   gap: 18px 24px !important;
-  padding: 18px 34px 22px 32px !important;
+  padding: 16px 38px 20px 34px !important;
   border-top: 1px solid var(--bm2-line) !important;
   background: rgba(255, 255, 255, 0.3) !important;
 }
@@ -18756,14 +18812,14 @@ html body #book-modal .bm2-room-note::before {
   }
 }
 
-/* ---------- narrow screens: cover above details ---------- */
-@media (max-width: 719.98px) {
+/* ---------- 560-959px: cover on top, details full width ---------- */
+@media (max-width: 959.98px) {
   html body #book-modal .bm2-body {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 
   html body #book-modal .bm2-left {
-    padding: 26px 20px 22px !important;
+    padding: 24px 20px 20px !important;
     border-right: 0 !important;
     border-bottom: 1px solid var(--bm2-line) !important;
   }
@@ -18774,23 +18830,48 @@ html body #book-modal .bm2-room-note::before {
   }
 
   html body #book-modal .bm2-right {
-    padding: 20px 20px 22px !important;
+    padding: 20px 28px 16px !important;
   }
 
   html body #book-modal .bm2-top {
     padding-right: 0 !important;
   }
 
+  html body #book-modal .bm2-foot {
+    padding: 16px 28px 20px !important;
+  }
+}
+
+/* ---------- below 560px: phone ---------- */
+@media (max-width: 559.98px) {
+  html body #book-modal .bm2-right {
+    padding: 20px 20px 16px !important;
+  }
+
   html body #book-modal .book-modal-v2 .book-modal-title {
     font-size: 26px !important;
   }
 
-  html body #book-modal .bm2-loc-cols {
-    grid-template-columns: minmax(0, 1fr) !important;
+  /* Tile columns stack here, so the tile goes full width and may wrap. */
+  html body #book-modal .bm2-loc {
+    width: auto !important;
   }
 
-  html body #book-modal .bm2-loc-col {
+  html body #book-modal .bm2-loc-cols {
+    flex-direction: column !important;
+    white-space: normal !important;
+  }
+
+  html body #book-modal .bm2-loc-col,
+  html body #book-modal .bm2-loc-col.bm2-loc-call {
+    flex: 1 1 auto !important;
+    width: 100% !important;
     padding-right: 0 !important;
+  }
+
+  html body #book-modal .bm2-loc-value {
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
   }
 
   html body #book-modal .bm2-loc-col.bm2-loc-call {
