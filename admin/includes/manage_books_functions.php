@@ -93,6 +93,31 @@ function manage_books_section_options(array $sections, string $current): array {
     return $options;
 }
 
+/**
+ * Location for a book from the add/edit form. Section is the only required
+ * part; class, shelf, row and position are optional (a section-only book
+ * points at the placeholder row with those four empty, as created by
+ * database/assign_book_sections.sql). Reuses the existing row with exactly
+ * these five values, otherwise creates one. Never edits an existing row,
+ * since rows are shared between books. Returns 0 when no section is given.
+ */
+function manage_books_resolve_location_id(
+    mysqli $conn,
+    array $classNames,
+    string $section,
+    string $classCode,
+    string $shelf,
+    string $row,
+    string $position
+): int {
+    if ($section === '') {
+        return 0;
+    }
+
+    $className = $classCode !== '' ? (string)($classNames[$classCode] ?? 'General Works') : '';
+    return get_or_create_location_id($conn, $section, $classCode, $className, $shelf, $row, $position);
+}
+
 function build_legacy_location_text(string $section, string $classCode, string $shelf, string $row, string $position, string $callNumber): string {
     $locationParts = [];
     if ($section !== '') $locationParts[] = 'Section: ' . $section;

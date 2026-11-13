@@ -182,6 +182,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_book'])) {
 
     if ($title === '') {
         $errorMessage = 'Title is required.';
+    } elseif ($locationSection === '') {
+        $errorMessage = 'Section is required.';
     } elseif ($callNumber === '') {
         $errorMessage = 'Call Number is required.';
     } elseif (!$hasBookCopiesTable) {
@@ -239,13 +241,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_book'])) {
         $legacyLocationText = build_legacy_location_text($locationSection, $locationClass, $locationShelf, $locationRow, $locationPosition, $callNumber);
 
         $locationId = 0;
-        if ($hasLocationTable && $hasBookLocationId && $locationSection !== '' && $locationClass !== '' && $locationShelf !== '' && $locationRow !== '' && $locationPosition !== '') {
-            $className = (string)($libraryClassNames[$locationClass] ?? 'General Works');
-            $locationId = get_or_create_location_id(
+        if ($hasLocationTable && $hasBookLocationId) {
+            $locationId = manage_books_resolve_location_id(
                 $conn,
+                $libraryClassNames,
                 $locationSection,
                 $locationClass,
-                $className,
                 $locationShelf,
                 $locationRow,
                 $locationPosition
@@ -480,6 +481,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_book'])) {
         $errorMessage = 'Invalid book selection.';
     } elseif ($title === '') {
         $errorMessage = 'Title is required.';
+    } elseif ($locationSection === '') {
+        $errorMessage = 'Section is required.';
     } elseif ($callNumber === '') {
         $errorMessage = 'Call Number is required.';
     } elseif (!$hasBookCopiesTable) {
@@ -664,19 +667,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_book'])) {
             $coreUpd->close();
 
             if ($hasLocationTable && $hasBookLocationId) {
-                $locationId = 0;
-                if ($locationSection !== '' && $locationClass !== '' && $locationShelf !== '' && $locationRow !== '' && $locationPosition !== '') {
-                    $className = (string)($libraryClassNames[$locationClass] ?? 'General Works');
-                    $locationId = get_or_create_location_id(
-                        $conn,
-                        $locationSection,
-                        $locationClass,
-                        $className,
-                        $locationShelf,
-                        $locationRow,
-                        $locationPosition
-                    );
-                }
+                // Section only is enough (class/shelf/row/position optional).
+                $locationId = manage_books_resolve_location_id(
+                    $conn,
+                    $libraryClassNames,
+                    $locationSection,
+                    $locationClass,
+                    $locationShelf,
+                    $locationRow,
+                    $locationPosition
+                );
 
                 $locUpd = $conn->prepare('UPDATE books SET location_id = NULLIF(?, 0) WHERE book_id = ?');
                 if ($locUpd) {
@@ -1686,29 +1686,29 @@ require 'layout_top.php';
                     <?php endforeach; ?>
                 </select>
 
-                <select name="location_class" required>
-                    <option value="">Select Class Letter</option>
+                <select name="location_class">
+                    <option value="">Select Class Letter (optional)</option>
                     <?php foreach ($libraryClassLabels as $classCode => $classLabel): ?>
                         <option value="<?= htmlspecialchars($classCode) ?>" <?= ((string)($addBookForm['location_class'] ?? '') === (string)$classCode) ? 'selected' : '' ?>><?= htmlspecialchars($classLabel) ?></option>
                     <?php endforeach; ?>
                 </select>
 
-                <select name="location_shelf" required>
-                    <option value="">Select Shelf Code</option>
+                <select name="location_shelf">
+                    <option value="">Select Shelf Code (optional)</option>
                     <?php foreach ($shelfOptions as $shelf): ?>
                         <option value="<?= htmlspecialchars($shelf) ?>" <?= ((string)($addBookForm['location_shelf'] ?? '') === (string)$shelf) ? 'selected' : '' ?>><?= htmlspecialchars($shelf) ?></option>
                     <?php endforeach; ?>
                 </select>
 
-                <select name="location_row" required>
-                    <option value="">Select Row</option>
+                <select name="location_row">
+                    <option value="">Select Row (optional)</option>
                     <?php foreach ($rowOptions as $rowOpt): ?>
                         <option value="<?= htmlspecialchars($rowOpt) ?>" <?= ((string)($addBookForm['location_row'] ?? '') === (string)$rowOpt) ? 'selected' : '' ?>><?= htmlspecialchars($rowOpt) ?></option>
                     <?php endforeach; ?>
                 </select>
 
-                <select name="location_position" required>
-                    <option value="">Select Position</option>
+                <select name="location_position">
+                    <option value="">Select Position (optional)</option>
                     <?php foreach ($positionOptions as $pos): ?>
                         <option value="<?= htmlspecialchars($pos) ?>" <?= ((string)($addBookForm['location_position'] ?? '') === (string)$pos) ? 'selected' : '' ?>><?= htmlspecialchars($pos) ?></option>
                     <?php endforeach; ?>
@@ -1868,8 +1868,8 @@ require 'layout_top.php';
 
                         <label class="edit-field">
                             <span class="edit-field-label">Class Letter</span>
-                            <select name="location_class" required>
-                                <option value="">Select Class Letter</option>
+                            <select name="location_class">
+                                <option value="">Select Class Letter (optional)</option>
                                 <?php foreach ($libraryClassLabels as $classCode => $classLabel): ?>
                                     <option value="<?= htmlspecialchars($classCode) ?>" <?= ((string)($editForm['location_class'] ?? '') === (string)$classCode) ? 'selected' : '' ?>><?= htmlspecialchars($classLabel) ?></option>
                                 <?php endforeach; ?>
@@ -1878,8 +1878,8 @@ require 'layout_top.php';
 
                         <label class="edit-field">
                             <span class="edit-field-label">Shelf Code</span>
-                            <select name="location_shelf" required>
-                                <option value="">Select Shelf Code</option>
+                            <select name="location_shelf">
+                                <option value="">Select Shelf Code (optional)</option>
                                 <?php foreach ($shelfOptions as $shelf): ?>
                                     <option value="<?= htmlspecialchars($shelf) ?>" <?= ((string)($editForm['location_shelf'] ?? '') === (string)$shelf) ? 'selected' : '' ?>><?= htmlspecialchars($shelf) ?></option>
                                 <?php endforeach; ?>
@@ -1888,8 +1888,8 @@ require 'layout_top.php';
 
                         <label class="edit-field">
                             <span class="edit-field-label">Row</span>
-                            <select name="location_row" required>
-                                <option value="">Select Row</option>
+                            <select name="location_row">
+                                <option value="">Select Row (optional)</option>
                                 <?php foreach ($rowOptions as $rowOpt): ?>
                                     <option value="<?= htmlspecialchars($rowOpt) ?>" <?= ((string)($editForm['location_row'] ?? '') === (string)$rowOpt) ? 'selected' : '' ?>><?= htmlspecialchars($rowOpt) ?></option>
                                 <?php endforeach; ?>
@@ -1898,8 +1898,8 @@ require 'layout_top.php';
 
                         <label class="edit-field">
                             <span class="edit-field-label">Shelf Level</span>
-                            <select name="location_position" required>
-                                <option value="">Select Position</option>
+                            <select name="location_position">
+                                <option value="">Select Position (optional)</option>
                                 <?php foreach ($positionOptions as $pos): ?>
                                     <option value="<?= htmlspecialchars($pos) ?>" <?= ((string)($editForm['location_position'] ?? '') === (string)$pos) ? 'selected' : '' ?>><?= htmlspecialchars($pos) ?></option>
                                 <?php endforeach; ?>
