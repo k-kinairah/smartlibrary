@@ -1549,6 +1549,24 @@ let signinCountdownEndTs = 0;
         document.getElementById("book-modal")?.classList.add("hidden");
     });
 
+    // Backdrop tap and Escape also close the book modal. Escape runs in the
+    // capture phase so it can see whether a dialog stacked on top (borrow
+    // confirm, status message, receipt) is still open; that dialog closes
+    // first and the book modal stays.
+    document.querySelector("#book-modal .modal-backdrop")?.addEventListener("click", () => {
+        document.getElementById("book-modal")?.classList.add("hidden");
+    });
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        const bookModal = document.getElementById("book-modal");
+        if (!bookModal || bookModal.classList.contains("hidden")) return;
+        const stacked = [...document.querySelectorAll(".modal:not(.hidden), #receipt-status-modal:not(.hidden)")]
+            .some((el) => el !== bookModal);
+        if (stacked) return;
+        bookModal.classList.add("hidden");
+    }, true);
+
     // Deferred full-catalog load: this used to run on every page load,
     // fetching fetch_books.php twice (~3.3MB) and rendering 2000+ books --
     // each with a real cover <img> that the browser requested even though
@@ -1888,7 +1906,7 @@ ${receiptFlankLabel("verify", "Verification")}
     };
 
     const runCheckout = async ({ modalRoot, bookId, checkoutBtn }) => {
-        const originalText = checkoutBtn.textContent || "Check Out";
+        const originalText = checkoutBtn.textContent || "Borrow Item";
         checkoutBtn.disabled = true;
         checkoutBtn.textContent = "Processing...";
 
@@ -1901,7 +1919,7 @@ ${receiptFlankLabel("verify", "Verification")}
 
             const data = await response.json();
             if (!response.ok || data.status !== "success") {
-                throw new Error(data.message || "Checkout failed.");
+                throw new Error(data.message || "Borrowing failed.");
             }
 
             const receipt = data.receipt || {};
@@ -1931,11 +1949,11 @@ ${receiptFlankLabel("verify", "Verification")}
                 window.smartlibRefreshBooks();
             }
         } catch (error) {
-            const errorMessage = String(error?.message || "Checkout failed.").trim();
+            const errorMessage = String(error?.message || "Borrowing failed.").trim();
             const isBorrowLimit = /borrow\s+limit\s+reached/i.test(errorMessage);
 
             showReceiptStatus(isBorrowLimit ? "warning" : "error", errorMessage, {
-                title: isBorrowLimit ? "Borrow Limit Reached" : "Unable to Check Out",
+                title: isBorrowLimit ? "Borrow Limit Reached" : "Unable to Borrow Item",
                 actionLabel: "Okay"
             });
 
@@ -1956,7 +1974,7 @@ ${receiptFlankLabel("verify", "Verification")}
 
         if (!bookId) {
             showReceiptStatus("error", "Invalid book selection.", {
-                title: "Unable to Check Out",
+                title: "Unable to Borrow Item",
                 actionLabel: "Close"
             });
             return;
@@ -2486,126 +2504,6 @@ document.addEventListener("DOMContentLoaded", () => {
         .finally(() => {
             initializeCarousels();
         });
-});
-document.addEventListener("DOMContentLoaded", () => {
-    const locationModal = document.getElementById("location-modal");
-    const locationContent = document.getElementById("location-modal-content");
-    const closeLocationBtn = document.getElementById("close-location-modal");
-    const locationBackdrop = locationModal?.querySelector(".modal-backdrop");
-
-    if (!locationModal || !locationContent) return;
-
-    // Location modal scope helper
-    const escapeHtml = (value) => {
-        const div = document.createElement("div");
-        div.textContent = value == null ? "" : String(value);
-        return div.innerHTML;
-    };
-
-
-
-    const toTitle = (value) => {
-        return String(value || "")
-            .replace(/[_-]+/g, " ")
-            .trim()
-            .replace(/\b\w/g, (c) => c.toUpperCase());
-    };
-
-    const LOC_ICONS = {
-        section: '<svg viewBox="0 0 24 24" role="presentation"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.3"></rect><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.3"></rect><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.3"></rect><rect x="13" y="13" width="7.5" height="7.5" rx="1.3"></rect></svg>',
-        shelf: '<svg viewBox="0 0 24 24" role="presentation"><path d="M4 20V4M20 20V4M4 20h16"></path><path d="M8 4v13M12 4v16M16 4v13"></path></svg>',
-        row: '<svg viewBox="0 0 24 24" role="presentation"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>',
-        position: '<svg viewBox="0 0 24 24" role="presentation"><path d="M12 3v18"></path><path d="M7.5 7.5L12 3l4.5 4.5"></path><path d="M7.5 16.5L12 21l4.5-4.5"></path></svg>',
-        availability: '<svg viewBox="0 0 24 24" role="presentation"><circle cx="12" cy="12" r="7.5"></circle><path d="M12 8.3v4.2l2.7 1.6"></path></svg>',
-        guide: '<svg viewBox="0 0 24 24" role="presentation"><path d="M9 5l7 7-7 7"></path></svg>',
-        check: '<svg viewBox="0 0 24 24" role="presentation"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>',
-        unavailable: '<svg viewBox="0 0 24 24" role="presentation"><circle cx="12" cy="12" r="8"></circle><path d="M8 12h8"></path></svg>'
-    };
-
-    const getStockState = (availability, status) => {
-        const text = String(availability || "").toLowerCase();
-        const s = String(status || "").toLowerCase();
-        if (s === "borrowed" || s === "unavailable" || text.startsWith("0 of")) {
-            return { label: "Checked Out", cls: "warn", icon: LOC_ICONS.unavailable };
-        }
-        return { label: "In Stock", cls: "ok", icon: LOC_ICONS.check };
-    };
-
-    const buildLocationModal = (bookRoot) => {
-        const title = bookRoot.dataset.title || "Book";
-        const author = bookRoot.dataset.author || "Unknown Author";
-        const section = bookRoot.dataset.locationSection || "General Collection";
-        const classCode = bookRoot.dataset.locationClassCode || "T";
-        const className = bookRoot.dataset.locationClassName || "Technology";
-        const shelf = bookRoot.dataset.locationShelf || "YA-05";
-        const row = bookRoot.dataset.locationRow || "First row";
-        const position = bookRoot.dataset.locationPosition || "Eye Level";
-        const call = bookRoot.dataset.locationCall || "";
-        const availability = bookRoot.dataset.availability || "1 of 1 available";
-        const status = bookRoot.dataset.status || "available";
-
-        const stock = getStockState(availability, status);
-        const callLine = call ? `<div class="loc-call-number">Call Number: ${escapeHtml(call)}</div>` : "";
-
-        locationContent.innerHTML = `
-            <div class="loc-head">
-                <h3>Book Location</h3>
-                <p>${escapeHtml(title)} by ${escapeHtml(author)}</p>
-            </div>
-
-            <div class="loc-guide-card">
-                <div class="loc-guide-title-wrap">
-                    <span class="loc-guide-icon">${LOC_ICONS.guide}</span>
-                    <div>
-                        <h4>How to Find This Book</h4>
-                        <p>Follow these directions from the kiosk</p>
-                    </div>
-                </div>
-
-                <div class="loc-steps">
-                    <div class="loc-step"><span>1</span><p>Find the <strong>${escapeHtml(section)}</strong> section</p></div>
-                    <div class="loc-step"><span>2</span><p>Go to <strong>Class ${escapeHtml(classCode)}</strong> (${escapeHtml(className)}), Shelf <strong>${escapeHtml(shelf)}</strong></p></div>
-                    <div class="loc-step"><span>3</span><p>Look at <strong>${escapeHtml(toTitle(row))}</strong>, <strong>${escapeHtml(toTitle(position))}</strong></p></div>
-                </div>
-                ${callLine}
-            </div>
-
-            <div class="loc-meta-grid">
-                <div class="loc-meta-card"><div class="loc-meta-label"><span class="loc-meta-icon">${LOC_ICONS.section}</span>Section</div><div class="loc-meta-value">${escapeHtml(section)}</div></div>
-                <div class="loc-meta-card"><div class="loc-meta-label"><span class="loc-meta-icon">${LOC_ICONS.shelf}</span>Shelf</div><div class="loc-meta-value">${escapeHtml(shelf)}</div></div>
-                <div class="loc-meta-card"><div class="loc-meta-label"><span class="loc-meta-icon">${LOC_ICONS.row}</span>Row</div><div class="loc-meta-value">${escapeHtml(toTitle(row))}</div></div>
-                <div class="loc-meta-card"><div class="loc-meta-label"><span class="loc-meta-icon">${LOC_ICONS.position}</span>Position</div><div class="loc-meta-value">${escapeHtml(toTitle(position))}</div></div>
-            </div>
-
-            <div class="loc-availability-card">
-                <div>
-                    <div class="loc-meta-label"><span class="loc-meta-icon">${LOC_ICONS.availability}</span>Availability</div>
-                    <div class="loc-meta-value">${escapeHtml(availability)}</div>
-                </div>
-                <span class="loc-stock-chip ${stock.cls}"><span class="loc-stock-chip-icon">${stock.icon}</span>${escapeHtml(stock.label)}</span>
-            </div>
-        `;
-
-        locationModal.classList.remove("hidden");
-    };
-
-    const closeLocation = () => {
-        locationModal.classList.add("hidden");
-    };
-
-    document.addEventListener("click", (e) => {
-        const findBtn = e.target.closest(".find-book-btn");
-        if (!findBtn) return;
-
-        e.preventDefault();
-        const bookRoot = findBtn.closest(".book-modal-v2");
-        if (!bookRoot) return;
-
-        buildLocationModal(bookRoot);
-    });
-
-    closeLocationBtn?.addEventListener("click", closeLocation);
-    locationBackdrop?.addEventListener("click", closeLocation);
 });
 
 

@@ -451,7 +451,7 @@ if ($genreRes) {
                     </span>
                     <div class="account-type-text">
                         <strong id="signin-account-type-label">Student</strong>
-                        <div class="muted-sub" id="signin-account-type-sub">3 books - 7 days</div>
+                        <div class="muted-sub" id="signin-account-type-sub">3 books at a time</div>
                     </div>
                     <span class="chev-circle" aria-hidden="true">
                         <svg class="chev" viewBox="0 0 24 24" role="presentation">
@@ -461,17 +461,17 @@ if ($genreRes) {
                 </button>
 
                 <div id="signin-account-type-menu" class="account-type-menu hidden">
-                    <button type="button" class="account-type-option active" data-type="student" data-label="Student" data-sub="3 books - 7 days" data-id-label="Student ID" data-id-placeholder="20232243" data-secret-label="PIN" data-secret-placeholder="2026">
+                    <button type="button" class="account-type-option active" data-type="student" data-label="Student" data-sub="3 books at a time" data-id-label="Student ID" data-id-placeholder="20232243" data-secret-label="PIN" data-secret-placeholder="2026">
                         <span class="option-title">Student</span>
-                        <span class="option-sub">Borrow up to 3 books for 7 days</span>
+                        <span class="option-sub">Borrow up to 3 books at a time</span>
                     </button>
-                    <button type="button" class="account-type-option" data-type="faculty" data-label="Faculty" data-sub="5 books - 30 days" data-id-label="Faculty ID" data-id-placeholder="Your faculty ID" data-secret-label="PIN" data-secret-placeholder="2026">
+                    <button type="button" class="account-type-option" data-type="faculty" data-label="Faculty" data-sub="5 books - up to 30 days" data-id-label="Faculty ID" data-id-placeholder="Your faculty ID" data-secret-label="PIN" data-secret-placeholder="2026">
                         <span class="option-title">Faculty</span>
-                        <span class="option-sub">Borrow up to 5 books for 30 days</span>
+                        <span class="option-sub">Borrow up to 5 books for up to 30 days</span>
                     </button>
-                    <button type="button" class="account-type-option" data-type="librarian" data-label="Librarian" data-sub="5 books - 7 days" data-id-label="Librarian ID" data-id-placeholder="Your librarian ID" data-secret-label="Password" data-secret-placeholder="Enter your password">
+                    <button type="button" class="account-type-option" data-type="librarian" data-label="Librarian" data-sub="5 books at a time" data-id-label="Librarian ID" data-id-placeholder="Your librarian ID" data-secret-label="Password" data-secret-placeholder="Enter your password">
                         <span class="option-title">Librarian</span>
-                        <span class="option-sub">Staff access - up to 5 books for 7 days</span>
+                        <span class="option-sub">Staff access - up to 5 books at a time</span>
                     </button>
                 </div>
             </div>
@@ -543,17 +543,9 @@ if ($genreRes) {
 
 <div id="book-modal" class="modal hidden">
     <div class="modal-backdrop"></div>
-    <div class="modal-panel" style="max-width:650px;">
+    <div class="modal-panel">
         <button class="close-btn" id="close-book-modal">&times;</button>
         <div id="book-modal-content"></div>
-    </div>
-</div>
-
-<div id="location-modal" class="modal hidden">
-    <div class="modal-backdrop"></div>
-    <div class="modal-panel location-modal-panel">
-        <button class="close-btn" id="close-location-modal">&times;</button>
-        <div id="location-modal-content"></div>
     </div>
 </div>
 
@@ -569,7 +561,7 @@ if ($genreRes) {
                 </svg>
             </span>
             <div>
-                <h3>Book Checked Out Successfully!</h3>
+                <h3>Book Borrowed Successfully!</h3>
                 <p>Your borrowing receipt</p>
             </div>
         </div>
@@ -658,11 +650,11 @@ if ($genreRes) {
                 <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
             </svg>
         </span>
-        <h3 class="checkout-confirm-title">Confirm Checkout</h3>
+        <h3 class="checkout-confirm-title">Confirm Borrow</h3>
         <p class="checkout-confirm-text">You're about to borrow <strong id="checkout-confirm-book-title">this book</strong>. Please return it by the due date shown on your receipt.</p>
         <div class="checkout-confirm-actions">
             <button type="button" id="checkout-confirm-cancel-btn" class="checkout-confirm-cancel">Cancel</button>
-            <button type="button" id="checkout-confirm-submit-btn" class="checkout-confirm-confirm">Yes, Check Out</button>
+            <button type="button" id="checkout-confirm-submit-btn" class="checkout-confirm-confirm">Yes, Borrow Item</button>
         </div>
     </div>
 </div>

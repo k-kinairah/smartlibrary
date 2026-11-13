@@ -18047,3 +18047,787 @@ html body #receipt-modal .receipt-note {
   font-style: italic !important;
   text-align: center !important;
 }
+
+
+/* ============================================================
+   Kiosk Polish v198 (Book Modal v2: Light Frosted Glass)
+   ------------------------------------------------------------
+   Approved design "book-v2-FINAL-A". get_book.php now outputs new
+   bm2-* wrappers (so the stacked .book-modal-header / .book-info-grid /
+   .book-actions-inline rules no longer apply): cover column, seal + tag
+   chips, title/author, a "Where to find it" tile (section + call number
+   only), a Published | ISBN strip, "About this book", and a footer bar
+   with Availability, Loan period and the action (Borrow Item /
+   Unavailable / room-use note). The Book Location modal is retired;
+   its .loc-* rules above are now dead code.
+   Only #book-modal changes. The panel is light glass over the dark
+   page, so the fill sits at 93-95% (measured over the real kiosk page)
+   and its ring is its own ::after mask ring, not the shared two-layer
+   border-box ring from "Modal glassmorphism".
+   ============================================================ */
+
+html body #book-modal .modal-backdrop {
+  background: rgba(0, 10, 6, 0.52) !important;
+}
+
+html body #book-modal .modal-panel {
+  --bm2-text: #0b3025;
+  --bm2-muted: #2f5a4c;
+  --bm2-strong: #082a20;
+  --bm2-accent: #0e8660;
+  --bm2-line: rgba(14, 134, 96, 0.22);
+  --bm2-label: #1d4939;
+  --bm2-amber: #8a5300;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 812px !important;
+  max-width: calc(100vw - 48px) !important;
+  max-height: calc(100dvh - 40px) !important;
+  height: auto !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 26px !important;
+  color: var(--bm2-text) !important;
+  background: none !important;
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 253, 247, 0.93) 50%, rgba(222, 247, 236, 0.93) 100%) !important;
+  background-origin: border-box !important;
+  background-clip: border-box !important;
+  backdrop-filter: blur(28px) saturate(185%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(185%) !important;
+  box-shadow:
+    0 28px 60px rgba(20, 90, 80, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 40px rgba(255, 255, 255, 0.35) !important;
+}
+
+/* The shared dark-glass sheen is not part of this design. */
+html body #book-modal .modal-panel::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* 1.5px gradient ring (mask: content-box excluded from border-box). */
+html body #book-modal .modal-panel::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 4 !important;
+  padding: 1.5px !important;
+  border-radius: inherit !important;
+  background: linear-gradient(120deg, #ffffff 0%, rgba(14, 134, 96, 0.55) 30%, rgba(80, 190, 230, 0.55) 62%, rgba(255, 255, 255, 0.95) 100%) !important;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0) !important;
+  -webkit-mask-composite: xor !important;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0) !important;
+  pointer-events: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+html body #book-modal #book-modal-content {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  background: none !important;
+}
+
+html body #book-modal .book-modal-v2 {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  gap: 0 !important;
+  background: none !important;
+  color: var(--bm2-text) !important;
+  font-family: "Manrope", sans-serif !important;
+}
+
+/* ---------- close button ---------- */
+html body #book-modal .close-btn {
+  position: absolute !important;
+  top: 18px !important;
+  right: 18px !important;
+  left: auto !important;
+  z-index: 6 !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(14, 134, 96, 0.3) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  color: var(--bm2-strong) !important;
+  font-size: 26px !important;
+  line-height: 1 !important;
+  box-shadow: 0 4px 12px rgba(20, 90, 80, 0.14) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html body #book-modal .close-btn:hover {
+  background: #ffffff !important;
+}
+
+/* ---------- body: two columns, scrolls; footer stays visible ---------- */
+html body #book-modal .bm2-body {
+  display: grid !important;
+  grid-template-columns: 290px minmax(0, 1fr) !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(14, 134, 96, 0.45) transparent !important;
+}
+
+html body #book-modal .bm2-left {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 36px 24px !important;
+  background: radial-gradient(70% 55% at 50% 45%, rgba(14, 134, 96, 0.22), transparent 72%) !important;
+  border-right: 1px solid var(--bm2-line) !important;
+}
+
+html body #book-modal .bm2-cover-frame {
+  position: relative !important;
+  display: inline-block !important;
+  padding: 9px !important;
+  border-radius: 20px !important;
+  background: rgba(255, 255, 255, 0.78) !important;
+  border: 1px solid rgba(255, 255, 255, 0.95) !important;
+  box-shadow:
+    0 20px 38px rgba(20, 90, 80, 0.3),
+    0 2px 6px rgba(20, 90, 80, 0.12) !important;
+  animation: bm2Float 6s ease-in-out infinite alternate;
+}
+
+html body #book-modal .bm2-cover-frame img.book-cover-lg {
+  display: block !important;
+  width: 218px !important;
+  height: 331px !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  object-fit: cover !important;
+  border-radius: 12px !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+html body #book-modal .bm2-cover-frame .fav-heart-btn-lg {
+  position: absolute !important;
+  top: 20px !important;
+  right: 20px !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+  background: rgba(8, 26, 20, 0.55) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28) !important;
+  z-index: 2 !important;
+}
+
+html body #book-modal .bm2-right {
+  min-width: 0 !important;
+  padding: 26px 34px 26px 32px !important;
+}
+
+/* ---------- seal + tag chips ---------- */
+html body #book-modal .bm2-top {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  padding-right: 52px !important;
+  margin: 0 0 14px !important;
+}
+
+html body #book-modal .bm2-seal {
+  flex: none !important;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 50% !important;
+  background: url("../images/phinma-icon.png") center/cover no-repeat !important;
+  box-shadow:
+    0 0 0 1.5px rgba(14, 134, 96, 0.7),
+    0 2px 6px rgba(20, 90, 80, 0.25) !important;
+}
+
+html body #book-modal .bm2-tags {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+html body #book-modal .bm2-tags .book-tag {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  padding: 5px 14px 5px 11px !important;
+  margin: 0 !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(14, 134, 96, 0.45) !important;
+  background: rgba(14, 134, 96, 0.1) !important;
+  color: var(--bm2-strong) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  box-shadow: none !important;
+}
+
+html body #book-modal .bm2-tags .book-tag::before {
+  content: "" !important;
+  display: inline-block !important;
+  flex: none !important;
+  width: 14px !important;
+  height: 14px !important;
+  background: var(--bm2-accent) !important;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 12.6V4.5a1 1 0 0 1 1-1h8.1l8 8a1.6 1.6 0 0 1 0 2.3l-6.8 6.8a1.6 1.6 0 0 1-2.3 0z'/%3E%3Ccircle cx='8.2' cy='8.2' r='1.4'/%3E%3C/svg%3E") center/contain no-repeat !important;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 12.6V4.5a1 1 0 0 1 1-1h8.1l8 8a1.6 1.6 0 0 1 0 2.3l-6.8 6.8a1.6 1.6 0 0 1-2.3 0z'/%3E%3Ccircle cx='8.2' cy='8.2' r='1.4'/%3E%3C/svg%3E") center/contain no-repeat !important;
+}
+
+/* ---------- title + author ---------- */
+html body #book-modal .book-modal-v2 .book-modal-title {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  line-height: 1.16 !important;
+  letter-spacing: -0.01em !important;
+  text-transform: none !important;
+  color: var(--bm2-strong) !important;
+  text-align: left !important;
+  overflow-wrap: anywhere !important;
+  text-shadow: none !important;
+  background: none !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+/* The seal is now its own element in .bm2-top. */
+html body #book-modal .book-modal-title::before {
+  content: none !important;
+  display: none !important;
+}
+
+html body #book-modal .book-modal-v2 .book-modal-author-sub {
+  margin: 6px 0 22px !important;
+  padding: 0 !important;
+  font-size: 17px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  font-style: normal !important;
+  color: var(--bm2-muted) !important;
+  text-align: left !important;
+  overflow-wrap: anywhere !important;
+}
+
+html body #book-modal .book-modal-v2 .book-modal-author-sub::before {
+  content: "by " !important;
+}
+
+/* ---------- shared label / icon ---------- */
+html body #book-modal .bm2-label,
+html body #book-modal .bm2-strip-label,
+html body #book-modal .book-modal-v2 .book-description h3 {
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  line-height: 1.3 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  color: var(--bm2-label) !important;
+}
+
+html body #book-modal .bm2-icon {
+  display: inline-flex !important;
+  flex: none !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+html body #book-modal .bm2-icon svg {
+  width: 100% !important;
+  height: 100% !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 1.9 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+/* ---------- "Where to find it" tile ---------- */
+html body #book-modal .bm2-loc {
+  padding: 14px 18px 16px !important;
+  border-radius: 16px !important;
+  background: linear-gradient(135deg, rgba(14, 134, 96, 0.12), rgba(80, 190, 230, 0.12)) !important;
+  border: 1px solid rgba(14, 134, 96, 0.34) !important;
+}
+
+html body #book-modal .bm2-loc-head {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  color: #07603f !important;
+}
+
+html body #book-modal .bm2-loc-head .bm2-icon {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+html body #book-modal .bm2-loc-cols {
+  display: grid !important;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) !important;
+  margin-top: 10px !important;
+}
+
+html body #book-modal .bm2-loc-col {
+  min-width: 0 !important;
+  padding-right: 20px !important;
+}
+
+html body #book-modal .bm2-loc-col.bm2-loc-call {
+  padding: 0 0 0 20px !important;
+  border-left: 1px dashed rgba(14, 134, 96, 0.5) !important;
+}
+
+html body #book-modal .bm2-loc-value {
+  margin-top: 3px !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  line-height: 1.22 !important;
+  font-variant-numeric: tabular-nums !important;
+  color: var(--bm2-strong) !important;
+  overflow-wrap: anywhere !important;
+  min-width: 0 !important;
+}
+
+/* ---------- Published | ISBN strip ---------- */
+html body #book-modal .bm2-strip {
+  display: grid !important;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) !important;
+  margin-top: 20px !important;
+  padding: 16px 0 !important;
+  border-top: 1px solid var(--bm2-line) !important;
+  border-bottom: 1px solid var(--bm2-line) !important;
+}
+
+html body #book-modal .bm2-strip-item {
+  min-width: 0 !important;
+  padding-right: 32px !important;
+}
+
+html body #book-modal .bm2-strip-item + .bm2-strip-item {
+  padding: 0 0 0 32px !important;
+  border-left: 1px solid var(--bm2-line) !important;
+}
+
+html body #book-modal .bm2-strip-label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+html body #book-modal .bm2-strip-label .bm2-icon {
+  width: 15px !important;
+  height: 15px !important;
+  color: var(--bm2-accent) !important;
+}
+
+html body #book-modal .bm2-strip-value {
+  margin-top: 4px !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  font-variant-numeric: tabular-nums !important;
+  color: var(--bm2-strong) !important;
+  overflow-wrap: anywhere !important;
+}
+
+/* ---------- About this book ---------- */
+html body #book-modal .book-modal-v2 .book-description {
+  margin: 18px 0 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+html body #book-modal .book-modal-v2 .book-description h3 {
+  margin: 0 0 8px !important;
+  padding: 0 !important;
+}
+
+html body #book-modal .book-modal-v2 .book-description h3::before,
+html body #book-modal .book-modal-v2 .book-description h3::after {
+  content: none !important;
+  display: none !important;
+}
+
+html body #book-modal .book-modal-v2 .book-description p {
+  margin: 0 !important;
+  font-size: 16px !important;
+  line-height: 1.6 !important;
+  font-weight: 500 !important;
+  color: var(--bm2-text) !important;
+  overflow-wrap: anywhere !important;
+}
+
+/* ---------- footer bar ---------- */
+html body #book-modal .bm2-foot {
+  flex: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 18px 24px !important;
+  padding: 18px 34px 22px 32px !important;
+  border-top: 1px solid var(--bm2-line) !important;
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+html body #book-modal .bm2-foot-stats {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  row-gap: 12px !important;
+  min-width: 0 !important;
+}
+
+html body #book-modal .bm2-stat {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+}
+
+html body #book-modal .bm2-stat.bm2-avail {
+  padding-right: 24px !important;
+  margin-right: 24px !important;
+  border-right: 1px solid var(--bm2-line) !important;
+}
+
+html body #book-modal .bm2-stat-value {
+  margin-top: 2px !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  font-variant-numeric: tabular-nums !important;
+  color: var(--bm2-strong) !important;
+}
+
+html body #book-modal .bm2-loan-icon {
+  width: 20px !important;
+  height: 20px !important;
+  color: var(--bm2-accent) !important;
+}
+
+html body #book-modal .bm2-dots {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+html body #book-modal .bm2-dot {
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 50% !important;
+  box-sizing: border-box !important;
+  border: 1.8px solid rgba(14, 134, 96, 0.6) !important;
+  background: transparent !important;
+}
+
+html body #book-modal .bm2-dot.is-on {
+  border-color: var(--bm2-accent) !important;
+  background: var(--bm2-accent) !important;
+  animation: bm2DotPulse 2.4s ease-in-out infinite;
+}
+
+/* No copies: amber availability, hollow amber dots. */
+html body #book-modal .bm2-is-unavailable .bm2-avail .bm2-stat-value {
+  color: var(--bm2-amber) !important;
+}
+
+html body #book-modal .bm2-is-unavailable .bm2-dot {
+  border-color: #b06a00 !important;
+  background: transparent !important;
+}
+
+/* Room use only: amber loan value and icon. */
+html body #book-modal .bm2-is-room-only .bm2-loan .bm2-stat-value,
+html body #book-modal .bm2-is-room-only .bm2-loan-icon {
+  color: var(--bm2-amber) !important;
+}
+
+html body #book-modal .bm2-foot-action {
+  flex: none !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+}
+
+html body #book-modal .bm2-foot-action:empty {
+  display: none !important;
+}
+
+/* ---------- actions ---------- */
+html body #book-modal .bm2-foot .checkout-btn {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: 54px !important;
+  min-height: 0 !important;
+  padding: 0 30px !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 16px !important;
+  background: linear-gradient(135deg, #0d8260, #07704e) !important;
+  color: #ffffff !important;
+  font-family: inherit !important;
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  box-shadow:
+    0 12px 28px rgba(14, 134, 96, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease !important;
+  animation: none !important;
+  opacity: 1 !important;
+}
+
+html body #book-modal .bm2-foot .checkout-btn::before {
+  content: "" !important;
+  position: static !important;
+  display: inline-block !important;
+  flex: none !important;
+  width: 20px !important;
+  height: 20px !important;
+  background: currentColor !important;
+  opacity: 1 !important;
+  transform: none !important;
+  animation: none !important;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.5 8h13l-1 12.5h-11z'/%3E%3Cpath d='M9 10V7a3 3 0 0 1 6 0v3'/%3E%3C/svg%3E") center/contain no-repeat !important;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.5 8h13l-1 12.5h-11z'/%3E%3Cpath d='M9 10V7a3 3 0 0 1 6 0v3'/%3E%3C/svg%3E") center/contain no-repeat !important;
+}
+
+/* Slow diagonal shine. Peak is 6% white: white text measured 5.12:1 on
+   the button and 4.59:1 under the shine's peak (28% fell to 3.08:1). */
+html body #book-modal .bm2-foot .checkout-btn::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: -70% !important;
+  right: auto !important;
+  width: 45% !important;
+  height: auto !important;
+  display: block !important;
+  background: linear-gradient(105deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0) 100%) !important;
+  transform: skewX(-20deg) !important;
+  pointer-events: none !important;
+  opacity: 1 !important;
+  animation: bm2Shine 4s ease-in-out infinite !important;
+}
+
+html body #book-modal .bm2-foot .checkout-btn:not(:disabled):hover {
+  transform: translateY(-1px) !important;
+  filter: brightness(1.06) !important;
+  box-shadow:
+    0 16px 32px rgba(14, 134, 96, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+html body #book-modal .bm2-foot .checkout-btn:disabled {
+  cursor: progress !important;
+  opacity: 0.85 !important;
+}
+
+/* No copies left: outline "Unavailable". */
+html body #book-modal .bm2-foot .checkout-btn.bm2-btn-unavailable {
+  background: rgba(255, 255, 255, 0.55) !important;
+  border: 1.5px solid rgba(150, 110, 30, 0.55) !important;
+  color: #5b4a2a !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+  filter: none !important;
+  transform: none !important;
+}
+
+html body #book-modal .bm2-foot .checkout-btn.bm2-btn-unavailable::before {
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M8.5 12h7'/%3E%3C/svg%3E") center/contain no-repeat !important;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M8.5 12h7'/%3E%3C/svg%3E") center/contain no-repeat !important;
+}
+
+html body #book-modal .bm2-foot .checkout-btn.bm2-btn-unavailable::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Room use only: a note, not a button. */
+html body #book-modal .bm2-room-note {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 54px !important;
+  padding: 0 22px !important;
+  border-radius: 16px !important;
+  border: 1.5px dashed rgba(170, 100, 0, 0.6) !important;
+  background: rgba(217, 119, 6, 0.12) !important;
+  color: #6b3f00 !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  cursor: default !important;
+  user-select: none !important;
+}
+
+html body #book-modal .bm2-room-note::before {
+  content: "" !important;
+  flex: none !important;
+  width: 19px !important;
+  height: 19px !important;
+  background: currentColor !important;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 5.5h6a3 3 0 0 1 3 3V20a2.5 2.5 0 0 0-2.5-2.5H3z'/%3E%3Cpath d='M21 5.5h-6a3 3 0 0 0-3 3V20a2.5 2.5 0 0 1 2.5-2.5H21z'/%3E%3C/svg%3E") center/contain no-repeat !important;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 5.5h6a3 3 0 0 1 3 3V20a2.5 2.5 0 0 0-2.5-2.5H3z'/%3E%3Cpath d='M21 5.5h-6a3 3 0 0 0-3 3V20a2.5 2.5 0 0 1 2.5-2.5H21z'/%3E%3C/svg%3E") center/contain no-repeat !important;
+}
+
+/* ---------- motion ---------- */
+@keyframes bm2Float {
+  from { transform: translateY(0); }
+  to { transform: translateY(-5px); }
+}
+
+@keyframes bm2Shine {
+  0% { left: -70%; }
+  55% { left: 130%; }
+  100% { left: 130%; }
+}
+
+@keyframes bm2DotPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(14, 134, 96, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(14, 134, 96, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body #book-modal .bm2-cover-frame,
+  html body #book-modal .bm2-dot.is-on,
+  html body #book-modal .bm2-foot .checkout-btn::after {
+    animation: none !important;
+  }
+
+  html body #book-modal .bm2-foot .checkout-btn::after {
+    display: none !important;
+  }
+}
+
+/* ---------- narrow screens: cover above details ---------- */
+@media (max-width: 719.98px) {
+  html body #book-modal .bm2-body {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  html body #book-modal .bm2-left {
+    padding: 26px 20px 22px !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--bm2-line) !important;
+  }
+
+  html body #book-modal .bm2-cover-frame img.book-cover-lg {
+    width: 180px !important;
+    height: 273px !important;
+  }
+
+  html body #book-modal .bm2-right {
+    padding: 20px 20px 22px !important;
+  }
+
+  html body #book-modal .bm2-top {
+    padding-right: 0 !important;
+  }
+
+  html body #book-modal .book-modal-v2 .book-modal-title {
+    font-size: 26px !important;
+  }
+
+  html body #book-modal .bm2-loc-cols {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  html body #book-modal .bm2-loc-col {
+    padding-right: 0 !important;
+  }
+
+  html body #book-modal .bm2-loc-col.bm2-loc-call {
+    margin-top: 10px !important;
+    padding: 10px 0 0 !important;
+    border-left: 0 !important;
+    border-top: 1px dashed rgba(14, 134, 96, 0.5) !important;
+  }
+
+  html body #book-modal .bm2-strip-item {
+    padding-right: 18px !important;
+  }
+
+  html body #book-modal .bm2-strip-item + .bm2-strip-item {
+    padding-left: 18px !important;
+  }
+
+  /* Stats wrap onto two lines here, so no divider between them. */
+  html body #book-modal .bm2-foot-stats {
+    gap: 12px 22px !important;
+  }
+
+  html body #book-modal .bm2-stat.bm2-avail {
+    padding-right: 0 !important;
+    margin-right: 0 !important;
+    border-right: 0 !important;
+  }
+
+  html body #book-modal .bm2-foot {
+    flex-wrap: wrap !important;
+    padding: 16px 20px 18px !important;
+  }
+
+  html body #book-modal .bm2-foot-action,
+  html body #book-modal .bm2-foot .checkout-btn,
+  html body #book-modal .bm2-room-note {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}

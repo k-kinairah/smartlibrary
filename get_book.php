@@ -338,6 +338,7 @@ function icon_svg($name) {
         'isbn' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.6h12.5a2 2 0 0 1 2 2V18"></path><path d="M5 18.4h12.5a2 2 0 0 0 2-2V6.8"></path><path d="M8.2 8.2v7.5M11 8.2v7.5"></path></svg>',
         'availability' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5"></circle><path d="M12 8.3v4.2l2.7 1.6"></path></svg>',
         'rating' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5l2.3 4.7 5.2.8-3.7 3.7.9 5.2-4.7-2.5-4.7 2.5.9-5.2-3.7-3.7 5.2-.8z"></path></svg>',
+        'book-open' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5h6a3 3 0 0 1 3 3V20a2.5 2.5 0 0 0-2.5-2.5H3z"></path><path d="M21 5.5h-6a3 3 0 0 0-3 3V20a2.5 2.5 0 0 1 2.5-2.5H21z"></path></svg>',
         'pin' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.2s6-6 6-10a6 6 0 1 0-12 0c0 4 6 10 6 10z"></path><circle cx="12" cy="10.2" r="2.2"></circle></svg>'
     ];
 
@@ -479,7 +480,7 @@ if (is_numeric($totalCopiesRaw)) {
 }
 $unavailableStates = ['borrowed', 'unavailable', 'checked_out', 'checked out'];
 $isUnavailable = in_array($statusValue, $unavailableStates, true);
-$checkoutLabel = $isUnavailable ? 'Unavailable' : 'Check Out';
+$checkoutLabel = $isUnavailable ? 'Unavailable' : 'Borrow Item';
 $checkoutDisabled = $isUnavailable ? ' disabled' : '';
 $sessionRole = strtolower(trim((string)($_SESSION['role'] ?? '')));
 $canCheckout = isset($_SESSION['user_id']) && in_array($sessionRole, ['student', 'faculty', 'librarian', 'admin'], true);
@@ -564,8 +565,39 @@ function info_item($icon, $label, $value, $extraClass = '') {
     </div>";
 }
 
+// Book modal v2 (approved design "book-v2-FINAL-A"). The loan period comes
+// from the same helper checkout_book.php enforces (config/loan_policy.php);
+// signed-out visitors see the student value.
+$policy = smartlib_loan_policy_for_book($sessionRole !== '' ? $sessionRole : 'student', $locationSection);
+$isRoomOnly = !empty($policy['room_only']);
+$roomOnlyNote = 'For use inside the library'; // placeholder wording: change it here only
+$loanLabelText = 'Loan period' . (!empty($policy['is_faculty_rate']) ? ' · Faculty' : '');
+$loanValueText = $isRoomOnly ? 'Room use only' : (string)$policy['label'];
+
+// One dot per copy (filled = available), only for 1-6 copies.
+$dotsHtml = '';
+if (is_numeric($totalCopiesRaw) && (int)$totalCopiesRaw >= 1 && (int)$totalCopiesRaw <= 6) {
+    $dotTotal = (int)$totalCopiesRaw;
+    $dotAvailable = max(0, min($dotTotal, (int)$availableCopiesRaw));
+    for ($i = 0; $i < $dotTotal; $i++) {
+        $dotsHtml .= "<span class='bm2-dot" . ($i < $dotAvailable ? ' is-on' : '') . "'></span>";
+    }
+    $dotsHtml = "<span class='bm2-dots' aria-hidden='true'>{$dotsHtml}</span>";
+}
+
+// Room-use-only books never get a .checkout-btn (the server refuses them too).
+if ($isRoomOnly) {
+    $actionHtml = "<div class='bm2-room-note' role='note'>" . h($roomOnlyNote) . "</div>";
+} elseif ($canCheckout) {
+    $actionHtml = "<button type='button' class='checkout-btn" . ($isUnavailable ? ' bm2-btn-unavailable' : '') . "' data-book-id='" . intval($bookId) . "'" . $checkoutDisabled . ">" . h($checkoutLabel) . "</button>";
+} else {
+    $actionHtml = '';
+}
+
+$callDisplay = trim($locationCall) !== '' ? $locationCall : '—';
+
 echo "
-<div class='book-modal-v2'
+<div class='book-modal-v2" . ($isUnavailable ? ' bm2-is-unavailable' : '') . ($isRoomOnly ? ' bm2-is-room-only' : '') . "'
      data-book-id='" . intval($bookId) . "'
      data-title='" . h($title) . "'
      data-author='" . h($author) . "'
@@ -582,15 +614,12 @@ echo "
      data-location-call='" . h($locationCall) . "'
      data-status='" . h($statusValue) . "'
      data-accession='" . h($accession) . "'
-     data-availability='" . h($availability) . "'>
-    <div class='book-modal-header'>
-        <h2 class='book-modal-title'>" . h($title) . "</h2>
-        <p class='book-modal-author-sub'>" . h($author) . "</p>
-    </div>
-
-    <div class='book-modal-body'>
-        <div class='book-modal-left'>
-            <div class='book-cover-wrap'>
+     data-availability='" . h($availability) . "'
+     data-loan-days='" . ($policy['days'] === null ? '' : intval($policy['days'])) . "'
+     data-room-only='" . ($isRoomOnly ? '1' : '0') . "'>
+    <div class='bm2-body'>
+        <div class='bm2-left'>
+            <div class='bm2-cover-frame'>
                 <img class='book-cover-lg' src='" . h($cover) . "' alt='Book cover'>
                 " . ($favoritesEnabled ? "<button type='button' class='fav-heart-btn fav-heart-btn-lg" . ($isFavorited ? ' is-favorited' : '') . "' data-book-id='" . intval($bookId) . "' aria-pressed='" . ($isFavorited ? 'true' : 'false') . "' aria-label='Save to favorites'>
                     <svg class='fav-heart-icon' viewBox='0 0 24 24' aria-hidden='true'>
@@ -600,26 +629,65 @@ echo "
             </div>
         </div>
 
-        <div class='book-modal-right'>
-            <div class='book-tag-row'>" . $tagsHtml . "</div>
+        <div class='bm2-right'>
+            <div class='bm2-top'>
+                <span class='bm2-seal' aria-hidden='true'></span>
+                <div class='bm2-tags'>" . $tagsHtml . "</div>
+            </div>
 
-            <div class='book-info-grid'>
-                " . info_item('author', 'Author', $author) . "
-                " . info_item('published', 'Published', $year) . "
-                " . info_item('isbn', 'ISBN', $isbn) . "
-                " . info_item('availability', 'Availability', $availability, 'is-availability') . "
+            <h2 class='book-modal-title'>" . h($title) . "</h2>
+            <p class='book-modal-author-sub'>" . h($author) . "</p>
+
+            <div class='bm2-loc'>
+                <div class='bm2-loc-head'><span class='bm2-icon'>" . icon_svg('pin') . "</span>Where to find it</div>
+                <div class='bm2-loc-cols'>
+                    <div class='bm2-loc-col'>
+                        <div class='bm2-label'>Section</div>
+                        <div class='bm2-loc-value'>" . h($locationSection) . "</div>
+                    </div>
+                    <div class='bm2-loc-col bm2-loc-call'>
+                        <div class='bm2-label'>Call number</div>
+                        <div class='bm2-loc-value'>" . h($callDisplay) . "</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class='bm2-strip'>
+                <div class='bm2-strip-item'>
+                    <div class='bm2-strip-label'><span class='bm2-icon'>" . icon_svg('published') . "</span>Published</div>
+                    <div class='bm2-strip-value'>" . h($year) . "</div>
+                </div>
+                <div class='bm2-strip-item'>
+                    <div class='bm2-strip-label'><span class='bm2-icon'>" . icon_svg('isbn') . "</span>ISBN</div>
+                    <div class='bm2-strip-value'>" . h($isbn) . "</div>
+                </div>
             </div>
 
             <div class='book-description'>
-                <h3>Description</h3>
+                <h3>About this book</h3>
                 <p>" . h($description) . "</p>
             </div>
+        </div>
+    </div>
 
-            <div class='book-actions-inline'>
-                " . ($canCheckout ? "<button type='button' class='checkout-btn' data-book-id='" . intval($bookId) . "'" . $checkoutDisabled . ">" . h($checkoutLabel) . "</button>" : "") . "
-                <button type='button' class='find-book-btn'>" . icon_svg('pin') . "<span>Find This Book</span></button>
+    <div class='bm2-foot'>
+        <div class='bm2-foot-stats'>
+            <div class='bm2-stat bm2-avail'>
+                " . $dotsHtml . "
+                <div>
+                    <div class='bm2-label'>Availability</div>
+                    <div class='bm2-stat-value'>" . h($availability) . "</div>
+                </div>
+            </div>
+            <div class='bm2-stat bm2-loan'>
+                <span class='bm2-icon bm2-loan-icon'>" . icon_svg($isRoomOnly ? 'book-open' : 'availability') . "</span>
+                <div>
+                    <div class='bm2-label'>" . h($loanLabelText) . "</div>
+                    <div class='bm2-stat-value'>" . h($loanValueText) . "</div>
+                </div>
             </div>
         </div>
+        <div class='bm2-foot-action'>" . $actionHtml . "</div>
     </div>
 </div>
 ";
