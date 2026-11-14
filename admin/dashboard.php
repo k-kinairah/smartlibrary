@@ -981,56 +981,6 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
         </article>
 </section>
 
-<section class="dashboard-section-wrap analytics-feature-wrap">
-    <section class="dashboard-chart-grid full-width-grid analytics-feature-row">
-        <article class="panel glass-card chart-panel feature-chart-panel search-trend-panel">
-            <div class="panel-head">
-                <div>
-                    <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('search') ?></span>Search Trends Over Time</h2>
-                    <p class="panel-sub">Searches per day over the last 14 days</p>
-                </div>
-            </div>
-            <div id="search-trend-chart" class="chart-shell feature-chart-shell"></div>
-
-            <div id="search-trend-insight" class="trend-insight">
-                Search insight will appear here once trend data is loaded.
-            </div>
-        </article>
-    </section>
-</section>
-
-<section class="dashboard-section-wrap analytics-middle-wrap">
-    <section class="dashboard-chart-grid equal-grid keyword-borrow-row">
-                <article class="panel glass-card chart-panel search-keywords-panel">
-            <div class="panel-head search-keywords-head">
-                <div>
-                    <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('list') ?></span>Top Search Keywords</h2>
-                    <p class="panel-sub">Normalized intents from live user searches</p>
-                </div>
-                <div class="search-smart-chip" id="search-keywords-chip">Calculating...</div>
-            </div>
-            <div id="search-keywords-chart" class="chart-shell compact-chart"></div>
-            <div id="search-keywords-insight" class="search-keywords-insight">
-                Smart keyword insight will appear here once data is loaded.
-            </div>
-        </article>
-
-        <article class="panel glass-card chart-panel borrowed-books-panel">
-            <div class="panel-head search-keywords-head">
-                <div>
-                    <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('book-open') ?></span>Top 10 Borrowed Books</h2>
-                    <p class="panel-sub">Most borrowed books across all records</p>
-                </div>
-                <div class="search-smart-chip borrow-smart-chip" id="borrowed-books-chip">Calculating...</div>
-            </div>
-            <div id="most-borrowed-top-chart" class="chart-shell"></div>
-            <div id="most-borrowed-insight" class="search-keywords-insight borrowed-books-insight">
-                Borrowing insight will appear here once data is loaded.
-            </div>
-        </article>
-    </section>
-</section>
-
 <section class="dashboard-section-wrap top-borrowers-wrap">
     <section class="dashboard-chart-grid full-width-grid">
         <article id="top-borrowers-panel" class="panel glass-card chart-panel top-borrowers-panel">
@@ -1186,6 +1136,56 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
     });
 })();
 </script>
+
+<section class="dashboard-section-wrap analytics-feature-wrap">
+    <section class="dashboard-chart-grid full-width-grid analytics-feature-row">
+        <article class="panel glass-card chart-panel feature-chart-panel search-trend-panel">
+            <div class="panel-head">
+                <div>
+                    <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('search') ?></span>Search Trends Over Time</h2>
+                    <p class="panel-sub">Searches per day over the last 14 days</p>
+                </div>
+            </div>
+            <div id="search-trend-chart" class="chart-shell feature-chart-shell"></div>
+
+            <div id="search-trend-insight" class="trend-insight">
+                Search insight will appear here once trend data is loaded.
+            </div>
+        </article>
+    </section>
+</section>
+
+<section class="dashboard-section-wrap analytics-middle-wrap">
+    <section class="dashboard-chart-grid equal-grid keyword-borrow-row">
+                <article class="panel glass-card chart-panel search-keywords-panel">
+            <div class="panel-head search-keywords-head">
+                <div>
+                    <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('list') ?></span>Top Search Keywords</h2>
+                    <p class="panel-sub">Normalized intents from live user searches</p>
+                </div>
+                <div class="search-smart-chip" id="search-keywords-chip">Calculating...</div>
+            </div>
+            <div id="search-keywords-chart" class="chart-shell compact-chart"></div>
+            <div id="search-keywords-insight" class="search-keywords-insight">
+                Smart keyword insight will appear here once data is loaded.
+            </div>
+        </article>
+
+        <article class="panel glass-card chart-panel borrowed-books-panel">
+            <div class="panel-head search-keywords-head">
+                <div>
+                    <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('book-open') ?></span>Top 10 Borrowed Books</h2>
+                    <p class="panel-sub">Most borrowed books across all records</p>
+                </div>
+                <div class="search-smart-chip borrow-smart-chip" id="borrowed-books-chip">Calculating...</div>
+            </div>
+            <div id="most-borrowed-top-chart" class="chart-shell"></div>
+            <div id="most-borrowed-insight" class="search-keywords-insight borrowed-books-insight">
+                Borrowing insight will appear here once data is loaded.
+            </div>
+        </article>
+    </section>
+</section>
 
 <section class="dashboard-section-wrap borrow-trend-wrap">
     <section class="dashboard-chart-grid full-width-grid borrow-trend-row">
