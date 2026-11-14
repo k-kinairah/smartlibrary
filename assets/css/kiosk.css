@@ -18999,3 +18999,274 @@ html body #book-modal .bm2-room-note::before {
     justify-content: center !important;
   }
 }
+
+
+/* ============================================================
+   Kiosk Polish v199 (Header Dock: Mint Glass)
+   ------------------------------------------------------------
+   The search-view dock (v92 floating bottom pill, v196 hide-on-scroll)
+   changes from dark green glass to pale mint glass with dark ink
+   (design "header-mint-c"). Position, width, radius, transform,
+   opacity and transition are untouched: they belong to v92/v196.
+   The signed-out Sign In button now uses the signed-in chip layout
+   ([two lines, right-aligned] | divider | [icon] [round button]);
+   index.php gives it .btn-login-text / -icon / -caret.
+   Earlier dark-bar rules (dark text halos, white hover ink, the gold
+   icon glow, green/blue Sign In gradients) are overridden here and
+   left as dead code. Scoped to #search-view.
+   ============================================================ */
+
+/* ---------- dock skin (both states) ---------- */
+/* Fill alpha is the design's +0.06 and the icon ink #04432f (design
+   #05684a): measured over the darkest covers, the person/login icons
+   were 1.94:1 at the design values; these lift them past 3:1. */
+html body #search-view .header.search-header,
+html body #search-view .search-header {
+  background:
+    linear-gradient(112deg, rgba(255, 255, 255, 0) 26%, rgba(255, 255, 255, 0.28) 45%, rgba(255, 255, 255, 0.46) 51%, rgba(255, 255, 255, 0.14) 58%, rgba(255, 255, 255, 0) 74%),
+    linear-gradient(100deg, rgba(244, 254, 249, 0.66) 0%, rgba(230, 251, 240, 0.62) 55%, rgba(206, 244, 225, 0.6) 100%) !important;
+  backdrop-filter: blur(28px) saturate(1.6) brightness(1.32) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.6) brightness(1.32) !important;
+  border: 0 !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.85),
+    0 0 0 2px rgba(7, 90, 64, 0.14),
+    0 18px 38px rgba(3, 40, 30, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 0 rgba(7, 90, 64, 0.1) !important;
+  /* dockGlowPulse loops box-shadow and would fight the shadow above. */
+  animation: none !important;
+}
+
+/* ---------- title: dark ink, no halos (sizes unchanged) ---------- */
+html body #search-view .search-header .title h2 {
+  color: #07211a !important;
+  -webkit-text-fill-color: #07211a !important;
+  text-shadow: none !important;
+}
+
+/* Also cancels the "KNOWN, INTENTIONAL AA GAP" halo, which was for
+   white text on the dark bar. */
+html body #search-view .search-header .title p {
+  color: #1f2e27 !important;
+  -webkit-text-fill-color: #1f2e27 !important;
+  text-shadow: none !important;
+}
+
+/* ---------- signed-in chip ---------- */
+html body #search-view .search-header .user-menu-toggle .user-info strong,
+html body #search-view .search-header .user-menu-toggle:hover .user-info strong,
+html body #search-view .search-header .user-menu-toggle[aria-expanded="true"] .user-info strong {
+  color: #07211a !important;
+  text-shadow: none !important;
+}
+
+html body #search-view .search-header .user-menu-toggle .user-info span {
+  color: #1f2e27 !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+html body #search-view .search-header .user-menu-toggle .user-info::after {
+  background: rgba(7, 60, 44, 0.26) !important;
+  height: 36px !important;
+}
+
+/* A long name ellipsises instead of pushing the round button out. */
+html body #search-view .search-header .user-header-right,
+html body #search-view .search-header .user-menu-toggle,
+html body #search-view .search-header .user-menu-toggle .user-info {
+  min-width: 0 !important;
+}
+
+html body #search-view .search-header .user-menu-toggle .user-info strong,
+html body #search-view .search-header .user-menu-toggle .user-info span {
+  display: block !important;
+  max-width: 100% !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+html body #search-view .search-header .user-profile-icon,
+html body #search-view .search-header .user-profile-icon {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  background: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+html body #search-view .search-header .user-profile-icon svg,
+html body #search-view .search-header .user-profile-icon svg {
+  width: 22px !important;
+  height: 22px !important;
+  fill: none !important;
+  stroke: #04432f !important;
+  filter: none !important;
+}
+
+/* Round button (signed-in caret and the Sign In caret share it). The
+   signed-in chevron keeps its existing direction rules on the svg:
+   closed points up, open points down. */
+html body #search-view .search-header .user-menu-caret,
+html body #search-view .search-header .user-menu-toggle:hover .user-menu-caret,
+html body #search-view .search-header .btn-login .btn-login-caret {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: none !important;
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: linear-gradient(160deg, #059669, #047e59 60%, #06684a) !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 3px 8px rgba(4, 100, 70, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+html body #search-view .search-header .user-menu-caret svg,
+html body #search-view .search-header .btn-login .btn-login-caret svg {
+  width: 15px !important;
+  height: 15px !important;
+  fill: none !important;
+  stroke: #ffffff !important;
+  stroke-width: 2.4 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+html body #search-view .search-header .user-menu-toggle:hover .user-menu-caret {
+  filter: brightness(1.08) !important;
+}
+
+/* ---------- signed-out Sign In: same chip layout ---------- */
+html body #search-view .search-header .btn-login,
+html body #search-view .search-header .btn-login:hover,
+html body #search-view .search-header .btn-login:active,
+html body #search-view .search-header .btn-login:focus {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+  min-height: 44px !important;
+  padding: 6px 4px 6px 10px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: none !important;
+  box-shadow: none !important;
+  color: #07211a !important;
+  text-shadow: none !important;
+  transform: none !important;
+  filter: none !important;
+  animation: none !important;
+  cursor: pointer !important;
+}
+
+html body #search-view .search-header .btn-login::before,
+html body #search-view .search-header .btn-login::after {
+  content: none !important;
+  display: none !important;
+}
+
+html body #search-view .search-header .btn-login .btn-login-text {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  min-width: 0 !important;
+  padding-right: 14px !important;
+  text-align: right !important;
+}
+
+html body #search-view .search-header .btn-login .btn-login-text::after {
+  content: "" !important;
+  position: absolute !important;
+  right: 0 !important;
+  top: 50% !important;
+  width: 1px !important;
+  height: 36px !important;
+  transform: translateY(-50%) !important;
+  background: rgba(7, 60, 44, 0.26) !important;
+}
+
+html body #search-view .search-header .btn-login .btn-login-text strong {
+  display: block !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  color: #07211a !important;
+  white-space: nowrap !important;
+}
+
+html body #search-view .search-header .btn-login .btn-login-text span {
+  display: block !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  color: #1f2e27 !important;
+  opacity: 1 !important;
+  white-space: nowrap !important;
+}
+
+html body #search-view .search-header .btn-login .btn-login-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: none !important;
+  width: 22px !important;
+  height: 22px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+html body #search-view .search-header .btn-login .btn-login-icon svg {
+  width: 22px !important;
+  height: 22px !important;
+  fill: none !important;
+  stroke: #04432f !important;
+  stroke-width: 2.1 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  filter: none !important;
+}
+
+html body #search-view .search-header .btn-login .btn-login-caret {
+  transition: transform 0.18s ease, filter 0.18s ease !important;
+}
+
+html body #search-view .search-header .btn-login:hover .btn-login-caret {
+  transform: translateY(-1px) !important;
+  filter: brightness(1.08) !important;
+}
+
+/* ---------- keyboard focus ---------- */
+html body #search-view .search-header .user-menu-toggle:focus-visible,
+html body #search-view .search-header .btn-login:focus-visible {
+  outline: 3px solid rgba(5, 150, 105, 0.55) !important;
+  outline-offset: 3px !important;
+}
+
+@media (max-width: 640px) {
+  html body #search-view .search-header .btn-login .btn-login-text span {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body #search-view .search-header .btn-login .btn-login-caret {
+    transition: none !important;
+  }
+}

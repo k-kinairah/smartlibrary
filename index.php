@@ -300,6 +300,7 @@ if ($genreRes) {
             </div>
         <?php else: ?>
             <button id="open-account-modal" class="btn-login">
+                <span class="btn-login-text"><strong>Sign In</strong><span>School ID &amp; PIN</span></span>
                 <span class="btn-login-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" role="presentation">
                         <path d="M14 4H17.5A2.5 2.5 0 0 1 20 6.5v11A2.5 2.5 0 0 1 17.5 20H14"></path>
@@ -307,7 +308,7 @@ if ($genreRes) {
                         <path d="M10 8l5 4-5 4"></path>
                     </svg>
                 </span>
-                <span>Sign In</span>
+                <span class="btn-login-caret" aria-hidden="true"><svg viewBox="0 0 24 24" role="presentation"><path d="M10 7l5 5-5 5"></path></svg></span>
             </button>
         <?php endif; ?>
     </header>
