@@ -436,7 +436,7 @@ if ($genreRes) {
             <img class="account-brand-phinma" src="assets/images/phinma-icon.png" alt="PHINMA Education">
         </div>
         <h3 class="modal-title">Welcome to SJCDC Library</h3>
-        <p class="modal-subtitle">Sign in to borrow books and access personalized recommendations</p>
+        <p class="modal-subtitle">Sign in with your School ID and PIN to borrow books and get recommendations made for you.</p>
 
         <form id="signin-form" class="modal-form account-form">
             <div class="floating-field">
@@ -491,14 +491,27 @@ if ($genreRes) {
                 <input type="text" id="signin-otp" inputmode="numeric" maxlength="6" placeholder="123456">
             </div>
 
-            <p id="signin-helper" class="modal-helper"> </p>
-            <button type="button" id="signin-btn" class="primary-btn">Sign In</button>
+            <p id="signin-helper" class="modal-helper" aria-live="polite"> </p>
+            <button type="button" id="signin-btn" class="primary-btn" data-step="password">
+                <span class="signin-btn-icon" aria-hidden="true">
+                    <svg class="signin-btn-icon-login" viewBox="0 0 24 24" role="presentation">
+                        <path d="M14 4H17.5A2.5 2.5 0 0 1 20 6.5v11A2.5 2.5 0 0 1 17.5 20H14"></path>
+                        <path d="M3 12H15"></path>
+                        <path d="M10 8l5 4-5 4"></path>
+                    </svg>
+                    <svg class="signin-btn-icon-shield" viewBox="0 0 24 24" role="presentation">
+                        <path d="M12 3.5l6.5 2.6v5.4c0 4.4-2.8 7.3-6.5 8.6-3.7-1.3-6.5-4.2-6.5-8.6V6.1z"></path>
+                        <path d="M9.2 12.2l2 2 3.8-4"></path>
+                    </svg>
+                </span>
+                <span class="signin-btn-label">Sign In</span>
+            </button>
 
             <div class="signin-links-row">
                 <button type="button" id="signin-forgot-pin" class="signin-text-btn">Forgot your PIN?</button>
             </div>
 
-            <div id="signin-msg" class="form-msg"></div>
+            <div id="signin-msg" class="form-msg" aria-live="polite"></div>
         </form>
     </div>
 </div>

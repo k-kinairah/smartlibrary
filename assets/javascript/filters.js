@@ -1005,8 +1005,50 @@ let signinCountdownEndTs = 0;
         signinCountdownEndTs = 0;
     };
 
-    const setSigninMessage = (text = "") => {
-        if (signinMsgBox) signinMsgBox.textContent = text;
+    // kind: "error" | "warn" | "info" -- styles the box and sets how it is
+    // announced (errors as alerts, the rest politely). Empty text clears the
+    // kind, which hides the box.
+    const setSigninMessage = (text = "", kind = "info") => {
+        if (!signinMsgBox) return;
+        signinMsgBox.textContent = text;
+        if (!text) {
+            signinMsgBox.removeAttribute("data-kind");
+            signinMsgBox.removeAttribute("role");
+            signinMsgBox.setAttribute("aria-live", "polite");
+            return;
+        }
+        signinMsgBox.setAttribute("data-kind", kind);
+        if (kind === "error") {
+            signinMsgBox.setAttribute("role", "alert");
+            signinMsgBox.removeAttribute("aria-live");
+        } else {
+            signinMsgBox.removeAttribute("role");
+            signinMsgBox.setAttribute("aria-live", "polite");
+        }
+    };
+
+    // Red outline on the PIN field after a failed sign-in (not a lockout);
+    // cleared on the next keystroke and whenever the modal opens or resets.
+    const signinPinField = signinPasswordInput?.closest(".floating-field") || null;
+    const signinIdField = signinIdentifierInput?.closest(".floating-field") || null;
+    const setPinInvalid = (invalid) => {
+        signinPinField?.classList.toggle("is-invalid", !!invalid);
+    };
+    signinPasswordInput?.addEventListener("input", () => setPinInvalid(false));
+    signinIdentifierInput?.addEventListener("input", () => setPinInvalid(false));
+
+    // Title/subtitle swap for the staff code step (restored on reset).
+    const signinTitleEl = modal?.querySelector(".modal-title") || null;
+    const signinSubtitleEl = modal?.querySelector(".modal-subtitle") || null;
+    const signinDefaultTitle = signinTitleEl?.textContent || "";
+    const signinDefaultSubtitle = signinSubtitleEl?.textContent || "";
+    const setCodeStepView = (on) => {
+        if (signinTitleEl) signinTitleEl.textContent = on ? "Check your email" : signinDefaultTitle;
+        if (signinSubtitleEl) signinSubtitleEl.textContent = on ? "Enter the 6-digit code we sent to your email to finish signing in." : signinDefaultSubtitle;
+        if (signinIdentifierInput) signinIdentifierInput.readOnly = !!on;
+        signinIdField?.classList.toggle("is-confirmed", !!on);
+        signinPinField?.classList.toggle("is-step-hidden", !!on);
+        modal?.classList.toggle("is-code-step", !!on);
     };
 
     const formatSigninTimeLeft = (seconds = 0) => {
@@ -1023,7 +1065,7 @@ let signinCountdownEndTs = 0;
         clearSigninCountdown();
         const safeSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
         if (safeSeconds <= 0) {
-            setSigninMessage(`${prefix}0s.`);
+            setSigninMessage(`${prefix}0s.`, "warn");
             return;
         }
 
@@ -1031,7 +1073,7 @@ let signinCountdownEndTs = 0;
 
         const tick = () => {
             const left = Math.max(0, Math.ceil((signinCountdownEndTs - Date.now()) / 1000));
-            setSigninMessage(`${prefix}${formatSigninTimeLeft(left)}.`);
+            setSigninMessage(`${prefix}${formatSigninTimeLeft(left)}.`, "warn");
             if (left <= 0) {
                 clearSigninCountdown();
             }
@@ -1041,10 +1083,23 @@ let signinCountdownEndTs = 0;
         signinCountdownTimer = setInterval(tick, 1000);
     };
 
+    // Sets only the label span (the icon span stays) and which icon shows:
+    // "code" for Verify Code / Verifying..., "password" otherwise.
+    const signinBtnLabel = signinBtn?.querySelector(".signin-btn-label") || null;
     const setSigninBusy = (busy, label) => {
         if (!signinBtn) return;
         signinBtn.disabled = !!busy;
-        signinBtn.textContent = label;
+        if (busy) {
+            signinBtn.setAttribute("aria-busy", "true");
+        } else {
+            signinBtn.removeAttribute("aria-busy");
+        }
+        if (signinBtnLabel) {
+            signinBtnLabel.textContent = label;
+        } else {
+            signinBtn.textContent = label;
+        }
+        signinBtn.dataset.step = /^Verif/.test(label) ? "code" : "password";
     };
 
     // One fixed "PIN" field for every account; the server decides what the
@@ -1070,8 +1125,12 @@ let signinCountdownEndTs = 0;
         if (signinOtpInput) signinOtpInput.value = "";
         signinForgotPinBtn?.classList.remove("hidden");
         if (signinHelper) signinHelper.textContent = " ";
+        setCodeStepView(false);
         setSigninBusy(false, "Sign In");
-        if (clearMessage) setSigninMessage("");
+        if (clearMessage) {
+            setSigninMessage("");
+            setPinInvalid(false);
+        }
     };
 
     const showAccountModal = () => {
@@ -1116,9 +1175,10 @@ let signinCountdownEndTs = 0;
 
         clearSigninCountdown();
         setSigninMessage("");
+        setPinInvalid(false);
 
         if (!identifier || !password) {
-            setSigninMessage(`Please enter ${idLabel} and ${currentSecretLabel()}.`);
+            setSigninMessage(`Please enter ${idLabel} and ${currentSecretLabel()}.`, "error");
             return;
         }
 
@@ -1152,13 +1212,17 @@ let signinCountdownEndTs = 0;
                     signinOtpWrap?.classList.remove("hidden");
                     signinForgotPinBtn?.classList.add("hidden");
                     if (signinHelper) {
-                        signinHelper.textContent = "Enter the 6-digit code sent to your email to continue.";
+                        const expires = Number(data.expires_minutes || 0);
+                        signinHelper.textContent = data.masked_email
+                            ? `Code sent to ${data.masked_email}.` + (expires > 0 ? ` It expires in ${expires} minutes.` : "")
+                            : "Enter the 6-digit code sent to your email to continue.";
                     }
+                    setCodeStepView(true);
                     setSigninBusy(false, "Verify Code");
                     if (signinPasswordInput) signinPasswordInput.value = "";
                     if (signinOtpInput) signinOtpInput.focus();
                     clearSigninCountdown();
-                    setSigninMessage(data.message || "Verification code required.");
+                    setSigninMessage(data.message || "Verification code required.", "info");
                     return;
                 }
 
@@ -1167,24 +1231,25 @@ let signinCountdownEndTs = 0;
                 if (Number.isFinite(retryAfter) && retryAfter > 0) {
                     startSigninCountdown(retryAfter);
                 } else {
-                    setSigninMessage(data.message || "Login failed.");
+                    setSigninMessage(data.message || "Login failed.", "error");
+                    setPinInvalid(true);
                 }
             })
             .catch((err) => {
                 resetTwoFactorState(false);
                 const rawMsg = String(err && err.message ? err.message : "");
                 if (rawMsg.startsWith("NON_JSON_LOGIN::")) {
-                    setSigninMessage("Sign-in service returned an invalid response. Please check server PHP errors/logs.");
+                    setSigninMessage("Sign-in service returned an invalid response. Please check server PHP errors/logs.", "error");
                     return;
                 }
-                setSigninMessage("Login failed. Please try again.");
+                setSigninMessage("Login failed. Please try again.", "error");
             });
     };
 
     const submitTwoFactorStep = () => {
         const code = (signinOtpInput?.value || "").replace(/\D+/g, "").trim();
         if (code.length !== 6) {
-            setSigninMessage("Enter the 6-digit verification code.");
+            setSigninMessage("Enter the 6-digit verification code.", "error");
             return;
         }
 
@@ -1218,16 +1283,16 @@ let signinCountdownEndTs = 0;
                     setSigninBusy(false, "Verify Code");
                 }
 
-                setSigninMessage(data.message || "Verification failed.");
+                setSigninMessage(data.message || "Verification failed.", "error");
             })
             .catch((err) => {
                 setSigninBusy(false, "Verify Code");
                 const rawMsg = String(err && err.message ? err.message : "");
                 if (rawMsg.startsWith("NON_JSON_2FA::")) {
-                    setSigninMessage("Verification endpoint returned an invalid response. Check server logs / verify_2fa.php.");
+                    setSigninMessage("Verification endpoint returned an invalid response. Check server logs / verify_2fa.php.", "error");
                     return;
                 }
-                setSigninMessage("Verification failed.");
+                setSigninMessage("Verification failed.", "error");
             });
     };
 
@@ -1241,17 +1306,34 @@ let signinCountdownEndTs = 0;
         });
     }
 
+    // Enter in any sign-in field submits the current step, and the form can
+    // never do a native submit (it has no action; that would reload the page).
+    const signinForm = document.getElementById("signin-form");
+    signinForm?.addEventListener("submit", (e) => e.preventDefault());
+    signinForm?.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" || !(e.target instanceof HTMLInputElement)) return;
+        e.preventDefault();
+        if (signinBtn && !signinBtn.disabled) signinBtn.click();
+    });
+
+    // Escape closes the sign-in modal, like the x and the backdrop.
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && modal && !modal.classList.contains("hidden")) {
+            hideAccountModal();
+        }
+    });
+
 
     signinForgotPinBtn?.addEventListener("click", () => {
         const identifier = signinIdentifierInput?.value.trim() || "";
         const idLabel = signinIdentifierLabel?.textContent || "ID";
 
         if (!identifier) {
-            setSigninMessage(`Enter ${idLabel} first, then click Forgot ${currentSecretLabel()}.`);
+            setSigninMessage(`Enter ${idLabel} first, then click Forgot ${currentSecretLabel()}.`, "error");
             return;
         }
 
-        setSigninMessage("Sending reset link...");
+        setSigninMessage("Sending reset link...", "info");
         fetch("request_pin_reset.php", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -1259,10 +1341,10 @@ let signinCountdownEndTs = 0;
         })
             .then(res => res.json())
             .then(data => {
-                setSigninMessage(data.message || "If this account exists, a reset link was sent.");
+                setSigninMessage(data.message || "If this account exists, a reset link was sent.", data.status === "error" ? "error" : "info");
             })
             .catch(() => {
-                setSigninMessage("Could not process reset request right now.");
+                setSigninMessage("Could not process reset request right now.", "error");
             });
     });
     // Favorites (heart icon). One toggle handler covers every surface the

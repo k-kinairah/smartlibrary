@@ -18070,8 +18070,10 @@ html body #receipt-modal .receipt-note {
    gold -> cream -> sage -> mint) over a dark-green veil, with a static
    diagonal light streak on top. The page behind is blurred (20px max for
    the kiosk GPU) and dimmed. Fades in over 200ms each time the modal is
-   shown (it goes from display:none). */
-html body #book-modal .modal-backdrop {
+   shown (it goes from display:none). Shared with the sign-in modal
+   (#account-modal, Kiosk Polish v200). */
+html body #book-modal .modal-backdrop,
+html body #account-modal .modal-backdrop {
   background:
     linear-gradient(112deg, transparent 34%, rgba(255, 255, 255, 0.1) 42%, rgba(255, 255, 255, 0.34) 48%, rgba(255, 255, 255, 0.12) 54%, transparent 62%),
     linear-gradient(120deg, rgba(234, 209, 159, 0.62) 0%, rgba(243, 241, 228, 0.3) 26%, rgba(112, 160, 139, 0.62) 52%, rgba(140, 227, 185, 0.62) 78%, rgba(224, 213, 168, 0.55) 100%),
@@ -18084,7 +18086,8 @@ html body #book-modal .modal-backdrop {
 /* Without backdrop-filter the page would show through sharp, so the veil
    rises to 0.88. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  html body #book-modal .modal-backdrop {
+  html body #book-modal .modal-backdrop,
+  html body #account-modal .modal-backdrop {
     background:
       linear-gradient(112deg, transparent 34%, rgba(255, 255, 255, 0.1) 42%, rgba(255, 255, 255, 0.34) 48%, rgba(255, 255, 255, 0.12) 54%, transparent 62%),
       linear-gradient(120deg, rgba(234, 209, 159, 0.62) 0%, rgba(243, 241, 228, 0.3) 26%, rgba(112, 160, 139, 0.62) 52%, rgba(140, 227, 185, 0.62) 78%, rgba(224, 213, 168, 0.55) 100%),
@@ -18093,7 +18096,8 @@ html body #book-modal .modal-backdrop {
 }
 
 /* Fine grain so the large soft gradients don't band. */
-html body #book-modal .modal-backdrop::after {
+html body #book-modal .modal-backdrop::after,
+html body #account-modal .modal-backdrop::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -18147,7 +18151,8 @@ html body #book-modal .modal-panel::before {
 }
 
 /* 1.5px gradient ring (mask: content-box excluded from border-box). */
-html body #book-modal .modal-panel::after {
+html body #book-modal .modal-panel::after,
+html body #account-modal .modal-panel.account-modal-panel::after {
   content: "" !important;
   display: block !important;
   position: absolute !important;
@@ -18848,6 +18853,7 @@ html body #book-modal .bm2-room-note::before {
 
 @media (prefers-reduced-motion: reduce) {
   html body #book-modal .modal-backdrop,
+  html body #account-modal .modal-backdrop,
   html body #book-modal .bm2-cover-frame,
   html body #book-modal .bm2-dot.is-on,
   html body #book-modal .bm2-foot .checkout-btn::after {
@@ -19267,6 +19273,638 @@ html body #search-view .search-header .btn-login:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   html body #search-view .search-header .btn-login .btn-login-caret {
+    transition: none !important;
+  }
+}
+
+
+/* ============================================================
+   Kiosk Polish v200 (Sign-In Modal: Daylight Glass)
+   ------------------------------------------------------------
+   #account-modal (index.php only) gets the book modal's light glass:
+   the v198 panel fill, halo and 1.5px ring, and the same "Daylight
+   glass" backdrop (shared with #book-modal by adding this modal to
+   v198's backdrop and ring selector lists, so the values live once).
+   Fields become white rounded boxes with a static label above the
+   value (the .floating-label hooks stay), messages get a kind
+   (data-kind="error|warn|info", set by setSigninMessage() in
+   filters.js) with a masked icon, and the staff code step swaps the
+   title/subtitle and shows the ID as confirmed (classes set by
+   filters.js: .is-code-step on the modal, .is-confirmed / .is-step-hidden
+   / .is-invalid on the fields). Older account-modal rules are left as
+   dead code. Selectors inside the form carry #signin-form so they
+   outrank the older #account-modal rules.
+   ============================================================ */
+
+/* ---------- panel ---------- */
+html body #account-modal .modal-panel.account-modal-panel {
+  position: relative !important;
+  box-sizing: border-box !important;
+  width: 520px !important;
+  max-width: calc(100vw - 32px) !important;
+  max-height: none !important;
+  padding: 30px 44px !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 28px !important;
+  text-align: center !important;
+  color: #0b3025 !important;
+  background: none !important;
+  /* v198 panel fill, filter and halo */
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 253, 247, 0.93) 50%, rgba(222, 247, 236, 0.93) 100%) !important;
+  background-origin: border-box !important;
+  background-clip: border-box !important;
+  backdrop-filter: blur(28px) saturate(185%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(185%) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.6),
+    0 44px 96px rgba(3, 30, 24, 0.6),
+    0 0 90px rgba(255, 255, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 40px rgba(255, 255, 255, 0.35) !important;
+}
+
+/* The shared dark-glass sheen is not part of this design. */
+html body #account-modal .modal-panel.account-modal-panel::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* ---------- close ---------- */
+html body #account-modal #close-modal {
+  position: absolute !important;
+  top: 18px !important;
+  right: 18px !important;
+  left: auto !important;
+  z-index: 6 !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(14, 134, 96, 0.3) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  color: #082a20 !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+  box-shadow: 0 4px 12px rgba(20, 90, 80, 0.14) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html body #account-modal #close-modal:hover {
+  background: #ffffff !important;
+}
+
+html body #account-modal #close-modal:focus-visible {
+  outline: 3px solid rgba(14, 134, 96, 0.85) !important;
+  outline-offset: 3px !important;
+}
+
+/* ---------- brand marks ---------- */
+html body #account-modal .account-brand-mark {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 16px !important;
+  width: max-content !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+}
+
+html body #account-modal .account-brand-mark .account-brand-seal {
+  width: 62px !important;
+  height: 62px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  border: 0 !important;
+  filter: none !important;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 3px rgba(14, 134, 96, 0.4),
+    0 6px 14px rgba(20, 90, 80, 0.25) !important;
+}
+
+html body #account-modal .account-brand-mark .account-brand-divider {
+  display: block !important;
+  width: 2px !important;
+  height: 40px !important;
+  border-radius: 2px !important;
+  background: linear-gradient(transparent, rgba(214, 170, 80, 0.9), transparent) !important;
+  opacity: 1 !important;
+}
+
+html body #account-modal .account-brand-mark .account-brand-phinma {
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  border: 0 !important;
+  filter: none !important;
+  box-shadow:
+    0 0 0 1.5px rgba(14, 134, 96, 0.7),
+    0 4px 10px rgba(20, 90, 80, 0.25) !important;
+}
+
+/* ---------- title + subtitle ---------- */
+html body #account-modal .account-modal-panel .modal-title {
+  margin: 18px 0 0 !important;
+  padding: 0 !important;
+  font-family: "Manrope", sans-serif !important;
+  font-size: 29px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.015em !important;
+  text-transform: none !important;
+  color: #082a20 !important;
+  -webkit-text-fill-color: #082a20 !important;
+  text-shadow: none !important;
+  background: none !important;
+  text-align: center !important;
+}
+
+html body #account-modal .account-modal-panel .modal-title::before,
+html body #account-modal .account-modal-panel .modal-title::after {
+  content: none !important;
+  display: none !important;
+}
+
+html body #account-modal .account-modal-panel .modal-subtitle {
+  max-width: 380px !important;
+  margin: 8px auto 0 !important;
+  padding: 0 !important;
+  font-size: 15.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+  color: #2f5a4c !important;
+  -webkit-text-fill-color: #2f5a4c !important;
+  text-shadow: none !important;
+  text-align: center !important;
+}
+
+/* ---------- form + fields ---------- */
+/* Flex column so the message sits between the fields and the button (as in
+   the mock) while the markup keeps its order. */
+html body #account-modal #signin-form {
+  display: flex !important;
+  flex-direction: column !important;
+  margin: 6px 0 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  text-align: left !important;
+}
+
+html body #account-modal #signin-form .floating-field {
+  position: relative !important;
+  box-sizing: border-box !important;
+  display: grid !important;
+  grid-template-columns: 40px minmax(0, 1fr) auto !important;
+  grid-template-rows: auto auto !important;
+  align-content: center !important;
+  align-items: center !important;
+  column-gap: 14px !important;
+  row-gap: 0 !important;
+  height: 64px !important;
+  min-height: 64px !important;
+  margin: 14px 0 0 !important;
+  padding: 0 16px !important;
+  /* #4f9d83 (the brief's estimate) measured 2.90-2.94:1 against the real
+     panel; #4b977e measures >= 3:1. */
+  border: 1.5px solid #4b977e !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  box-shadow:
+    inset 0 1px 0 #ffffff,
+    0 2px 6px rgba(20, 90, 80, 0.06) !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
+}
+
+/* Shown/hidden by filters.js (.hidden on the code field; .is-step-hidden on
+   the PIN field during the staff code step). */
+html body #account-modal #signin-form .floating-field.hidden,
+html body #account-modal #signin-form .floating-field.is-step-hidden {
+  display: none !important;
+}
+
+html body #account-modal #signin-form .floating-field:focus-within {
+  border-color: #0e8660 !important;
+  box-shadow:
+    0 0 0 4px rgba(14, 134, 96, 0.18),
+    inset 0 1px 0 #ffffff !important;
+}
+
+html body #account-modal #signin-form .floating-field.is-invalid {
+  border-color: #b4332a !important;
+  box-shadow:
+    0 0 0 4px rgba(180, 51, 42, 0.12),
+    inset 0 1px 0 #ffffff !important;
+}
+
+/* Staff code step: the ID is confirmed, read-only, with a green check. */
+html body #account-modal #signin-form .floating-field.is-confirmed {
+  background: rgba(14, 134, 96, 0.08) !important;
+}
+
+html body #account-modal #signin-form .floating-field.is-confirmed::after {
+  content: "" !important;
+  grid-column: 3 !important;
+  grid-row: 1 / span 2 !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+  background: #0e8660 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.5 12.5l4.2 4.2L18.5 8'/%3E%3C/svg%3E") center / 20px 20px no-repeat !important;
+  box-shadow: 0 3px 8px rgba(4, 100, 70, 0.3) !important;
+}
+
+html body #account-modal #signin-form .floating-field-icon {
+  grid-column: 1 !important;
+  grid-row: 1 / span 2 !important;
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  height: 40px !important;
+  margin: 0 !important;
+  border-radius: 12px !important;
+  background: rgba(14, 134, 96, 0.1) !important;
+  color: #0e8660 !important;
+  opacity: 1 !important;
+}
+
+html body #account-modal #signin-form .floating-field-icon svg {
+  width: 21px !important;
+  height: 21px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 1.9 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+/* Static label above the value (not floating over the input). */
+html body #account-modal #signin-form .floating-field .floating-label {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  align-self: end !important;
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  color: #1d4939 !important;
+  -webkit-text-fill-color: #1d4939 !important;
+  background: none !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  white-space: nowrap !important;
+}
+
+/* The eye button sits in the field's grid next to the input. */
+html body #account-modal #signin-form .password-field-wrap {
+  display: contents !important;
+}
+
+html body #account-modal #signin-form .floating-field input {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  align-self: start !important;
+  position: static !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 2px 0 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-family: inherit !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0 !important;
+  font-variant-numeric: tabular-nums !important;
+  color: #082a20 !important;
+  -webkit-text-fill-color: #082a20 !important;
+  caret-color: #082a20 !important;
+  text-align: left !important;
+}
+
+html body #account-modal #signin-form .floating-field input::placeholder {
+  color: rgba(8, 42, 32, 0.3) !important;
+  -webkit-text-fill-color: rgba(8, 42, 32, 0.3) !important;
+  opacity: 1 !important;
+  letter-spacing: 0 !important;
+}
+
+html body #account-modal #signin-form .floating-field input#signin-password:not(:placeholder-shown) {
+  font-size: 22px !important;
+  letter-spacing: 0.3em !important;
+}
+
+html body #account-modal #signin-form .floating-field input#signin-otp {
+  font-size: 24px !important;
+  letter-spacing: 0.5em !important;
+}
+
+/* Autofill: the old rules forced a dark fill with near-white text. */
+html body #account-modal #signin-form input:-webkit-autofill,
+html body #account-modal #signin-form input:-webkit-autofill:hover,
+html body #account-modal #signin-form input:-webkit-autofill:focus {
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #082a20 !important;
+  caret-color: #082a20 !important;
+}
+
+html body #account-modal #signin-form input:autofill {
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #082a20 !important;
+  caret-color: #082a20 !important;
+}
+
+/* Eye toggle */
+html body #account-modal #signin-form #signin-password-toggle {
+  grid-column: 3 !important;
+  grid-row: 1 / span 2 !important;
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: rgba(14, 134, 96, 0.1) !important;
+  color: #082a20 !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+}
+
+html body #account-modal #signin-form #signin-password-toggle svg {
+  width: 20px !important;
+  height: 20px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 1.9 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+html body #account-modal #signin-form #signin-password-toggle:focus-visible {
+  outline: 3px solid rgba(14, 134, 96, 0.85) !important;
+  outline-offset: 2px !important;
+}
+
+/* ---------- helper (code step) ---------- */
+html body #account-modal #signin-form #signin-helper {
+  margin: 12px 0 0 !important;
+  padding: 0 !important;
+  font-size: 14.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.45 !important;
+  color: #2f5a4c !important;
+  -webkit-text-fill-color: #2f5a4c !important;
+  text-shadow: none !important;
+  text-align: center !important;
+}
+
+html body #account-modal.is-code-step #signin-form #signin-helper {
+  display: block !important;
+}
+
+/* ---------- primary button ---------- */
+html body #account-modal #signin-form #signin-btn {
+  position: relative !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  height: 58px !important;
+  min-height: 0 !important;
+  margin: 18px 0 0 !important;
+  padding: 0 20px !important;
+  border: 0 !important;
+  border-radius: 17px !important;
+  background: linear-gradient(135deg, #0d8260, #07704e) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-family: inherit !important;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  text-shadow: none !important;
+  box-shadow:
+    0 14px 30px rgba(14, 134, 96, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  cursor: pointer !important;
+  opacity: 1 !important;
+  filter: none !important;
+  transform: none !important;
+  animation: none !important;
+  transition: transform 0.15s ease, filter 0.15s ease, opacity 0.15s ease !important;
+}
+
+html body #account-modal #signin-form #signin-btn::before,
+html body #account-modal #signin-form #signin-btn::after {
+  content: none !important;
+  display: none !important;
+}
+
+html body #account-modal #signin-form #signin-btn:not(:disabled):hover {
+  transform: translateY(-1px) !important;
+  filter: brightness(1.05) !important;
+}
+
+html body #account-modal #signin-form #signin-btn:not(:disabled):active {
+  transform: scale(0.98) !important;
+}
+
+html body #account-modal #signin-form #signin-btn:disabled,
+html body #account-modal #signin-form #signin-btn[aria-busy="true"] {
+  opacity: 0.7 !important;
+  cursor: progress !important;
+}
+
+/* 0.45 (the brief) measured 1.78:1 against the panel; 0.9 clears 3:1. */
+html body #account-modal #signin-form #signin-btn:focus-visible {
+  outline: 3px solid rgba(14, 134, 96, 0.9) !important;
+  outline-offset: 3px !important;
+}
+
+html body #account-modal #signin-form #signin-btn .signin-btn-icon {
+  display: inline-flex !important;
+  flex: none !important;
+  width: 22px !important;
+  height: 22px !important;
+}
+
+html body #account-modal #signin-form #signin-btn .signin-btn-icon svg {
+  width: 22px !important;
+  height: 22px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+html body #account-modal #signin-form #signin-btn[data-step="password"] .signin-btn-icon-shield,
+html body #account-modal #signin-form #signin-btn[data-step="code"] .signin-btn-icon-login {
+  display: none !important;
+}
+
+/* ---------- Forgot your PIN? ---------- */
+html body #account-modal #signin-form .signin-links-row {
+  display: flex !important;
+  justify-content: center !important;
+  margin: 6px 0 0 !important;
+  padding: 0 !important;
+}
+
+html body #account-modal #signin-form #signin-forgot-pin {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 44px !important;
+  padding: 0 12px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  font-family: inherit !important;
+  font-size: 15.5px !important;
+  font-weight: 700 !important;
+  color: #0a6a4b !important;
+  -webkit-text-fill-color: #0a6a4b !important;
+  text-shadow: none !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+}
+
+html body #account-modal #signin-form #signin-forgot-pin:hover,
+html body #account-modal #signin-form #signin-forgot-pin:focus-visible {
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+}
+
+/* Solid ring: at 0.85 it measured 2.90:1 against the panel. */
+html body #account-modal #signin-form #signin-forgot-pin:focus-visible {
+  outline: 3px solid #0e8660 !important;
+  outline-offset: 2px !important;
+  border-radius: 10px !important;
+}
+
+html body #account-modal #signin-form #signin-forgot-pin.hidden {
+  display: none !important;
+}
+
+/* ---------- messages ---------- */
+html body #account-modal #signin-form #signin-msg {
+  display: none !important;
+}
+
+html body #account-modal #signin-form #signin-msg[data-kind] {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 10px !important;
+  min-height: 0 !important;
+  margin: 14px 0 0 !important;
+  padding: 11px 14px !important;
+  border-radius: 14px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+  text-align: left !important;
+  text-shadow: none !important;
+}
+
+html body #account-modal #signin-form #signin-msg[data-kind]::before {
+  content: "" !important;
+  flex: none !important;
+  width: 20px !important;
+  height: 20px !important;
+  background: currentColor !important;
+  -webkit-mask: var(--signin-msg-icon) center / contain no-repeat !important;
+  mask: var(--signin-msg-icon) center / contain no-repeat !important;
+}
+
+html body #account-modal #signin-form #signin-msg[data-kind="error"] {
+  --signin-msg-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7.5v5.5'/%3E%3Cpath d='M12 16.4h.01'/%3E%3C/svg%3E");
+  background: rgba(180, 51, 42, 0.1) !important;
+  border: 1px solid rgba(180, 51, 42, 0.45) !important;
+  color: #8a231b !important;
+  -webkit-text-fill-color: #8a231b !important;
+}
+
+html body #account-modal #signin-form #signin-msg[data-kind="warn"] {
+  --signin-msg-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3.2 2'/%3E%3C/svg%3E");
+  background: rgba(217, 119, 6, 0.12) !important;
+  border: 1px solid rgba(170, 100, 0, 0.55) !important;
+  color: #6b3f00 !important;
+  -webkit-text-fill-color: #6b3f00 !important;
+}
+
+html body #account-modal #signin-form #signin-msg[data-kind="info"] {
+  --signin-msg-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+  background: rgba(14, 134, 96, 0.1) !important;
+  border: 1px solid rgba(14, 134, 96, 0.35) !important;
+  color: #0a4d38 !important;
+  -webkit-text-fill-color: #0a4d38 !important;
+}
+
+html body #account-modal #signin-form .floating-field { order: 0 !important; }
+html body #account-modal #signin-form #signin-helper { order: 1 !important; }
+html body #account-modal #signin-form #signin-msg { order: 2 !important; }
+html body #account-modal #signin-form #signin-btn { order: 3 !important; }
+html body #account-modal #signin-form .signin-links-row { order: 4 !important; }
+
+/* Code step: the helper already says where the code went (and is
+   announced politely), so the "code sent" info box would only repeat it.
+   Errors (wrong or expired code) still show. */
+html body #account-modal.is-code-step #signin-form #signin-msg[data-kind="info"] {
+  display: none !important;
+}
+
+/* ---------- small screens: never taller than the screen ---------- */
+@media (max-width: 599.98px) {
+  html body #account-modal .modal-panel.account-modal-panel {
+    width: 94vw !important;
+    max-width: 94vw !important;
+    padding: 24px 20px !important;
+    max-height: calc(100vh - 32px) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body #account-modal #signin-form #signin-btn,
+  html body #account-modal #signin-form .floating-field {
     transition: none !important;
   }
 }
