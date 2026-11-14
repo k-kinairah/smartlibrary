@@ -2,6 +2,7 @@
 session_start();
 require 'config/db_connect.php';
 require_once 'config/borrow_fine_rules.php';
+require_once 'config/loan_policy.php';
 require_once 'config/book_cover.php';
 
 header('Content-Type: application/json');
@@ -307,6 +308,7 @@ if (my_books_favorites_table_exists($conn)) {
 }
 
 $summary['favorites'] = count($favorite_books);
+$summary['favorites_limit'] = (int)FAVORITES_LIMIT;
 
 respond([
     'status' => 'success',

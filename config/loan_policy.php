@@ -15,6 +15,12 @@
 
 require_once __DIR__ . '/borrow_fine_rules.php';
 
+// Favorites: how many books one borrower can save (same for every role).
+// toggle_favorite.php enforces it; fetch_my_checked_out.php reports it.
+if (!defined('FAVORITES_LIMIT')) {
+    define('FAVORITES_LIMIT', 10);
+}
+
 if (!function_exists('smartlib_section_key')) {
     function smartlib_section_key(string $section): string {
         $key = strtolower(trim($section));

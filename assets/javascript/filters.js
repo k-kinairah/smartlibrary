@@ -1380,7 +1380,7 @@ let signinCountdownEndTs = 0;
             const res = await fetch("toggle_favorite.php", {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({ book_id: String(bookId) }),
+                body: new URLSearchParams({ book_id: String(bookId), action: nextFavorited ? "add" : "remove" }),
                 credentials: "same-origin"
             });
 
@@ -1401,7 +1401,9 @@ let signinCountdownEndTs = 0;
 
             const data = await res.json().catch(() => null);
             if (!res.ok || !data || data.status !== "success") {
-                throw new Error(data?.message || "Could not update favorites.");
+                const failure = new Error(data?.message || "Could not update favorites.");
+                failure.limitReached = data?.limit_reached === true;
+                throw failure;
             }
 
             document.querySelectorAll(`.fav-heart-btn[data-book-id="${bookId}"]`).forEach(btn => {
@@ -1422,6 +1424,15 @@ let signinCountdownEndTs = 0;
                 btn.classList.toggle("is-favorited", wasFavorited);
                 btn.setAttribute("aria-pressed", String(wasFavorited));
             });
+            // The favorites limit (toggle_favorite.php) is the one refusal a
+            // borrower can act on, so say it in the same popup the borrow
+            // limit uses; it stacks above the book modal and the dock.
+            if (err?.limitReached && typeof window.smartlibShowStatus === "function") {
+                window.smartlibShowStatus("warning", err.message, {
+                    title: "Favorites Limit Reached",
+                    actionLabel: "Okay"
+                });
+            }
         } finally {
             button.dataset.favBusy = "";
         }
@@ -1623,6 +1634,14 @@ document.addEventListener("DOMContentLoaded", () => {
         root.querySelector(".receipt-status-close")?.addEventListener("click", close);
         root.querySelector(".receipt-status-btn")?.addEventListener("click", close);
         root.querySelector(".receipt-status-backdrop")?.addEventListener("click", close);
+        // Escape closes this popup first; it is registered after the other
+        // dialogs' capture handlers, which skip while it is open, so a book
+        // modal or My Books underneath stays open.
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && !root.classList.contains("hidden")) {
+                close();
+            }
+        }, true);
 
         receiptStatusUi = {
             root,
@@ -1667,6 +1686,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (ui.message) ui.message.textContent = message || options.message || defaultMessage;
         if (ui.action) ui.action.textContent = options.actionLabel || defaultAction;
     };
+
+    // The favorites heart (another DOMContentLoaded block) uses this same
+    // popup for its limit message, so it can sit above the book modal.
+    window.smartlibShowStatus = showReceiptStatus;
 
     const formatDate = (d) => d.toLocaleDateString("en-US", {
         month: "numeric",
@@ -2795,6 +2818,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 ${hasActiveFine ? `${money(summary.active_fines)} due` : 'No active fees'}
             </span>`;
 
+        // "N of 10 saved"; an account already over the limit (older data)
+        // shows just "N saved", since "12 of 10" would look broken.
+        const favoritesLimit = Number(summary.favorites_limit || 0);
+        const favoritesPillText = favoritesLimit > 0 && favoriteBooks.length <= favoritesLimit
+            ? `${favoriteBooks.length} of ${favoritesLimit} saved`
+            : `${favoriteBooks.length} saved`;
+
         const favoritesSection = `
             <section class="my-account-section favorites-section">
                 <div class="my-account-section-head">
@@ -2804,7 +2834,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         </svg>
                         My Favorites
                     </h5>
-                    <span>${favoriteBooks.length} saved</span>
+                    <span>${favoritesPillText}</span>
                 </div>
                 ${favoriteBooks.length ? favoritesPage.pageItems.map((book) => renderFavoriteCard(book)).join("") : '<div class="my-books-empty slim"><strong>No favorites yet.</strong><p>Tap the heart on any book to save it here.</p></div>'}
                 ${renderPagerControls("favorites", favoritesPage.page, favoritesPage.totalPages)}
