@@ -12300,3 +12300,250 @@ body {
     height: 13px;
 }
 
+
+/* ============================================================
+   Top Borrowers (Nov 2026)
+   ------------------------------------------------------------
+   Dashboard panel (#top-borrowers-panel) listing the students and
+   faculty with the most borrows, with an All time / This month /
+   This year switch. It sits on the same .panel.glass-card.chart-panel
+   frame as "Top 10 Borrowed Books" and takes its text colour from the
+   panel, so it follows the dark, light and palette themes; tints are
+   mixed from currentColor and the gold accent reuses --warn.
+   ============================================================ */
+.top-borrowers-panel .top-borrowers-head {
+    align-items: center;
+}
+
+.top-borrowers-panel .tb-tabs {
+    display: inline-flex;
+    flex: none;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+    background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.top-borrowers-panel .tb-tab {
+    appearance: none;
+    border: 0;
+    border-radius: 999px;
+    padding: 6px 12px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    opacity: 0.78;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.top-borrowers-panel .tb-tab:hover {
+    opacity: 1;
+    background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.top-borrowers-panel .tb-tab.is-active {
+    opacity: 1;
+    background: color-mix(in srgb, currentColor 16%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.top-borrowers-panel .tb-tab:focus-visible {
+    outline: 2px solid var(--warn, #e4bb17);
+    outline-offset: 2px;
+}
+
+.top-borrowers-panel .tb-tabpanel[hidden] {
+    display: none;
+}
+
+.top-borrowers-panel .tb-list {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+}
+
+.top-borrowers-panel .tb-row {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1.6fr) minmax(80px, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, currentColor 9%, transparent);
+    background: color-mix(in srgb, currentColor 3%, transparent);
+}
+
+.top-borrowers-panel .tb-row:hover {
+    background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.top-borrowers-panel .tb-rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+/* Ranks 1-3: a quiet gold ring, the theme's existing accent. */
+.top-borrowers-panel .tb-row--top .tb-rank {
+    box-shadow: inset 0 0 0 1.5px var(--warn, #e4bb17);
+}
+
+.top-borrowers-panel .tb-row--rank1 .tb-rank {
+    background: var(--warn, #e4bb17);
+    color: #2b2100;
+    box-shadow: none;
+}
+
+.top-borrowers-panel .tb-who {
+    min-width: 0;
+}
+
+.top-borrowers-panel .tb-name-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.top-borrowers-panel .tb-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: inherit;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.top-borrowers-panel .tb-name:hover,
+.top-borrowers-panel .tb-name:focus-visible {
+    text-decoration: underline;
+}
+
+.top-borrowers-panel .tb-chip {
+    flex: none;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    opacity: 0.85;
+}
+
+.top-borrowers-panel .tb-meta {
+    margin-top: 2px;
+    font-size: 12px;
+    opacity: 0.72;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.top-borrowers-panel .tb-bar {
+    height: 6px;
+    border-radius: 999px;
+    background: color-mix(in srgb, currentColor 10%, transparent);
+    overflow: hidden;
+}
+
+.top-borrowers-panel .tb-bar > span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #3a9d6e, #58bf8c);
+}
+
+.top-borrowers-panel .tb-row--top .tb-bar > span {
+    background: linear-gradient(90deg, #3a9d6e, var(--warn, #e4bb17));
+}
+
+.top-borrowers-panel .tb-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.top-borrowers-panel .tb-count {
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.top-borrowers-panel .tb-last {
+    font-size: 11.5px;
+    opacity: 0.72;
+}
+
+.top-borrowers-panel .tb-empty {
+    margin-top: 12px;
+}
+
+.top-borrowers-panel .tb-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin-top: 12px;
+    font-size: 12px;
+}
+
+.top-borrowers-panel .tb-foot > span {
+    opacity: 0.72;
+}
+
+.top-borrowers-panel .tb-report-link {
+    color: inherit;
+    font-weight: 800;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+@media (max-width: 860px) {
+    .top-borrowers-panel .top-borrowers-head {
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 700px) {
+    .top-borrowers-panel .tb-row {
+        grid-template-columns: 30px minmax(0, 1fr);
+        row-gap: 4px;
+    }
+
+    .top-borrowers-panel .tb-bar {
+        display: none;
+    }
+
+    .top-borrowers-panel .tb-stats {
+        grid-column: 2;
+        flex-direction: row;
+        align-items: baseline;
+        justify-content: flex-start;
+        gap: 10px;
+        text-align: left;
+    }
+
+    .top-borrowers-panel .tb-tabs {
+        max-width: 100%;
+        overflow-x: auto;
+    }
+}

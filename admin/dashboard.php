@@ -2,6 +2,14 @@
 <?php
 require_once '../config/db_connect.php';
 require_once '../config/borrow_fine_rules.php';
+require_once __DIR__ . '/includes/top_borrowers.php';
+
+// Top Borrowers panel: three ready-made lists, switched client-side.
+$topBorrowerSets = [
+    'all' => smartlib_top_borrowers($conn, null, null, 'all', 10),
+    'month' => smartlib_top_borrowers($conn, date('Y-m-01'), date('Y-m-t'), 'all', 10),
+    'year' => smartlib_top_borrowers($conn, date('Y-01-01'), date('Y-12-31'), 'all', 10),
+];
 
 function safe_query(mysqli $conn, string $sql) {
     try {
@@ -1022,6 +1030,106 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
         </article>
     </section>
 </section>
+
+<section class="dashboard-section-wrap top-borrowers-wrap">
+    <section class="dashboard-chart-grid full-width-grid">
+        <article id="top-borrowers-panel" class="panel glass-card chart-panel top-borrowers-panel">
+            <div class="panel-head search-keywords-head top-borrowers-head">
+                <div>
+                    <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('people') ?></span>Top Borrowers</h2>
+                    <p class="panel-sub">Students and faculty who borrowed the most</p>
+                </div>
+                <div class="tb-tabs" role="tablist" aria-label="Top Borrowers period">
+                    <?php
+                    $tbTabs = ['all' => 'All time', 'month' => 'This month', 'year' => 'This year'];
+                    foreach ($tbTabs as $tbKey => $tbLabel):
+                        $tbActive = $tbKey === 'all';
+                    ?>
+                    <button type="button" class="tb-tab<?= $tbActive ? ' is-active' : '' ?>" role="tab" id="tb-tab-<?= $tbKey ?>" aria-controls="tb-list-<?= $tbKey ?>" aria-selected="<?= $tbActive ? 'true' : 'false' ?>" tabindex="<?= $tbActive ? '0' : '-1' ?>" data-tb="<?= $tbKey ?>"><?= $tbLabel ?></button>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php
+            $tbEmpty = [
+                'all' => 'No borrowing recorded yet. This fills in as students and faculty borrow books.',
+                'month' => 'No borrowing recorded yet this month. This fills in as students and faculty borrow books.',
+                'year' => 'No borrowing recorded yet this year. This fills in as students and faculty borrow books.',
+            ];
+            foreach ($topBorrowerSets as $tbKey => $tbRows):
+                $tbMax = 0;
+                foreach ($tbRows as $tbRow) {
+                    $tbMax = max($tbMax, (int)$tbRow['borrow_count']);
+                }
+            ?>
+            <div class="tb-tabpanel" role="tabpanel" id="tb-list-<?= $tbKey ?>" aria-labelledby="tb-tab-<?= $tbKey ?>"<?= $tbKey === 'all' ? '' : ' hidden' ?>>
+                <?php if (empty($tbRows)): ?>
+                    <div class="chart-empty tb-empty"><?= htmlspecialchars($tbEmpty[$tbKey]) ?></div>
+                <?php else: ?>
+                    <ol class="tb-list">
+                        <?php foreach ($tbRows as $tbIndex => $tbRow):
+                            $tbRank = $tbIndex + 1;
+                            $tbCount = (int)$tbRow['borrow_count'];
+                            $tbPct = $tbMax > 0 ? max(4, (int)round($tbCount / $tbMax * 100)) : 0;
+                            $tbMeta = array_values(array_filter([trim((string)$tbRow['borrower_number']), trim((string)$tbRow['program_name'])], 'strlen'));
+                            $tbLastTs = $tbRow['last_borrowed'] !== '' ? strtotime((string)$tbRow['last_borrowed']) : false;
+                            $tbName = trim((string)$tbRow['borrower_name']) !== '' ? (string)$tbRow['borrower_name'] : 'Unnamed borrower';
+                        ?>
+                        <li class="tb-row<?= $tbRank <= 3 ? ' tb-row--top tb-row--rank' . $tbRank : '' ?>">
+                            <span class="tb-rank" aria-label="Rank <?= $tbRank ?>"><?= $tbRank ?></span>
+                            <div class="tb-who">
+                                <div class="tb-name-line">
+                                    <a class="tb-name" href="borrower_history.php?user_id=<?= (int)$tbRow['user_id'] ?>"><?= htmlspecialchars($tbName) ?></a>
+                                    <?php if ($tbRow['role'] === 'faculty'): ?><span class="tb-chip">Faculty</span><?php endif; ?>
+                                </div>
+                                <?php if (!empty($tbMeta)): ?><div class="tb-meta"><?= htmlspecialchars(implode(' - ', $tbMeta)) ?></div><?php endif; ?>
+                            </div>
+                            <div class="tb-bar" aria-hidden="true"><span style="width: <?= $tbPct ?>%"></span></div>
+                            <div class="tb-stats">
+                                <span class="tb-count"><?= number_format($tbCount) ?> <?= $tbCount === 1 ? 'borrow' : 'borrows' ?></span>
+                                <?php if ($tbLastTs): ?><span class="tb-last">Last: <?= htmlspecialchars(date('M j', $tbLastTs)) ?></span><?php endif; ?>
+                            </div>
+                        </li>
+                        <?php endforeach; ?>
+                    </ol>
+                <?php endif; ?>
+            </div>
+            <?php endforeach; ?>
+            <div class="tb-foot">
+                <span>Students and faculty only. Ties go to the most recent borrower.</span>
+                <a class="tb-report-link" href="reports.php?quick_type=top_borrowers">Open full report</a>
+            </div>
+        </article>
+    </section>
+</section>
+<script>
+(function () {
+    var panel = document.getElementById("top-borrowers-panel");
+    if (!panel) return;
+    var tabs = Array.prototype.slice.call(panel.querySelectorAll('.tb-tab[role="tab"]'));
+    function select(tab, focus) {
+        tabs.forEach(function (t) {
+            var on = t === tab;
+            t.classList.toggle("is-active", on);
+            t.setAttribute("aria-selected", on ? "true" : "false");
+            t.setAttribute("tabindex", on ? "0" : "-1");
+            var list = document.getElementById(t.getAttribute("aria-controls"));
+            if (list) list.hidden = !on;
+        });
+        if (focus) tab.focus();
+    }
+    tabs.forEach(function (tab, i) {
+        tab.addEventListener("click", function () { select(tab, false); });
+        tab.addEventListener("keydown", function (e) {
+            var next = null;
+            if (e.key === "ArrowRight") next = tabs[(i + 1) % tabs.length];
+            else if (e.key === "ArrowLeft") next = tabs[(i - 1 + tabs.length) % tabs.length];
+            else if (e.key === "Home") next = tabs[0];
+            else if (e.key === "End") next = tabs[tabs.length - 1];
+            if (next) { e.preventDefault(); select(next, true); }
+        });
+    });
+})();
+</script>
 
 <section class="dashboard-section-wrap borrow-trend-wrap">
     <section class="dashboard-chart-grid full-width-grid borrow-trend-row">
