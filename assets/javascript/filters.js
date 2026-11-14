@@ -1912,7 +1912,9 @@ ${receiptFlankLabel("verify", "Verification")}
 
             const data = await response.json();
             if (!response.ok || data.status !== "success") {
-                throw new Error(data.message || "Borrowing failed.");
+                const failure = new Error(data.message || "Borrowing failed.");
+                failure.code = data.code || "";
+                throw failure;
             }
 
             const receipt = data.receipt || {};
@@ -1943,7 +1945,9 @@ ${receiptFlankLabel("verify", "Verification")}
             }
         } catch (error) {
             const errorMessage = String(error?.message || "Borrowing failed.").trim();
-            const isBorrowLimit = /borrow\s+limit\s+reached/i.test(errorMessage);
+            // checkout_book.php sends code "borrow_limit"; the regex still
+            // catches the older wording.
+            const isBorrowLimit = error?.code === "borrow_limit" || /borrow\s+limit\s+reached/i.test(errorMessage);
 
             showReceiptStatus(isBorrowLimit ? "warning" : "error", errorMessage, {
                 title: isBorrowLimit ? "Borrow Limit Reached" : "Unable to Borrow Item",

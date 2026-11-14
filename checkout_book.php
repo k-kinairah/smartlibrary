@@ -59,9 +59,13 @@ if ($activeBorrowStmt) {
 
     $activeBorrows = (int)($activeBorrowRow['active_borrows'] ?? 0);
     if ($activeBorrows >= $maxBorrows) {
+        // 'code' lets filters.js pick the warning pop-up without matching
+        // the wording.
+        $roleLabel = ucfirst(strtolower(trim((string)$userRole)));
         respond([
             'status' => 'error',
-            'message' => "Borrow limit reached. {$userRole} accounts can only borrow up to {$maxBorrows} books at a time."
+            'code' => 'borrow_limit',
+            'message' => "{$roleLabel} accounts can borrow up to {$maxBorrows} books at a time. Return a book to borrow another."
         ], 422);
     }
 }

@@ -557,12 +557,11 @@ if ($genreRes) {
             <button type="button" id="receipt-download-btn" class="receipt-secondary-btn">
                 <span class="receipt-btn-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" role="presentation">
-                        <path d="M12 4v11"></path>
-                        <path d="M7.5 11L12 15.5 16.5 11"></path>
-                        <path d="M4.5 18.5h15"></path>
+                        <rect x="3.5" y="5.5" width="17" height="13" rx="2.5"></rect>
+                        <path d="M4.5 7.5l7.5 5.5 7.5-5.5"></path>
                     </svg>
                 </span>
-                Download
+                Email Receipt
             </button>
         </div>
 

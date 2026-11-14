@@ -18075,7 +18075,10 @@ html body #receipt-modal .receipt-note {
 html body #book-modal .modal-backdrop,
 html body #account-modal .modal-backdrop,
 html body #my-books-modal .modal-backdrop,
-html body #logout-confirm-modal .modal-backdrop {
+html body #logout-confirm-modal .modal-backdrop,
+html body #checkout-confirm-modal .modal-backdrop,
+html body #receipt-modal .modal-backdrop,
+html body #receipt-status-modal .receipt-status-backdrop {
   background:
     linear-gradient(112deg, transparent 34%, rgba(255, 255, 255, 0.1) 42%, rgba(255, 255, 255, 0.34) 48%, rgba(255, 255, 255, 0.12) 54%, transparent 62%),
     linear-gradient(120deg, rgba(234, 209, 159, 0.62) 0%, rgba(243, 241, 228, 0.3) 26%, rgba(112, 160, 139, 0.62) 52%, rgba(140, 227, 185, 0.62) 78%, rgba(224, 213, 168, 0.55) 100%),
@@ -18091,7 +18094,10 @@ html body #logout-confirm-modal .modal-backdrop {
   html body #book-modal .modal-backdrop,
   html body #account-modal .modal-backdrop,
   html body #my-books-modal .modal-backdrop,
-  html body #logout-confirm-modal .modal-backdrop {
+  html body #logout-confirm-modal .modal-backdrop,
+  html body #checkout-confirm-modal .modal-backdrop,
+  html body #receipt-modal .modal-backdrop,
+  html body #receipt-status-modal .receipt-status-backdrop {
     background:
       linear-gradient(112deg, transparent 34%, rgba(255, 255, 255, 0.1) 42%, rgba(255, 255, 255, 0.34) 48%, rgba(255, 255, 255, 0.12) 54%, transparent 62%),
       linear-gradient(120deg, rgba(234, 209, 159, 0.62) 0%, rgba(243, 241, 228, 0.3) 26%, rgba(112, 160, 139, 0.62) 52%, rgba(140, 227, 185, 0.62) 78%, rgba(224, 213, 168, 0.55) 100%),
@@ -18103,7 +18109,10 @@ html body #logout-confirm-modal .modal-backdrop {
 html body #book-modal .modal-backdrop::after,
 html body #account-modal .modal-backdrop::after,
 html body #my-books-modal .modal-backdrop::after,
-html body #logout-confirm-modal .modal-backdrop::after {
+html body #logout-confirm-modal .modal-backdrop::after,
+html body #checkout-confirm-modal .modal-backdrop::after,
+html body #receipt-modal .modal-backdrop::after,
+html body #receipt-status-modal .receipt-status-backdrop::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -18160,7 +18169,10 @@ html body #book-modal .modal-panel::before {
 html body #book-modal .modal-panel::after,
 html body #account-modal .modal-panel.account-modal-panel::after,
 html body #my-books-modal .modal-panel.my-books-modal-panel::after,
-html body #logout-confirm-modal .modal-panel.logout-confirm-panel::after {
+html body #logout-confirm-modal .modal-panel.logout-confirm-panel::after,
+html body #checkout-confirm-modal .modal-panel.checkout-confirm-panel::after,
+html body #receipt-modal .modal-panel.receipt-modal-panel::after,
+html body #receipt-status-modal .receipt-status-card::after {
   content: "" !important;
   display: block !important;
   position: absolute !important;
@@ -18864,6 +18876,9 @@ html body #book-modal .bm2-room-note::before {
   html body #account-modal .modal-backdrop,
   html body #my-books-modal .modal-backdrop,
   html body #logout-confirm-modal .modal-backdrop,
+  html body #checkout-confirm-modal .modal-backdrop,
+  html body #receipt-modal .modal-backdrop,
+  html body #receipt-status-modal .receipt-status-backdrop,
   html body #book-modal .bm2-cover-frame,
   html body #book-modal .bm2-dot.is-on,
   html body #book-modal .bm2-foot .checkout-btn::after {
@@ -21156,6 +21171,645 @@ html body #logout-confirm-modal #logout-confirm-submit-btn:focus-visible {
   html body #my-books-modal #my-books-content .my-book-item .my-book-renew-btn,
   html body #logout-confirm-modal #logout-confirm-cancel-btn,
   html body #logout-confirm-modal #logout-confirm-submit-btn {
+    transition: none !important;
+  }
+}
+
+
+/* ============================================================
+   Kiosk Polish v203 (Borrow Flow: Daylight Glass)
+   ------------------------------------------------------------
+   Confirm Borrow (#checkout-confirm-modal), the shared status pop-up
+   (#receipt-status-modal: borrow limit / unable to borrow / receipt
+   email result) and the borrow receipt (#receipt-modal) move to the
+   light glass of the book, sign-in, My Books and Log Out dialogs
+   (designs modal-confirm-borrow-light, modal-borrow-limit-light,
+   modal-status-variants-light, modal-receipt-light). Backdrop, grain,
+   fallback, 1.5px ring and reduced motion are shared: all three were
+   added to v198's selector lists (the pop-up's own
+   .receipt-status-backdrop included). Panels use the v200/v202 recipe.
+   Stacking is unchanged: no z-index is set here. The receipt paper
+   keeps its v197 certificate layout and colours; only its outer
+   shadow and vertical spacing change. Icons that are not in the
+   markup (the confirm check) are CSS masks, so JS text swaps cannot
+   drop them. Older rules for these dialogs are left as dead code.
+   ============================================================ */
+
+/* ---------- panels (v200 recipe) ---------- */
+html body #checkout-confirm-modal .modal-panel.checkout-confirm-panel,
+html body #receipt-modal .modal-panel.receipt-modal-panel,
+html body #receipt-status-modal .receipt-status-card {
+  position: relative !important;
+  box-sizing: border-box !important;
+  border: 0 !important;
+  border-radius: 28px !important;
+  color: #0b3025 !important;
+  font-family: "Manrope", sans-serif !important;
+  text-align: center !important;
+  background: none !important;
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 253, 247, 0.93) 50%, rgba(222, 247, 236, 0.93) 100%) !important;
+  background-origin: border-box !important;
+  background-clip: border-box !important;
+  backdrop-filter: blur(28px) saturate(185%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(185%) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.6),
+    0 44px 96px rgba(3, 30, 24, 0.6),
+    0 0 90px rgba(255, 255, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 40px rgba(255, 255, 255, 0.35) !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+html body #checkout-confirm-modal .modal-panel.checkout-confirm-panel::before,
+html body #receipt-modal .modal-panel.receipt-modal-panel::before,
+html body #receipt-status-modal .receipt-status-card::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* ---------- shared pieces ---------- */
+/* Close x: the sign-in modal's button. */
+html body #receipt-modal #close-receipt-modal.close-btn,
+html body #receipt-status-modal .receipt-status-card .receipt-status-close {
+  position: absolute !important;
+  top: 18px !important;
+  right: 18px !important;
+  left: auto !important;
+  bottom: auto !important;
+  z-index: 6 !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(14, 134, 96, 0.3) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  color: #082a20 !important;
+  -webkit-text-fill-color: #082a20 !important;
+  font-family: "Manrope", sans-serif !important;
+  font-size: 22px !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  box-shadow: 0 4px 12px rgba(20, 90, 80, 0.14) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+html body #receipt-modal #close-receipt-modal.close-btn::before,
+html body #receipt-modal #close-receipt-modal.close-btn::after,
+html body #receipt-status-modal .receipt-status-card .receipt-status-close::before,
+html body #receipt-status-modal .receipt-status-card .receipt-status-close::after {
+  content: none !important;
+  display: none !important;
+}
+
+html body #receipt-modal #close-receipt-modal.close-btn:hover,
+html body #receipt-status-modal .receipt-status-card .receipt-status-close:hover {
+  background: #ffffff !important;
+}
+
+html body #receipt-modal #close-receipt-modal.close-btn:focus-visible,
+html body #receipt-status-modal .receipt-status-card .receipt-status-close:focus-visible {
+  outline: 3px solid #059669 !important;
+  outline-offset: 3px !important;
+}
+
+/* Icon tile: 60px rounded square (green by default). */
+html body #checkout-confirm-modal .checkout-confirm-panel .checkout-confirm-icon,
+html body #receipt-status-modal .receipt-status-card .receipt-status-icon {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 60px !important;
+  height: 60px !important;
+  min-width: 60px !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  border-radius: 18px !important;
+  background: rgba(14, 134, 96, 0.1) !important;
+  border: 1px solid rgba(14, 134, 96, 0.16) !important;
+  color: #0e8660 !important;
+  box-shadow: none !important;
+  animation: none !important;
+  transform: none !important;
+}
+
+html body #checkout-confirm-modal .checkout-confirm-panel .checkout-confirm-icon::before,
+html body #checkout-confirm-modal .checkout-confirm-panel .checkout-confirm-icon::after,
+html body #receipt-status-modal .receipt-status-card .receipt-status-icon::before,
+html body #receipt-status-modal .receipt-status-card .receipt-status-icon::after {
+  content: none !important;
+  display: none !important;
+}
+
+html body #checkout-confirm-modal .checkout-confirm-panel .checkout-confirm-icon svg,
+html body #receipt-status-modal .receipt-status-card .receipt-status-icon svg {
+  width: 30px !important;
+  height: 30px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  filter: none !important;
+  animation: none !important;
+}
+
+html body #checkout-confirm-modal .checkout-confirm-panel .checkout-confirm-icon svg *,
+html body #receipt-status-modal .receipt-status-card .receipt-status-icon svg * {
+  fill: none !important;
+  stroke: currentColor !important;
+}
+
+/* Titles and body text. */
+html body #checkout-confirm-modal .checkout-confirm-panel .checkout-confirm-title,
+html body #receipt-status-modal .receipt-status-card .receipt-status-title {
+  margin: 18px 0 0 !important;
+  padding: 0 !important;
+  font-family: "Manrope", sans-serif !important;
+  font-size: 26px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.01em !important;
+  text-transform: none !important;
+  text-align: center !important;
+  color: #082a20 !important;
+  -webkit-text-fill-color: #082a20 !important;
+  text-shadow: none !important;
+  background: none !important;
+}
+
+html body #checkout-confirm-modal .checkout-confirm-panel .checkout-confirm-text,
+html body #receipt-status-modal .receipt-status-card .receipt-status-message {
+  margin: 10px auto 0 !important;
+  padding: 0 !important;
+  font-family: "Manrope", sans-serif !important;
+  font-size: 15.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+  text-align: center !important;
+  color: #2f5a4c !important;
+  -webkit-text-fill-color: #2f5a4c !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+/* Buttons: shared size, then three looks. */
+html body #checkout-confirm-modal #checkout-confirm-cancel-btn,
+html body #checkout-confirm-modal #checkout-confirm-submit-btn,
+html body #receipt-status-modal .receipt-status-card .receipt-status-btn {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  height: 52px !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 14px !important;
+  border-radius: 15px !important;
+  font-family: "Manrope", sans-serif !important;
+  font-size: 16.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  text-shadow: none !important;
+  cursor: pointer !important;
+  transform: none !important;
+  filter: none !important;
+  animation: none !important;
+  transition: filter 0.15s ease, transform 0.15s ease !important;
+}
+
+html body #checkout-confirm-modal #checkout-confirm-cancel-btn::after,
+html body #checkout-confirm-modal #checkout-confirm-submit-btn::after,
+html body #checkout-confirm-modal #checkout-confirm-cancel-btn::before,
+html body #receipt-status-modal .receipt-status-card .receipt-status-btn::before,
+html body #receipt-status-modal .receipt-status-card .receipt-status-btn::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Outline (Cancel; the pop-up's error state). */
+html body #checkout-confirm-modal #checkout-confirm-cancel-btn,
+html body #receipt-status-modal.is-error .receipt-status-card .receipt-status-btn {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1.5px solid #4b977e !important;
+  color: #0a4d38 !important;
+  -webkit-text-fill-color: #0a4d38 !important;
+  box-shadow: none !important;
+}
+
+/* Emerald (Confirm; the pop-up's success state). */
+html body #checkout-confirm-modal #checkout-confirm-submit-btn,
+html body #receipt-status-modal.is-success .receipt-status-card .receipt-status-btn {
+  background: linear-gradient(135deg, #0d8260, #07704e) !important;
+  border: 0 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow:
+    0 12px 26px rgba(14, 134, 96, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Gold (the pop-up's warning state: borrow / favorites limit). */
+html body #receipt-status-modal.is-warning .receipt-status-card .receipt-status-btn {
+  background: linear-gradient(135deg, #f7dd7e, #ebbf3f 55%, #d9a22a) !important;
+  border: 0 !important;
+  color: #3a2700 !important;
+  -webkit-text-fill-color: #3a2700 !important;
+  box-shadow:
+    0 12px 26px rgba(150, 100, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+}
+
+html body #checkout-confirm-modal #checkout-confirm-cancel-btn:hover,
+html body #checkout-confirm-modal #checkout-confirm-submit-btn:not(:disabled):hover,
+html body #receipt-status-modal .receipt-status-card .receipt-status-btn:hover {
+  filter: brightness(1.05) !important;
+}
+
+html body #checkout-confirm-modal #checkout-confirm-submit-btn:not(:disabled):active,
+html body #receipt-status-modal .receipt-status-card .receipt-status-btn:active {
+  transform: scale(0.98) !important;
+}
+
+html body #checkout-confirm-modal #checkout-confirm-cancel-btn:focus-visible,
+html body #checkout-confirm-modal #checkout-confirm-submit-btn:focus-visible,
+html body #receipt-status-modal .receipt-status-card .receipt-status-btn:focus-visible {
+  outline: 3px solid #059669 !important;
+  outline-offset: 3px !important;
+}
+
+/* ---------- 1) Confirm Borrow ---------- */
+html body #checkout-confirm-modal .modal-panel.checkout-confirm-panel {
+  width: min(500px, 92vw) !important;
+  max-width: 92vw !important;
+  max-height: calc(100dvh - 24px) !important;
+  padding: 34px 34px 30px !important;
+  overflow: auto !important;
+}
+
+html body #checkout-confirm-modal .checkout-confirm-panel .checkout-confirm-text {
+  max-width: 410px !important;
+}
+
+html body #checkout-confirm-modal .checkout-confirm-panel .checkout-confirm-text strong,
+html body #checkout-confirm-modal #checkout-confirm-book-title {
+  font-weight: 800 !important;
+  color: #082a20 !important;
+  -webkit-text-fill-color: #082a20 !important;
+}
+
+html body #checkout-confirm-modal .checkout-confirm-panel .checkout-confirm-actions {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+  margin: 24px 0 0 !important;
+  padding: 0 !important;
+}
+
+/* White check before "Yes, Borrow Item". */
+html body #checkout-confirm-modal #checkout-confirm-submit-btn::before {
+  content: "" !important;
+  display: inline-block !important;
+  position: static !important;
+  flex: none !important;
+  width: 18px !important;
+  height: 18px !important;
+  background: currentColor !important;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7'/%3E%3C/svg%3E") center / contain no-repeat !important;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7'/%3E%3C/svg%3E") center / contain no-repeat !important;
+}
+
+html body #checkout-confirm-modal #checkout-confirm-submit-btn:disabled {
+  opacity: 0.7 !important;
+  cursor: progress !important;
+}
+
+@media (max-width: 480px) {
+  html body #checkout-confirm-modal .modal-panel.checkout-confirm-panel {
+    padding: 30px 22px 24px !important;
+  }
+
+  html body #checkout-confirm-modal .checkout-confirm-panel .checkout-confirm-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Confirm on top. */
+  html body #checkout-confirm-modal #checkout-confirm-submit-btn {
+    order: -1 !important;
+  }
+}
+
+/* ---------- 2) Status pop-up ---------- */
+html body #receipt-status-modal .receipt-status-card {
+  width: min(420px, 92vw) !important;
+  max-width: 92vw !important;
+  min-width: 0 !important;
+  max-height: calc(100dvh - 24px) !important;
+  padding: 36px 34px 30px !important;
+  overflow: auto !important;
+}
+
+html body #receipt-status-modal .receipt-status-card .receipt-status-btn {
+  margin-top: 24px !important;
+}
+
+html body #receipt-status-modal.is-warning .receipt-status-card .receipt-status-icon {
+  background: rgba(232, 185, 63, 0.26) !important;
+  border-color: rgba(170, 120, 10, 0.32) !important;
+  color: #7a5200 !important;
+}
+
+html body #receipt-status-modal.is-error .receipt-status-card .receipt-status-icon {
+  background: rgba(214, 40, 57, 0.1) !important;
+  border-color: rgba(200, 31, 51, 0.22) !important;
+  color: #c81f33 !important;
+}
+
+@media (max-width: 480px) {
+  html body #receipt-status-modal .receipt-status-card {
+    padding: 32px 22px 24px !important;
+  }
+}
+
+/* ---------- 3) Receipt ---------- */
+/* Fits at 1280x800; on shorter screens the panel scrolls, not the page. */
+html body #receipt-modal .modal-panel.receipt-modal-panel {
+  width: min(620px, 92vw) !important;
+  max-width: 92vw !important;
+  height: auto !important;
+  max-height: calc(100dvh - 24px) !important;
+  padding: 16px 28px 18px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+}
+
+html body #receipt-modal .receipt-modal-panel .receipt-success-head {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  margin: 0 0 12px !important;
+  padding: 0 48px !important;
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  text-align: center !important;
+}
+
+html body #receipt-modal .receipt-modal-panel .receipt-success-head > div {
+  margin: 8px 0 0 !important;
+  text-align: center !important;
+}
+
+html body #receipt-modal .receipt-modal-panel .receipt-success-head .receipt-check-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  margin: 0 !important;
+  border-radius: 12px !important;
+  background: rgba(14, 134, 96, 0.1) !important;
+  border: 1px solid rgba(14, 134, 96, 0.16) !important;
+  color: #0e8660 !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+html body #receipt-modal .receipt-modal-panel .receipt-success-head .receipt-check-icon::before,
+html body #receipt-modal .receipt-modal-panel .receipt-success-head .receipt-check-icon::after {
+  content: none !important;
+  display: none !important;
+}
+
+html body #receipt-modal .receipt-modal-panel .receipt-success-head .receipt-check-icon svg {
+  width: 21px !important;
+  height: 21px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2.4 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  filter: none !important;
+}
+
+html body #receipt-modal .receipt-modal-panel .receipt-success-head h3 {
+  margin: 0 !important;
+  font-family: "Manrope", sans-serif !important;
+  font-size: 23px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.01em !important;
+  text-transform: none !important;
+  color: #082a20 !important;
+  -webkit-text-fill-color: #082a20 !important;
+  text-shadow: none !important;
+  background: none !important;
+}
+
+html body #receipt-modal .receipt-modal-panel .receipt-success-head p {
+  margin: 2px 0 0 !important;
+  font-family: "Manrope", sans-serif !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.35 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  color: #2f5a4c !important;
+  -webkit-text-fill-color: #2f5a4c !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+/* Paper: v197 layout and colours kept; new outer shadow, tighter rhythm. */
+html body #receipt-modal .receipt-modal-panel #receipt-content.receipt-paper {
+  margin: 0 7px !important;
+  padding: 9px 16px !important;
+  box-shadow:
+    0 0 0 4px #ffffff,
+    0 0 0 5px #d3e2dc,
+    0 0 0 7px rgba(23, 137, 95, 0.14),
+    0 14px 28px rgba(16, 68, 54, 0.2) !important;
+}
+
+/* The logo is a wide lockup (672x161): shorter, width follows. */
+html body #receipt-modal #receipt-content .receipt-brand-logo {
+  width: auto !important;
+  max-width: 160px !important;
+  height: 38px !important;
+  margin: 0 auto 6px !important;
+}
+
+html body #receipt-modal #receipt-content .receipt-flank-label {
+  margin: 7px 0 3px !important;
+}
+
+html body #receipt-modal #receipt-content .receipt-barcode svg {
+  height: 34px !important;
+}
+
+html body #receipt-modal #receipt-content .receipt-note-rule {
+  margin: 6px auto 4px !important;
+}
+
+/* Print / Email Receipt. */
+html body #receipt-modal .receipt-modal-panel .receipt-actions-row {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+  margin: 12px 0 0 !important;
+  padding: 0 !important;
+}
+
+html body #receipt-modal .receipt-actions-row .receipt-secondary-btn,
+html body #receipt-modal .receipt-modal-panel #receipt-done-btn.receipt-done-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 14px !important;
+  border-radius: 15px !important;
+  font-family: "Manrope", sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  text-shadow: none !important;
+  cursor: pointer !important;
+  transform: none !important;
+  filter: none !important;
+  white-space: nowrap !important;
+  transition: filter 0.15s ease, transform 0.15s ease !important;
+}
+
+html body #receipt-modal .receipt-actions-row .receipt-secondary-btn {
+  height: 42px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1.5px solid #4b977e !important;
+  color: #0a4d38 !important;
+  -webkit-text-fill-color: #0a4d38 !important;
+  box-shadow: none !important;
+}
+
+html body #receipt-modal .receipt-modal-panel #receipt-done-btn.receipt-done-btn {
+  height: 46px !important;
+  margin-top: 8px !important;
+  font-size: 16px !important;
+  background: linear-gradient(135deg, #0d8260, #07704e) !important;
+  border: 0 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow:
+    0 12px 26px rgba(14, 134, 96, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+html body #receipt-modal .receipt-actions-row .receipt-secondary-btn::before,
+html body #receipt-modal .receipt-actions-row .receipt-secondary-btn::after,
+html body #receipt-modal .receipt-modal-panel #receipt-done-btn.receipt-done-btn::before,
+html body #receipt-modal .receipt-modal-panel #receipt-done-btn.receipt-done-btn::after {
+  content: none !important;
+  display: none !important;
+}
+
+html body #receipt-modal .receipt-modal-panel .receipt-btn-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: none !important;
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  color: inherit !important;
+}
+
+html body #receipt-modal .receipt-modal-panel .receipt-btn-icon svg {
+  width: 18px !important;
+  height: 18px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2.1 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+html body #receipt-modal .receipt-modal-panel .receipt-btn-icon svg * {
+  fill: none !important;
+  stroke: currentColor !important;
+}
+
+html body #receipt-modal .receipt-actions-row .receipt-secondary-btn:not(:disabled):hover,
+html body #receipt-modal .receipt-modal-panel #receipt-done-btn.receipt-done-btn:hover {
+  filter: brightness(1.05) !important;
+}
+
+html body #receipt-modal .receipt-actions-row .receipt-secondary-btn:not(:disabled):active,
+html body #receipt-modal .receipt-modal-panel #receipt-done-btn.receipt-done-btn:active {
+  transform: scale(0.98) !important;
+}
+
+html body #receipt-modal .receipt-actions-row .receipt-secondary-btn:disabled {
+  opacity: 0.7 !important;
+  cursor: progress !important;
+}
+
+html body #receipt-modal .receipt-actions-row .receipt-secondary-btn:focus-visible,
+html body #receipt-modal .receipt-modal-panel #receipt-done-btn.receipt-done-btn:focus-visible {
+  outline: 3px solid #059669 !important;
+  outline-offset: 3px !important;
+}
+
+@media (max-width: 480px) {
+  html body #receipt-modal .modal-panel.receipt-modal-panel {
+    padding: 16px 16px 18px !important;
+  }
+
+  html body #receipt-modal .receipt-modal-panel .receipt-success-head {
+    padding: 0 44px !important;
+  }
+
+  html body #receipt-modal .receipt-modal-panel .receipt-success-head h3 {
+    font-size: 20px !important;
+  }
+
+  html body #receipt-modal .receipt-actions-row .receipt-secondary-btn {
+    font-size: 14px !important;
+    padding: 0 10px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body #checkout-confirm-modal #checkout-confirm-cancel-btn,
+  html body #checkout-confirm-modal #checkout-confirm-submit-btn,
+  html body #receipt-status-modal .receipt-status-card .receipt-status-btn,
+  html body #receipt-modal .receipt-actions-row .receipt-secondary-btn,
+  html body #receipt-modal .receipt-modal-panel #receipt-done-btn.receipt-done-btn {
     transition: none !important;
   }
 }
