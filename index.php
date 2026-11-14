@@ -608,7 +608,7 @@ if ($genreRes) {
             </svg>
         </span>
         <h3 class="logout-confirm-title">Log out of SmartLib?</h3>
-        <p class="logout-confirm-text">You'll need to sign in again with your Student ID and PIN to search, borrow, or view your account.</p>
+        <p class="logout-confirm-text">You'll need to sign in again with your School ID and PIN to search, borrow, or view your account.</p>
         <div class="logout-confirm-actions">
             <button type="button" id="logout-confirm-cancel-btn" class="logout-confirm-cancel">Stay Signed In</button>
             <button type="button" id="logout-confirm-submit-btn" class="logout-confirm-confirm">Log Out</button>
