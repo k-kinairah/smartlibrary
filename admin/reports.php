@@ -17,6 +17,7 @@ if (!smartlib_active_staff_session($conn)) {
 }
 require_once '../config/entry_report_helpers.php';
 require_once __DIR__ . '/includes/reports_modal_view.php';
+require_once __DIR__ . '/includes/top_borrowers.php';
 
 function reports_query(mysqli $conn, string $sql) {
     try {
@@ -629,6 +630,7 @@ function reports_resolve_scope(string $reportType, string $mode = 'summary'): ar
         'show_top_books' => true,
         'show_program' => true,
         'show_entries' => true,
+        'show_top_borrowers' => true,
         'show_detailed' => (strtolower(trim($mode)) === 'detailed')
     ];
 
@@ -655,6 +657,7 @@ function reports_resolve_scope(string $reportType, string $mode = 'summary'): ar
             'show_activity_month' => false,
             'show_top_books' => true,
             'show_program' => false,
+            'show_top_borrowers' => true,
             'show_detailed' => false
         ];
     }
@@ -706,6 +709,19 @@ function reports_resolve_scope(string $reportType, string $mode = 'summary'): ar
             'show_detailed' => false
         ];
     }
+    if ($type === 'top_borrowers') {
+        return [
+            'show_totals' => false,
+            'show_status' => false,
+            'show_borrow' => false,
+            'show_search' => false,
+            'show_activity_month' => false,
+            'show_top_books' => false,
+            'show_program' => false,
+            'show_top_borrowers' => true,
+            'show_detailed' => false
+        ];
+    }
     if ($type === 'search_trend') {
         return [
             'show_totals' => false,
@@ -721,6 +737,7 @@ function reports_resolve_scope(string $reportType, string $mode = 'summary'): ar
 
     if ($type === 'full_detailed') {
         $base['show_detailed'] = true;
+        $base['show_top_borrowers'] = false;
         return $base;
     }
 
@@ -969,6 +986,9 @@ if ($resTopBooks) {
     }
 }
 
+// Top Borrowers: students and faculty only, same period and status filter.
+$topBorrowers = smartlib_top_borrowers($conn, $rangeFrom, $rangeTo, $statusFilter, 10);
+
 $borrowTrendRows = [];
 $resBorrowTrend = reports_query(
     $conn,
@@ -1169,6 +1189,12 @@ $quickTypeProfiles = [
         'mode' => 'summary',
         'title' => 'LIBRARY ENTRY REPORT',
         'label' => 'Library Entries'
+    ],
+    'top_borrowers' => [
+        'report_type' => 'top_borrowers',
+        'mode' => 'summary',
+        'title' => 'TOP BORROWERS REPORT',
+        'label' => 'Top Borrowers'
     ]
 ];
 
@@ -1180,6 +1206,7 @@ $customReportTypeOptions = [
     'program_activity' => 'Program Activity',
     'search_trend' => 'Search Trend',
     'entry_log' => 'Library Entries',
+    'top_borrowers' => 'Top Borrowers',
     'detailed_transactions' => 'Detailed Transactions'
 ];
 
@@ -1277,6 +1304,7 @@ if (in_array($exportMode, ['summary', 'detailed', 'summary_pdf', 'detailed_pdf']
         'search_trend' => $searchTrendRows,
         'activity_by_month' => $activityByMonth,
         'top_books' => $topBooks,
+        'top_borrowers' => $topBorrowers,
         'program_activity' => $programActivityRows,
         'entry_report' => $entryReport,
         'detailed_rows' => $detailedRows
@@ -1367,6 +1395,14 @@ $quickReports = [
         'download_url' => reports_build_url(['period' => 'quarterly', 'year' => (string)$year, 'quarter' => (string)$quarter, 'status' => 'all', 'trend_bucket' => 'monthly', 'quick_type' => 'program_activity', 'export' => 'summary'])
     ],
     [
+        'group' => 'borrowing',
+        'title' => 'Top Borrowers Report',
+        'description' => 'Most active students and faculty for the chosen period. Contains names and ID numbers.',
+        'view_url' => reports_build_url(['period' => $period, 'year' => (string)$year, 'month' => (string)$month, 'quarter' => (string)$quarter, 'week' => (string)$week, 'day' => $day, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'status' => 'all', 'trend_bucket' => $trendBucket, 'quick_type' => 'top_borrowers']),
+        'preview_url' => reports_build_url(['period' => $period, 'year' => (string)$year, 'month' => (string)$month, 'quarter' => (string)$quarter, 'week' => (string)$week, 'day' => $day, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'status' => 'all', 'trend_bucket' => $trendBucket, 'quick_type' => 'top_borrowers', 'preview_modal' => '1']),
+        'download_url' => reports_build_url(['period' => $period, 'year' => (string)$year, 'month' => (string)$month, 'quarter' => (string)$quarter, 'week' => (string)$week, 'day' => $day, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'status' => 'all', 'trend_bucket' => $trendBucket, 'quick_type' => 'top_borrowers', 'export' => 'summary'])
+    ],
+    [
         'group' => 'search',
         'title' => 'Search Trend Report',
         'description' => 'Search behavior trend report for demand and topic monitoring.',
@@ -1385,7 +1421,7 @@ $quickReports = [
 ];
 
 $quickReportGroups = [
-    'borrowing' => ['label' => 'Borrowing Activity', 'tone' => 'is-blue', 'grid' => 'reports-quick-grid-row5'],
+    'borrowing' => ['label' => 'Borrowing Activity', 'tone' => 'is-blue', 'grid' => 'reports-quick-grid-row5 reports-quick-grid-row6'],
     'search' => ['label' => 'Search & Catalog', 'tone' => 'is-gold', 'grid' => ''],
     'entries' => ['label' => 'Library Entries', 'tone' => 'is-green', 'grid' => ''],
 ];
@@ -1413,6 +1449,10 @@ if ($isModalPreview) {
     $borrowSentence = reports_modal_borrow_sentence($totals, $periodWord);
     $modalTopBooks = array_slice($topBooks, 0, 10);
     $modalProgramRows = array_slice($programActivityRows, 0, 10);
+    $modalTopBorrowers = array_slice($topBorrowers, 0, 10);
+    if (!empty($modalScope['show_top_borrowers'])) {
+        $metaParts[] = 'Confidential: names and ID numbers';
+    }
     $modalPreviewRows = array_slice($previewRows, 0, 20);
 
     // The callout: one plain sentence from numbers already on hand.
@@ -1451,6 +1491,14 @@ if ($isModalPreview) {
             $summaryIsEmpty = true;
         } else {
             $summary = $modalProgramRows[0]['program_name'] . ' led with ' . number_format((int)$modalProgramRows[0]['borrow_count']) . ' borrows this ' . $periodWord . '.';
+        }
+    } elseif ($modalReportType === 'top_borrowers') {
+        if (empty($modalTopBorrowers)) {
+            $summary = 'No borrowing by students or faculty yet this ' . $periodWord . '. This section fills in automatically as entries come in.';
+            $summaryIsEmpty = true;
+        } else {
+            $leadCount = (int)$modalTopBorrowers[0]['borrow_count'];
+            $summary = $modalTopBorrowers[0]['borrower_name'] . ' led with ' . number_format($leadCount) . ' ' . ($leadCount === 1 ? 'borrow' : 'borrows') . ' this ' . $periodWord . '.';
         }
     } elseif ($modalReportType === 'detailed_transactions') {
         if (empty($previewRows)) {
@@ -1525,6 +1573,17 @@ if ($isModalPreview) {
                 <?php reports_modal_bar_rows(array_map(fn($row) => ['label' => $row['title'] !== '' ? $row['title'] : 'Unknown title', 'total' => $row['borrow_count']], $modalTopBooks), 'is-blue', true); ?>
             <?php else: ?>
                 <?php reports_modal_empty('No books borrowed yet this ' . $periodWord . '. This section fills in automatically as entries come in.'); ?>
+            <?php endif; ?>
+        </section>
+    <?php endif; ?>
+
+    <?php if (!empty($modalScope['show_top_borrowers'])): ?>
+        <section class="reports-modal-card">
+            <div class="reports-modal-card-head"><h3>Top borrowers</h3></div>
+            <?php if (!empty($modalTopBorrowers)): ?>
+                <?php reports_modal_bar_rows(array_map(fn($r) => ['label' => trim($r['borrower_name'] . ' - ' . $r['borrower_number'], ' -'), 'total' => $r['borrow_count']], $modalTopBorrowers), 'is-blue', true); ?>
+            <?php else: ?>
+                <?php reports_modal_empty('No borrowing by students or faculty yet this ' . $periodWord . '. This section fills in automatically as entries come in.'); ?>
             <?php endif; ?>
         </section>
     <?php endif; ?>

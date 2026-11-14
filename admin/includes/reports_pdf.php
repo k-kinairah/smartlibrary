@@ -511,7 +511,7 @@ function rpdf_bar_card_height(array $parts): float {
     return $h + ($parts['note'] ? 10 + count($parts['note']) * 10 : 0);
 }
 
-function rpdf_draw_bar_card(RpdfCanvas $c, float $x, float $top, float $w, float $h, string $title, array $parts, bool $ranked, string $emptyText): void {
+function rpdf_draw_bar_card(RpdfCanvas $c, float $x, float $top, float $w, float $h, string $title, array $parts, bool $ranked, string $emptyText, int $rankOffset = 0): void {
     rpdf_card_frame($c, $x, $top, $w, $h, $title);
     $innerX = $x + 14;
     $innerW = $w - 28;
@@ -528,7 +528,7 @@ function rpdf_draw_bar_card(RpdfCanvas $c, float $x, float $top, float $w, float
         $value = number_format((int)$row['total']);
         $labelX = $innerX + ($ranked ? 16 : 0);
         if ($ranked) {
-            $c->text($innerX, $y + 9, (string)($i + 1), 9, 'F2', RPDF_FAINT);
+            $c->text($innerX, $y + 9, (string)($rankOffset + $i + 1), 9, 'F2', RPDF_FAINT);
         }
         $muted = (string)$row['label'] === ENTRY_REPORT_NOT_SPECIFIED;
         $labelW = $innerW - ($labelX - $innerX) - rpdf_width($value, 9.5, 'F2') - 10;
@@ -556,6 +556,7 @@ function rpdf_bar_card(RpdfLayout $l, string $title, array $rows, bool $ranked, 
     $parts = rpdf_bar_parts($rows, RPDF_CONTENT_W - 28, $zeroNoun);
     $all = $parts['rows'];
     $first = true;
+    $done = 0; // rows already drawn, so a continued ranked card keeps counting
     do {
         $fit = (int)floor(($l->room() - RPDF_CARD_HEAD - 6 - ($parts['note'] ? 10 + count($parts['note']) * 10 : 0)) / RPDF_ROW_H);
         if ($fit < 2 && count($all) > 1 || $fit < 1) {
@@ -566,7 +567,8 @@ function rpdf_bar_card(RpdfLayout $l, string $title, array $rows, bool $ranked, 
         $all = array_slice($all, count($chunk));
         $piece = ['rows' => $chunk, 'note' => $all ? [] : $parts['note']];
         $h = rpdf_bar_card_height($piece);
-        rpdf_draw_bar_card($l->c, RPDF_M, $l->y, RPDF_CONTENT_W, $h, $title . ($first ? '' : ' (continued)'), $piece, $ranked, $emptyText);
+        rpdf_draw_bar_card($l->c, RPDF_M, $l->y, RPDF_CONTENT_W, $h, $title . ($first ? '' : ' (continued)'), $piece, $ranked, $emptyText, $done);
+        $done += count($chunk);
         $l->y += $h + 14;
         $first = false;
     } while ($all);
@@ -716,12 +718,17 @@ function reports_build_branded_pdf(array $r): string {
     if (!$isEntry && $type !== 'search_trend' && (string)$r['status_filter'] !== 'all') {
         $meta .= ' · Status: ' . ucfirst((string)$r['status_filter']);
     }
+    if (!empty($scope['show_top_borrowers'])) {
+        $meta .= ' - Confidential: names and ID numbers';
+    }
     rpdf_meta_row($layout, $meta);
 
     $searchChart = reports_modal_buckets($searchDaily, $from, $to);
     $searchPeak = reports_modal_peak_sentence('Search activity', 'searches', $searchChart, reports_modal_peak_day($searchDaily));
     $searchTotal = array_sum(array_column($searchDaily, 'total'));
     $programs = (array)$r['program_activity'];
+    $topBorrowers = (array)($r['top_borrowers'] ?? []);
+    $topBorrowerRows = array_map(fn($row) => ['label' => trim($row['borrower_name'] . ' - ' . $row['borrower_number'], ' -'), 'total' => $row['borrow_count']], $topBorrowers);
 
     // Headline tiles and the one-line summary, per report.
     if ($isEntry) {
@@ -737,6 +744,11 @@ function reports_build_branded_pdf(array $r): string {
         $top = $programs[0] ?? null;
         $tiles = [['value' => number_format(count($programs)), 'label' => 'Programs'], ['value' => $top ? number_format((int)$top['borrow_count']) : '0', 'label' => $top ? 'Top: ' . $top['program_name'] : 'Top program']];
         $sentence = $top ? $top['program_name'] . ' led with ' . number_format((int)$top['borrow_count']) . ' borrows this ' . $periodWord . '.' : reports_modal_empty_text('program borrowing', $periodWord);
+    } elseif ($type === 'top_borrowers') {
+        $top = $topBorrowers[0] ?? null;
+        $tiles = [['value' => number_format(count($topBorrowers)), 'label' => 'Borrowers listed'], ['value' => $top ? number_format((int)$top['borrow_count']) : '0', 'label' => $top ? 'Top: ' . $top['borrower_name'] : 'Top borrower']];
+        $topCount = $top ? (int)$top['borrow_count'] : 0;
+        $sentence = $top ? $top['borrower_name'] . ' led with ' . number_format($topCount) . ' ' . ($topCount === 1 ? 'borrow' : 'borrows') . ' this ' . $periodWord . '.' : 'No borrowing by students or faculty yet this ' . $periodWord . '.';
     } elseif ($type === 'detailed_transactions') {
         $tiles = [['value' => number_format((int)$totals['total']), 'label' => 'Records'], ['value' => number_format((int)$totals['overdue']), 'label' => 'Overdue'], ['value' => number_format((float)$totals['total_fine'], 0), 'label' => 'Fines (PHP)']];
         $sentence = (int)$totals['total'] > 0 ? (reports_modal_borrow_sentence($totals, $periodWord) . ' Every loan in the range is listed below.') : reports_modal_empty_text('loans', $periodWord);
@@ -766,6 +778,9 @@ function reports_build_branded_pdf(array $r): string {
         }
         if ($scope['show_top_books']) {
             rpdf_bar_card($layout, 'Top borrowed books', array_map(fn($row) => ['label' => $row['title'] !== '' ? $row['title'] : 'Unknown title', 'total' => $row['borrow_count']], (array)$r['top_books']), true, 'borrows', 'No books borrowed yet this ' . $periodWord . '.');
+        }
+        if (!empty($scope['show_top_borrowers'])) {
+            rpdf_bar_card($layout, 'Top borrowers', $topBorrowerRows, true, 'borrows', 'No borrowing by students or faculty yet this ' . $periodWord . '.');
         }
         if ($scope['show_borrow'] || $scope['show_activity_month']) {
             [$unit, $rows] = rpdf_bucket_rows($borrowDaily, $from, $to);

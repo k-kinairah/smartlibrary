@@ -12547,3 +12547,17 @@ body {
         overflow-x: auto;
     }
 }
+
+/* Top Borrowers (Nov 2026), Reports page: the Borrowing Activity group now
+   has six quick cards. reports-quick-grid-row6 sits beside -row5, so the
+   compact card styling stays; only the columns change: 3 x 2 above 640px
+   (the same 3 columns -row5 already used at 1280px and below), 1 below. */
+.reports-quick-grid.reports-quick-grid-row5.reports-quick-grid-row6 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 640px) {
+    .reports-quick-grid.reports-quick-grid-row5.reports-quick-grid-row6 {
+        grid-template-columns: 1fr;
+    }
+}
