@@ -12304,149 +12304,660 @@ body {
 /* ============================================================
    Top Borrowers (Nov 2026)
    ------------------------------------------------------------
-   Dashboard panel (#top-borrowers-panel) listing the students and
-   faculty with the most borrows, with an All time / This month /
-   This year switch. It sits on the same .panel.glass-card.chart-panel
-   frame as "Top 10 Borrowed Books" and takes its text colour from the
-   panel, so it follows the dark, light and palette themes; tints are
-   mixed from currentColor and the gold accent reuses --warn.
+   Dashboard panel (#top-borrowers-panel): Students and faculty with the
+   most borrows, All time / This month / This year. Redesigned to the
+   approved mockups (top-borrowers-final-banner-layout, -side-layout,
+   spotlight look 3 "Bright aurora"):
+   - #1 is a spotlight card (.tb-hero) with its own colours, so it looks
+     the same in every admin theme. One markup, two layouts via grid
+     areas: a wide banner above the list for 1-6 borrowers
+     (.tb-layout--banner), a tall card beside the list for 7-10
+     (.tb-layout--side). In the side layout the list rows stretch so the
+     card and the list end on the same line.
+   - Ranks 2..N are open rows (no boxes): medal ranks for 2 and 3, a
+     person icon in one of six tints, the count with a bar, the date.
+   - Rows, tabs and footer take their colour from the panel
+     (currentColor + color-mix), so they follow dark, light and palette
+     themes.
+   The tab switch, data and markup ids are unchanged.
    ============================================================ */
-.top-borrowers-panel .top-borrowers-head {
+
+/* Two layout bugs: the header icon sat above the title (the panel was
+   missing from the flex-h2 list), and .chart-panel's 360px minimum left
+   empty space under short lists. */
+#top-borrowers-panel {
+    min-height: 0;
+}
+
+#top-borrowers-panel .panel-head h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#top-borrowers-panel .top-borrowers-head {
     align-items: center;
 }
 
-.top-borrowers-panel .tb-tabs {
+/* ---------- segmented tabs ---------- */
+#top-borrowers-panel .tb-tabs {
     display: inline-flex;
     flex: none;
-    gap: 4px;
+    gap: 2px;
     padding: 4px;
     border-radius: 999px;
-    border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+    border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
     background: color-mix(in srgb, currentColor 6%, transparent);
 }
 
-.top-borrowers-panel .tb-tab {
+#top-borrowers-panel .tb-tab {
     appearance: none;
     border: 0;
     border-radius: 999px;
-    padding: 6px 12px;
+    padding: 7px 15px;
     background: transparent;
     color: inherit;
     font: inherit;
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 700;
     line-height: 1.2;
     opacity: 0.78;
     cursor: pointer;
     white-space: nowrap;
+    transition: background-color 0.15s ease, opacity 0.15s ease;
 }
 
-.top-borrowers-panel .tb-tab:hover {
+#top-borrowers-panel .tb-tab:hover {
     opacity: 1;
-    background: color-mix(in srgb, currentColor 8%, transparent);
 }
 
-.top-borrowers-panel .tb-tab.is-active {
+#top-borrowers-panel .tb-tab.is-active {
     opacity: 1;
-    background: color-mix(in srgb, currentColor 16%, transparent);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 22%, transparent);
+    background: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22), inset 0 0 0 1px rgba(255, 255, 255, 0.14);
 }
 
-.top-borrowers-panel .tb-tab:focus-visible {
-    outline: 2px solid var(--warn, #e4bb17);
+[data-theme="light"] #top-borrowers-panel .tb-tab.is-active {
+    background: #ffffff;
+    color: #155f3a;
+    box-shadow: 0 1px 4px rgba(22, 56, 39, 0.16);
+}
+
+#top-borrowers-panel .tb-tab:focus-visible {
+    outline: 2px solid #43b184;
     outline-offset: 2px;
 }
 
-.top-borrowers-panel .tb-tabpanel[hidden] {
+#top-borrowers-panel .tb-tabpanel[hidden] {
     display: none;
 }
 
-.top-borrowers-panel .tb-list {
-    list-style: none;
-    margin: 12px 0 0;
-    padding: 0;
-    display: grid;
-    gap: 6px;
+#top-borrowers-panel .tb-empty {
+    margin-top: 14px;
 }
 
-.top-borrowers-panel .tb-row {
+/* ---------- layout ---------- */
+#top-borrowers-panel .tb-body {
+    margin-top: 16px;
+}
+
+#top-borrowers-panel .tb-layout--banner .tb-list {
+    margin-top: 10px;
+}
+
+#top-borrowers-panel .tb-layout--side {
     display: grid;
-    grid-template-columns: 30px minmax(0, 1.6fr) minmax(80px, 1fr) auto;
+    grid-template-columns: 350px minmax(0, 1fr);
+    gap: 22px;
+    align-items: stretch;
+}
+
+/* ---------- spotlight card (#1) ---------- */
+#top-borrowers-panel .tb-hero {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+        "avatar eyebrow score"
+        "avatar text score";
+    column-gap: 26px;
+    row-gap: 10px;
     align-items: center;
-    gap: 12px;
-    padding: 8px 12px;
-    border-radius: 12px;
-    border: 1px solid color-mix(in srgb, currentColor 9%, transparent);
-    background: color-mix(in srgb, currentColor 3%, transparent);
+    padding: 22px 28px;
+    border-radius: 22px;
+    color: #ffffff;
+    background: linear-gradient(150deg, #0b7a55 0%, #12a06c 44%, #62d49b 100%);
+    box-shadow:
+        0 24px 46px rgba(12, 110, 78, 0.34),
+        0 4px 10px rgba(12, 110, 78, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
-.top-borrowers-panel .tb-row:hover {
-    background: color-mix(in srgb, currentColor 6%, transparent);
+#top-borrowers-panel .tb-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.17), transparent 36%);
+    pointer-events: none;
 }
 
-.top-borrowers-panel .tb-rank {
+#top-borrowers-panel .tb-hero > :not(.tb-deco) {
+    position: relative;
+    z-index: 2;
+}
+
+/* Decoration: glows, rings, sparkles and dots behind the content. */
+#top-borrowers-panel .tb-deco {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+#top-borrowers-panel .tb-deco > span {
+    position: absolute;
+    display: block;
+}
+
+#top-borrowers-panel .tb-glow {
+    border-radius: 50%;
+}
+
+#top-borrowers-panel .tb-glow--1 {
+    width: 280px;
+    height: 280px;
+    right: -40px;
+    top: -50px;
+    background: radial-gradient(circle, rgba(220, 245, 120, 0.55), transparent 62%);
+}
+
+#top-borrowers-panel .tb-glow--2 {
+    width: 280px;
+    height: 280px;
+    left: -70px;
+    bottom: -60px;
+    background: radial-gradient(circle, rgba(0, 200, 225, 0.38), transparent 62%);
+}
+
+#top-borrowers-panel .tb-glow--3 {
+    width: 200px;
+    height: 200px;
+    left: 30%;
+    top: 25%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.2), transparent 62%);
+}
+
+#top-borrowers-panel .tb-ring-deco {
+    border-radius: 50%;
+}
+
+#top-borrowers-panel .tb-ring-deco--1 {
+    width: 250px;
+    height: 250px;
+    right: -70px;
+    bottom: -120px;
+    border: 1px solid rgba(255, 255, 255, 0.13);
+}
+
+#top-borrowers-panel .tb-ring-deco--2 {
+    width: 170px;
+    height: 170px;
+    right: -30px;
+    bottom: -80px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+#top-borrowers-panel .tb-spark svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Banner: sparkles toward the right half, left of the score. */
+#top-borrowers-panel .tb-spark--1 { width: 18px; height: 18px; right: 27%; top: 15%; color: #fff2a8; opacity: 0.95; }
+#top-borrowers-panel .tb-spark--2 { width: 9px; height: 9px; right: 34%; top: 14%; color: #ffffff; opacity: 0.7; }
+#top-borrowers-panel .tb-spark--3 { width: 10px; height: 10px; right: 21%; top: 22%; color: #ffffff; opacity: 0.75; }
+#top-borrowers-panel .tb-spark--4 { width: 11px; height: 11px; right: 24%; top: 47%; color: #fff2a8; opacity: 0.8; }
+#top-borrowers-panel .tb-spark--5 { width: 8px; height: 8px; right: 2%; bottom: 3%; color: #ffffff; opacity: 0.55; }
+
+#top-borrowers-panel .tb-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+
+#top-borrowers-panel .tb-dot--1 { right: 30%; bottom: 18%; background: #fff2a8; opacity: 0.8; }
+#top-borrowers-panel .tb-dot--2 { right: 40%; bottom: 28%; background: #ffffff; opacity: 0.6; }
+#top-borrowers-panel .tb-dot--3 { display: none; }
+
+/* Eyebrow pill */
+#top-borrowers-panel .tb-eyebrow {
+    grid-area: eyebrow;
+    align-self: end;
+    justify-self: start;
     display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px 5px 9px;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #0d6a49;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+}
+
+#top-borrowers-panel .tb-eyebrow svg {
+    width: 13px;
+    height: 13px;
+    flex: none;
+    color: #d29a0a;
+}
+
+/* Avatar with gold ring and crown */
+#top-borrowers-panel .tb-hero-avatar {
+    grid-area: avatar;
+    position: relative;
+    justify-self: start;
+    width: 86px;
+    height: 86px;
+}
+
+#top-borrowers-panel .tb-ring {
+    display: block;
+    box-sizing: border-box;
+    width: 86px;
+    height: 86px;
+    padding: 3px;
+    border-radius: 50%;
+    background: conic-gradient(from 200deg, #fff6c4, #f2c617, #b98a0d, #fedf78, #f2c617, #fff6c4);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28), 0 0 0 7px rgba(255, 255, 255, 0.08);
+}
+
+#top-borrowers-panel .tb-avin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #ffffff;
+    color: #14935f;
+}
+
+#top-borrowers-panel .tb-avin svg {
+    width: 46px;
+    height: 46px;
+}
+
+#top-borrowers-panel .tb-crown {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    display: flex;
     align-items: center;
     justify-content: center;
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    font-size: 12px;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    background: color-mix(in srgb, currentColor 10%, transparent);
+    background: linear-gradient(160deg, #fff3b0, #f2c617);
+    box-shadow: 0 0 0 2px #ffffff, 0 3px 8px rgba(0, 0, 0, 0.2);
+    color: #6b4d00;
 }
 
-/* Ranks 1-3: a quiet gold ring, the theme's existing accent. */
-.top-borrowers-panel .tb-row--top .tb-rank {
-    box-shadow: inset 0 0 0 1.5px var(--warn, #e4bb17);
+#top-borrowers-panel .tb-crown svg {
+    width: 15px;
+    height: 15px;
 }
 
-.top-borrowers-panel .tb-row--rank1 .tb-rank {
-    background: var(--warn, #e4bb17);
-    color: #2b2100;
-    box-shadow: none;
-}
-
-.top-borrowers-panel .tb-who {
+/* Name and meta */
+#top-borrowers-panel .tb-hero-text {
+    grid-area: text;
+    align-self: start;
     min-width: 0;
 }
 
-.top-borrowers-panel .tb-name-line {
+#top-borrowers-panel .tb-hero .tb-name {
+    color: inherit !important;
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+#top-borrowers-panel .tb-hero .tb-name:hover,
+#top-borrowers-panel .tb-hero .tb-name:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+#top-borrowers-panel .tb-hero .tb-name:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+#top-borrowers-panel .tb-hero .tb-meta {
+    margin-top: 4px;
+    font-size: 12.5px;
+    opacity: 0.88;
+    color: inherit;
+}
+
+#top-borrowers-panel .tb-hero .tb-chip {
+    display: inline-block;
+    vertical-align: 5px;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+/* Score: count above the white strip */
+#top-borrowers-panel .tb-hero-score {
+    grid-area: score;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    min-width: 0;
+}
+
+#top-borrowers-panel .tb-hero-count {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+#top-borrowers-panel .tb-hero-count b {
+    font-size: 70px;
+    line-height: 0.88;
+    font-weight: 800;
+    letter-spacing: -0.045em;
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(180deg, #ffffff 20%, #ffeeb0 130%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 5px 14px rgba(0, 0, 0, 0.25));
+}
+
+#top-borrowers-panel .tb-hero-count span {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+#top-borrowers-panel .tb-hero-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid #ffffff;
+    background: rgba(255, 255, 255, 0.92);
+    color: #1d4a38;
+    font-size: 12.5px;
+    white-space: nowrap;
+}
+
+#top-borrowers-panel .tb-hero-strip:empty {
+    display: none;
+}
+
+#top-borrowers-panel .tb-lb {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+#top-borrowers-panel .tb-lb b {
+    font-weight: 800;
+    color: #12352a;
+}
+
+#top-borrowers-panel .tb-lb svg {
+    width: 15px;
+    height: 15px;
+    flex: none;
+    color: #14935f;
+}
+
+#top-borrowers-panel .tb-ahead {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: #e7f7ee;
+    color: #0d6a49;
+    font-size: 11.5px;
+    font-weight: 800;
+}
+
+#top-borrowers-panel .tb-ahead svg {
+    width: 10px;
+    height: 10px;
+    flex: none;
+}
+
+/* ---------- side layout: the card becomes a column beside the list ---------- */
+#top-borrowers-panel .tb-layout--side .tb-hero {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+        "eyebrow"
+        "avatar"
+        "text"
+        "score";
+    grid-template-rows: auto auto auto 1fr;
+    row-gap: 16px;
+    align-items: start;
+    padding: 22px;
+}
+
+#top-borrowers-panel .tb-layout--side .tb-eyebrow {
+    align-self: start;
+}
+
+#top-borrowers-panel .tb-layout--side .tb-hero .tb-name {
+    font-size: 23px;
+}
+
+#top-borrowers-panel .tb-layout--side .tb-hero-score {
+    align-self: end;
+    align-items: stretch;
+    margin-top: 6px;
+}
+
+#top-borrowers-panel .tb-layout--side .tb-hero-count {
+    justify-content: flex-start;
+}
+
+/* Side: sparkles in the top-right corner, rings low on the right. */
+#top-borrowers-panel .tb-layout--side .tb-spark--1 { right: 12%; top: 5%; }
+#top-borrowers-panel .tb-layout--side .tb-spark--2 { right: 26%; top: 4.5%; }
+#top-borrowers-panel .tb-layout--side .tb-spark--3 { right: 6%; top: 13%; }
+#top-borrowers-panel .tb-layout--side .tb-spark--4 { right: 13%; top: 37%; }
+#top-borrowers-panel .tb-layout--side .tb-spark--5 { right: 20%; top: 52%; bottom: auto; }
+#top-borrowers-panel .tb-layout--side .tb-dot--1 { right: 16%; bottom: 26%; }
+#top-borrowers-panel .tb-layout--side .tb-dot--2 { left: 12%; right: auto; bottom: 34%; }
+#top-borrowers-panel .tb-layout--side .tb-dot--3 { display: block; left: 22%; bottom: 30%; background: #ffffff; opacity: 0.6; }
+#top-borrowers-panel .tb-layout--side .tb-glow--1 { right: -60px; top: 0; }
+#top-borrowers-panel .tb-layout--side .tb-ring-deco--1 { right: -90px; bottom: -60px; }
+#top-borrowers-panel .tb-layout--side .tb-ring-deco--2 { left: -60px; right: auto; bottom: 22%; }
+
+/* ---------- ranks 2..N ---------- */
+#top-borrowers-panel .tb-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+#top-borrowers-panel .tb-row {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1.5fr) minmax(180px, 1.1fr) 112px;
+    column-gap: 14px;
+    align-items: center;
+    min-height: 58px;
+    padding: 0 12px;
+    border-top: 1px solid color-mix(in srgb, currentColor 9%, transparent);
+    border-radius: 0;
+    background: transparent;
+    transition: background-color 0.15s ease;
+}
+
+#top-borrowers-panel .tb-row:first-child {
+    border-top: 0;
+}
+
+#top-borrowers-panel .tb-row:hover {
+    background: color-mix(in srgb, currentColor 4%, transparent);
+}
+
+/* Side layout: rows share the card's height, so both columns end on the same line. */
+#top-borrowers-panel .tb-layout--side .tb-row {
+    flex: 1 1 0;
+}
+
+#top-borrowers-panel .tb-rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.62;
+}
+
+#top-borrowers-panel .tb-rank--2,
+#top-borrowers-panel .tb-rank--3 {
+    opacity: 1;
+}
+
+#top-borrowers-panel .tb-rank--2 {
+    background: #dfe6e3;
+    color: #3d544a;
+    box-shadow: inset 0 0 0 1px #c5d0cb;
+}
+
+#top-borrowers-panel .tb-rank--3 {
+    background: #f1d9c3;
+    color: #6b4423;
+    box-shadow: inset 0 0 0 1px #e1bf9f;
+}
+
+html:not([data-theme="light"]) #top-borrowers-panel .tb-rank--2 {
+    background: rgba(223, 230, 227, 0.2);
+    color: #e6eeea;
+    box-shadow: inset 0 0 0 1px rgba(223, 230, 227, 0.45);
+}
+
+html:not([data-theme="light"]) #top-borrowers-panel .tb-rank--3 {
+    background: rgba(225, 160, 105, 0.22);
+    color: #f5d2b2;
+    box-shadow: inset 0 0 0 1px rgba(225, 175, 130, 0.5);
+}
+
+#top-borrowers-panel .tb-who {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+#top-borrowers-panel .tb-who-text {
+    min-width: 0;
+}
+
+/* Row avatars: person icon, six tints. */
+#top-borrowers-panel .tb-av {
+    --tb-tint: 29, 122, 76;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(var(--tb-tint), 0.17);
+    color: rgb(var(--tb-tint));
+}
+
+#top-borrowers-panel .tb-av svg {
+    width: 58%;
+    height: 58%;
+}
+
+#top-borrowers-panel .tb-av--1 { --tb-tint: 29, 122, 76; }
+#top-borrowers-panel .tb-av--2 { --tb-tint: 44, 84, 136; }
+#top-borrowers-panel .tb-av--3 { --tb-tint: 216, 173, 52; }
+#top-borrowers-panel .tb-av--4 { --tb-tint: 106, 63, 138; }
+#top-borrowers-panel .tb-av--5 { --tb-tint: 15, 106, 102; }
+#top-borrowers-panel .tb-av--6 { --tb-tint: 161, 64, 47; }
+
+[data-theme="light"] #top-borrowers-panel .tb-av--3 {
+    color: #9a7414;
+}
+
+/* Dark theme: same hues, lighter so the icons read on the dark glass. */
+html:not([data-theme="light"]) #top-borrowers-panel .tb-av { background: rgba(var(--tb-tint), 0.3); }
+html:not([data-theme="light"]) #top-borrowers-panel .tb-av--1 { color: #7fd6a6; }
+html:not([data-theme="light"]) #top-borrowers-panel .tb-av--2 { color: #9cc0ee; }
+html:not([data-theme="light"]) #top-borrowers-panel .tb-av--3 { color: #f3d47c; }
+html:not([data-theme="light"]) #top-borrowers-panel .tb-av--4 { color: #cfa9ea; }
+html:not([data-theme="light"]) #top-borrowers-panel .tb-av--5 { color: #74d6cf; }
+html:not([data-theme="light"]) #top-borrowers-panel .tb-av--6 { color: #f2a593; }
+
+#top-borrowers-panel .tb-name-line {
     display: flex;
     align-items: center;
     gap: 8px;
     min-width: 0;
 }
 
-.top-borrowers-panel .tb-name {
+#top-borrowers-panel .tb-row .tb-name {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     color: inherit;
-    font-weight: 700;
+    font-size: 15px;
+    font-weight: 800;
     text-decoration: none;
 }
 
-.top-borrowers-panel .tb-name:hover,
-.top-borrowers-panel .tb-name:focus-visible {
+#top-borrowers-panel .tb-row .tb-name:hover,
+#top-borrowers-panel .tb-row .tb-name:focus-visible {
     text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
-.top-borrowers-panel .tb-chip {
-    flex: none;
-    padding: 2px 8px;
-    border-radius: 999px;
-    border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
-    font-size: 10.5px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    opacity: 0.85;
-}
-
-.top-borrowers-panel .tb-meta {
+#top-borrowers-panel .tb-row .tb-meta {
     margin-top: 2px;
     font-size: 12px;
     opacity: 0.72;
@@ -12455,94 +12966,228 @@ body {
     white-space: nowrap;
 }
 
-.top-borrowers-panel .tb-bar {
+#top-borrowers-panel .tb-row .tb-chip {
+    flex: none;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(29, 122, 76, 0.45);
+    background: rgba(29, 122, 76, 0.08);
+    color: #1d7a4c;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
+    border-color: rgba(127, 214, 166, 0.5);
+    background: rgba(127, 214, 166, 0.1);
+    color: #a8e8c4;
+}
+
+#top-borrowers-panel .tb-score {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+#top-borrowers-panel .tb-count {
+    font-size: 16px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+#top-borrowers-panel .tb-bar {
     height: 6px;
     border-radius: 999px;
     background: color-mix(in srgb, currentColor 10%, transparent);
     overflow: hidden;
 }
 
-.top-borrowers-panel .tb-bar > span {
+#top-borrowers-panel .tb-bar > span {
     display: block;
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, #3a9d6e, #58bf8c);
+    background: linear-gradient(90deg, #1d7a4c, #43b184);
 }
 
-.top-borrowers-panel .tb-row--top .tb-bar > span {
-    background: linear-gradient(90deg, #3a9d6e, var(--warn, #e4bb17));
-}
-
-.top-borrowers-panel .tb-stats {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 2px;
-    text-align: right;
+#top-borrowers-panel .tb-last {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    opacity: 0.72;
     white-space: nowrap;
 }
 
-.top-borrowers-panel .tb-count {
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
+#top-borrowers-panel .tb-last svg {
+    width: 14px;
+    height: 14px;
+    flex: none;
 }
 
-.top-borrowers-panel .tb-last {
-    font-size: 11.5px;
-    opacity: 0.72;
-}
-
-.top-borrowers-panel .tb-empty {
-    margin-top: 12px;
-}
-
-.top-borrowers-panel .tb-foot {
+/* ---------- footer ---------- */
+#top-borrowers-panel .tb-foot {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 8px 16px;
-    margin-top: 12px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid color-mix(in srgb, currentColor 10%, transparent);
     font-size: 12px;
 }
 
-.top-borrowers-panel .tb-foot > span {
+#top-borrowers-panel .tb-foot > span {
     opacity: 0.72;
 }
 
-.top-borrowers-panel .tb-report-link {
+#top-borrowers-panel .tb-report-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, #1d7a4c 30%, transparent);
+    background: color-mix(in srgb, #1d7a4c 10%, transparent);
     color: inherit;
+    font-size: 12.5px;
     font-weight: 800;
-    text-decoration: underline;
-    text-underline-offset: 3px;
+    text-decoration: none;
+}
+
+[data-theme="light"] #top-borrowers-panel .tb-report-link {
+    color: #155f3a;
+}
+
+#top-borrowers-panel .tb-report-link:hover {
+    background: color-mix(in srgb, #1d7a4c 18%, transparent);
+}
+
+#top-borrowers-panel .tb-report-link:focus-visible {
+    outline: 2px solid #43b184;
+    outline-offset: 2px;
+}
+
+#top-borrowers-panel .tb-report-link svg {
+    width: 14px;
+    height: 14px;
+    flex: none;
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 1100px) {
+    /* One column: the side card goes back to the banner shape. */
+    #top-borrowers-panel .tb-layout--side {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+    }
+
+    #top-borrowers-panel .tb-layout--side .tb-hero {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas:
+            "avatar eyebrow score"
+            "avatar text score";
+        grid-template-rows: auto;
+        row-gap: 10px;
+        align-items: center;
+        padding: 22px 28px;
+    }
+
+    #top-borrowers-panel .tb-layout--side .tb-eyebrow {
+        align-self: end;
+    }
+
+    #top-borrowers-panel .tb-layout--side .tb-hero-score {
+        align-self: center;
+        align-items: flex-end;
+        margin-top: 0;
+    }
+
+    #top-borrowers-panel .tb-layout--side .tb-row {
+        flex: 0 0 auto;
+    }
+
+    #top-borrowers-panel .tb-row {
+        grid-template-columns: 36px minmax(0, 1.5fr) minmax(140px, 1fr) 96px;
+    }
 }
 
 @media (max-width: 860px) {
-    .top-borrowers-panel .top-borrowers-head {
+    #top-borrowers-panel .top-borrowers-head {
         align-items: flex-start;
     }
 }
 
 @media (max-width: 700px) {
-    .top-borrowers-panel .tb-row {
-        grid-template-columns: 30px minmax(0, 1fr);
-        row-gap: 4px;
+    #top-borrowers-panel .tb-hero,
+    #top-borrowers-panel .tb-layout--side .tb-hero {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "eyebrow"
+            "avatar"
+            "text"
+            "score";
+        grid-template-rows: auto;
+        row-gap: 14px;
+        align-items: start;
+        padding: 20px;
     }
 
-    .top-borrowers-panel .tb-bar {
+    #top-borrowers-panel .tb-eyebrow {
+        align-self: start;
+    }
+
+    #top-borrowers-panel .tb-hero .tb-name,
+    #top-borrowers-panel .tb-layout--side .tb-hero .tb-name {
+        font-size: 21px;
+    }
+
+    #top-borrowers-panel .tb-hero-score,
+    #top-borrowers-panel .tb-layout--side .tb-hero-score {
+        align-items: stretch;
+        align-self: start;
+    }
+
+    #top-borrowers-panel .tb-hero-count b {
+        font-size: 56px;
+    }
+
+    #top-borrowers-panel .tb-hero-strip {
+        flex-wrap: wrap;
+        white-space: normal;
+    }
+
+    /* Rank + who on the first line; count and date share the second. */
+    #top-borrowers-panel .tb-row {
+        grid-template-columns: 30px auto minmax(0, 1fr);
+        row-gap: 4px;
+        column-gap: 12px;
+        padding: 10px 6px;
+    }
+
+    #top-borrowers-panel .tb-who {
+        grid-column: 2 / -1;
+    }
+
+    #top-borrowers-panel .tb-score {
+        grid-column: 2;
+        grid-template-columns: auto;
+        padding-left: 50px;
+    }
+
+    #top-borrowers-panel .tb-bar {
         display: none;
     }
 
-    .top-borrowers-panel .tb-stats {
-        grid-column: 2;
-        flex-direction: row;
-        align-items: baseline;
-        justify-content: flex-start;
-        gap: 10px;
-        text-align: left;
+    #top-borrowers-panel .tb-last {
+        grid-column: 3;
     }
 
-    .top-borrowers-panel .tb-tabs {
+    #top-borrowers-panel .tb-tabs {
         max-width: 100%;
         overflow-x: auto;
     }

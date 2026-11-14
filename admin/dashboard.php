@@ -1055,48 +1055,104 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
                 'month' => 'No borrowing recorded yet this month. This fills in as students and faculty borrow books.',
                 'year' => 'No borrowing recorded yet this year. This fills in as students and faculty borrow books.',
             ];
-            foreach ($topBorrowerSets as $tbKey => $tbRows):
-                $tbMax = 0;
-                foreach ($tbRows as $tbRow) {
-                    $tbMax = max($tbMax, (int)$tbRow['borrow_count']);
+            // Inline icons (decorative; aria-hidden on each).
+            $tbSvg = [
+                'person' => '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="7.8" r="4.3"/><path d="M3.6 21.2c0-4.7 3.7-7.4 8.4-7.4s8.4 2.7 8.4 7.4c0 .6-.4 1-1 1H4.6c-.6 0-1-.4-1-1z"/></svg>',
+                'crown' => '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 8.2l4.6 3.9L12 4.8l4.4 7.3L21 8.2l-1.9 10.6H4.9L3 8.2z"/><rect x="5" y="19.8" width="14" height="2" rx="1"/></svg>',
+                'trophy' => '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 3h10v5.2a5 5 0 0 1-10 0V3z"/><path d="M7 4.5H4v2.2c0 1.9 1.4 3.3 3.3 3.5l-.4-1.7C6 8.3 5.6 7.7 5.6 6.9V6H7V4.5zM17 4.5h3v2.2c0 1.9-1.4 3.3-3.3 3.5l.4-1.7c.9-.2 1.3-.8 1.3-1.6V6H17V4.5z"/><rect x="11" y="12.5" width="2" height="4"/><rect x="8" y="17" width="8" height="3" rx="1"/></svg>',
+                'star' => '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 1.5l2.2 7.3 7.3 2.2-7.3 2.2L12 20.5l-2.2-7.3L2.5 11l7.3-2.2z"/></svg>',
+                'cal' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>',
+                'up' => '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 5l7 11H5z"/></svg>',
+            ];
+            // Last-borrowed date: "Nov 13", with the year when it is not this year.
+            $tbDate = function (string $raw): string {
+                $ts = $raw !== '' ? strtotime($raw) : false;
+                if (!$ts) {
+                    return '';
                 }
+                return date('Y', $ts) === date('Y') ? date('M j', $ts) : date('M j, Y', $ts);
+            };
+            foreach ($topBorrowerSets as $tbKey => $tbRows):
+                $n = count($tbRows);
+                $tbMax = $n > 0 ? (int)$tbRows[0]['borrow_count'] : 0;
+                $tbAhead = $n >= 2 ? (int)$tbRows[0]['borrow_count'] - (int)$tbRows[1]['borrow_count'] : 0;
+                $tbLayout = $n >= 7 ? 'tb-layout--side' : 'tb-layout--banner';
             ?>
             <div class="tb-tabpanel" role="tabpanel" id="tb-list-<?= $tbKey ?>" aria-labelledby="tb-tab-<?= $tbKey ?>"<?= $tbKey === 'all' ? '' : ' hidden' ?>>
                 <?php if (empty($tbRows)): ?>
                     <div class="chart-empty tb-empty"><?= htmlspecialchars($tbEmpty[$tbKey]) ?></div>
-                <?php else: ?>
-                    <ol class="tb-list">
-                        <?php foreach ($tbRows as $tbIndex => $tbRow):
-                            $tbRank = $tbIndex + 1;
-                            $tbCount = (int)$tbRow['borrow_count'];
-                            $tbPct = $tbMax > 0 ? max(4, (int)round($tbCount / $tbMax * 100)) : 0;
-                            $tbMeta = array_values(array_filter([trim((string)$tbRow['borrower_number']), trim((string)$tbRow['program_name'])], 'strlen'));
-                            $tbLastTs = $tbRow['last_borrowed'] !== '' ? strtotime((string)$tbRow['last_borrowed']) : false;
-                            $tbName = trim((string)$tbRow['borrower_name']) !== '' ? (string)$tbRow['borrower_name'] : 'Unnamed borrower';
-                        ?>
-                        <li class="tb-row<?= $tbRank <= 3 ? ' tb-row--top tb-row--rank' . $tbRank : '' ?>">
-                            <span class="tb-rank" aria-label="Rank <?= $tbRank ?>"><?= $tbRank ?></span>
-                            <div class="tb-who">
-                                <div class="tb-name-line">
-                                    <a class="tb-name" href="borrower_history.php?user_id=<?= (int)$tbRow['user_id'] ?>"><?= htmlspecialchars($tbName) ?></a>
-                                    <?php if ($tbRow['role'] === 'faculty'): ?><span class="tb-chip">Faculty</span><?php endif; ?>
+                <?php else:
+                    $tbTop = $tbRows[0];
+                    $tbTopName = trim((string)$tbTop['borrower_name']) !== '' ? (string)$tbTop['borrower_name'] : 'Unnamed borrower';
+                    $tbTopMeta = array_values(array_filter([trim((string)$tbTop['borrower_number']), trim((string)$tbTop['program_name'])], 'strlen'));
+                    $tbTopCount = (int)$tbTop['borrow_count'];
+                    $tbTopLast = $tbDate((string)$tbTop['last_borrowed']);
+                ?>
+                    <div class="tb-body <?= $tbLayout ?>">
+                        <div class="tb-hero">
+                            <span class="tb-deco" aria-hidden="true">
+                                <span class="tb-glow tb-glow--1"></span><span class="tb-glow tb-glow--2"></span><span class="tb-glow tb-glow--3"></span>
+                                <span class="tb-ring-deco tb-ring-deco--1"></span><span class="tb-ring-deco tb-ring-deco--2"></span>
+                                <span class="tb-spark tb-spark--1"><?= $tbSvg['star'] ?></span><span class="tb-spark tb-spark--2"><?= $tbSvg['star'] ?></span><span class="tb-spark tb-spark--3"><?= $tbSvg['star'] ?></span><span class="tb-spark tb-spark--4"><?= $tbSvg['star'] ?></span><span class="tb-spark tb-spark--5"><?= $tbSvg['star'] ?></span>
+                                <span class="tb-dot tb-dot--1"></span><span class="tb-dot tb-dot--2"></span><span class="tb-dot tb-dot--3"></span>
+                            </span>
+                            <span class="tb-eyebrow"><?= $tbSvg['trophy'] ?>Top borrower</span>
+                            <span class="tb-hero-avatar"><span class="tb-ring"><span class="tb-avin"><?= $tbSvg['person'] ?></span></span><span class="tb-crown"><?= $tbSvg['crown'] ?></span></span>
+                            <div class="tb-hero-text">
+                                <a class="tb-name" href="borrower_history.php?user_id=<?= (int)$tbTop['user_id'] ?>"><?= htmlspecialchars($tbTopName) ?></a>
+                                <?php if ($tbTop['role'] === 'faculty'): ?><span class="tb-chip">Faculty</span><?php endif; ?>
+                                <?php if (!empty($tbTopMeta)): ?><div class="tb-meta"><?= htmlspecialchars(implode(' · ', $tbTopMeta)) ?></div><?php endif; ?>
+                            </div>
+                            <div class="tb-hero-score">
+                                <div class="tb-hero-count"><b><?= number_format($tbTopCount) ?></b><span><?= $tbTopCount === 1 ? 'borrow' : 'borrows' ?></span></div>
+                                <div class="tb-hero-strip">
+                                    <?php if ($tbTopLast !== ''): ?><span class="tb-lb"><?= $tbSvg['cal'] ?>Last borrowed <b><?= htmlspecialchars($tbTopLast) ?></b></span><?php endif; ?>
+                                    <?php if ($tbAhead > 0): ?><span class="tb-ahead"><?= $tbSvg['up'] ?><?= number_format($tbAhead) ?> ahead of #2</span><?php endif; ?>
                                 </div>
-                                <?php if (!empty($tbMeta)): ?><div class="tb-meta"><?= htmlspecialchars(implode(' - ', $tbMeta)) ?></div><?php endif; ?>
                             </div>
-                            <div class="tb-bar" aria-hidden="true"><span style="width: <?= $tbPct ?>%"></span></div>
-                            <div class="tb-stats">
-                                <span class="tb-count"><?= number_format($tbCount) ?> <?= $tbCount === 1 ? 'borrow' : 'borrows' ?></span>
-                                <?php if ($tbLastTs): ?><span class="tb-last">Last: <?= htmlspecialchars(date('M j', $tbLastTs)) ?></span><?php endif; ?>
-                            </div>
-                        </li>
-                        <?php endforeach; ?>
-                    </ol>
+                        </div>
+                        <?php if ($n > 1): ?>
+                        <ol class="tb-list">
+                            <?php foreach ($tbRows as $tbIndex => $tbRow):
+                                if ($tbIndex === 0) {
+                                    continue;
+                                }
+                                $tbRank = $tbIndex + 1;
+                                $tbCount = (int)$tbRow['borrow_count'];
+                                $tbPct = $tbMax > 0 ? max(4, (int)round($tbCount / $tbMax * 100)) : 0;
+                                $tbMeta = array_values(array_filter([trim((string)$tbRow['borrower_number']), trim((string)$tbRow['program_name'])], 'strlen'));
+                                $tbLast = $tbDate((string)$tbRow['last_borrowed']);
+                                $tbName = trim((string)$tbRow['borrower_name']) !== '' ? (string)$tbRow['borrower_name'] : 'Unnamed borrower';
+                                $tbTint = ($tbIndex % 6) + 1;
+                            ?>
+                            <li class="tb-row">
+                                <span class="tb-rank tb-rank--<?= $tbRank ?>" aria-label="Rank <?= $tbRank ?>"><?= $tbRank ?></span>
+                                <div class="tb-who">
+                                    <span class="tb-av tb-av--<?= $tbTint ?>"><?= $tbSvg['person'] ?></span>
+                                    <div class="tb-who-text">
+                                        <div class="tb-name-line">
+                                            <a class="tb-name" href="borrower_history.php?user_id=<?= (int)$tbRow['user_id'] ?>"><?= htmlspecialchars($tbName) ?></a>
+                                            <?php if ($tbRow['role'] === 'faculty'): ?><span class="tb-chip">Faculty</span><?php endif; ?>
+                                        </div>
+                                        <?php if (!empty($tbMeta)): ?><div class="tb-meta"><?= htmlspecialchars(implode(' · ', $tbMeta)) ?></div><?php endif; ?>
+                                    </div>
+                                </div>
+                                <div class="tb-score">
+                                    <span class="tb-count" aria-label="<?= number_format($tbCount) ?> <?= $tbCount === 1 ? 'borrow' : 'borrows' ?>"><?= number_format($tbCount) ?></span>
+                                    <div class="tb-bar" aria-hidden="true"><span style="width: <?= $tbPct ?>%"></span></div>
+                                </div>
+                                <div class="tb-last"><?php if ($tbLast !== ''): ?><?= $tbSvg['cal'] ?><?= htmlspecialchars($tbLast) ?><?php endif; ?></div>
+                            </li>
+                            <?php endforeach; ?>
+                        </ol>
+                        <?php endif; ?>
+                    </div>
                 <?php endif; ?>
             </div>
             <?php endforeach; ?>
             <div class="tb-foot">
                 <span>Students and faculty only. Ties go to the most recent borrower.</span>
-                <a class="tb-report-link" href="reports.php?quick_type=top_borrowers">Open full report</a>
+                <a class="tb-report-link" href="reports.php?quick_type=top_borrowers">Open full report<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
             </div>
         </article>
     </section>
