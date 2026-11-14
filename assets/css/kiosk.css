@@ -19908,3 +19908,179 @@ html body #account-modal.is-code-step #signin-form #signin-msg[data-kind="info"]
     transition: none !important;
   }
 }
+
+
+/* ============================================================
+   Kiosk Polish v201 (Account Dropdown: Mint Glass)
+   ------------------------------------------------------------
+   The signed-in account menu (#user-menu-dropdown, nested in the v199
+   mint dock) changes from the dark-green glass card to a mint glass
+   card with dark ink, so it reads as part of the light dock. Design
+   "dropdown-mint-options": panel, rows and dividers from frame A, the
+   gold avatar from frame B. Placement (opens upward, right-aligned to
+   the chip), show/hide, z-index, the caret flip and the JS are
+   untouched. Selectors carry the menu's id so they outrank the scattered
+   older .user-menu-* rules (including the late .user-menu-profile-id
+   colour rule); those are left as dead code.
+   ============================================================ */
+
+/* ---------- panel ---------- */
+html body #search-view .search-header #user-menu-dropdown {
+  min-width: min(272px, calc(100vw - 24px)) !important;
+  padding: 12px !important;
+  gap: 2px !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  background:
+    linear-gradient(112deg, rgba(255, 255, 255, 0) 24%, rgba(255, 255, 255, 0.2) 44%, rgba(255, 255, 255, 0.34) 50%, rgba(255, 255, 255, 0.1) 58%, rgba(255, 255, 255, 0) 74%),
+    linear-gradient(160deg, rgba(246, 254, 250, 0.95) 0%, rgba(232, 251, 242, 0.94) 55%, rgba(212, 245, 229, 0.94) 100%) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.9),
+    0 0 0 2px rgba(7, 90, 64, 0.14),
+    0 26px 52px rgba(3, 40, 30, 0.32),
+    inset 0 1px 0 #ffffff,
+    inset 0 -1px 0 rgba(7, 90, 64, 0.08) !important;
+  /* Nested in the dock, which already has a backdrop blur, so the browser
+     cannot blur the page through the menu; the ~94% fill carries it. */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  color: #07211a !important;
+}
+
+html body #search-view .search-header #user-menu-dropdown::before,
+html body #search-view .search-header #user-menu-dropdown::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* ---------- profile row ---------- */
+html body #search-view .search-header #user-menu-dropdown .user-menu-avatar {
+  background: linear-gradient(150deg, #f5d976 0%, #e8b93f 45%, #cf9a25 100%) !important;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 3px rgba(207, 154, 37, 0.45),
+    0 6px 14px rgba(120, 80, 0, 0.25) !important;
+}
+
+html body #search-view .search-header #user-menu-dropdown .user-menu-avatar svg {
+  stroke: #12331f !important;
+}
+
+html body #search-view .search-header #user-menu-dropdown .user-menu-profile-name {
+  color: #07211a !important;
+  -webkit-text-fill-color: #07211a !important;
+  font-size: 14px !important;
+  font-weight: 750 !important;
+  text-shadow: none !important;
+}
+
+html body #search-view .search-header #user-menu-dropdown .user-menu-profile-id {
+  color: #1f2e27 !important;
+  -webkit-text-fill-color: #1f2e27 !important;
+  opacity: 1 !important;
+  font-size: 11.5px !important;
+  text-shadow: none !important;
+}
+
+html body #search-view .search-header #user-menu-dropdown .user-menu-divider {
+  height: 1px !important;
+  margin: 3px 2px !important;
+  background: rgba(7, 60, 44, 0.15) !important;
+  border: 0 !important;
+  opacity: 1 !important;
+}
+
+/* ---------- rows (My Books, My Favorites, Admin Panel, Log Out) ---------- */
+html body #search-view .search-header #user-menu-dropdown .user-menu-item,
+html body #search-view .search-header #user-menu-dropdown .user-menu-item:hover,
+html body #search-view .search-header #user-menu-dropdown .user-menu-item:focus,
+html body #search-view .search-header #user-menu-dropdown .user-menu-item:active {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  min-height: 44px !important;
+  padding: 0 10px !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 12px !important;
+  background: none !important;
+  box-shadow: none !important;
+  font-size: 14px !important;
+  font-weight: 650 !important;
+  color: #07211a !important;
+  -webkit-text-fill-color: #07211a !important;
+  text-decoration: none !important;
+  text-shadow: none !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+html body #search-view .search-header #user-menu-dropdown .user-menu-item .menu-item-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: none !important;
+  width: 28px !important;
+  height: 28px !important;
+  border: 0 !important;
+  border-radius: 9px !important;
+  background: rgba(5, 104, 74, 0.1) !important;
+  color: #05684a !important;
+  box-shadow: none !important;
+}
+
+html body #search-view .search-header #user-menu-dropdown .user-menu-item .menu-item-icon svg {
+  width: 15px !important;
+  height: 15px !important;
+  fill: none !important;
+  stroke: #05684a !important;
+}
+
+/* Hover / keyboard focus */
+html body #search-view .search-header #user-menu-dropdown .user-menu-item:hover,
+html body #search-view .search-header #user-menu-dropdown .user-menu-item:focus-visible {
+  background: rgba(5, 150, 105, 0.13) !important;
+}
+
+html body #search-view .search-header #user-menu-dropdown .user-menu-item:hover .menu-item-icon,
+html body #search-view .search-header #user-menu-dropdown .user-menu-item:focus-visible .menu-item-icon {
+  background: rgba(5, 104, 74, 0.18) !important;
+}
+
+/* Inset ring so the panel edge never clips it. Solid: at 0.55 (the brief)
+   it measured 2.14:1 against the panel. */
+html body #search-view .search-header #user-menu-dropdown .user-menu-item:focus-visible {
+  outline: 3px solid #059669 !important;
+  outline-offset: -3px !important;
+}
+
+/* Log Out keeps red: the safety signal on a shared kiosk. */
+html body #search-view .search-header #user-menu-dropdown .user-menu-item.danger,
+html body #search-view .search-header #user-menu-dropdown .user-menu-item.danger:hover,
+html body #search-view .search-header #user-menu-dropdown .user-menu-item.danger:focus,
+html body #search-view .search-header #user-menu-dropdown .user-menu-item.danger:active {
+  color: #8f1d2a !important;
+  -webkit-text-fill-color: #8f1d2a !important;
+}
+
+html body #search-view .search-header #user-menu-dropdown .user-menu-item.danger .menu-item-icon {
+  background: rgba(190, 40, 60, 0.12) !important;
+  color: #a3202f !important;
+}
+
+html body #search-view .search-header #user-menu-dropdown .user-menu-item.danger .menu-item-icon svg {
+  stroke: #a3202f !important;
+}
+
+html body #search-view .search-header #user-menu-dropdown .user-menu-item.danger:hover,
+html body #search-view .search-header #user-menu-dropdown .user-menu-item.danger:focus-visible {
+  background: rgba(190, 40, 60, 0.1) !important;
+}
+
+/* The menu's pop-in animation never honoured reduced motion; it does now. */
+@media (prefers-reduced-motion: reduce) {
+  html body #search-view .search-header #user-menu-dropdown {
+    animation: none !important;
+  }
+}
