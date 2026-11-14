@@ -350,7 +350,9 @@ try {
             </div>
             <h2>Find What You're Looking For</h2>
             <p>Search our library by title, author, subject, or program</p>
-            <div class="search-hero-divider search-hero-divider--dots" aria-hidden="true"></div>
+            <div class="search-hero-ornament" aria-hidden="true">
+                <span class="sho-line sho-line--l"></span><span class="sho-dash"></span><span class="sho-diamond"></span><span class="sho-dash"></span><span class="sho-line sho-line--r"></span>
+            </div>
         </div>
         <div class="filters-wrapper">
             <div class="search-filters-top">

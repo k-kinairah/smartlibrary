@@ -22323,3 +22323,81 @@ html body .recommend-cta .sparkle-icon.sparkle-icon--card svg {
   fill: none !important;
   stroke: currentColor !important;
 }
+
+
+/* ============================================================
+   Kiosk Polish v206 (Hero Ornament)
+   ------------------------------------------------------------
+   Design hero-b-refinements, row B2: the green line-with-dots under
+   "Find What You're Looking For" becomes a thin gold ornament (fading
+   gold lines, two gold dashes, a small gold diamond). The new element
+   (.search-hero-ornament) replaces the old div, which carried
+   .search-hero-divider / --dots; nothing else uses those classes, so
+   their rules (8891, 14933) are left as dead code. Height stays 3px and
+   the margin stays 0 auto, so the hero does not grow. Decorative only.
+   ============================================================ */
+
+html body #search-view .search-hero .search-hero-ornament {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  width: auto !important;
+  max-width: 100% !important;
+  height: 3px !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  background: none !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  animation: none !important;
+}
+
+html body #search-view .search-hero .search-hero-ornament::before,
+html body #search-view .search-hero .search-hero-ornament::after {
+  content: none !important;
+  display: none !important;
+}
+
+html body #search-view .search-hero .search-hero-ornament > span {
+  display: block !important;
+  flex: none !important;
+}
+
+html body #search-view .search-hero .search-hero-ornament .sho-line {
+  width: 140px !important;
+  height: 1px !important;
+}
+
+html body #search-view .search-hero .search-hero-ornament .sho-line--l {
+  background: linear-gradient(90deg, rgba(216, 154, 43, 0), rgba(216, 154, 43, 0.6)) !important;
+}
+
+html body #search-view .search-hero .search-hero-ornament .sho-line--r {
+  background: linear-gradient(270deg, rgba(216, 154, 43, 0), rgba(216, 154, 43, 0.6)) !important;
+}
+
+html body #search-view .search-hero .search-hero-ornament .sho-dash {
+  width: 20px !important;
+  height: 2px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(90deg, #f2c617 0%, #fedf78 50%, #f1c514 100%) !important;
+  box-shadow: 0 0 9px rgba(242, 198, 23, 0.5), 0 0 3px rgba(254, 223, 120, 0.9) !important;
+}
+
+html body #search-view .search-hero .search-hero-ornament .sho-diamond {
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 1.5px !important;
+  transform: rotate(45deg) !important;
+  background: linear-gradient(135deg, #fedf78, #f2c617) !important;
+  box-shadow: 0 0 10px rgba(242, 198, 23, 0.7), 0 0 2px rgba(255, 240, 170, 0.9) !important;
+}
+
+@media (max-width: 640px) {
+  html body #search-view .search-hero .search-hero-ornament .sho-line {
+    width: 56px !important;
+  }
+}
