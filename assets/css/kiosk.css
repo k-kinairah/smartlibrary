@@ -21875,3 +21875,451 @@ html body #account-modal #signin-form input#signin-password:-webkit-autofill::fi
   font-size: 18px !important;
   font-weight: 700 !important;
 }
+
+
+/* ============================================================
+   Kiosk Polish v205 (Header Wordmark, Logos, Clear Filters, Year Range,
+   Light Scrollbar, Library-Card Icon)
+   ------------------------------------------------------------
+   Designs polish-1 .. polish-4 and brand-text-options (option C):
+   1) Search-hero pill: "PHINMA-SJCDC LIBRARY" between the seal and the
+      PHINMA mark; both logos 34px (28px on phones), no disc behind them.
+      The pill's glass is unchanged; the footer pill is not touched.
+   2) Sign-in modal logos without the ring: seal 60px, PHINMA 52px (the
+      dark mark reads bigger), soft drop shadow only.
+   3) Book-modal PHINMA seal lifted (white edge + layered shadow), 32px.
+   5) "Clear filters" soft outline pill with a reset arrow; dimmed and
+      inert while no filter is active (filters.js sets [disabled]).
+   6) Year range: calendar tile, "Published from" and "To" fields with the
+      label inside the box, arrow between. The fields keep the existing
+      custom dropdown (year-select-ui.js, Kiosk Polish v113): its trigger
+      is restyled to fill the box; its option list is unchanged.
+   7) Light mint scrollbar replacing v140's dark one. v140 set
+      scrollbar-color on html/body, which every element inherits and
+      which makes Chrome ignore ::-webkit-scrollbar; auto here hands
+      the page back to the rules below. Selectors stay low-specificity so
+      the panels with their own bars (search suggestions, chip carousel,
+      year list, book modal, My Books) keep theirs. v140 is left in place.
+   8) Library-card icon: inline SVG card in the existing circle.
+   ============================================================ */
+
+/* ---------- 1) search-hero pill wordmark ---------- */
+html body #search-view .search-hero-brand--pill {
+  align-items: center !important;
+  max-width: calc(100vw - 24px) !important;
+}
+
+html body #search-view .search-hero-brand--pill .search-hero-brand-icon {
+  width: 34px !important;
+  height: 34px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+html body #search-view .search-hero-brand--pill .search-hero-brand-wordmark {
+  display: block !important;
+  flex: none !important;
+  padding: 0 4px !important;
+  font-family: "Manrope", sans-serif !important;
+  font-size: 14.5px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  letter-spacing: 0.15em !important;
+  text-transform: none !important;
+  color: #0e3b2e !important;
+  -webkit-text-fill-color: #0e3b2e !important;
+  white-space: nowrap !important;
+  text-shadow: none !important;
+}
+
+@media (max-width: 640px) {
+  html body #search-view .search-hero-brand--pill .search-hero-brand-icon {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  html body #search-view .search-hero-brand--pill .search-hero-brand-wordmark {
+    font-size: 11.5px !important;
+    letter-spacing: 0.12em !important;
+  }
+}
+
+/* ---------- 2) sign-in modal logos, no rings ---------- */
+html body #account-modal .account-brand-mark .account-brand-seal {
+  width: 60px !important;
+  height: 60px !important;
+  border-radius: 50% !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 4px 8px rgba(20, 90, 80, 0.22)) !important;
+}
+
+html body #account-modal .account-brand-mark .account-brand-phinma {
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 50% !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 4px 8px rgba(20, 90, 80, 0.22)) !important;
+}
+
+html body #account-modal .account-brand-mark .account-brand-divider {
+  height: 38px !important;
+}
+
+/* ---------- 3) book-modal seal, lifted ---------- */
+html body #book-modal .bm2-seal {
+  width: 32px !important;
+  height: 32px !important;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 1px 2px rgba(10, 60, 45, 0.28),
+    0 7px 14px rgba(20, 90, 80, 0.3),
+    0 16px 28px rgba(20, 90, 80, 0.18) !important;
+}
+
+/* ---------- 5) Clear filters ---------- */
+html body #search-view .active-filter-row #clear-active.clear-all {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  flex: none !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: 38px !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 18px 0 14px !important;
+  border-radius: 999px !important;
+  border: 1.5px solid rgba(14, 134, 96, 0.4) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  color: #0e6b4d !important;
+  -webkit-text-fill-color: #0e6b4d !important;
+  font-family: "Manrope", sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  text-shadow: none !important;
+  white-space: nowrap !important;
+  box-shadow: 0 3px 8px rgba(8, 50, 38, 0.06) !important;
+  filter: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease !important;
+}
+
+html body #search-view .active-filter-row #clear-active.clear-all::before {
+  content: "" !important;
+  display: inline-block !important;
+  position: static !important;
+  flex: none !important;
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
+  -webkit-mask: none !important;
+  mask: none !important;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230e6b4d' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 12a7.5 7.5 0 1 0 2.4-5.5'/%3E%3Cpath d='M4.5 4.5v4.2h4.2'/%3E%3C/svg%3E") center / 16px 16px no-repeat !important;
+}
+
+html body #search-view .active-filter-row #clear-active.clear-all::after {
+  content: none !important;
+  display: none !important;
+}
+
+html body #search-view .active-filter-row #clear-active.clear-all:hover {
+  background: rgba(14, 134, 96, 0.1) !important;
+  border-color: rgba(14, 134, 96, 0.6) !important;
+  box-shadow: 0 3px 8px rgba(8, 50, 38, 0.06) !important;
+}
+
+html body #search-view .active-filter-row #clear-active.clear-all:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(14, 134, 96, 0.35) !important;
+}
+
+html body #search-view .active-filter-row #clear-active.clear-all:active {
+  transform: translateY(1px) !important;
+}
+
+html body #search-view .active-filter-row #clear-active.clear-all:disabled,
+html body #search-view .active-filter-row #clear-active.clear-all:disabled:hover,
+html body #search-view .active-filter-row #clear-active.clear-all:disabled:active {
+  opacity: 0.45 !important;
+  cursor: default !important;
+  pointer-events: none !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: rgba(14, 134, 96, 0.4) !important;
+  transform: none !important;
+}
+
+/* ---------- 6) year range ---------- */
+html body #search-view #year_published-box .year-range-wrap {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+html body #search-view #year_published-box .year-range-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: none !important;
+  width: 52px !important;
+  height: 56px !important;
+  border-radius: 18px !important;
+  background: rgba(14, 134, 96, 0.1) !important;
+  border: 1px solid rgba(14, 134, 96, 0.28) !important;
+  color: #0e6b4d !important;
+  box-sizing: border-box !important;
+}
+
+html body #search-view #year_published-box .year-range-icon svg {
+  width: 22px !important;
+  height: 22px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 1.9 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+html body #search-view #year_published-box .year-range-arrow {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: none !important;
+  width: 28px !important;
+  color: #7a9288 !important;
+}
+
+html body #search-view #year_published-box .year-range-arrow svg {
+  width: 22px !important;
+  height: 22px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+html body #search-view #year_published-box .year-range-wrap .year-range-field {
+  position: relative !important;
+  display: block !important;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  width: auto !important;
+  height: 56px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  border-radius: 18px !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(244, 252, 248, 0.9)) !important;
+  border: 1px solid rgba(16, 40, 34, 0.14) !important;
+  box-shadow: 0 4px 12px rgba(8, 50, 38, 0.06), inset 0 1px 0 #ffffff !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+html body #search-view #year_published-box .year-range-wrap .year-range-field:focus-within {
+  border-color: rgba(14, 134, 96, 0.65) !important;
+  box-shadow: 0 0 0 4px rgba(14, 134, 96, 0.14), 0 4px 12px rgba(8, 50, 38, 0.06) !important;
+}
+
+/* Chevron in a mint circle, drawn by the field (the trigger's own is hidden). */
+html body #search-view #year_published-box .year-range-wrap .year-range-field::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 50% !important;
+  right: 14px !important;
+  width: 28px !important;
+  height: 28px !important;
+  margin-top: -14px !important;
+  border-radius: 50% !important;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230e6b4d' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") center / 14px 14px no-repeat, rgba(14, 134, 96, 0.12) !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+}
+
+html body #search-view #year_published-box .year-range-wrap .year-range-field .year-range-label {
+  position: absolute !important;
+  top: 9px !important;
+  left: 18px !important;
+  z-index: 2 !important;
+  display: block !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-family: "Manrope", sans-serif !important;
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  color: #5b766b !important;
+  -webkit-text-fill-color: #5b766b !important;
+  text-shadow: none !important;
+  background: transparent !important;
+  pointer-events: none !important;
+}
+
+/* Native select: used as-is only if the custom dropdown is not built. */
+html body #search-view #year_published-box .year-range-wrap .year-range-field .year-range-select:not(.custom-select-native-hidden) {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 22px 56px 0 18px !important;
+  border: 0 !important;
+  border-radius: 18px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  font-family: "Manrope", sans-serif !important;
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  color: #0f2a22 !important;
+  cursor: pointer !important;
+}
+
+/* Custom dropdown trigger fills the field. */
+html body #search-view #year_published-box .year-range-wrap .year-range-field .custom-select-wrap {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+html body #search-view #year_published-box .year-range-wrap .year-range-field .custom-select-trigger,
+html body #search-view #year_published-box .year-range-wrap .year-range-field .custom-select-trigger:hover,
+html body #search-view #year_published-box .year-range-wrap .year-range-field .custom-select-trigger:focus-visible,
+html body #search-view #year_published-box .year-range-wrap .year-range-field .custom-select-wrap.is-open .custom-select-trigger {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 22px 56px 0 18px !important;
+  border: 0 !important;
+  border-radius: 18px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  filter: none !important;
+  font-family: "Manrope", sans-serif !important;
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  color: #0f2a22 !important;
+  -webkit-text-fill-color: #0f2a22 !important;
+  text-align: left !important;
+  cursor: pointer !important;
+}
+
+html body #search-view #year_published-box .year-range-wrap .year-range-field .custom-select-chevron {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  html body #search-view #year_published-box .year-range-wrap {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  html body #search-view #year_published-box .year-range-icon,
+  html body #search-view #year_published-box .year-range-arrow {
+    display: none !important;
+  }
+
+  html body #search-view #year_published-box .year-range-wrap .year-range-field {
+    flex: none !important;
+    width: 100% !important;
+  }
+}
+
+/* ---------- 7) light mint scrollbar ---------- */
+html,
+body {
+  scrollbar-width: auto !important;
+  scrollbar-color: auto !important;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  html,
+  body {
+    scrollbar-width: thin !important;
+    scrollbar-color: #9fcdbb #eef6f2 !important;
+  }
+}
+
+html::-webkit-scrollbar,
+html *::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+html::-webkit-scrollbar-track,
+html *::-webkit-scrollbar-track {
+  background: rgba(14, 134, 96, 0.07);
+  border-radius: 12px;
+}
+
+html::-webkit-scrollbar-thumb,
+html *::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #8fcdb6, #6fb8a0);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+  border-radius: 12px;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+html *::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #5fae95, #3e9a80);
+  background-clip: padding-box;
+  filter: none;
+}
+
+html::-webkit-scrollbar-button,
+html *::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+html::-webkit-scrollbar-corner,
+html *::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ---------- 8) library-card icon ---------- */
+html body .recommend-cta .sparkle-icon.sparkle-icon--card {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #0b6a4d !important;
+}
+
+html body .recommend-cta .sparkle-icon.sparkle-icon--card svg {
+  display: block !important;
+  width: 50% !important;
+  height: 50% !important;
+  fill: none !important;
+  stroke: currentColor !important;
+}

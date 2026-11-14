@@ -50,6 +50,28 @@ if ($genreRes) {
     }
 }
 
+// Year filter: every publication year in the catalog, newest first. Only
+// values between 1800 and next year count, so blanks and typos (2962,
+// 2104) do not stretch the list; the newest option is at least this year.
+$currentYear = (int)date('Y');
+$yearMin = 1900;
+$yearMax = $currentYear;
+$yearSql = "CAST(COALESCE(NULLIF(TRIM(year_published),''),'0') AS UNSIGNED)";
+try {
+    $yearRes = $conn->query(
+        "SELECT MIN({$yearSql}) AS y_min, MAX({$yearSql}) AS y_max
+         FROM books
+         WHERE {$yearSql} BETWEEN 1800 AND " . ($currentYear + 1)
+    );
+    $yearRow = $yearRes ? $yearRes->fetch_assoc() : null;
+    if ($yearRow && $yearRow['y_min'] !== null) {
+        $yearMin = (int)$yearRow['y_min'];
+        $yearMax = max($currentYear, (int)$yearRow['y_max']);
+    }
+} catch (Throwable $e) {
+    // keep 1900..this year
+}
+
 ?><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -174,7 +196,7 @@ if ($genreRes) {
             </div>
             <div class="cta-path-or" aria-hidden="true"><span>or</span></div>
             <div class="cta-path cta-path--card">
-                <div class="sparkle-icon" aria-hidden="true">🪪</div>
+                <div class="sparkle-icon sparkle-icon--card" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="2.8" y="5" width="18.4" height="14" rx="2.6"/><circle cx="7.8" cy="10.2" r="1.8"/><path d="M5 15.4c.4-1.4 1.4-2.1 2.8-2.1s2.4.7 2.8 2.1"/><path d="M13.2 8.8v6.4M14.4 8.8v6.4M15.6 8.8v6.4M18 8.8v6.4"/></svg></div>
                 <p class="cta-path-kicker">New here?</p>
                 <h3>Get Your Library Card</h3>
                 <p>Sign up with your PHINMA email, then print your card to enter the library</p>
@@ -183,7 +205,7 @@ if ($genreRes) {
         </section>
         <?php else: ?>
         <section class="recommend-cta library-card-cta">
-            <div class="sparkle-icon" aria-hidden="true">🪪</div>
+            <div class="sparkle-icon sparkle-icon--card" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="2.8" y="5" width="18.4" height="14" rx="2.6"/><circle cx="7.8" cy="10.2" r="1.8"/><path d="M5 15.4c.4-1.4 1.4-2.1 2.8-2.1s2.4.7 2.8 2.1"/><path d="M13.2 8.8v6.4M14.4 8.8v6.4M15.6 8.8v6.4M18 8.8v6.4"/></svg></div>
             <h3>Get Your Library Card</h3>
             <p>Sign up with your PHINMA email, then print your card to enter the library</p>
             <a class="discover-signin-btn" href="library_card_signup.php">Get My Card</a>
@@ -322,6 +344,8 @@ if ($genreRes) {
             <div class="search-hero-brand search-hero-brand--pill">
                 <img src="assets/images/stjude_seal_64.png" alt="St. Jude College" class="search-hero-brand-icon search-hero-brand-icon--primary">
                 <div class="search-hero-brand-pill-divider" aria-hidden="true"></div>
+                <span class="search-hero-brand-wordmark">PHINMA-SJCDC LIBRARY</span>
+                <div class="search-hero-brand-pill-divider" aria-hidden="true"></div>
                 <img src="assets/images/phinma-icon.png" alt="PHINMA Education" class="search-hero-brand-icon search-hero-brand-icon--secondary">
             </div>
             <h2>Find What You're Looking For</h2>
@@ -350,7 +374,7 @@ if ($genreRes) {
                                 <circle cx="16" cy="8" r="1.1"></circle>
                             </svg>
                         </span>
-                        <span>Genre</span>
+                        <span>Subject</span>
                     </button>
                     <button class="filter-top-tab" data-type="year_published">
                         <span class="filter-top-tab-icon" aria-hidden="true">
@@ -364,7 +388,7 @@ if ($genreRes) {
                 </div>
 
                 <div class="filter-box-p" id="genre-box">
-                    <label class="filter-label">Filter by subject/genre:</label>
+                    <label class="filter-label">Filter by subject:</label>
                     <div class="chip-carousel">
                         <button type="button" class="chip-scroll-btn prev" aria-label="Scroll subjects left" disabled>&lsaquo;</button>
                         <div class="chip-container">
@@ -373,7 +397,7 @@ if ($genreRes) {
                                     <div class="chip" data-filter="genre" data-value="<?= htmlspecialchars($genreName) ?>"><?= htmlspecialchars($genreName) ?></div>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <div class="chip" aria-disabled="true">No genres available</div>
+                                <div class="chip" aria-disabled="true">No subjects available</div>
                             <?php endif; ?>
                         </div>
                         <button type="button" class="chip-scroll-btn next" aria-label="Scroll subjects right">&rsaquo;</button>
@@ -381,30 +405,33 @@ if ($genreRes) {
                 </div>
                 <div class="filter-box-p hidden" id="year_published-box">
                     <div class="year-range-wrap">
+                        <span class="year-range-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" role="presentation">
+                                <rect x="3.5" y="5.5" width="17" height="15" rx="2"></rect>
+                                <path d="M8 3.8v3.4M16 3.8v3.4M3.5 9.2h17"></path>
+                            </svg>
+                        </span>
                         <div class="year-range-field">
-                            <label class="year-range-label" for="year-from-select">From Year:</label>
-                            <select id="year-from-select" class="year-range-select">
+                            <label class="year-range-label" for="year-from-select">Published from</label>
+                            <select id="year-from-select" class="year-range-select" aria-label="Published from year">
                                 <option value="">Any</option>
-                                <option value="1800">1800</option>
-                                <option value="1900">1900</option>
-                                <option value="1950">1950</option>
-                                <option value="1980">1980</option>
-                                <option value="2000">2000</option>
-                                <option value="2010">2010</option>
-                                <option value="2020">2020</option>
+<?php for ($y = $yearMax; $y >= $yearMin; $y--): ?>
+                                <option value="<?= $y ?>"><?= $y ?></option>
+<?php endfor; ?>
                             </select>
                         </div>
+                        <span class="year-range-arrow" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" role="presentation">
+                                <path d="M5 12h14M13.5 6.5L19 12l-5.5 5.5"></path>
+                            </svg>
+                        </span>
                         <div class="year-range-field">
-                            <label class="year-range-label" for="year-to-select">To Year:</label>
-                            <select id="year-to-select" class="year-range-select">
+                            <label class="year-range-label" for="year-to-select">To</label>
+                            <select id="year-to-select" class="year-range-select" aria-label="Published to year">
                                 <option value="">Any</option>
-                                <option value="1900">1900</option>
-                                <option value="1950">1950</option>
-                                <option value="1980">1980</option>
-                                <option value="2000">2000</option>
-                                <option value="2010">2010</option>
-                                <option value="2020">2020</option>
-                                <option value="2026">2026</option>
+<?php for ($y = $yearMax; $y >= $yearMin; $y--): ?>
+                                <option value="<?= $y ?>"><?= $y ?></option>
+<?php endfor; ?>
                             </select>
                         </div>
                     </div>
@@ -413,7 +440,7 @@ if ($genreRes) {
                 <div class="active-filter-row">
                     <span>Active filters:</span>
                     <div id="active-filters"></div>
-                    <button id="clear-active" class="clear-all">Clear</button>
+                    <button id="clear-active" class="clear-all" type="button" disabled>Clear filters</button>
                 </div>
             </div>
         </div>

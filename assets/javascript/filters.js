@@ -604,6 +604,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (seed.trim() !== "") {
                 if (advancedSearchInput) advancedSearchInput.value = seed;
                 activeFilters.search = seed;
+                // Show the "Search" chip (and enable Clear filters) now,
+                // not only after the next filter change.
+                refreshActiveFilterDisplay();
                 // Mark initialized and fetch once, filtered by the seed --
                 // calling ensureBooksLoaded() too would race an unfiltered
                 // fetch against this one, and it could land last.
@@ -732,6 +735,12 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             container.appendChild(chip);
         }
+
+        // "Clear filters" is dimmed and inert while nothing is active. Every
+        // path that changes a filter (chip, search, year, chip x, Clear)
+        // ends here, so this is the one place it is kept in step.
+        const clearBtn = document.getElementById("clear-active");
+        if (clearBtn) clearBtn.disabled = container.children.length === 0;
     }
     // Only the newest loadBooks() response may render. The full catalog now
     // loads when search first opens, so a quick first keystroke fires a small
