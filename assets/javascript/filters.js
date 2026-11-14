@@ -3007,6 +3007,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     closeMyBooksBtn?.addEventListener("click", closeMyBooks);
     myBooksBackdrop?.addEventListener("click", closeMyBooks);
+
+    // Escape closes My Books / My Favorites like the x and the backdrop,
+    // unless another dialog is open on top of it (that one closes first).
+    // Capture phase, like the book modal, so it checks before the other
+    // dialogs' own Escape handlers have closed them.
+    document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape" || !myBooksModal || myBooksModal.classList.contains("hidden")) return;
+        const stacked = [...document.querySelectorAll(".modal:not(.hidden), #receipt-status-modal:not(.hidden)")]
+            .some((el) => el !== myBooksModal);
+        if (stacked) return;
+        closeMyBooks();
+    }, true);
 });
 
 document.addEventListener("DOMContentLoaded", () => {
