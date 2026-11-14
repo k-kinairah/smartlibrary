@@ -106,7 +106,7 @@ if ($genreRes) {
         <section class="discover-panel" data-panel-key="new_arrivals">
             <span class="panel-kicker">Newly added</span>
             <h2>New Arrivals</h2>
-            <p>Latest books and journals added to our collection</p>
+            <p>Newest titles in our collection</p>
             <div class="discover-carousel">
                 <button class="carousel-arrow">&#8249;</button>
                 <div class="carousel-books">

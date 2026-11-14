@@ -620,6 +620,14 @@ if (count($popularRows) === 0) {
     );
 }
 
+// New Arrivals: newest publication year first. year_published is text, so
+// it is cast to a number (as fetch_books.php does). Books were bulk-imported
+// with near-identical created_at values, so the year decides the order. A
+// blank or impossible year (e.g. a typo like 2962) is not dropped; it just
+// sorts after every book with a year between 1900 and next year. Only ints
+// are interpolated below.
+$currentYear = (int)date('Y');
+$yearExpr = "CAST(COALESCE(NULLIF(TRIM(b.year_published),''),'0') AS UNSIGNED)";
 $newArrivalRows = query_rows(
     $conn,
     "SELECT
@@ -628,9 +636,14 @@ $newArrivalRows = query_rows(
         b.author,
         b.cover,
         DATE(b.created_at) AS created_day,
-        b.year_published
+        b.year_published,
+        ($yearExpr) AS pub_year
      FROM books b
-     ORDER BY b.created_at DESC, b.year_published DESC, b.book_id DESC
+     ORDER BY
+        (CASE WHEN $yearExpr BETWEEN 1900 AND ($currentYear + 1) THEN 1 ELSE 0 END) DESC,
+        $yearExpr DESC,
+        b.created_at DESC,
+        b.book_id DESC
      LIMIT 60"
 );
 
@@ -891,7 +904,7 @@ if ($isPersonalized) {
     $panels[] = [
         'key' => 'new_arrivals',
         'title' => 'New Arrivals',
-        'subtitle' => 'Latest books and journals added to our collection',
+        'subtitle' => 'Newest titles in our collection',
         'books' => $newArrivalBooks
     ];
     $panels[] = [
@@ -911,7 +924,7 @@ if ($isPersonalized) {
         [
             'key' => 'new_arrivals',
             'title' => 'New Arrivals',
-            'subtitle' => 'Latest books and journals added to our collection',
+            'subtitle' => 'Newest titles in our collection',
             'books' => $newArrivalBooks
         ],
         [
