@@ -61,6 +61,15 @@ $exportCards = [
         'description' => 'Focused list of overdue and missing loans for follow-up and collection control.',
         'count' => export_center_scalar($conn, "SELECT COUNT(*) FROM borrow_records WHERE status IN ('overdue', 'missing')"),
         'count_label' => 'flagged'
+    ],
+    [
+        'type' => 'top_borrowers',
+        'icon' => 'user-check',
+        'title' => 'Top Borrowers',
+        'description' => 'Most active students and faculty, ranked by borrows. Optional date range; blank means all time.',
+        'count' => export_center_scalar($conn, "SELECT COUNT(DISTINCT br.user_id) FROM borrow_records br INNER JOIN library_users u ON u.user_id = br.user_id WHERE u.role IN ('student','faculty')"),
+        'count_label' => 'borrowers',
+        'date_filter' => true
     ]
 ];
 ?>
@@ -91,9 +100,22 @@ $exportCards = [
                     <span><?= number_format((int)$card['count']) ?> <?= htmlspecialchars($card['count_label']) ?></span>
                 </div>
                 <p><?= htmlspecialchars($card['description']) ?></p>
+                <?php if (!empty($card['date_filter'])): ?>
+                    <form class="export-date-form" method="get" action="export_csv.php">
+                        <input type="hidden" name="type" value="<?= htmlspecialchars((string)$card['type']) ?>">
+                        <div class="export-date-fields">
+                            <label class="export-date-field"><span>From (optional)</span><input type="date" name="date_from"></label>
+                            <label class="export-date-field"><span>To (optional)</span><input type="date" name="date_to"></label>
+                        </div>
+                        <div class="reports-card-actions">
+                            <button type="submit" class="reports-export-link export-download-btn"><?= admin_icon('export') ?><span>Download CSV</span></button>
+                        </div>
+                    </form>
+                <?php else: ?>
                 <div class="reports-card-actions">
                     <a class="reports-export-link export-download-btn" href="export_csv.php?type=<?= urlencode((string)$card['type']) ?>"><?= admin_icon('export') ?><span>Download CSV</span></a>
                 </div>
+                <?php endif; ?>
             </div>
         </article>
     <?php endforeach; ?>
@@ -114,6 +136,7 @@ $exportCards = [
                     ['icon' => 'people', 'name' => 'Borrowers & Staff', 'use' => 'Account review, active-loan counts, user status checks', 'tier' => 'personal', 'note' => 'Names, ID numbers and emails; password column excluded'],
                     ['icon' => 'swap', 'name' => 'Borrow Records', 'use' => 'Complete circulation reporting and fine reconciliation', 'tier' => 'personal', 'note' => 'Includes borrower identity needed for library operations'],
                     ['icon' => 'alert-triangle', 'name' => 'Overdue & Missing', 'use' => 'Follow-up lists for unresolved loans', 'tier' => 'personal', 'note' => 'Includes borrower identity needed for follow-up'],
+                    ['icon' => 'user-check', 'name' => 'Top Borrowers', 'use' => 'Recognition lists and borrowing-pattern reviews', 'tier' => 'personal', 'note' => 'Names, ID numbers and programs; top 100 only'],
                 ];
                 ?>
                 <?php foreach ($includesRows as $row): ?>

@@ -12561,3 +12561,65 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* Top Borrowers (Nov 2026), Data Export page: a sixth card (Top Borrowers
+   CSV) with an optional From / To date form. Six cards sit 3 x 2 above
+   960px (the existing 5-across row would strand the sixth); 960px and
+   below keep the existing single column. */
+@media (min-width: 961px) {
+    .export-center-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+.export-date-form {
+    margin: 0;
+}
+
+.export-date-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.export-date-field {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.export-date-field > span {
+    opacity: 0.8;
+}
+
+.export-date-field input[type="date"] {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    min-height: 36px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+    background: color-mix(in srgb, currentColor 6%, transparent);
+    color: inherit;
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    color-scheme: light dark;
+}
+
+.export-date-form button.export-download-btn {
+    cursor: pointer;
+    font: inherit;
+    font-weight: 900;
+}
+
+@media (max-width: 420px) {
+    .export-date-fields {
+        grid-template-columns: 1fr;
+    }
+}

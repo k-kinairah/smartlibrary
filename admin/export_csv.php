@@ -18,6 +18,7 @@ if (!smartlib_active_staff_session($conn)) {
     exit;
 }
 require_once '../config/borrow_fine_rules.php';
+require_once __DIR__ . '/includes/top_borrowers.php';
 
 function export_csv_fail(string $message, int $statusCode = 404): void {
     http_response_code($statusCode);
@@ -52,6 +53,33 @@ function export_csv_send(mysqli $conn, string $type, array $headers, string $sql
     fwrite($out, "\xEF\xBB\xBF");
     fputcsv($out, $headers);
     while ($row = $res->fetch_assoc()) {
+        $line = [];
+        foreach ($headers as $key) {
+            $line[] = (string)($row[$key] ?? '');
+        }
+        fputcsv($out, $line);
+    }
+
+    fclose($out);
+    exit;
+}
+
+/** Same output as export_csv_send(), for rows already built in PHP. */
+function export_csv_send_rows(string $type, array $headers, array $rows): void {
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . export_csv_filename($type) . '"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    $out = fopen('php://output', 'w');
+    if (!$out) {
+        exit;
+    }
+
+    // UTF-8 byte-order mark, as in export_csv_send(), so Excel reads accents.
+    fwrite($out, "\xEF\xBB\xBF");
+    fputcsv($out, $headers);
+    foreach ($rows as $row) {
         $line = [];
         foreach ($headers as $key) {
             $line[] = (string)($row[$key] ?? '');
@@ -176,6 +204,27 @@ $exports = [
                  ORDER BY br.status ASC, br.due_date ASC, br.record_id DESC"
     ]
 ];
+
+// Top Borrowers: Top 100 students and faculty, optional date range
+// (YYYY-MM-DD; blank means all time, anything invalid is ignored).
+if ($type === 'top_borrowers') {
+    $tbFrom = trim((string)($_GET['date_from'] ?? ''));
+    $tbTo = trim((string)($_GET['date_to'] ?? ''));
+    $tbRows = smartlib_top_borrowers($conn, $tbFrom !== '' ? $tbFrom : null, $tbTo !== '' ? $tbTo : null, 'all', 100);
+    $tbOut = [];
+    foreach ($tbRows as $i => $row) {
+        $tbOut[] = [
+            'rank' => $i + 1,
+            'borrower_number' => $row['borrower_number'],
+            'borrower_name' => $row['borrower_name'],
+            'role' => $row['role'],
+            'program' => $row['program_name'],
+            'borrow_count' => $row['borrow_count'],
+            'last_borrowed' => $row['last_borrowed'],
+        ];
+    }
+    export_csv_send_rows($type, ['rank', 'borrower_number', 'borrower_name', 'role', 'program', 'borrow_count', 'last_borrowed'], $tbOut);
+}
 
 if (!isset($exports[$type])) {
     export_csv_fail('Unknown export type.', 404);
