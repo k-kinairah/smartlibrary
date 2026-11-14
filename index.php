@@ -446,8 +446,8 @@ if ($genreRes) {
                         <path d="M5 19c0-3.2 2.8-5.2 7-5.2s7 2 7 5.2"></path>
                     </svg>
                 </span>
-                <label id="signin-identifier-label" class="floating-label">School ID</label>
-                <input type="text" id="signin-identifier" placeholder="20232243">
+                <label id="signin-identifier-label" class="floating-label" for="signin-identifier">School ID</label>
+                <input type="text" id="signin-identifier" placeholder="Enter your School ID">
             </div>
 
             <div class="floating-field">
@@ -457,9 +457,9 @@ if ($genreRes) {
                         <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"></path>
                     </svg>
                 </span>
-                <label class="floating-label" id="signin-password-label">PIN</label>
+                <label class="floating-label" id="signin-password-label" for="signin-password">PIN</label>
                 <div class="password-field-wrap">
-                    <input type="password" id="signin-password" placeholder="2026">
+                    <input type="password" id="signin-password" placeholder="Enter your PIN">
                     <button
                         type="button"
                         id="signin-password-toggle"
@@ -487,8 +487,8 @@ if ($genreRes) {
                         <path d="M12 3.5l6.5 2.6v5.4c0 4.4-2.8 7.3-6.5 8.6-3.7-1.3-6.5-4.2-6.5-8.6V6.1z"></path>
                     </svg>
                 </span>
-                <label class="floating-label">Verification Code</label>
-                <input type="text" id="signin-otp" inputmode="numeric" maxlength="6" placeholder="123456">
+                <label class="floating-label" for="signin-otp">Verification Code</label>
+                <input type="text" id="signin-otp" inputmode="numeric" maxlength="6" placeholder="Enter the 6-digit code">
             </div>
 
             <p id="signin-helper" class="modal-helper" aria-live="polite"> </p>

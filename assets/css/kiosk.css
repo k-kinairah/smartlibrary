@@ -21813,3 +21813,65 @@ html body #receipt-modal .receipt-modal-panel #receipt-done-btn.receipt-done-btn
     transition: none !important;
   }
 }
+
+
+/* ============================================================
+   Kiosk Polish v204 (Sign-In Fields: Hint Text)
+   ------------------------------------------------------------
+   The sign-in placeholders were sample entries ("20232243", "2026",
+   "123456") drawn at the typed size and weight at 30% opacity, so they
+   looked already filled in and read at about 2:1. They are now plain
+   hints ("Enter your School ID", ...) in a smaller, lighter, solid
+   colour, and typed text drops a step: ID and PIN 18px, the code 22px.
+   Field boxes, labels, icons and the eye button are unchanged; the
+   v200 rules for them stay in force.
+   ============================================================ */
+
+/* Typed text */
+html body #account-modal #signin-form .floating-field input#signin-identifier,
+html body #account-modal #signin-form .floating-field input#signin-password {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+}
+
+/* Hidden or shown, a typed PIN is the ID's size; dots keep a little air. */
+html body #account-modal #signin-form .floating-field input#signin-password:not(:placeholder-shown) {
+  font-size: 18px !important;
+  letter-spacing: 0.26em !important;
+}
+
+html body #account-modal #signin-form .floating-field input#signin-otp {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.45em !important;
+}
+
+/* Hints (all three). The code field's digit spacing must not reach its hint. */
+html body #account-modal #signin-form .floating-field input#signin-identifier::placeholder,
+html body #account-modal #signin-form .floating-field input#signin-password::placeholder,
+html body #account-modal #signin-form .floating-field input#signin-otp::placeholder {
+  font-size: 15.5px !important;
+  font-weight: 500 !important;
+  color: #557268 !important;
+  -webkit-text-fill-color: #557268 !important;
+  opacity: 1 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+/* Autofill keeps the typed size and the white fill (Chrome restyles the
+   first line of an autofilled field). */
+html body #account-modal #signin-form input#signin-identifier:-webkit-autofill,
+html body #account-modal #signin-form input#signin-password:-webkit-autofill {
+  font-size: 18px !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #082a20 !important;
+}
+
+html body #account-modal #signin-form input#signin-identifier:-webkit-autofill::first-line,
+html body #account-modal #signin-form input#signin-password:-webkit-autofill::first-line {
+  font-family: "Manrope", sans-serif !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+}
