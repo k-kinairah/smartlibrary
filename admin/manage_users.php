@@ -77,9 +77,14 @@ $editUserData = [
     'user_number' => '',
     'email' => '',
     'program_id' => null,
+    'department_id' => null,
     'role' => 'student',
     'status' => 'active'
 ];
+
+// Faculty/staff departments (database/faculty_departments_setup.sql), in the
+// school's order. Faculty get a department instead of a program.
+$departmentsList = library_card_get_departments($conn);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_user'])) {
     if (!smartlib_csrf_verify('manage_users_csrf', $_POST['csrf_token'] ?? '')) {
@@ -95,15 +100,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_user'])) {
     $role = strtolower(trim((string)($_POST['role'] ?? 'student')));
     $programIdRaw = trim((string)($_POST['program_id'] ?? ''));
     $programId = ctype_digit($programIdRaw) ? (int)$programIdRaw : null;
+    $departmentIdRaw = trim((string)($_POST['department_id'] ?? ''));
+    $departmentId = ctype_digit($departmentIdRaw) && isset($departmentsList[(int)$departmentIdRaw]) ? (int)$departmentIdRaw : null;
 
     if (!in_array($role, $allowedRoles, true)) {
         $role = 'student';
+    }
+    // Faculty/staff: department (optional, like Program) and no program.
+    // Every other role keeps its program and has no department.
+    if ($role === 'faculty') {
+        $programId = null;
+    } else {
+        $departmentId = null;
     }
 
     if ($firstName === '' || $lastName === '' || $userNumber === '' || $email === '' || $pin === '') {
         $flash = ['type' => 'error', 'message' => 'First name, last name, ID number, email, and PIN are required.'];
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $flash = ['type' => 'error', 'message' => 'Please enter a valid email address.'];
+    } elseif ($role === 'faculty' && $departmentIdRaw !== '' && $departmentId === null) {
+        $flash = ['type' => 'error', 'message' => 'Please choose a department from the list.'];
     } elseif (in_array($role, ['student', 'faculty'], true) && !preg_match('/^\d{4,}$/', $pin)) {
         $flash = ['type' => 'error', 'message' => 'For Student/Faculty accounts, PIN must be at least 4 digits.'];
     } elseif (in_array($role, ['librarian', 'admin'], true) && ($staffProblem = auth_staff_password_problem($pin, $userNumber)) !== '') {
@@ -142,12 +158,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_user'])) {
             $pinHash = password_hash($pin, PASSWORD_DEFAULT);
 
             $insert = $conn->prepare(
-                "INSERT INTO library_users (user_number, first_name, last_name, email, password, program_id, role, status, created_at)
-                 VALUES (?, ?, ?, ?, ?, NULLIF(?, 0), ?, 'active', NOW())"
+                "INSERT INTO library_users (user_number, first_name, last_name, email, password, program_id, department_id, role, status, created_at)
+                 VALUES (?, ?, ?, ?, ?, NULLIF(?, 0), ?, ?, 'active', NOW())"
             );
 
             if ($insert) {
-                $insert->bind_param('sssssis', $userNumber, $firstName, $lastName, $email, $pinHash, $programId, $role);
+                $insert->bind_param('sssssiis', $userNumber, $firstName, $lastName, $email, $pinHash, $programId, $departmentId, $role);
                 $ok = $insert->execute();
                 $createdUserId = $ok ? (int)$conn->insert_id : 0;
                 $insert->close();
@@ -158,7 +174,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_user'])) {
                         'email' => $email,
                         'role' => $role,
                         'status' => 'active',
-                        'program_id' => $programId
+                        'program_id' => $programId,
+                        'department_id' => $departmentId
                     ]);
                     $flash = ['type' => 'success', 'message' => 'User account created successfully.'];
                 } else {
@@ -183,6 +200,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
     $email = trim((string)($_POST['edit_email'] ?? ''));
     $programIdRaw = trim((string)($_POST['edit_program_id'] ?? ''));
     $programId = ctype_digit($programIdRaw) ? (int)$programIdRaw : null;
+    $departmentIdRaw = trim((string)($_POST['edit_department_id'] ?? ''));
+    $departmentId = ctype_digit($departmentIdRaw) && isset($departmentsList[(int)$departmentIdRaw]) ? (int)$departmentIdRaw : null;
     $role = strtolower(trim((string)($_POST['edit_role'] ?? 'student')));
     $status = strtolower(trim((string)($_POST['edit_status'] ?? 'active')));
     $newPin = trim((string)($_POST['edit_pin'] ?? ''));
@@ -201,6 +220,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
         }
         if (!in_array($status, $allowedStatusValues, true)) {
             $status = 'active';
+        }
+        // Faculty + department chosen: department, program cleared. Faculty
+        // with no department yet: keep the posted program (an older faculty
+        // account keeps its course until a department is picked). Any other
+        // role: program from the form, no department.
+        if ($role === 'faculty' && $departmentIdRaw !== '' && $departmentId === null) {
+            $flash = ['type' => 'error', 'message' => 'Please choose a department from the list.'];
+        } elseif ($role === 'faculty' && $departmentId !== null) {
+            $programId = null;
+        } elseif ($role !== 'faculty') {
+            $departmentId = null;
         }
 
         $dupStmt = $conn->prepare("SELECT user_id FROM library_users WHERE user_number = ? AND user_id <> ? LIMIT 1");
@@ -275,11 +305,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
                 $update = $conn->prepare(
                     "UPDATE library_users
                      SET first_name = ?, last_name = ?, user_number = ?, email = NULLIF(?, ''),
-                         program_id = NULLIF(?, 0), role = ?, status = ?, password = ?
+                         program_id = NULLIF(?, 0), department_id = ?, role = ?, status = ?, password = ?
                      WHERE user_id = ? LIMIT 1"
                 );
                 if ($update) {
-                    $update->bind_param('ssssisssi', $firstName, $lastName, $userNumber, $email, $programId, $role, $status, $pinHash, $editUserId);
+                    $update->bind_param('ssssiisssi', $firstName, $lastName, $userNumber, $email, $programId, $departmentId, $role, $status, $pinHash, $editUserId);
                     $ok = $update->execute();
                     $update->close();
                 }
@@ -287,11 +317,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
                 $update = $conn->prepare(
                     "UPDATE library_users
                      SET first_name = ?, last_name = ?, user_number = ?, email = NULLIF(?, ''),
-                         program_id = NULLIF(?, 0), role = ?, status = ?
+                         program_id = NULLIF(?, 0), department_id = ?, role = ?, status = ?
                      WHERE user_id = ? LIMIT 1"
                 );
                 if ($update) {
-                    $update->bind_param('ssssissi', $firstName, $lastName, $userNumber, $email, $programId, $role, $status, $editUserId);
+                    $update->bind_param('ssssiissi', $firstName, $lastName, $userNumber, $email, $programId, $departmentId, $role, $status, $editUserId);
                     $ok = $update->execute();
                     $update->close();
                 }
@@ -317,6 +347,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
                     'role' => $role,
                     'status' => $status,
                     'program_id' => $programId,
+                    'department_id' => $departmentId,
                     'pin_changed' => $newPin !== ''
                 ]);
 
@@ -343,6 +374,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
         'user_number' => $userNumber,
         'email' => $email,
         'program_id' => $programId,
+        'department_id' => $departmentId,
         'role' => in_array($role, ['student', 'faculty', 'librarian'], true) ? $role : 'student',
         'status' => in_array($status, $allowedStatusValues, true) ? $status : 'active'
     ];
@@ -410,7 +442,7 @@ if (!$openEditUserModal && isset($_GET['edit_user'])) {
     $editId = (int)($_GET['edit_user'] ?? 0);
     if ($editId > 0) {
         $editRow = null;
-        $editStmt = $conn->prepare("SELECT user_id, first_name, last_name, user_number, email, program_id, role, status FROM library_users WHERE user_id = ? LIMIT 1");
+        $editStmt = $conn->prepare("SELECT user_id, first_name, last_name, user_number, email, program_id, department_id, role, status FROM library_users WHERE user_id = ? LIMIT 1");
         if ($editStmt) {
             $editStmt->bind_param('i', $editId);
             $editStmt->execute();
@@ -432,6 +464,7 @@ if (!$openEditUserModal && isset($_GET['edit_user'])) {
                 'user_number' => (string)($editRow['user_number'] ?? ''),
                 'email' => (string)($editRow['email'] ?? ''),
                 'program_id' => isset($editRow['program_id']) ? (int)$editRow['program_id'] : null,
+                'department_id' => isset($editRow['department_id']) ? (int)$editRow['department_id'] : null,
                 'role' => in_array($dbRole, ['student', 'faculty', 'librarian'], true) ? $dbRole : 'student',
                 'status' => in_array((string)($editRow['status'] ?? ''), $allowedStatusValues, true) ? (string)$editRow['status'] : 'active'
             ];
@@ -715,6 +748,13 @@ require 'layout_top.php';
                 <?php endforeach; ?>
             </select>
 
+            <select name="department_id" hidden>
+                <option value="">No Department</option>
+                <?php foreach ($departmentsList as $did => $dname): ?>
+                    <option value="<?= (int)$did ?>"><?= htmlspecialchars((string)$dname) ?></option>
+                <?php endforeach; ?>
+            </select>
+
             <select name="role" required>
                 <option value="student">Student</option>
                 <option value="faculty">Faculty</option>
@@ -750,11 +790,19 @@ require 'layout_top.php';
             <input type="password" name="edit_pin" placeholder="New PIN / Password (optional)" autocomplete="new-password">
             <small class="pin-rule-note" id="editPinHint">Leave blank to keep current PIN/password. Student/Faculty: at least 4 digits. Librarian/Admin: at least <?= (int)AUTH_STAFF_PASSWORD_MIN ?> characters with a letter and a number.</small>
 
-            <select name="edit_program_id">
+            <select name="edit_program_id"<?= ($editUserData['role'] ?? '') === 'faculty' ? ' hidden' : '' ?>>
                 <option value="">No Program</option>
                 <?php foreach ($programs as $p): ?>
                     <?php $pid = (int)($p['program_id'] ?? 0); ?>
                     <option value="<?= $pid ?>" <?= (int)($editUserData['program_id'] ?? 0) === $pid ? 'selected' : '' ?>><?= htmlspecialchars((string)$p['program_name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+
+            <?php $editIsFaculty = ($editUserData['role'] ?? '') === 'faculty'; ?>
+            <select name="edit_department_id"<?= $editIsFaculty ? '' : ' hidden' ?>>
+                <option value="">No Department</option>
+                <?php foreach ($departmentsList as $did => $dname): ?>
+                    <option value="<?= (int)$did ?>" <?= (int)($editUserData['department_id'] ?? 0) === (int)$did ? 'selected' : '' ?>><?= htmlspecialchars((string)$dname) ?></option>
                 <?php endforeach; ?>
             </select>
 
@@ -795,6 +843,11 @@ require 'layout_top.php';
 function openUserModal() {
     const modal = document.getElementById('userModal');
     if (!modal) return;
+    // Program or Department by the role already chosen in the form.
+    const form = modal.querySelector('form');
+    if (form) {
+        syncAffiliationFields(form.querySelector('select[name="role"]'), form.querySelector('select[name="program_id"]'), form.querySelector('select[name="department_id"]'));
+    }
     modal.classList.add('show');
     modal.setAttribute('aria-hidden', 'false');
 }
@@ -903,6 +956,15 @@ function applyOptionalEmailValidation(formEl, selector) {
     });
 }
 
+// Faculty/staff pick a Department; every other role a Program. Hidden
+// selects still post: the server applies the role rule.
+function syncAffiliationFields(roleSelect, programSelect, departmentSelect) {
+    if (!roleSelect) return;
+    const isFaculty = roleSelect.value === 'faculty';
+    if (programSelect) programSelect.hidden = isFaculty;
+    if (departmentSelect) departmentSelect.hidden = !isFaculty;
+}
+
 if (createUserForm) {
     const createRole = createUserForm.querySelector('select[name="role"]');
     const createPin = createUserForm.querySelector('input[name="pin"]');
@@ -911,10 +973,14 @@ if (createUserForm) {
     applyOptionalEmailValidation(createUserForm, 'input[name="email"]');
 
     if (createRole) {
+        const createProgram = createUserForm.querySelector('select[name="program_id"]');
+        const createDepartment = createUserForm.querySelector('select[name="department_id"]');
         updatePinHint(createHint, createRole.value, false);
+        syncAffiliationFields(createRole, createProgram, createDepartment);
         createRole.addEventListener('change', function () {
             if (createPin) createPin.setCustomValidity('');
             updatePinHint(createHint, createRole.value, false);
+            syncAffiliationFields(createRole, createProgram, createDepartment);
         });
     }
 
@@ -958,10 +1024,14 @@ if (editUserForm) {
     applyOptionalEmailValidation(editUserForm, 'input[name="edit_email"]');
 
     if (editRole) {
+        const editProgram = editUserForm.querySelector('select[name="edit_program_id"]');
+        const editDepartment = editUserForm.querySelector('select[name="edit_department_id"]');
         updatePinHint(editHint, editRole.value, true, editWasStaff);
+        syncAffiliationFields(editRole, editProgram, editDepartment);
         editRole.addEventListener('change', function () {
             if (pinInput) pinInput.setCustomValidity('');
             updatePinHint(editHint, editRole.value, true, editWasStaff);
+            syncAffiliationFields(editRole, editProgram, editDepartment);
         });
     }
 

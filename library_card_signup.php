@@ -10,6 +10,8 @@ $csrfToken = smartlib_csrf_token($csrfKey);
 $message = '';
 $messageType = 'info';
 $programs = library_card_get_programs($conn);
+// Faculty/staff pick a department instead of a program (school's own order).
+$departments = library_card_get_departments($conn);
 $form = [
     'first_name' => '',
     'last_name' => '',
@@ -17,6 +19,7 @@ $form = [
     'user_number' => '',
     'account_type' => '',
     'program_id' => '',
+    'department_id' => '',
     'year_level' => '',
     'gender' => '',
     'data_consent' => ''
@@ -29,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $form['user_number'] = library_card_normalize_id((string)($_POST['user_number'] ?? ''));
     $form['account_type'] = trim((string)($_POST['account_type'] ?? ''));
     $form['program_id'] = trim((string)($_POST['program_id'] ?? ''));
+    $form['department_id'] = trim((string)($_POST['department_id'] ?? ''));
     $form['year_level'] = trim((string)($_POST['year_level'] ?? ''));
     $form['gender'] = trim((string)($_POST['gender'] ?? ''));
     $form['data_consent'] = ($_POST['data_consent'] ?? '') === '1' ? '1' : '';
@@ -42,11 +46,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $role = in_array($form['account_type'], ['student', 'faculty'], true) ? $form['account_type'] : null;
 
     $programId = ctype_digit($form['program_id']) && isset($programs[(int)$form['program_id']]) ? (int)$form['program_id'] : null;
+    $departmentId = ctype_digit($form['department_id']) && isset($departments[(int)$form['department_id']]) ? (int)$form['department_id'] : null;
     $yearLevel = ctype_digit($form['year_level']) && isset(LIBRARY_CARD_YEAR_LEVELS[(int)$form['year_level']]) ? (int)$form['year_level'] : null;
     $gender = isset(LIBRARY_CARD_GENDERS[$form['gender']]) ? $form['gender'] : null;
     if ($role === 'faculty') {
-        // Faculty have no year level; ignore anything submitted for it.
+        // Faculty/staff have no year level and no program (they pick a
+        // department); ignore anything the hidden fields submitted.
         $yearLevel = null;
+        $programId = null;
+    } elseif ($role === 'student') {
+        // Students keep Program / course; a department is never stored for them.
+        $departmentId = null;
     }
 
     if (!smartlib_csrf_verify($csrfKey, $_POST['csrf_token'] ?? '')) {
@@ -62,16 +72,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Please use your official PHINMA email address (ending in @' . LIBRARY_CARD_EMAIL_DOMAIN . ').';
         $messageType = 'error';
     } elseif ($role === null) {
-        $message = 'Please select whether you\'re a student or faculty.';
+        $message = 'Please select whether you\'re a student or faculty/staff.';
         $messageType = 'error';
     } elseif (!library_card_id_format_ok($form['user_number'])) {
         $message = 'Please enter a valid school ID number.';
         $messageType = 'error';
-    } elseif ($form['program_id'] !== '' && $programId === null) {
+    } elseif ($role === 'student' && $form['program_id'] !== '' && $programId === null) {
         $message = 'Please choose your program from the list.';
         $messageType = 'error';
     } elseif ($role === 'student' && $programId === null) {
         $message = 'Please choose your program.';
+        $messageType = 'error';
+    } elseif ($role === 'faculty' && $departmentId === null) {
+        $message = 'Please choose your department.';
         $messageType = 'error';
     } elseif ($role === 'student' && $yearLevel === null) {
         $message = 'Please choose your year level.';
@@ -102,6 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'last_name' => $form['last_name'],
                 'email' => $form['email'],
                 'program_id' => $programId,
+                'department_id' => $departmentId,
                 'year_level' => $yearLevel,
                 'gender' => $gender
             ], auth_client_ip(), 'signup', null, password_hash($pin, PASSWORD_DEFAULT));
@@ -184,17 +198,26 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
                 </label>
                 <label class="role-option">
                     <input type="radio" name="account_type" value="faculty" <?= $form['account_type'] === 'faculty' ? 'checked' : '' ?>>
-                    <span>Faculty</span>
+                    <span>Faculty / Staff</span>
                 </label>
             </div>
         </div>
 
-        <div class="field">
+        <div class="field" id="program_field" <?= $form['account_type'] === 'faculty' ? 'hidden' : '' ?>>
             <label for="program_id">Program / course</label>
             <select id="program_id" name="program_id">
                 <option value="">Select your program</option>
                 <?php foreach ($programs as $pid => $pname): ?>
                     <option value="<?= $pid ?>" <?= $form['program_id'] === (string)$pid ? 'selected' : '' ?>><?= htmlspecialchars($pname) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="field" id="department_field" <?= $form['account_type'] === 'faculty' ? '' : 'hidden' ?>>
+            <label for="department_id">Department</label>
+            <select id="department_id" name="department_id">
+                <option value="">Select your department</option>
+                <?php foreach ($departments as $did => $dname): ?>
+                    <option value="<?= $did ?>" <?= $form['department_id'] === (string)$did ? 'selected' : '' ?>><?= htmlspecialchars($dname) ?></option>
                 <?php endforeach; ?>
             </select>
         </div>
@@ -225,7 +248,7 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
                 <span class="consent-check" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"></path></svg>
                 </span>
-                <span class="consent-text">I understand my info is used to manage my library account, and my program, year level, and gender only for anonymous usage stats.</span>
+                <span class="consent-text">I understand my info is used to manage my library account, and my program or department, year level, and gender only for anonymous usage stats.</span>
             </label>
         </div>
 
@@ -284,13 +307,19 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
     // than one ID format in use at once -- see library_card_normalize_id()
     // in config/library_card_helpers.php). The server ignores year level
     // for faculty regardless.
+    // Faculty/staff also swap Program / course for Department.
     const roleInputs = document.querySelectorAll('input[name="account_type"]');
     const yearField = document.getElementById('year_level_field');
+    const programField = document.getElementById('program_field');
+    const departmentField = document.getElementById('department_field');
     if (!roleInputs.length || !yearField) return;
 
     function sync() {
         const checked = document.querySelector('input[name="account_type"]:checked');
-        yearField.hidden = !!checked && checked.value === 'faculty';
+        const isFaculty = !!checked && checked.value === 'faculty';
+        yearField.hidden = isFaculty;
+        if (programField) programField.hidden = isFaculty;
+        if (departmentField) departmentField.hidden = !isFaculty;
     }
 
     roleInputs.forEach(function (input) {

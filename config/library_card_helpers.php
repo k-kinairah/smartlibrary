@@ -51,6 +51,24 @@ function library_card_get_programs(mysqli $conn): array {
     return $programs;
 }
 
+/**
+ * Faculty/staff departments (database/faculty_departments_setup.sql), in the
+ * school's own order. Returns [] if the table is missing, so the sign-up page
+ * still renders (faculty then cannot pick one and get the "choose" error).
+ */
+function library_card_get_departments(mysqli $conn): array {
+    $departments = [];
+    try {
+        $res = $conn->query("SELECT department_id, department_name FROM departments ORDER BY sort_order ASC, department_name ASC");
+        while ($res && ($row = $res->fetch_assoc())) {
+            $departments[(int)$row['department_id']] = (string)$row['department_name'];
+        }
+    } catch (Throwable $e) {
+        return [];
+    }
+    return $departments;
+}
+
 function library_card_normalize_email(string $email): string {
     return strtolower(trim($email));
 }
@@ -300,16 +318,17 @@ function library_card_create_verification(mysqli $conn, array $signup, string $i
     $ttl = LIBRARY_CARD_CODE_TTL_MINUTES;
 
     $programId = $signup['program_id'] ?? null;
+    $departmentId = $signup['department_id'] ?? null;
     $yearLevel = $signup['year_level'] ?? null;
     $gender = $signup['gender'] ?? null;
 
     $stmt = $conn->prepare(
         "INSERT INTO auth_signup_verifications (
             purpose, user_id, user_number, account_type, first_name, last_name,
-            program_id, year_level, gender, email_to,
+            program_id, department_id, year_level, gender, email_to,
             code_hash, pin_hash, requested_ip, attempt_count, max_attempts, expires_at, created_at
         ) VALUES (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, NOW() + INTERVAL ? MINUTE, NOW()
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, NOW() + INTERVAL ? MINUTE, NOW()
         )"
     );
     if (!$stmt) {
@@ -317,9 +336,9 @@ function library_card_create_verification(mysqli $conn, array $signup, string $i
     }
 
     $stmt->bind_param(
-        'sissssiisssssii',
+        'sissssiiisssssii',
         $purpose, $userId, $signup['user_number'], $signup['account_type'], $signup['first_name'], $signup['last_name'],
-        $programId, $yearLevel, $gender, $signup['email'], $hash, $pinHash, $ip, $maxAttempts, $ttl
+        $programId, $departmentId, $yearLevel, $gender, $signup['email'], $hash, $pinHash, $ip, $maxAttempts, $ttl
     );
     $ok = $stmt->execute();
     $verificationId = (int)$stmt->insert_id;
@@ -336,7 +355,7 @@ function library_card_create_verification(mysqli $conn, array $signup, string $i
 function library_card_get_verification(mysqli $conn, int $verificationId): ?array {
     $stmt = $conn->prepare(
         "SELECT verification_id, purpose, user_id, user_number, account_type, first_name, last_name,
-                program_id, year_level, gender, email_to, code_hash, pin_hash, attempt_count, max_attempts, expires_at, used_at,
+                program_id, department_id, year_level, gender, email_to, code_hash, pin_hash, attempt_count, max_attempts, expires_at, used_at,
                 (expires_at <= NOW()) AS is_expired
          FROM auth_signup_verifications
          WHERE verification_id = ?
@@ -392,10 +411,10 @@ function library_card_create_account(mysqli $conn, array $verification): array {
         $stmt = $conn->prepare(
             "INSERT INTO library_users (
                 user_number, first_name, last_name, email, email_verified_at,
-                card_issued_at, registration_source, password, program_id, year_level, gender,
+                card_issued_at, registration_source, password, program_id, department_id, year_level, gender,
                 role, status, created_at
             ) VALUES (
-                ?, ?, ?, ?, NOW(), NOW(), 'self_signup', ?, ?, ?, ?, ?, 'active', NOW()
+                ?, ?, ?, ?, NOW(), NOW(), 'self_signup', ?, ?, ?, ?, ?, ?, 'active', NOW()
             )"
         );
         if (!$stmt) {
@@ -403,12 +422,13 @@ function library_card_create_account(mysqli $conn, array $verification): array {
         }
         $pinHash = $verification['pin_hash'] ?? null;
         $programId = $verification['program_id'] !== null ? (int)$verification['program_id'] : null;
+        $departmentId = isset($verification['department_id']) && $verification['department_id'] !== null ? (int)$verification['department_id'] : null;
         $yearLevel = $verification['year_level'] !== null ? (int)$verification['year_level'] : null;
         $gender = $verification['gender'];
         $stmt->bind_param(
-            'sssssiiss',
+            'sssssiiiss',
             $verification['user_number'], $verification['first_name'], $verification['last_name'],
-            $verification['email_to'], $pinHash, $programId, $yearLevel, $gender, $role
+            $verification['email_to'], $pinHash, $programId, $departmentId, $yearLevel, $gender, $role
         );
         $stmt->execute();
         $userId = (int)$stmt->insert_id;
