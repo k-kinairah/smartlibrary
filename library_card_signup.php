@@ -36,11 +36,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $form['year_level'] = trim((string)($_POST['year_level'] ?? ''));
     $form['gender'] = trim((string)($_POST['gender'] ?? ''));
     $form['data_consent'] = ($_POST['data_consent'] ?? '') === '1' ? '1' : '';
-    // Kiosk PIN: same rule and trimming as every other PIN entry point
-    // (admin/manage_users.php, reset_pin.php). Never kept in $form, so it
-    // isn't echoed back into the page after a validation error.
-    $pin = trim((string)($_POST['pin'] ?? ''));
-    $confirmPin = trim((string)($_POST['confirm_pin'] ?? ''));
     // Role is an explicit choice, not inferred from the ID's shape -- see
     // library_card_normalize_id()'s docblock for why.
     $role = in_array($form['account_type'], ['student', 'faculty'], true) ? $form['account_type'] : null;
@@ -95,12 +90,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($form['data_consent'] !== '1') {
         $message = 'Please check the box confirming you understand how your information will be used.';
         $messageType = 'error';
-    } elseif (!preg_match('/^\d{4,}$/', $pin)) {
-        $message = 'Please enter a kiosk PIN of at least 4 digits.';
-        $messageType = 'error';
-    } elseif ($confirmPin !== $pin) {
-        $message = 'PINs don\'t match.';
-        $messageType = 'error';
     } else {
         $allowed = library_card_check_signup_allowed($conn, $form['email'], $form['user_number']);
 
@@ -118,7 +107,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'department_id' => $departmentId,
                 'year_level' => $yearLevel,
                 'gender' => $gender
-            ], auth_client_ip(), 'signup', null, password_hash($pin, PASSWORD_DEFAULT));
+            // No PIN yet: it is chosen after the emailed code is verified
+            // (library_card_set_pin.php), so a form error never wipes it.
+            ], auth_client_ip(), 'signup', null, null);
 
             if (!$created) {
                 $message = 'Unable to start your signup right now. Please try again.';
@@ -162,7 +153,7 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
         </div>
     </div>
     <h1>Get your library card</h1>
-    <p class="sub">Sign up with your PHINMA email. We'll email you a 6-digit code to confirm it's you, then show your card to print.</p>
+    <p class="sub">Sign up with your PHINMA email. We'll email you a 6-digit code to confirm it's you, then you'll create your kiosk PIN and get your card to print.</p>
 
     <?php if ($message !== ''): ?>
         <div class="msg <?= htmlspecialchars($messageType) ?>" role="alert"><?= htmlspecialchars($message) ?></div>
@@ -252,46 +243,6 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
             </label>
         </div>
 
-        <p class="hint pin-intro">This PIN logs you into the self-service kiosk to search and borrow books &mdash; you'll use it every time, so pick something you'll remember.</p>
-        <div class="field-row pin-row stack-sm">
-            <div class="field">
-                <label for="pin">Create your kiosk PIN</label>
-                <div class="password-field-wrap">
-                    <input id="pin" name="pin" type="password" inputmode="numeric" maxlength="20" pattern="\d{4,}" autocomplete="new-password" placeholder="At least 4 digits" required>
-                    <button type="button" id="pin_toggle" class="password-toggle-btn" aria-controls="pin" aria-label="Show PIN" aria-pressed="false">
-                        <svg class="icon-eye" viewBox="0 0 24 24" role="presentation" aria-hidden="true">
-                            <path d="M1.5 12s3.6-6.5 10.5-6.5S22.5 12 22.5 12s-3.6 6.5-10.5 6.5S1.5 12 1.5 12z"></path>
-                            <circle cx="12" cy="12" r="3.2"></circle>
-                        </svg>
-                        <svg class="icon-eye-off" viewBox="0 0 24 24" role="presentation" aria-hidden="true">
-                            <path d="M1.5 12s3.6-6.5 10.5-6.5c2.1 0 3.9.6 5.4 1.5"></path>
-                            <path d="M22.5 12s-3.6 6.5-10.5 6.5c-2.1 0-3.9-.6-5.4-1.5"></path>
-                            <circle cx="12" cy="12" r="3.2"></circle>
-                            <path d="M3 21L21 3"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            <div class="field">
-                <label for="confirm_pin">Confirm PIN</label>
-                <div class="password-field-wrap">
-                    <input id="confirm_pin" name="confirm_pin" type="password" inputmode="numeric" maxlength="20" pattern="\d{4,}" autocomplete="new-password" placeholder="Re-enter PIN" required>
-                    <button type="button" id="confirm_pin_toggle" class="password-toggle-btn" aria-controls="confirm_pin" aria-label="Show PIN" aria-pressed="false">
-                        <svg class="icon-eye" viewBox="0 0 24 24" role="presentation" aria-hidden="true">
-                            <path d="M1.5 12s3.6-6.5 10.5-6.5S22.5 12 22.5 12s-3.6 6.5-10.5 6.5S1.5 12 1.5 12z"></path>
-                            <circle cx="12" cy="12" r="3.2"></circle>
-                        </svg>
-                        <svg class="icon-eye-off" viewBox="0 0 24 24" role="presentation" aria-hidden="true">
-                            <path d="M1.5 12s3.6-6.5 10.5-6.5c2.1 0 3.9.6 5.4 1.5"></path>
-                            <path d="M22.5 12s-3.6 6.5-10.5 6.5c-2.1 0-3.9-.6-5.4-1.5"></path>
-                            <circle cx="12" cy="12" r="3.2"></circle>
-                            <path d="M3 21L21 3"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <button type="submit" class="btn">Send verification code</button>
     </form>
 
@@ -326,29 +277,6 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
         input.addEventListener('change', sync);
     });
     sync();
-})();
-
-(function () {
-    // Show/hide PIN toggles, same as reset_pin.php's.
-    function wirePasswordToggle(inputId, buttonId) {
-        const input = document.getElementById(inputId);
-        const button = document.getElementById(buttonId);
-        if (!input || !button) return;
-
-        function setVisible(visible) {
-            input.type = visible ? 'text' : 'password';
-            button.classList.toggle('is-visible', visible);
-            button.setAttribute('aria-pressed', visible ? 'true' : 'false');
-            button.setAttribute('aria-label', visible ? 'Hide PIN' : 'Show PIN');
-        }
-
-        button.addEventListener('click', function () {
-            setVisible(input.type === 'password');
-        });
-    }
-
-    wirePasswordToggle('pin', 'pin_toggle');
-    wirePasswordToggle('confirm_pin', 'confirm_pin_toggle');
 })();
 
 (function () {

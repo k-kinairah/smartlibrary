@@ -80,7 +80,16 @@ if ($verificationId <= 0) {
         $message = 'This library card is no longer available. Please see the librarian.';
         $messageType = 'error';
         $canEnterCode = false;
+    } elseif (trim((string)($verification['pin_hash'] ?? '')) === '') {
+        // Email confirmed; the kiosk PIN is chosen on the next page. The
+        // account is only created there, and this row stays unused until
+        // then, so the code can still be re-entered until it expires.
+        $_SESSION['library_card_pin_stage'] = ['verification_id' => $verificationId, 'at' => time()];
+        session_regenerate_id(true);
+        header('Location: library_card_set_pin.php');
+        exit;
     } else {
+        // Started on the old form, which already collected the PIN.
         $result = library_card_create_account($conn, $verification);
 
         if (!empty($result['user_id'])) {
@@ -138,7 +147,7 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
                 <input id="code" name="code" class="code-input" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" pattern="\d{6}" placeholder="••••••" aria-describedby="code_hint" required autofocus>
                 <span class="hint" id="code_hint">Enter the 6 digits from the email.</span>
             </div>
-            <button type="submit" class="btn"><?= $isReprint ? 'Verify and show my card' : 'Verify and get my card' ?></button>
+            <button type="submit" class="btn"><?= $isReprint ? 'Verify and show my card' : 'Verify my email' ?></button>
         </form>
     <?php else: ?>
         <a class="btn" href="<?= htmlspecialchars($restartUrl) ?>">Start again</a>

@@ -3,10 +3,11 @@
  * Self-registration for the digital library card.
  *
  * Students/faculty sign up with their PHINMA email and school ID number,
- * choose their own kiosk PIN, confirm a 6-digit emailed code, and get a
- * library_users row with a card and that PIN, so they can sign in to the
- * kiosk straight away. Self-signups created before 2026-11-04 have no PIN
- * and still need a librarian to set one.
+ * confirm a 6-digit emailed code, then choose their own kiosk PIN
+ * (library_card_set_pin.php), and get a library_users row with a card and
+ * that PIN, so they can sign in to the kiosk straight away. Signups started
+ * on the older form carry the PIN from the form instead. Self-signups
+ * created before 2026-11-04 have no PIN and still need a librarian to set one.
  *
  * Pending signups live in auth_signup_verifications (see
  * database/library_card_setup.sql). All expiry/age checks are done in SQL
@@ -308,8 +309,10 @@ function library_card_check_reprint_allowed(mysqli $conn, string $email, string 
 /**
  * Store a new pending code and return ['verification_id' => ..., 'code' => ...].
  * $purpose is 'signup' (account created on success) or 'reprint' (existing
- * account $userId is shown on success). $pinHash is the password_hash() of
- * the signer's chosen kiosk PIN (signup only); the plain PIN never gets here.
+ * account $userId is shown on success). $pinHash is the password_hash() of a
+ * kiosk PIN chosen on the older signup form; new signups pass null and the PIN
+ * is chosen after the code is verified (library_card_set_pin.php). The plain
+ * PIN never gets here.
  */
 function library_card_create_verification(mysqli $conn, array $signup, string $ip, string $purpose = 'signup', ?int $userId = null, ?string $pinHash = null): ?array {
     $code = (string)random_int(100000, 999999);
@@ -394,8 +397,9 @@ function library_card_increment_attempt(mysqli $conn, int $verificationId): void
 }
 
 /**
- * Create the verified account from a pending signup. The staged pin_hash
- * (the signer's chosen kiosk PIN, already hashed) becomes the account's
+ * Create the verified account from a pending signup. $verification['pin_hash']
+ * (the signer's chosen kiosk PIN, already hashed: set by library_card_set_pin.php,
+ * or staged by the older signup form for in-flight signups) becomes the account's
  * password, so it can sign in to the kiosk right away. A signup staged
  * before pin_hash existed carries NULL and gets a no-PIN account, as before.
  *
