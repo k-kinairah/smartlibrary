@@ -42,7 +42,7 @@ $exportCards = [
         'type' => 'users',
         'icon' => 'people',
         'title' => 'Borrowers & Staff',
-        'description' => 'User directory without passwords, including program, role, status, active loans, and fine totals.',
+        'description' => 'User directory without passwords, including program or department, role, status, active loans, and fine totals.',
         'count' => export_center_scalar($conn, 'SELECT COUNT(*) FROM library_users'),
         'count_label' => 'accounts'
     ],

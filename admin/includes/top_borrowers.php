@@ -54,14 +54,16 @@ if (!function_exists('smartlib_top_borrowers')) {
                        COALESCE(u.user_number, '') AS borrower_number,
                        TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) AS borrower_name,
                        u.role,
-                       COALESCE(p.program_name, '') AS program_name,
+                       -- program_name can now hold a faculty/staff department (department first, else program)
+                       COALESCE(NULLIF(d.department_name, ''), p.program_name, '') AS program_name,
                        COUNT(br.record_id) AS borrow_count,
                        MAX({$dateExpr}) AS last_borrowed
                 FROM borrow_records br
                 INNER JOIN library_users u ON u.user_id = br.user_id
                 LEFT JOIN programs p ON p.program_id = u.program_id
+                LEFT JOIN departments d ON d.department_id = u.department_id
                 WHERE " . implode(' AND ', $where) . "
-                GROUP BY u.user_id, u.user_number, u.first_name, u.last_name, u.role, p.program_name
+                GROUP BY u.user_id, u.user_number, u.first_name, u.last_name, u.role, p.program_name, d.department_name
                 HAVING COUNT(br.record_id) > 0
                 ORDER BY borrow_count DESC, last_borrowed DESC, borrower_name ASC, u.user_id ASC
                 LIMIT {$limit}";

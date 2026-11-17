@@ -28,14 +28,16 @@ function entry_report_fetch_rows(mysqli $conn, string $dateFrom, string $dateTo)
         $stmt = $conn->prepare(
             "SELECT HOUR(e.created_at) AS hour_of_day,
                     p.program_name,
+                    d.department_name,
                     COALESCE(e.year_level, u.year_level) AS entry_year,
                     COALESCE(e.gender, u.gender) AS entry_gender,
                     COUNT(*) AS total
              FROM library_entry_logs e
              LEFT JOIN library_users u ON u.user_id = e.user_id
              LEFT JOIN programs p ON p.program_id = COALESCE(e.program_id, u.program_id)
+             LEFT JOIN departments d ON d.department_id = COALESCE(e.department_id, u.department_id)
              WHERE e.created_at >= ? AND e.created_at < DATE_ADD(?, INTERVAL 1 DAY)
-             GROUP BY hour_of_day, p.program_name, entry_year, entry_gender"
+             GROUP BY hour_of_day, p.program_name, d.department_name, entry_year, entry_gender"
         );
         $stmt->bind_param('ss', $dateFrom, $dateTo);
         $stmt->execute();
@@ -107,6 +109,24 @@ function entry_report_by_program(array $rows): array {
     return $result;
 }
 
+/**
+ * Faculty/staff departments, busiest first, with "Not specified" last.
+ * Everyone without a department (students, older faculty) is "Not
+ * specified", so the section still adds up to the total.
+ */
+function entry_report_by_department(array $rows): array {
+    $totals = entry_report_rollup($rows, 'department_name');
+    $notSpecified = $totals[''] ?? 0;
+    unset($totals['']);
+    arsort($totals);
+    $result = [];
+    foreach ($totals as $name => $total) {
+        $result[] = ['label' => (string)$name, 'total' => $total];
+    }
+    $result[] = ['label' => ENTRY_REPORT_NOT_SPECIFIED, 'total' => $notSpecified];
+    return $result;
+}
+
 /** Every option from the signup form, then "Not specified". */
 function entry_report_by_gender(array $rows): array {
     $totals = entry_report_rollup($rows, 'entry_gender');
@@ -156,6 +176,7 @@ function entry_report_build(mysqli $conn, string $dateFrom, string $dateTo): arr
         'sections' => [
             ['title' => 'Entries by Hour of Day', 'column' => 'Hour', 'rows' => entry_report_by_hour($rows)],
             ['title' => 'Entries by Course', 'column' => 'Course', 'rows' => entry_report_by_program($rows)],
+            ['title' => 'Entries by Department', 'column' => 'Department', 'rows' => entry_report_by_department($rows)],
             ['title' => 'Entries by Gender', 'column' => 'Gender', 'rows' => entry_report_by_gender($rows)],
             ['title' => 'Entries by Year Level', 'column' => 'Year Level', 'rows' => entry_report_by_year($rows)],
         ],

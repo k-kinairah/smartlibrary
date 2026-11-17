@@ -49,9 +49,14 @@ if ($userId > 0) {
     sync_overdue_status_and_fines($conn, $userId);
 
     $userStmt = $conn->prepare(
-        "SELECT u.user_id, u.user_number, u.first_name, u.last_name, u.email, u.role, u.status, p.program_name
+        // program_name can now hold a faculty/staff department (department first,
+        // else program). Left NULL when neither, so the page's "General
+        // Collection" fallback still shows, as before.
+        "SELECT u.user_id, u.user_number, u.first_name, u.last_name, u.email, u.role, u.status,
+                COALESCE(NULLIF(d.department_name, ''), p.program_name) AS program_name
          FROM library_users u
          LEFT JOIN programs p ON p.program_id = u.program_id
+         LEFT JOIN departments d ON d.department_id = u.department_id
          WHERE u.user_id = ?
          LIMIT 1"
     );

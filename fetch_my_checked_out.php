@@ -71,9 +71,12 @@ smartlib_ensure_borrow_renewal_columns($conn);
 sync_overdue_status_and_fines($conn, $userId);
 
 $userStmt = $conn->prepare(
-    "SELECT u.user_id, u.user_number, u.first_name, u.last_name, u.role, p.program_name
+    // program_name can now hold a faculty/staff department (department first, else program).
+    "SELECT u.user_id, u.user_number, u.first_name, u.last_name, u.role,
+            COALESCE(NULLIF(d.department_name, ''), p.program_name, '') AS program_name
      FROM library_users u
      LEFT JOIN programs p ON p.program_id = u.program_id
+     LEFT JOIN departments d ON d.department_id = u.department_id
      WHERE u.user_id = ?
      LIMIT 1"
 );

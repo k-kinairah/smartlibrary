@@ -1805,6 +1805,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const author = modalRoot?.dataset.author || modalRoot?.querySelector(".book-modal-author-sub")?.textContent.trim() || "Unknown Author";
         const isbn = checkoutReceipt.isbn || modalRoot?.dataset.isbn || "N/A";
         const course = checkoutReceipt.course || modalRoot?.dataset.course || "N/A";
+        // "Department" for faculty/staff (checkout_book.php course_label).
+        const courseLabel = checkoutReceipt.course_label || "Course";
         const accession = checkoutReceipt.accession_no || modalRoot?.dataset.accession || "N/A";
 
         const receiptUserName = checkoutReceipt.user_name || user.name;
@@ -1820,6 +1822,7 @@ document.addEventListener("DOMContentLoaded", () => {
             userName: receiptUserName,
             userId: receiptUserId,
             course,
+            courseLabel,
             title,
             author,
             accession,
@@ -1870,7 +1873,7 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
 ${receiptFlankLabel("student", "Student Information")}
             <div class="receipt-hero receipt-hero--student">${escapeHtml(data.userName)}</div>
-${receiptStrip([["ID Number", data.userId, "receipt-strip-col--nowrap"], ["Course", data.course, "receipt-strip-col--wide"]])}
+${receiptStrip([["ID Number", data.userId, "receipt-strip-col--nowrap"], [data.courseLabel || "Course", data.course, "receipt-strip-col--wide"]])}
 ${receiptFlankLabel("book", "Book Information")}
             <div class="receipt-hero receipt-hero--book">${escapeHtml(data.title)}</div>
 ${receiptStrip([["Author", data.author, "receipt-strip-col--wide"], ["Accession No.", data.accession, "receipt-strip-col--nowrap"], ["ISBN", data.isbn, "receipt-strip-col--nowrap"]])}
@@ -2056,7 +2059,7 @@ ${receiptFlankLabel("verify", "Verification")}
                         <div class="grid">
                             <span>Name:</span><span>${escapeHtml(lastReceiptData.userName)}</span>
                             <span>ID Number:</span><span>${escapeHtml(lastReceiptData.userId)}</span>
-                            <span>Course:</span><span>${escapeHtml(lastReceiptData.course)}</span>
+                            <span>${escapeHtml(lastReceiptData.courseLabel || "Course")}:</span><span>${escapeHtml(lastReceiptData.course)}</span>
                         </div>
                         <div class="line"></div>
                         <div class="section">Book Information</div>

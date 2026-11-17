@@ -138,7 +138,7 @@ $exports = [
                  ORDER BY b.title ASC, bc.accession_no ASC, bc.copy_id ASC"
     ],
     'users' => [
-        'headers' => ['user_id', 'user_number', 'first_name', 'last_name', 'email', 'program', 'role', 'status', 'active_loans', 'total_fines', 'created_at'],
+        'headers' => ['user_id', 'user_number', 'first_name', 'last_name', 'email', 'program', 'department', 'role', 'status', 'active_loans', 'total_fines', 'created_at'],
         'sql' => "SELECT
                     u.user_id,
                     COALESCE(u.user_number, '') AS user_number,
@@ -146,6 +146,7 @@ $exports = [
                     COALESCE(u.last_name, '') AS last_name,
                     COALESCE(u.email, '') AS email,
                     COALESCE(p.program_name, '') AS program,
+                    COALESCE(d.department_name, '') AS department,
                     COALESCE(u.role, '') AS role,
                     COALESCE(u.status, '') AS status,
                     SUM(CASE WHEN br.status IN ('borrowed', 'overdue', 'missing') THEN 1 ELSE 0 END) AS active_loans,
@@ -153,6 +154,7 @@ $exports = [
                     COALESCE(DATE_FORMAT(u.created_at, '%Y-%m-%d %H:%i:%s'), '') AS created_at
                  FROM library_users u
                  LEFT JOIN programs p ON p.program_id = u.program_id
+                 LEFT JOIN departments d ON d.department_id = u.department_id
                  LEFT JOIN borrow_records br ON br.user_id = u.user_id
                  GROUP BY u.user_id
                  ORDER BY u.role ASC, u.last_name ASC, u.first_name ASC, u.user_id ASC"

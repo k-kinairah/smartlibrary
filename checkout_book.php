@@ -174,13 +174,17 @@ try {
     $userName = (string)($_SESSION['name'] ?? 'Student User');
     $userNumber = (string)($_SESSION['user_number'] ?? '');
     $course = '';
+    $courseLabel = 'Course';
 
     $userStmt = $conn->prepare(
+        // program_name can now hold a faculty/staff department (department first, else program).
         "SELECT CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) AS full_name,
                 COALESCE(u.user_number, '') AS user_number,
-                COALESCE(p.program_name, '') AS program_name
+                COALESCE(NULLIF(d.department_name, ''), p.program_name, '') AS program_name,
+                COALESCE(u.role, '') AS role
          FROM library_users u
          LEFT JOIN programs p ON p.program_id = u.program_id
+         LEFT JOIN departments d ON d.department_id = u.department_id
          WHERE u.user_id = ?
          LIMIT 1"
     );
@@ -204,6 +208,7 @@ try {
             }
 
             $course = trim((string)($u['program_name'] ?? ''));
+            $courseLabel = strtolower((string)($u['role'] ?? '')) === 'faculty' ? 'Department' : 'Course';
         }
     }
 
@@ -228,6 +233,7 @@ try {
             'user_name' => $userName,
             'user_number' => $userNumber,
             'course' => $course,
+            'course_label' => $courseLabel,
             'issued_at' => date('n/j/Y, g:i:s A'),
             'borrowed_date' => date('n/j/Y', strtotime($borrowedDateDb)),
             'due_date' => date('n/j/Y', strtotime($dueDateDb)),
