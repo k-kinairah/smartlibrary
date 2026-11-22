@@ -12,6 +12,18 @@ function respond_json(array $payload, int $statusCode = 200): void {
     exit;
 }
 
+// One server-log line per outcome, so "I never got the email" can be
+// answered from the PHP error log. Only the (already letters/digits-only)
+// ID, the token row id and a masked address: never a full email, token or
+// link.
+function pin_reset_log(string $detail): void {
+    error_log('SmartLib pin reset: ' . $detail);
+}
+
+function pin_reset_log_skip(string $reason, string $userNumber): void {
+    pin_reset_log('skipped reason=' . $reason . ' user_number=' . substr($userNumber, 0, 40));
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond_json(['status' => 'error', 'message' => 'Invalid request method.'], 405);
 }
@@ -20,13 +32,18 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $identifier = library_card_normalize_id((string)($_POST['identifier'] ?? ''));
 // The account's real role decides; a posted account_type is ignored.
 $clientIp = auth_client_ip();
+// The same answer whether or not anything was sent (no account
+// enumeration), worded so a person who never had a PIN, or whose mail
+// lands in Junk, knows what to do next.
+$genericMessage = 'If this account has a PIN, a reset link was sent to its email. It can take a few minutes and may land in Junk or Spam. If you have never had a PIN, ask the librarian.';
 $genericSuccess = [
     'status' => 'success',
-    'message' => 'If this account exists, a reset link was sent.'
+    'message' => $genericMessage
 ];
 
 
 if ($identifier === '') {
+    pin_reset_log_skip('unknown_id', '');
     respond_json($genericSuccess);
 }
 
@@ -34,11 +51,20 @@ if (!auth_ensure_reset_table($conn) || !auth_ensure_2fa_table($conn)) {
     respond_json(['status' => 'error', 'message' => 'PIN reset service is unavailable right now.'], 500);
 }
 
+// Cooldown and hourly cap are per ID; the IP only has a high abuse ceiling
+// (see auth_reset_rate_limit_status()).
 $rate = auth_reset_rate_limit_status($conn, $identifier, $clientIp);
+$throttledReason = '';
 if (!empty($rate['too_many']) || !empty($rate['cooldown'])) {
+    $throttledReason = 'throttled_id';
+} elseif (!empty($rate['ip_too_many'])) {
+    $throttledReason = 'throttled_ip';
+}
+if ($throttledReason !== '') {
+    pin_reset_log_skip($throttledReason, $identifier);
     respond_json([
         'status' => 'success',
-        'message' => 'If this account exists, a reset link was sent. Please wait before requesting another reset.'
+        'message' => $genericMessage . ' Please wait before requesting another reset.'
     ]);
 }
 
@@ -61,6 +87,7 @@ $user = $res ? $res->fetch_assoc() : null;
 $stmt->close();
 
 if (!$user) {
+    pin_reset_log_skip('unknown_id', $identifier);
     respond_json($genericSuccess);
 }
 
@@ -72,7 +99,13 @@ $status = strtolower(trim((string)($user['status'] ?? 'active')));
 $normalizedRole = in_array($rawRole, ['admin', 'librarian'], true) ? 'librarian' : $rawRole;
 $roleAllowed = in_array($normalizedRole, ['student', 'faculty', 'librarian'], true);
 
-if (!$roleAllowed || ($status !== '' && $status !== 'active')) {
+if (!$roleAllowed) {
+    pin_reset_log_skip('role_not_allowed', $identifier);
+    respond_json($genericSuccess);
+}
+
+if ($status !== '' && $status !== 'active') {
+    pin_reset_log_skip('inactive', $identifier);
     respond_json($genericSuccess);
 }
 
@@ -83,11 +116,13 @@ if (!$roleAllowed || ($status !== '' && $status !== 'active')) {
 // does any legacy account once a librarian has given it a PIN.
 $isSelfSignup = (string)($user['registration_source'] ?? '') === 'self_signup';
 if ($isSelfSignup && trim((string)($user['password'] ?? '')) === '') {
+    pin_reset_log_skip('self_signup_no_pin', $identifier);
     respond_json($genericSuccess);
 }
 
 $email = trim((string)($user['email'] ?? ''));
 if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    pin_reset_log_skip('no_valid_email', $identifier);
     respond_json($genericSuccess);
 }
 
@@ -101,6 +136,7 @@ $tokenInfo = auth_create_reset_token(
 );
 
 if (!$tokenInfo) {
+    pin_reset_log('token_failed user_number=' . substr($identifier, 0, 40));
     respond_json(['status' => 'error', 'message' => 'Unable to create reset token. Please try again.'], 500);
 }
 
@@ -173,10 +209,14 @@ $text = "SMARTLIB PIN Reset\n\n"
     . "Use this link to reset your PIN/password:\n{$resetUrl}\n\n"
     . "This link expires in {$expiryMinutes} minutes and can be used only once.";
 
+$tokenId = (int)($tokenInfo['token_id'] ?? 0);
 $sent = auth_send_multipart_email($email, $subject, $html, $text, $inlineImages);
 if (!$sent) {
+    pin_reset_log('send_failed token_id=' . $tokenId . ' user_number=' . substr($identifier, 0, 40));
     respond_json(['status' => 'error', 'message' => 'Reset email could not be sent. Check server mail configuration.'], 500);
 }
+
+pin_reset_log('sent token_id=' . $tokenId . ' to=' . auth_mask_email($email) . ' user_number=' . substr($identifier, 0, 40));
 
 respond_json($genericSuccess);
 

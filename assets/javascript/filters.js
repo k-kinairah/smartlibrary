@@ -1457,7 +1457,7 @@ let signinCountdownEndTs = 0;
         })
             .then(res => res.json())
             .then(data => {
-                setSigninMessage(data.message || "If this account exists, a reset link was sent.", data.status === "error" ? "error" : "info");
+                setSigninMessage(data.message || "If this account has a PIN, a reset link was sent to its email. It can take a few minutes and may land in Junk or Spam. If you have never had a PIN, ask the librarian.", data.status === "error" ? "error" : "info");
             })
             .catch(() => {
                 setSigninMessage("Could not process reset request right now.", "error");

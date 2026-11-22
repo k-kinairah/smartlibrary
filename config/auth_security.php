@@ -8,8 +8,13 @@ const AUTH_LOGIN_LOCK_MINUTES = 5;
 const AUTH_2FA_CODE_TTL_MINUTES = 10;
 const AUTH_2FA_MAX_ATTEMPTS = 5;
 const AUTH_RESET_TOKEN_TTL_MINUTES = 15;
+// PIN reset limits count per ID (user_number): a school Wi-Fi or the kiosk
+// is one public IP for everybody, so a per-IP cooldown let one person's
+// request silently block everyone else's. The per-IP ceiling is only an
+// abuse stop, far above what one network needs in an hour.
 const AUTH_RESET_MAX_REQUESTS_PER_HOUR = 3;
 const AUTH_RESET_MIN_SECONDS_BETWEEN_REQUESTS = 60;
+const AUTH_RESET_IP_MAX_REQUESTS_PER_HOUR = 30;
 const AUTH_EMAIL_EMBED_IMAGES = false;
 
 function auth_safe_query(mysqli $conn, string $sql) {
@@ -368,6 +373,9 @@ function auth_ensure_reset_table(mysqli $conn): bool {
     return (bool)auth_safe_query($conn, $sql);
 }
 
+// Cooldown and hourly cap are per ID; the IP only meets the much higher
+// AUTH_RESET_IP_MAX_REQUESTS_PER_HOUR ceiling ('ip_too_many'). Counts are
+// reset links issued (token rows), as before.
 function auth_reset_rate_limit_status(mysqli $conn, string $identifier, string $ip): array {
     $identifier = trim($identifier);
     $ip = trim($ip);
@@ -381,12 +389,12 @@ function auth_reset_rate_limit_status(mysqli $conn, string $identifier, string $
     $stmt = $conn->prepare(
         "SELECT COUNT(*) AS req_count, MAX(created_at) AS last_created_at
          FROM auth_pin_reset_tokens
-         WHERE (user_number = ? OR requested_ip = ?)
+         WHERE user_number = ?
            AND created_at >= ?"
     );
 
     if ($stmt) {
-        $stmt->bind_param('sss', $identifier, $ip, $hourCutoff);
+        $stmt->bind_param('ss', $identifier, $hourCutoff);
         $stmt->execute();
         $res = $stmt->get_result();
         if ($res && ($row = $res->fetch_assoc())) {
@@ -396,7 +404,26 @@ function auth_reset_rate_limit_status(mysqli $conn, string $identifier, string $
         $stmt->close();
     }
 
+    $ipCountHour = 0;
+    $ipStmt = $conn->prepare(
+        "SELECT COUNT(*) AS req_count
+         FROM auth_pin_reset_tokens
+         WHERE requested_ip = ?
+           AND created_at >= ?"
+    );
+
+    if ($ipStmt) {
+        $ipStmt->bind_param('ss', $ip, $hourCutoff);
+        $ipStmt->execute();
+        $ipRes = $ipStmt->get_result();
+        if ($ipRes && ($ipRow = $ipRes->fetch_assoc())) {
+            $ipCountHour = (int)($ipRow['req_count'] ?? 0);
+        }
+        $ipStmt->close();
+    }
+
     $tooMany = $countHour >= AUTH_RESET_MAX_REQUESTS_PER_HOUR;
+    $ipTooMany = $ipCountHour >= AUTH_RESET_IP_MAX_REQUESTS_PER_HOUR;
     $cooldown = false;
 
     if ($lastCreatedAt !== '') {
@@ -409,8 +436,11 @@ function auth_reset_rate_limit_status(mysqli $conn, string $identifier, string $
     return [
         'too_many' => $tooMany,
         'cooldown' => $cooldown,
+        'ip_too_many' => $ipTooMany,
         'count_hour' => $countHour,
         'limit_hour' => AUTH_RESET_MAX_REQUESTS_PER_HOUR,
+        'ip_count_hour' => $ipCountHour,
+        'ip_limit_hour' => AUTH_RESET_IP_MAX_REQUESTS_PER_HOUR,
         'min_seconds_between_requests' => AUTH_RESET_MIN_SECONDS_BETWEEN_REQUESTS
     ];
 }
