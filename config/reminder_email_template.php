@@ -18,6 +18,9 @@
  *   inline_logo   bool (default false): embed the school logo (cid:smartlib_logo)
  *                 when AUTH_EMAIL_EMBED_IMAGES is on; otherwise an "SL" badge.
  *                 Only callers that can send inline images may set it.
+ *   fines_on      bool (default false when missing): overdue fines are switched
+ *                 on in Settings (smartlib_fines_enabled()). Only then does the
+ *                 closing sentence mention penalties.
  *
  * Email-safe like send_receipt_email.php: tables, bgcolor + background-color
  * on every coloured cell, sized gap divs instead of margins on tables. No
@@ -98,9 +101,14 @@ function smartlib_reminder_copy(array $d): array {
     return [
         'title' => $overdue ? 'SmartLib Overdue Reminder' : 'SmartLib Due Date Reminder',
         'lead' => $overdue ? 'One of your borrowed books is past its due date.' : 'A book you borrowed is due soon.',
-        'closing' => $overdue
-            ? 'Please return this book as soon as possible to avoid additional penalties.'
-            : 'Please return this book on or before the due date to avoid overdue penalties.',
+        // Penalties are only mentioned while overdue fines are switched on.
+        'closing' => !empty($d['fines_on'])
+            ? ($overdue
+                ? 'Please return this book as soon as possible to avoid additional penalties.'
+                : 'Please return this book on or before the due date to avoid overdue penalties.')
+            : ($overdue
+                ? 'Please return this book as soon as possible.'
+                : 'Please return this book on or before the due date.'),
         'renew' => !$overdue,
     ];
 }

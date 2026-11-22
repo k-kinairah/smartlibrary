@@ -3,6 +3,7 @@ session_start();
 require 'config/db_connect.php';
 require_once 'config/mail_sender.php';
 require_once 'config/reminder_email_template.php';
+require_once 'config/library_settings.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -230,6 +231,8 @@ $reminder = [
     'isbn' => $isbn,
     'borrowed_date' => $borrowedDate,
     'due_date' => $dueRaw,
+    // Penalties are only mentioned while overdue fines are on (Settings).
+    'fines_on' => smartlib_fines_enabled($conn),
 ];
 $htmlBody = smartlib_reminder_email_html($reminder);
 $textBody = smartlib_reminder_email_text($reminder);

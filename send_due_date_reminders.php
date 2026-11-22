@@ -2,6 +2,7 @@
 require_once __DIR__ . '/config/db_connect.php';
 require_once __DIR__ . '/config/auth_security.php';
 require_once __DIR__ . '/config/reminder_email_template.php';
+require_once __DIR__ . '/config/library_settings.php';
 
 date_default_timezone_set('Asia/Taipei');
 
@@ -94,6 +95,11 @@ if (!$res) {
     out('Failed to read due-soon records from borrow_records.');
     exit(1);
 }
+
+// Overdue fines on? (Settings; off by default, and off when the
+// library_settings table does not exist yet.) Only then do reminders
+// mention penalties.
+$finesOn = smartlib_fines_enabled($conn);
 
 $checkStmt = $conn->prepare(
     "SELECT reminder_id
@@ -192,6 +198,7 @@ while ($row = $res->fetch_assoc()) {
         'borrowed_date' => $borrowedDate,
         'due_date' => $dueDateRaw,
         'inline_logo' => true,
+        'fines_on' => $finesOn,
     ];
     $htmlBody = smartlib_reminder_email_html($reminder);
     $textBody = smartlib_reminder_email_text($reminder);
