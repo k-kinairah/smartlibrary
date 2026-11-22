@@ -33,9 +33,8 @@ $identifier = library_card_normalize_id((string)($_POST['identifier'] ?? ''));
 // The account's real role decides; a posted account_type is ignored.
 $clientIp = auth_client_ip();
 // The same answer whether or not anything was sent (no account
-// enumeration), worded so a person who never had a PIN, or whose mail
-// lands in Junk, knows what to do next.
-$genericMessage = 'If this account has a PIN, a reset link was sent to its email. It can take a few minutes and may land in Junk or Spam. If you have never had a PIN, ask the librarian.';
+// enumeration).
+$genericMessage = 'If your ID is registered, a reset link was sent to your email.';
 $genericSuccess = [
     'status' => 'success',
     'message' => $genericMessage
