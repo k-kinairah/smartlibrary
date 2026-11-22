@@ -101,6 +101,8 @@ if ($token === '') {
 
 // ---- Presentation only below: nothing here changes what the handler above
 // accepts, rejects or writes. ------------------------------------------------
+// Design: "reset-page-centered-premium" (light mint page, centered card,
+// gold keyline and ornament, Merriweather headline, left-aligned fields).
 
 // A link that can no longer be used (missing, malformed, expired or already
 // used) gets its own screen instead of a form that can never succeed. This
@@ -115,27 +117,28 @@ if ($linkDead && $message === '') {
     $messageType = 'error';
 }
 
-// Which field a server-side PIN error belongs to, so it can be outlined.
+// Which field a server-side PIN error belongs to, so it can be shown there.
 $fieldError = ['new' => false, 'confirm' => false];
+$fillBothMessage = "Please fill in both {$secretWord} fields.";
+$mismatchMessage = ucfirst($secretWord) . ' confirmation does not match.';
 if (!$linkDead && $messageType === 'error') {
-    if ($message === "Please fill in both {$secretWord} fields.") {
+    if ($message === $fillBothMessage) {
         $fieldError = ['new' => true, 'confirm' => true];
-    } elseif ($message === ucfirst($secretWord) . ' confirmation does not match.') {
+    } elseif ($message === $mismatchMessage) {
         $fieldError['confirm'] = true;
     } elseif ($newSecretError) {
         $fieldError['new'] = true;
     }
 }
+// Field errors are shown next to their field; the banner is only for
+// general errors that no field can show (e.g. the update failing).
+$showBanner = !$done && !$linkDead && $messageType === 'error' && $message !== ''
+    && !$fieldError['new'] && !$fieldError['confirm'];
 
 // After a successful reset, open the kiosk sign-in. ?signin=<anything> just
 // opens the sign-in modal; the link never names a role.
 $signinHref = 'index.php?signin=1';
 
-$messageIcons = [
-    'success' => '<path d="m6.5 12.5 3.6 3.6 7.4-8"></path>',
-    'error' => '<path d="M12 4.5 21 19H3L12 4.5Z"></path><path d="M12 10v4"></path><path d="M12 16.8h.01"></path>',
-    'info' => '<path d="M12 11v6"></path><path d="M12 7.3h.01"></path>',
-];
 $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
 
 $secretTitle = ucfirst($secretWord);
@@ -145,419 +148,412 @@ $secretRule = $isStaffReset
 $secretAttrs = $isStaffReset
     ? 'autocomplete="new-password" maxlength="' . AUTH_STAFF_PASSWORD_MAX_BYTES . '"'
     : 'inputmode="numeric" pattern="[0-9]{4,}" autocomplete="new-password" maxlength="20"';
+// Escaped once here; the PIN wording keeps each sentence on its own line
+// (as in the mockup), the longer staff wording just wraps.
+$subLineHtml = $isStaffReset
+    ? htmlspecialchars('Choose a new password of at least ' . (int)AUTH_STAFF_PASSWORD_MIN . ' characters with a letter and a number. This link works once.')
+    : 'Choose a new PIN of at least 4 digits.<br>This link works once.';
+
+// Server-side field errors, worded like the live checks in the script below.
+$newRuleText = $secretRule;
+if ($newSecretError) {
+    $newRuleText = $message;
+} elseif ($fieldError['new']) {
+    $newRuleText = $isStaffReset ? 'Enter a new password' : 'Enter a new PIN (at least 4 digits)';
+}
+$confirmRuleText = "Type the same {$secretWord} again";
+if ($fieldError['confirm'] && $message === $mismatchMessage) {
+    $confirmRuleText = "{$secretTitle}s don't match";
+}
+
+$pageTitle = $done ? "{$secretTitle} updated" : ($linkDead ? 'Reset link expired' : "Reset your {$secretWord}");
+
+$eyeIcons = '<svg class="icon-eye" viewBox="0 0 24 24" aria-hidden="true"><path d="M1.5 12s3.6-6.5 10.5-6.5S22.5 12 22.5 12s-3.6 6.5-10.5 6.5S1.5 12 1.5 12z"></path><circle cx="12" cy="12" r="3.2"></circle></svg>'
+    . '<svg class="icon-eye-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M1.5 12s3.6-6.5 10.5-6.5c2.1 0 3.9.6 5.4 1.5"></path><path d="M22.5 12s-3.6 6.5-10.5 6.5c-2.1 0-3.9-.6-5.4-1.5"></path><circle cx="12" cy="12" r="3.2"></circle><path d="M3 21L21 3"></path></svg>';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="robots" content="noindex">
-    <title>SmartLib | Reset PIN</title>
+    <title>SmartLib | <?= htmlspecialchars($pageTitle) ?></title>
     <link rel="icon" href="assets/images/stjude_seal_64.png" type="image/png">
+    <!-- Same fonts as the kiosk (kiosk.css); Georgia / system sans if offline. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Merriweather:wght@700&display=swap">
     <style>
         :root {
-            --text: #eaf6ef;
-            --muted: #c8ddd1;
-            --soft: #9fc2b0;
-            --line: rgba(194, 224, 207, 0.28);
-            --ok: #8ff0b6;
-            --ok-bg: rgba(98, 209, 145, 0.16);
-            --ok-line: rgba(98, 209, 145, 0.5);
-            --bad: #ff9a9a;
-            --bad-bg: rgba(255, 107, 107, 0.18);
-            --bad-line: rgba(255, 107, 107, 0.65);
+            --ink: #0b3025;
+            --ink-2: #1d4939;
+            --muted: #3d5a4e;
+            --soft: #4f7a6a;
+            --green: #0e8660;
+            --gold: #e2c25a;
+            --bad: #a23a28;
+            --bad-line: #d9806e;
+            --sans: "Manrope", -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+            --serif: "Merriweather", Georgia, "Times New Roman", serif;
         }
         * { box-sizing: border-box; }
+        html { -webkit-text-size-adjust: 100%; }
         body {
             margin: 0;
             min-height: 100vh;
-            font-family: Arial, Helvetica, sans-serif;
-            background: radial-gradient(circle at 20% 20%, #1f6c50 0%, #0d2f24 45%, #071a14 100%);
-            color: var(--text);
+            min-height: 100dvh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 18px;
+            padding: max(24px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+            font-family: var(--sans);
+            color: var(--ink);
+            -webkit-font-smoothing: antialiased;
+            background:
+                radial-gradient(120% 60% at 10% 0%, #d3eee1 0%, rgba(211, 238, 225, 0) 60%),
+                radial-gradient(90% 50% at 100% 100%, #eadfb8 0%, rgba(232, 220, 180, 0) 55%),
+                linear-gradient(180deg, #e6f5ee 0%, #f5faf7 100%);
         }
         .card {
-            width: min(440px, 100%);
-            border-radius: 18px;
-            border: 1px solid var(--line);
-            background: rgba(34, 77, 60, 0.6);
-            box-shadow: 0 18px 40px rgba(2, 12, 8, 0.4);
-            padding: 24px 22px 20px;
+            width: 100%;
+            max-width: 440px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(255, 255, 255, 0.88));
+            border: 1px solid rgba(14, 134, 96, 0.16);
+            border-top: 3px solid var(--gold);
+            border-radius: 28px;
+            padding: 28px 22px 24px;
+            box-shadow: 0 2px 0 rgba(255, 255, 255, 0.8) inset, 0 24px 48px rgba(11, 48, 37, 0.14);
         }
 
-        /* Brand header: the same school seal and name as the admin sidebar,
-           so a patron can tell this is the real SmartLib page. */
+        /* Brand block: the school seal and name, so a patron can tell this
+           is the real SmartLib page. */
         .brand {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
             text-align: center;
-            padding-bottom: 18px;
-            margin-bottom: 20px;
-            border-bottom: 1px solid var(--line);
         }
         .brand img {
-            width: 64px;
-            height: 64px;
+            width: 76px;
+            height: 76px;
             border-radius: 50%;
             object-fit: cover;
-            border: 2px solid rgba(255, 255, 255, 0.4);
             background: #ffffff;
-            flex-shrink: 0;
+            border: 3px solid #ffffff;
+            box-shadow: 0 0 0 2px var(--gold), 0 10px 22px rgba(11, 48, 37, 0.22);
         }
         .brand-name {
-            margin: 0;
-            font-size: 22px;
-            line-height: 1.1;
+            margin: 14px 0 0;
             font-weight: 800;
-            letter-spacing: 0.01em;
+            font-size: 21px;
+            letter-spacing: 0.02em;
+            color: var(--ink);
         }
         .brand-sub {
-            margin: 3px 0 0;
-            font-size: 12px;
+            margin: 4px 0 0;
+            font-weight: 700;
+            font-size: 10.5px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
             color: var(--soft);
         }
-
+        .orn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 16px 0 18px;
+        }
+        .orn i {
+            height: 1px;
+            width: 64px;
+            background: linear-gradient(90deg, rgba(226, 194, 90, 0), var(--gold));
+        }
+        .orn i:last-child { background: linear-gradient(270deg, rgba(226, 194, 90, 0), var(--gold)); }
+        .orn b {
+            width: 7px;
+            height: 7px;
+            background: var(--gold);
+            transform: rotate(45deg);
+        }
         h1 {
-            margin: 0 0 6px;
-            font-size: 26px;
+            margin: 0;
+            font-family: var(--serif);
+            font-weight: 700;
+            font-size: 25px;
+            line-height: 1.25;
+            color: var(--ink);
+            text-align: center;
+            overflow-wrap: anywhere;
         }
-        p.sub {
-            margin: 0 0 16px;
+        .sub {
+            margin: 10px 0 20px;
+            font-weight: 500;
+            font-size: 14.5px;
+            line-height: 1.55;
             color: var(--muted);
-            font-size: 14px;
-            line-height: 1.45;
+            text-align: center;
         }
+        .sub b { font-weight: 800; color: var(--ink); }
 
-        /* Status banner: ONE component for every message. All variants share
-           the base below and only swap the three accent variables. The fill
-           is a dark neutral (not a translucent tint, which turned red into a
-           muddy brown over this green), with the accent carried by the left
-           bar, the icon chip and the border. */
+        /* General (not field-specific) error banner. */
         .msg {
-            --accent: #7cb8ff;
-            --accent-soft: rgba(124, 184, 255, 0.18);
-            --accent-line: rgba(124, 184, 255, 0.5);
             display: flex;
             align-items: flex-start;
-            gap: 12px;
-            margin-bottom: 18px;
-            padding: 13px 15px 13px 13px;
-            border-radius: 12px;
-            border: 1px solid var(--accent-line);
-            border-left: 4px solid var(--accent);
-            background:
-                linear-gradient(90deg, var(--accent-soft) 0%, rgba(0, 0, 0, 0) 75%),
-                rgba(5, 16, 12, 0.62);
-            color: #f4fbf7;
+            gap: 10px;
+            margin: 0 0 16px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1px solid #f1c2b8;
+            background: #fff3f0;
+            color: #7d2a1c;
+            font-weight: 600;
             font-size: 14px;
             line-height: 1.5;
         }
-        .msg-icon {
-            width: 30px;
-            height: 30px;
-            flex-shrink: 0;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--accent-soft);
-            color: var(--accent);
-        }
-        .msg-icon svg {
-            width: 17px;
-            height: 17px;
+        .msg svg {
+            flex: none;
+            width: 20px;
+            height: 20px;
+            margin-top: 1px;
             fill: none;
-            stroke: currentColor;
+            stroke: #c2412b;
             stroke-width: 2.2;
             stroke-linecap: round;
             stroke-linejoin: round;
         }
-        .msg-text {
-            padding-top: 4px;
-            min-width: 0;
-        }
-        .msg.success {
-            --accent: #5fe39c;
-            --accent-soft: rgba(95, 227, 156, 0.17);
-            --accent-line: rgba(95, 227, 156, 0.45);
-        }
-        .msg.error {
-            --accent: #ff6b6b;
-            --accent-soft: rgba(255, 107, 107, 0.18);
-            --accent-line: rgba(255, 107, 107, 0.55);
-        }
-        .msg.info {
-            --accent: #7cb8ff;
-            --accent-soft: rgba(124, 184, 255, 0.18);
-            --accent-line: rgba(124, 184, 255, 0.5);
-        }
 
-        .help {
-            margin: -4px 0 16px;
-            font-size: 13px;
-            line-height: 1.5;
-            color: var(--muted);
-        }
-        .help strong { color: var(--text); }
-
-        .field {
-            margin-bottom: 14px;
-        }
+        .field { margin-bottom: 14px; }
         label {
             display: block;
-            margin-bottom: 6px;
-            color: #d3e8dc;
-            font-size: 13px;
-            font-weight: 700;
+            margin-bottom: 7px;
+            font-weight: 800;
+            font-size: 11.5px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--ink-2);
         }
-        input {
+        .password-field-wrap { position: relative; }
+        input[type="password"],
+        input[type="text"] {
             width: 100%;
-            border-radius: 10px;
-            border: 1px solid rgba(196, 225, 208, 0.35);
-            background: rgba(230, 242, 236, 0.14);
-            color: #f2fbf6;
-            padding: 11px 12px;
+            height: 56px;
+            margin: 0;
+            padding: 0 58px 0 18px;
+            border-radius: 15px;
+            border: 1.5px solid #cfe5da;
+            background: #ffffff;
+            box-shadow: 0 1px 0 rgba(11, 48, 37, 0.04) inset;
+            color: var(--ink);
+            font-family: var(--sans);
+            font-weight: 700;
+            font-size: 18px; /* 16px+ stops iOS zooming in on focus */
+            letter-spacing: 0.12em;
             outline: none;
-            font-size: 16px; /* 16px stops iOS zooming in on focus */
-            letter-spacing: 0.08em;
-            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
         }
         input::placeholder {
-            color: #bbd3c6;
+            color: #8aa89b;
+            font-weight: 500;
+            font-size: 15px;
             letter-spacing: normal;
         }
         input:focus {
-            border-color: rgba(150, 230, 190, 0.7);
-            box-shadow: 0 0 0 3px rgba(98, 209, 145, 0.18);
+            border-color: var(--green);
+            box-shadow: 0 0 0 4px rgba(14, 134, 96, 0.16);
         }
-        .field.is-ok input { border-color: var(--ok-line); }
-        .field.is-bad input { border-color: var(--bad-line); }
-        .field.is-bad input:focus { box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.22); }
-
-        .password-field-wrap {
-            position: relative;
-            display: flex;
-            align-items: center;
+        .field.is-bad input {
+            border-color: var(--bad-line);
+            background: #fffaf8;
         }
-        .password-field-wrap input {
-            padding-right: 46px;
-            margin-bottom: 0;
-        }
+        .field.is-bad input:focus { box-shadow: 0 0 0 4px rgba(217, 128, 110, 0.22); }
         .password-toggle-btn {
             position: absolute;
             right: 8px;
             top: 50%;
             transform: translateY(-50%);
-            width: 32px;
-            height: 32px;
-            border-radius: 999px;
-            border: 1px solid rgba(184, 211, 196, 0.42);
-            background: rgba(214, 233, 223, 0.14);
-            color: #d9efe4;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 50%;
+            border: 1px solid #d9ece2;
+            background: #f4faf7;
+            color: #2f5a4c;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 0;
             cursor: pointer;
         }
-        .password-toggle-btn:hover {
-            background: rgba(205, 229, 217, 0.24);
-            border-color: rgba(196, 225, 208, 0.55);
-        }
+        .password-toggle-btn:hover { background: #e9f5ef; }
         .password-toggle-btn svg {
-            width: 17px;
-            height: 17px;
+            width: 20px;
+            height: 20px;
             fill: none;
             stroke: currentColor;
-            stroke-width: 2;
+            stroke-width: 1.9;
             stroke-linecap: round;
             stroke-linejoin: round;
         }
-        .password-toggle-btn .icon-eye-off {
-            display: none;
-        }
-        .password-toggle-btn.is-visible .icon-eye {
-            display: none;
-        }
-        .password-toggle-btn.is-visible .icon-eye-off {
-            display: block;
-        }
+        .password-toggle-btn .icon-eye-off { display: none; }
+        .password-toggle-btn.is-visible .icon-eye { display: none; }
+        .password-toggle-btn.is-visible .icon-eye-off { display: block; }
 
-        /* Live rule line under each field: neutral, then a check or a cross. */
+        /* Rule line under each field: grey ring, green check when met,
+           red ring when wrong. */
         .rule {
             display: flex;
             align-items: center;
-            gap: 6px;
-            min-height: 18px;
-            margin-top: 6px;
-            font-size: 12.5px;
+            gap: 8px;
+            min-height: 20px;
+            margin-top: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            line-height: 1.35;
             color: var(--soft);
         }
         .rule::before {
             content: "";
-            width: 16px;
-            height: 16px;
-            flex-shrink: 0;
+            flex: none;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
-            border: 1.5px solid currentColor;
-            opacity: 0.7;
+            border: 1.6px solid #b9d3c6;
             background-position: center;
             background-repeat: no-repeat;
-            background-size: 10px 10px;
+            background-size: 12px 12px;
         }
-        .rule.is-ok { color: var(--ok); }
         .rule.is-ok::before {
-            opacity: 1;
-            border-color: var(--ok-line);
-            background-color: var(--ok-bg);
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2 5.2 4.1 7.3 8 3' fill='none' stroke='%238ff0b6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            border-color: var(--green);
+            background-color: var(--green);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 12.5 4 4 8-9' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
         }
         .rule.is-bad { color: var(--bad); }
-        .rule.is-bad::before {
-            opacity: 1;
-            border-color: var(--bad-line);
-            background-color: var(--bad-bg);
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M3 3l4 4M7 3 3 7' fill='none' stroke='%23ff9a9a' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
-        }
-        /* Hidden rule still holds its line, so the card doesn't jump when it appears. */
+        .rule.is-bad::before { border-color: var(--bad-line); }
+        /* A hidden rule still holds its line, so the card doesn't jump. */
         .rule[hidden] { display: flex; visibility: hidden; }
 
         .btn {
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             width: 100%;
-            border: none;
-            border-radius: 10px;
-            background: #1b8b4e;
+            height: 56px;
+            margin-top: 22px;
+            padding: 0 16px;
+            border: 0;
+            border-radius: 17px;
+            background: linear-gradient(180deg, #14a173, #0b7a56);
+            box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 10px 22px rgba(14, 134, 96, 0.32);
             color: #ffffff;
-            font-weight: 700;
-            padding: 12px 14px;
-            margin-top: 6px;
+            font-family: var(--sans);
+            font-weight: 800;
+            font-size: 16px;
+            letter-spacing: 0.02em;
+            text-decoration: none;
             cursor: pointer;
-            font-size: 15px;
-            text-align: center;
+        }
+        .btn:hover { filter: brightness(1.05); }
+        .btn:active { transform: translateY(1px); }
+        .back {
+            display: block;
+            width: fit-content;
+            margin: 16px auto 0;
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--green);
             text-decoration: none;
-            font-family: inherit;
         }
-        .btn:hover {
-            filter: brightness(1.06);
-        }
+        .back:hover { text-decoration: underline; }
         .btn:focus-visible,
-        .link:focus-visible,
+        .back:focus-visible,
         .password-toggle-btn:focus-visible {
-            outline: 2px solid #b7ffd1;
-            outline-offset: 2px;
-        }
-        .link {
-            display: inline-block;
-            margin-top: 14px;
-            color: #c8e4d6;
-            text-decoration: none;
-            font-size: 13px;
-        }
-        .link:hover {
-            text-decoration: underline;
+            outline: 3px solid #0b7a56;
+            outline-offset: 3px;
         }
 
-        @media (max-width: 380px) {
-            .card { padding: 20px 16px 18px; }
+        /* Result screens: a big status circle above the headline. */
+        .big {
+            width: 80px;
+            height: 80px;
+            margin: 12px auto 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .big svg { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+        .big.ok {
+            background: linear-gradient(180deg, #14a173, #0b7a56);
+            box-shadow: 0 0 0 6px rgba(14, 134, 96, 0.12), 0 12px 24px rgba(14, 134, 96, 0.3);
+        }
+        .big.ok svg { width: 38px; height: 38px; stroke: #ffffff; stroke-width: 3; }
+        .big.warn {
+            background: #fff4dc;
+            border: 2px solid #f0d9a0;
+            box-shadow: 0 0 0 6px rgba(226, 194, 90, 0.14);
+        }
+        .big.warn svg { width: 36px; height: 36px; stroke: #9a6f00; stroke-width: 2.2; }
+
+        @media (max-width: 360px) {
+            .card { padding: 24px 16px 20px; border-radius: 24px; }
             h1 { font-size: 23px; }
+            .orn i { width: 48px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            * { transition: none !important; }
         }
     </style>
 </head>
 <body>
 <main class="card">
     <div class="brand">
-        <img src="assets/images/stjude_logo.jpg?v=<?= (int)$logoVer ?>" alt="St. Jude logo">
-        <div>
-            <p class="brand-name">SmartLib</p>
-            <p class="brand-sub">Self-Service Library System</p>
-        </div>
+        <img src="assets/images/stjude_logo.jpg?v=<?= (int)$logoVer ?>" alt="St. Jude College logo" width="76" height="76">
+        <p class="brand-name">SmartLib</p>
+        <p class="brand-sub">Self-Service Library System</p>
     </div>
-
-    <h1>Reset <?= htmlspecialchars($secretTitle) ?></h1>
-    <?php if (!$done && !$linkDead): ?>
-        <?php if ($isStaffReset): ?>
-            <p class="sub">Use a new password: at least <?= (int)AUTH_STAFF_PASSWORD_MIN ?> characters with a letter and a number. This reset link can only be used once.</p>
-        <?php else: ?>
-            <p class="sub">Use a new PIN (at least 4 digits). This reset link can only be used once.</p>
-        <?php endif; ?>
-    <?php endif; ?>
-
-    <?php if ($message !== ''): ?>
-        <div class="msg <?= htmlspecialchars($messageType) ?>" role="<?= $messageType === 'error' ? 'alert' : 'status' ?>">
-            <span class="msg-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><?= $messageIcons[$messageType] ?? $messageIcons['info'] ?></svg></span>
-            <span class="msg-text"><?= htmlspecialchars($message) ?></span>
-        </div>
-    <?php endif; ?>
+    <div class="orn" aria-hidden="true"><i></i><b></b><i></i></div>
 
     <?php if ($done): ?>
-        <a class="btn" href="<?= htmlspecialchars($signinHref) ?>">Sign in with your new <?= htmlspecialchars($secretWord) ?></a>
+        <div class="big ok" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 12.5 4 4 8-9"></path></svg></div>
+        <h1><?= htmlspecialchars($secretTitle) ?> updated</h1>
+        <p class="sub" role="status">You can now sign in to SmartLib<br>with your new <?= htmlspecialchars($secretWord) ?>.</p>
+        <a class="btn" href="<?= htmlspecialchars($signinHref) ?>">Sign in</a>
     <?php elseif ($linkDead): ?>
-        <p class="help">Reset links work once and expire after a while. To get a new one, open sign-in on SmartLib and choose <strong>Forgot your PIN?</strong></p>
-        <a class="btn" href="<?= htmlspecialchars($signinHref) ?>">Go to SmartLib sign-in</a>
+        <div class="big warn" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></div>
+        <h1>This link has expired</h1>
+        <p class="sub" role="alert">Reset links work once and last <?= (int)AUTH_RESET_TOKEN_TTL_MINUTES ?> minutes. Open sign-in and tap <b>Forgot your PIN?</b> to get a new one.</p>
+        <a class="btn" href="<?= htmlspecialchars($signinHref) ?>">Go to sign-in</a>
     <?php else: ?>
+        <h1>Reset your <?= htmlspecialchars($secretWord) ?></h1>
+        <p class="sub"><?= $subLineHtml ?></p>
+        <?php if ($showBanner): ?>
+            <div class="msg" role="alert">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5 21 19H3L12 4.5Z"></path><path d="M12 10v4"></path><path d="M12 16.8h.01"></path></svg>
+                <span><?= htmlspecialchars($message) ?></span>
+            </div>
+        <?php endif; ?>
         <form method="POST" id="reset-pin-form" data-mode="<?= $isStaffReset ? 'staff' : 'pin' ?>" novalidate>
             <input type="hidden" name="token" value="<?= htmlspecialchars($token) ?>">
             <div class="field<?= $fieldError['new'] ? ' is-bad' : '' ?>" id="new_pin_field">
-                <label for="new_pin">New <?= htmlspecialchars($secretTitle) ?></label>
+                <label for="new_pin">New <?= htmlspecialchars($secretWord) ?></label>
                 <div class="password-field-wrap">
                     <input id="new_pin" name="new_pin" type="password" <?= $secretAttrs ?> placeholder="Enter new <?= htmlspecialchars($secretWord) ?>" aria-describedby="new_pin_rule" <?= $fieldError['new'] ? 'aria-invalid="true"' : '' ?> required>
-                    <button
-                        type="button"
-                        id="new_pin_toggle"
-                        class="password-toggle-btn"
-                        aria-controls="new_pin"
-                        aria-label="Show <?= htmlspecialchars($secretWord) ?>"
-                        aria-pressed="false">
-                        <svg class="icon-eye" viewBox="0 0 24 24" role="presentation" aria-hidden="true">
-                            <path d="M1.5 12s3.6-6.5 10.5-6.5S22.5 12 22.5 12s-3.6 6.5-10.5 6.5S1.5 12 1.5 12z"></path>
-                            <circle cx="12" cy="12" r="3.2"></circle>
-                        </svg>
-                        <svg class="icon-eye-off" viewBox="0 0 24 24" role="presentation" aria-hidden="true">
-                            <path d="M1.5 12s3.6-6.5 10.5-6.5c2.1 0 3.9.6 5.4 1.5"></path>
-                            <path d="M22.5 12s-3.6 6.5-10.5 6.5c-2.1 0-3.9-.6-5.4-1.5"></path>
-                            <circle cx="12" cy="12" r="3.2"></circle>
-                            <path d="M3 21L21 3"></path>
-                        </svg>
-                    </button>
+                    <button type="button" id="new_pin_toggle" class="password-toggle-btn" aria-controls="new_pin" aria-label="Show <?= htmlspecialchars($secretWord) ?>" aria-pressed="false"><?= $eyeIcons ?></button>
                 </div>
-                <div class="rule<?= $fieldError['new'] ? ' is-bad' : '' ?>" id="new_pin_rule" aria-live="polite"><?= htmlspecialchars($newSecretError ? $message : $secretRule) ?></div>
+                <div class="rule<?= $fieldError['new'] ? ' is-bad' : '' ?>" id="new_pin_rule" aria-live="polite"><?= htmlspecialchars($newRuleText) ?></div>
             </div>
             <div class="field<?= $fieldError['confirm'] ? ' is-bad' : '' ?>" id="confirm_pin_field">
-                <label for="confirm_pin">Confirm New <?= htmlspecialchars($secretTitle) ?></label>
+                <label for="confirm_pin">Confirm new <?= htmlspecialchars($secretWord) ?></label>
                 <div class="password-field-wrap">
-                    <input id="confirm_pin" name="confirm_pin" type="password" <?= $secretAttrs ?> placeholder="Confirm new <?= htmlspecialchars($secretWord) ?>" aria-describedby="confirm_pin_rule" <?= $fieldError['confirm'] ? 'aria-invalid="true"' : '' ?> required>
-                    <button
-                        type="button"
-                        id="confirm_pin_toggle"
-                        class="password-toggle-btn"
-                        aria-controls="confirm_pin"
-                        aria-label="Show <?= htmlspecialchars($secretWord) ?>"
-                        aria-pressed="false">
-                        <svg class="icon-eye" viewBox="0 0 24 24" role="presentation" aria-hidden="true">
-                            <path d="M1.5 12s3.6-6.5 10.5-6.5S22.5 12 22.5 12s-3.6 6.5-10.5 6.5S1.5 12 1.5 12z"></path>
-                            <circle cx="12" cy="12" r="3.2"></circle>
-                        </svg>
-                        <svg class="icon-eye-off" viewBox="0 0 24 24" role="presentation" aria-hidden="true">
-                            <path d="M1.5 12s3.6-6.5 10.5-6.5c2.1 0 3.9.6 5.4 1.5"></path>
-                            <path d="M22.5 12s-3.6 6.5-10.5 6.5c-2.1 0-3.9-.6-5.4-1.5"></path>
-                            <circle cx="12" cy="12" r="3.2"></circle>
-                            <path d="M3 21L21 3"></path>
-                        </svg>
-                    </button>
+                    <input id="confirm_pin" name="confirm_pin" type="password" <?= $secretAttrs ?> placeholder="Type it again" aria-describedby="confirm_pin_rule" <?= $fieldError['confirm'] ? 'aria-invalid="true"' : '' ?> required>
+                    <button type="button" id="confirm_pin_toggle" class="password-toggle-btn" aria-controls="confirm_pin" aria-label="Show <?= htmlspecialchars($secretWord) ?>" aria-pressed="false"><?= $eyeIcons ?></button>
                 </div>
-                <div class="rule<?= $fieldError['confirm'] ? ' is-bad' : '' ?>" id="confirm_pin_rule" aria-live="polite"<?= $fieldError['confirm'] ? '' : ' hidden' ?>><?= $fieldError['confirm'] && $message === ucfirst($secretWord) . ' confirmation does not match.' ? htmlspecialchars("{$secretTitle}s don't match") : htmlspecialchars("Type the same {$secretWord} again") ?></div>
+                <div class="rule<?= $fieldError['confirm'] ? ' is-bad' : '' ?>" id="confirm_pin_rule" aria-live="polite"<?= $fieldError['confirm'] ? '' : ' hidden' ?>><?= htmlspecialchars($confirmRuleText) ?></div>
             </div>
-            <button type="submit" class="btn">Update <?= htmlspecialchars($secretTitle) ?></button>
+            <button type="submit" class="btn">Update <?= htmlspecialchars($secretWord) ?></button>
         </form>
     <?php endif; ?>
-
-    <a class="link" href="index.php">Back to SmartLib</a>
+    <a class="back" href="index.php">Back to SmartLib</a>
 </main>
 <script>
 (function () {
@@ -651,7 +647,7 @@ $secretAttrs = $isStaffReset
             setState(pinField, pinRule, pin, forceErrors ? 'bad' : 'neutral', left + ' more digit' + (left === 1 ? '' : 's') + ' needed');
             return false;
         }
-        setState(pinField, pinRule, pin, 'ok', 'At least 4 digits');
+        setState(pinField, pinRule, pin, 'ok', 'At least 4 digits, numbers only');
         return true;
     }
 

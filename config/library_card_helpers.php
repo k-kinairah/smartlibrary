@@ -486,61 +486,25 @@ function library_card_send_code_email(string $email, string $firstName, string $
     $ignoreLine = $purpose === 'reprint'
         ? 'If you did not ask to reprint your SmartLib library card, you can safely ignore this message.'
         : 'If you did not sign up for a SmartLib library card, you can safely ignore this message.';
-    $name = htmlspecialchars($firstName !== '' ? $firstName : 'there', ENT_QUOTES, 'UTF-8');
+    $name = trim($firstName) !== '' ? trim($firstName) : 'there';
     $ttl = LIBRARY_CARD_CODE_TTL_MINUTES;
-    $logoCid = 'smartlib_logo';
-    $logoPath = __DIR__ . '/../assets/images/stjude_logo.jpg';
-    $inlineImages = [];
-    if (is_file($logoPath) && is_readable($logoPath)) {
-        $inlineImages[] = ['cid' => $logoCid, 'path' => $logoPath, 'mime' => 'image/jpeg'];
-        $logoBadgeHtml = '<img src="cid:' . $logoCid . '" alt="SMARTLIB" width="42" height="42" style="display:block;margin:0 auto 8px;width:42px;height:42px;border-radius:50%;background:#ffffff;padding:2px;">';
-    } else {
-        $logoBadgeHtml = '<div style="display:inline-block;margin:0 auto 8px;width:42px;height:42px;line-height:42px;border-radius:50%;background:#ffffff;color:#0f5132;font-weight:700;">SL</div>';
-    }
 
+    require_once __DIR__ . '/auth_email_template.php';
     $subject = 'SMARTLIB LIBRARY CARD VERIFICATION CODE';
-    $html = <<<HTML
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SMARTLIB Library Card</title>
-</head>
-<body style="margin:0;padding:0;background:#eef3f8;font-family:Arial,Helvetica,sans-serif;color:#1e293b;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef3f8;padding:24px 12px;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:620px;background:#ffffff;border:1px solid #dbe4ee;border-radius:14px;overflow:hidden;">
-          <tr>
-            <td style="background:#0f5132;padding:18px 24px;color:#ffffff;text-align:center;">
-              {$logoBadgeHtml}
-              <div style="font-size:18px;font-weight:700;letter-spacing:.6px;color:#ffd84d;">SMARTLIB</div>
-              <div style="font-size:12px;opacity:.9;margin-top:4px;text-align:center;">Digital Library Card</div>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:24px;text-align:center;">
-              <h1 style="margin:0 0 10px;font-size:24px;line-height:1.25;color:#0f172a;">Your verification code</h1>
-              <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#475569;">Hi {$name}, enter this code on the SmartLib page to {$action}.</p>
-              <div style="display:inline-block;margin:0 auto 18px;padding:12px 22px;border-radius:10px;background:#f1f5f9;border:1px solid #dbe4ee;font-size:30px;font-weight:700;letter-spacing:8px;color:#0f5132;">{$code}</div>
-              <p style="margin:0;font-size:14px;line-height:1.6;color:#475569;text-align:center;">This code expires in <strong>{$ttl} minutes</strong>.</p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:0 24px 22px;font-size:12px;line-height:1.6;color:#64748b;text-align:center;">{$ignoreLine}</td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-HTML;
-    $text = "SMARTLIB Library Card\n\n"
-        . "Hi " . ($firstName !== '' ? $firstName : 'there') . ",\n"
-        . "Your verification code to {$action} is: {$code}\n\n"
-        . "It expires in {$ttl} minutes. {$ignoreLine}";
+    $emailOptions = [
+        'variant' => 'code',
+        'preheader' => "Your SmartLib verification code is {$code}. It expires in {$ttl} minutes.",
+        'eyebrow' => 'LIBRARY CARD',
+        'title' => 'Your verification code',
+        'intro' => "Hi {$name}, enter this code on the SmartLib page to {$action}.",
+        'code' => $code,
+        'expiry' => "Expires in {$ttl} minutes",
+        'security' => 'Never share this code. Library staff will never ask you for it.',
+        'sent_to' => function_exists('auth_mask_email') ? 'Sent to ' . auth_mask_email($email) : '',
+        'footer' => $ignoreLine,
+    ];
+    $html = smartlib_auth_email_html($emailOptions);
+    $text = smartlib_auth_email_text($emailOptions);
 
-    return auth_send_multipart_email($email, $subject, $html, $text, $inlineImages);
+    return auth_send_multipart_email($email, $subject, $html, $text);
 }

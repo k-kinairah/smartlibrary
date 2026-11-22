@@ -39,6 +39,7 @@ require 'config/db_connect.php';
 require 'config/auth_security.php';
 require 'config/csrf.php';
 require_once 'config/library_card_helpers.php';
+require_once 'config/auth_email_template.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -203,63 +204,21 @@ if ($normalizedRole === 'librarian') {
     $code = (string)($challenge['code'] ?? '');
     $masked = auth_mask_email($userEmail);
     $expiryMinutes = AUTH_2FA_CODE_TTL_MINUTES;
-    $logoBadgeHtml = '<div style="display:inline-block;margin:0 auto 8px;width:42px;height:42px;line-height:42px;border-radius:50%;background:#ffffff;color:#0f5132;font-weight:700;">SL</div>';
-    $inlineImages = [];
-
-    $logoPath = __DIR__ . '/assets/images/stjude_logo.jpg';
-    if (AUTH_EMAIL_EMBED_IMAGES && is_file($logoPath) && is_readable($logoPath)) {
-        $inlineImages[] = [
-            'cid' => 'smartlib_logo',
-            'path' => $logoPath,
-            'mime' => 'image/jpeg'
-        ];
-        $logoBadgeHtml = '<img src="cid:smartlib_logo" alt="SmartLib" style="display:block;margin:0 auto 8px;width:52px;height:52px;border-radius:50%;border:2px solid rgba(255,255,255,0.75);background:#ffffff;object-fit:cover;">';
-    }
-
     $subject = 'SMARTLIB 2FA CODE';
-    $html = <<<HTML
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SMARTLIB Sign-in Verification</title>
-</head>
-<body style="margin:0;padding:0;background:#eef3f8;font-family:Arial,Helvetica,sans-serif;color:#1e293b;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef3f8;padding:24px 12px;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:620px;background:#ffffff;border:1px solid #dbe4ee;border-radius:14px;overflow:hidden;">
-          <tr>
-            <td style="background:#0f5132;padding:18px 24px;color:#ffffff;text-align:center;">
-              {$logoBadgeHtml}
-              <div style="font-size:18px;font-weight:700;letter-spacing:.6px;color:#ffd84d;">SMARTLIB</div>
-              <div style="font-size:12px;opacity:.95;margin-top:4px;color:#ffe48a;">Sign-in Verification</div>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:24px;text-align:center;">
-              <h1 style="margin:0 0 10px;font-size:24px;line-height:1.25;color:#0f172a;">Your one-time sign-in code</h1>
-              <p style="margin:0 0 18px;font-size:15px;line-height:1.5;color:#475569;">Enter this code to complete your SMARTLIB sign-in.</p>
-              <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:16px;text-align:center;">
-                <span style="display:inline-block;font-size:36px;letter-spacing:8px;font-weight:800;color:#b88700;">{$code}</span>
-              </div>
-              <p style="margin:16px 0 0;font-size:14px;line-height:1.5;color:#475569;">This code expires in <strong>{$expiryMinutes} minutes</strong>. For your safety, do not share it with anyone.</p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:0 24px 22px;font-size:12px;line-height:1.6;color:#64748b;text-align:center;">Code sent to {$masked}. If you did not request this, you can ignore this email.</td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-HTML;
-    $text = "SMARTLIB Sign-in Verification\n\n"
-        . "Your one-time code is: {$code}\n"
-        . "This code expires in {$expiryMinutes} minutes.";
+    $emailOptions = [
+        'variant' => 'code',
+        'preheader' => "Your SmartLib sign-in code is {$code}. It expires in {$expiryMinutes} minutes.",
+        'eyebrow' => 'SIGN-IN VERIFICATION',
+        'title' => 'Your sign-in code',
+        'intro' => 'Enter this code to finish signing in to SmartLib.',
+        'code' => $code,
+        'expiry' => "Expires in {$expiryMinutes} minutes",
+        'security' => 'Never share this code. Library staff will never ask you for it.',
+        'sent_to' => 'Sent to ' . $masked,
+        'footer' => "Didn’t try to sign in? You can safely ignore this email — nobody can sign in without this code.",
+    ];
+    $html = smartlib_auth_email_html($emailOptions);
+    $text = smartlib_auth_email_text($emailOptions);
 $_SESSION['pending_2fa'] = [
         'challenge_id' => (int)($challenge['challenge_id'] ?? 0),
         'user_id' => $userId,
@@ -293,9 +252,9 @@ $_SESSION['pending_2fa'] = [
         'expires_minutes' => AUTH_2FA_CODE_TTL_MINUTES
     ];
 
-    register_shutdown_function(static function () use ($userEmail, $subject, $html, $text, $inlineImages): void {
+    register_shutdown_function(static function () use ($userEmail, $subject, $html, $text): void {
         @set_time_limit(45);
-        auth_send_multipart_email($userEmail, $subject, $html, $text, $inlineImages);
+        auth_send_multipart_email($userEmail, $subject, $html, $text);
     });
 
     respond_json($clientPayload);
