@@ -19160,8 +19160,9 @@ html body #book-modal .bml-retry:focus-visible {
 
 /* ---------- 600px and below: phone bottom sheet (Look A) ----------
    Approved design "book-modal-look-A-compact" (+ "-states"). The modal
-   is a bottom sheet as tall as the visible viewport (dvh, so it sits
-   between the browser's address bar and toolbar): grabber on top, close
+   is a bottom sheet only as tall as its content, at most the visible
+   viewport (dvh, so it stays between the browser's address bar and
+   toolbar); short books get a short sheet with no gap. Grabber on top, close
    X and heart top right, then a compact header (small cover | tags,
    title, author), one Availability | Loan band, the Where-to-find tile,
    the Published | ISBN strip and a 3-line description with Read more.
@@ -19181,11 +19182,12 @@ html body #book-modal .bml-retry:focus-visible {
     padding: 0 !important;
   }
 
+  /* As tall as its content, up to the visible viewport (dvh follows the
+     browser toolbars; vh is the fallback). Past that the grid scrolls. */
   html body #book-modal .modal-panel {
     width: 100% !important;
     max-width: 100% !important;
-    height: calc(100vh - 8px) !important;
-    height: calc(100dvh - 8px) !important;
+    height: auto !important;
     max-height: calc(100vh - 8px) !important;
     max-height: calc(100dvh - 8px) !important;
     margin: 0 !important;
@@ -19490,7 +19492,7 @@ html body #book-modal .bml-retry:focus-visible {
     grid-column: 1 / -1 !important;
     grid-row: 5 !important;
     align-self: start !important;
-    margin: 14px 0 24px !important;
+    margin: 14px 0 20px !important;
   }
 
   html body #book-modal .book-modal-v2 .book-description p {
@@ -19544,7 +19546,7 @@ html body #book-modal .bml-retry:focus-visible {
     left: 0 !important;
     right: 0 !important;
     bottom: 100% !important;
-    height: 22px !important;
+    height: 20px !important;
     background: linear-gradient(rgba(232, 249, 241, 0), rgba(232, 249, 241, 0.95)) !important;
     pointer-events: none !important;
   }
@@ -19590,6 +19592,15 @@ html body #book-modal .bml-retry:focus-visible {
   }
 
   /* ---- loading / error placeholder (filters.js) ---- */
+  /* The sheet now hugs its content, so the loading placeholder gets the
+     height of a typical book (median sheet ~684px at 390x712) to keep the
+     swap to the real content calm; capped at the visible height (8px top
+     gap + 64px header). The error state stays as short as its content. */
+  html body #book-modal .bm2-loading:not(.bm2-load-failed) {
+    min-height: min(620px, calc(100vh - 72px)) !important;
+    min-height: min(620px, calc(100dvh - 72px)) !important;
+  }
+
   html body #book-modal .bml-title,
   html body #book-modal .bml-bar-title {
     margin-right: 0 !important;
