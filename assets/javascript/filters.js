@@ -124,9 +124,13 @@ document.addEventListener("DOMContentLoaded", () => {
         year_to: ""
     };
 
-    let totalBooks = 0;
-    // The full catalog (#book-grid, inside the display:none #search-view) is
-    // only fetched the first time search opens -- see showSearchView().
+    // Search results come a page at a time from fetch_books.php (see
+    // loadBooks()); these hold the totals it sends in its X-Total-Matching
+    // and X-Catalog-Total headers for the "X of Y books" label.
+    let catalogTotal = 0;
+    let booksTotalMatching = 0;
+    // #book-grid (inside the display:none #search-view) is only fetched the
+    // first time search opens -- see showSearchView().
     let booksInitialized = false;
 
     const discoverView = document.getElementById("discover-view");
@@ -611,7 +615,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 // calling ensureBooksLoaded() too would race an unfiltered
                 // fetch against this one, and it could land last.
                 booksInitialized = true;
-                computeTotalBooks();
                 loadBooks();
             } else {
                 ensureBooksLoaded();
@@ -667,7 +670,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function updateResultCount() {
         if (!resultsCount || !bookGrid) return;
-        const found = bookGrid.querySelectorAll(".book-card").length;
+        // Every matching book, not just the cards loaded so far.
+        const found = booksTotalMatching;
         const isFiltered = buildParams().toString() !== "";
         const fmt = n => n.toLocaleString("en-US");
 
@@ -676,8 +680,8 @@ document.addEventListener("DOMContentLoaded", () => {
         // and "No matches" for an empty result.
         if (found === 0 && isFiltered) {
             resultsCount.textContent = "No matches";
-        } else if (isFiltered && totalBooks > 0) {
-            resultsCount.textContent = `${fmt(found)} of ${fmt(totalBooks)} books`;
+        } else if (isFiltered && catalogTotal > 0) {
+            resultsCount.textContent = `${fmt(found)} of ${fmt(catalogTotal)} books`;
         } else {
             resultsCount.textContent = `${fmt(found)} ${found === 1 ? "book" : "books"}`;
         }
@@ -742,33 +746,127 @@ document.addEventListener("DOMContentLoaded", () => {
         const clearBtn = document.getElementById("clear-active");
         if (clearBtn) clearBtn.disabled = container.children.length === 0;
     }
-    // Only the newest loadBooks() response may render. The full catalog now
-    // loads when search first opens, so a quick first keystroke fires a small
-    // filtered fetch while the ~3MB unfiltered one is still in flight -- if
-    // the unfiltered one landed last it would overwrite the typed results.
+    // Results load a page at a time: loadBooks() fetches the first page for
+    // the current filters and replaces the grid; scrolling near the end of
+    // the grid (the sentinel below) appends the next page until every
+    // matching book is shown. Only responses for the newest loadBooks() may
+    // render -- every new search/filter bumps loadBooksSeq, so a slow page
+    // for an older query can't overwrite or extend the current results.
+    const BOOKS_PAGE_SIZE = 60;
     let loadBooksSeq = 0;
-    function loadBooks() {
-        const params = buildParams();
-        const seq = ++loadBooksSeq;
+    let booksShown = 0;        // .book-card elements in the grid
+    let booksDone = true;      // every matching book is in the grid
+    let booksPageLoading = false;
+    let booksRetryTimer = 0;
 
-        fetch("fetch_books.php?" + params.toString())
-            .then(res => res.text())
-            .then(html => {
-                if (seq !== loadBooksSeq) return;
-                if (bookGrid) bookGrid.innerHTML = html;
+    let booksSentinel = null;
+    let booksObserver = null;
+    let booksSentinelVisible = false;
+
+    // In the current layout the page (window) scrolls in search view, not an
+    // element. Look anyway, so a future scrolling wrapper still works.
+    function findBooksScrollRoot() {
+        let el = bookGrid?.parentElement || null;
+        while (el && el !== document.body && el !== document.documentElement) {
+            const oy = getComputedStyle(el).overflowY;
+            if (oy === "auto" || oy === "scroll") return el;
+            el = el.parentElement;
+        }
+        return null;
+    }
+
+    function rearmBooksSentinel() {
+        // Re-observing makes the observer report the sentinel's current
+        // state again, so a page that didn't fill the screen loads the next.
+        if (!booksObserver || !booksSentinel) return;
+        booksObserver.unobserve(booksSentinel);
+        booksObserver.observe(booksSentinel);
+    }
+
+    if (bookGrid) {
+        booksSentinel = document.createElement("div");
+        booksSentinel.className = "book-grid-sentinel";
+        booksSentinel.setAttribute("aria-hidden", "true");
+        booksSentinel.style.cssText = "width:100%;height:1px;pointer-events:none;";
+        bookGrid.after(booksSentinel);
+
+        if ("IntersectionObserver" in window) {
+            booksObserver = new IntersectionObserver((entries) => {
+                const entry = entries[entries.length - 1];
+                booksSentinelVisible = !!entry?.isIntersecting;
+                if (booksSentinelVisible) loadMoreBooks();
+            }, { root: findBooksScrollRoot(), rootMargin: "600px 0px" });
+            booksObserver.observe(booksSentinel);
+        }
+    }
+
+    function fetchBooksPage(seq, offset, limit) {
+        const params = buildParams();
+        params.set("limit", String(limit));
+        params.set("offset", String(offset));
+        booksPageLoading = true;
+
+        return fetch("fetch_books.php?" + params.toString())
+            .then(res => {
+                if (!res.ok) throw new Error("fetch_books.php returned " + res.status);
+                return res.text().then(html => ({ res, html }));
+            })
+            .then(({ res, html }) => {
+                if (seq !== loadBooksSeq || !bookGrid) return;
+                booksPageLoading = false;
+
+                const matching = Number.parseInt(res.headers.get("X-Total-Matching") || "", 10);
+                const catalog = Number.parseInt(res.headers.get("X-Catalog-Total") || "", 10);
+                if (Number.isFinite(catalog)) catalogTotal = catalog;
+
+                const before = offset === 0 ? 0 : booksShown;
+                if (offset === 0) {
+                    bookGrid.innerHTML = html;
+                } else {
+                    bookGrid.insertAdjacentHTML("beforeend", html);
+                }
+                booksShown = bookGrid.querySelectorAll(".book-card").length;
+                const added = booksShown - before;
+
+                if (Number.isFinite(matching)) {
+                    booksTotalMatching = matching;
+                    booksDone = booksShown >= matching || added === 0;
+                } else {
+                    booksTotalMatching = booksShown;
+                    booksDone = added < limit;
+                }
+
                 updateResultCount();
+                if (!booksDone) rearmBooksSentinel();
+            })
+            .catch(() => {
+                if (seq !== loadBooksSeq) return;
+                booksPageLoading = false;
+                // Try the same page again shortly if the sentinel is still near.
+                window.clearTimeout(booksRetryTimer);
+                booksRetryTimer = window.setTimeout(() => {
+                    if (seq === loadBooksSeq) rearmBooksSentinel();
+                }, 3000);
             });
     }
 
-    function computeTotalBooks() {
-        fetch("fetch_books.php")
-            .then(res => res.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, "text/html");
-                totalBooks = doc.querySelectorAll(".book-card").length;
-                updateResultCount();
-            });
+    function loadMoreBooks() {
+        if (booksDone || booksPageLoading) return;
+        if (!searchView || searchView.classList.contains("hidden")) return;
+        fetchBooksPage(loadBooksSeq, booksShown, BOOKS_PAGE_SIZE);
+    }
+
+    // keepShown: re-fetch as many cards as are already on screen (up to the
+    // server's 200 cap) instead of dropping back to one page -- used after
+    // a checkout so the grid doesn't shrink under the borrower.
+    function loadBooks({ keepShown = false } = {}) {
+        const seq = ++loadBooksSeq;
+        window.clearTimeout(booksRetryTimer);
+        const limit = keepShown
+            ? Math.min(200, Math.max(BOOKS_PAGE_SIZE, booksShown))
+            : BOOKS_PAGE_SIZE;
+        booksDone = false;
+        fetchBooksPage(seq, 0, limit);
     }
 
     function removeFilter(type, value) {
@@ -1679,7 +1777,6 @@ let signinCountdownEndTs = 0;
     function ensureBooksLoaded() {
         if (booksInitialized) return;
         booksInitialized = true;
-        computeTotalBooks();
         loadBooks();
     }
 
@@ -1688,8 +1785,7 @@ let signinCountdownEndTs = 0;
         // open fetches fresh data anyway. Without this guard, a checkout from
         // a homepage carousel would bring the eager full-catalog load back.
         if (!booksInitialized) return;
-        computeTotalBooks();
-        loadBooks();
+        loadBooks({ keepShown: true });
     };
 });
 

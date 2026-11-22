@@ -100,6 +100,13 @@ $genres = $_GET['genre'] ?? [];
 $yearFromRaw = trim((string)($_GET['year_from'] ?? ''));
 $yearToRaw = trim((string)($_GET['year_to'] ?? ''));
 
+// Paging: search shows the catalog a page at a time (filters.js asks for
+// the next page as the grid scrolls) instead of all ~2,000 cards at once.
+$limit = filter_var($_GET['limit'] ?? null, FILTER_VALIDATE_INT);
+$limit = $limit === false ? 60 : max(1, min(200, (int)$limit));
+$offset = filter_var($_GET['offset'] ?? null, FILTER_VALIDATE_INT);
+$offset = $offset === false ? 0 : max(0, (int)$offset);
+
 $hasCategoryGroup = false;
 if (column_exists($conn, 'categories', 'category_group')) {
     $hasCategoryGroup = true;
@@ -159,6 +166,13 @@ $callNumberSortExpr = $hasBookCallNumber
     ? "COALESCE(NULLIF(TRIM(b.call_number), ''), 'ZZZ 9999')"
     : "'ZZZ 9999'";
 
+$fromSql = "
+    FROM books b
+    LEFT JOIN categories c ON b.category_id = c.category_id
+    LEFT JOIN programs p ON b.program_id = p.program_id
+    {$locationJoin}
+";
+
 $sql = "
     SELECT
         b.book_id,
@@ -169,10 +183,7 @@ $sql = "
         b.year_published,
         {$genreExpr} AS genre_name,
         p.program_name AS program_name
-    FROM books b
-    LEFT JOIN categories c ON b.category_id = c.category_id
-    LEFT JOIN programs p ON b.program_id = p.program_id
-    {$locationJoin}
+    {$fromSql}
 ";
 
 $where = [];
@@ -208,20 +219,41 @@ if ($yearTo !== null) {
     $where[] = 'CAST(b.year_published AS UNSIGNED) <= ' . $yearTo;
 }
 
-if (!empty($where)) {
-    $sql .= ' WHERE ' . implode(' AND ', $where);
-}
+$whereSql = !empty($where) ? ' WHERE ' . implode(' AND ', $where) : '';
+$sql .= $whereSql;
 
+// b.book_id last so rows that tie on everything else keep one fixed order
+// and paging never repeats or skips a book.
 $sql .= " ORDER BY
     {$lcOrderExpr} ASC,
     {$lcClassExpr} ASC,
     {$callNumberSortExpr} ASC,
     CAST(COALESCE(NULLIF(b.year_published, ''), '0') AS UNSIGNED) ASC,
-    b.title ASC";
+    b.title ASC,
+    b.book_id ASC
+    LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
+
+// Totals for the "X of Y books" label: every book matching the filters
+// (same joins and WHERE as the page query) and the whole catalog.
+$totalMatching = 0;
+$countRes = mysqli_query($conn, "SELECT COUNT(*) AS n {$fromSql} {$whereSql}");
+if ($countRes) {
+    $totalMatching = (int)(mysqli_fetch_assoc($countRes)['n'] ?? 0);
+}
+$catalogTotal = 0;
+$catalogRes = mysqli_query($conn, 'SELECT COUNT(*) AS n FROM books');
+if ($catalogRes) {
+    $catalogTotal = (int)(mysqli_fetch_assoc($catalogRes)['n'] ?? 0);
+}
+header('X-Total-Matching: ' . $totalMatching);
+header('X-Catalog-Total: ' . $catalogTotal);
 
 $res = mysqli_query($conn, $sql);
 $resultCount = $res ? mysqli_num_rows($res) : 0;
-log_search_query($conn, $search, $resultCount);
+// Only the first page logs, so loading more never adds search_logs rows.
+if ($offset === 0) {
+    log_search_query($conn, $search, $totalMatching);
+}
 
 // Favorites: precompute the current user's favorited book_ids in one query
 // (instead of one lookup per row) so the heart icon on each card can render
@@ -279,7 +311,7 @@ if ($res && $resultCount > 0) {
             </div>
         </div>";
     }
-} else {
+} elseif ($offset === 0) {
     echo "<p class='no-results'>No books found.</p>";
 }
 ?>
