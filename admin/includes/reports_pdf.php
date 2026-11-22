@@ -590,18 +590,21 @@ function rpdf_bar_grid(RpdfLayout $l, array $cards, string $zeroNoun): void {
     $l->y += 2;
 }
 
-/** Six small tiles; overdue, missing and fines turn amber above zero. */
-function rpdf_stat_tiles(RpdfLayout $l, array $totals): void {
+/** Six small tiles (five when overdue fines are off); overdue, missing and fines turn amber above zero. */
+function rpdf_stat_tiles(RpdfLayout $l, array $totals, bool $finesOn = true): void {
     $tiles = [
         ['Total Records', (int)$totals['total'], number_format((int)$totals['total']), false],
         ['Borrowed', (int)$totals['borrowed'], number_format((int)$totals['borrowed']), false],
         ['Returned', (int)$totals['returned'], number_format((int)$totals['returned']), false],
         ['Overdue', (int)$totals['overdue'], number_format((int)$totals['overdue']), true],
         ['Missing', (int)$totals['missing'], number_format((int)$totals['missing']), true],
-        ['Fines (PHP)', (float)$totals['total_fine'], number_format((float)$totals['total_fine'], 2), true],
     ];
+    if ($finesOn) {
+        $tiles[] = ['Fines (PHP)', (float)$totals['total_fine'], number_format((float)$totals['total_fine'], 2), true];
+    }
     $gap = 8.0;
-    $w = (RPDF_CONTENT_W - 5 * $gap) / 6;
+    $count = count($tiles);
+    $w = (RPDF_CONTENT_W - ($count - 1) * $gap) / $count;
     $h = 44.0;
     $l->need($h);
     foreach ($tiles as $i => [$label, $value, $text, $warn]) {
@@ -615,9 +618,12 @@ function rpdf_stat_tiles(RpdfLayout $l, array $totals): void {
 }
 
 /** Detailed records, a framed table that continues across pages. */
-function rpdf_records_table(RpdfLayout $l, array $rows, string $emptyText): void {
+function rpdf_records_table(RpdfLayout $l, array $rows, string $emptyText, bool $finesOn = true): void {
     // Widths plus the 8pt gaps fill the card's inner width (516pt) exactly.
-    $cols = [['ID', 32], ['Date', 56], ['User', 130], ['Book', 146], ['Status', 54], ['Fine', 44]];
+    // Fines off: no Fine column, Book takes its width and gap.
+    $cols = $finesOn
+        ? [['ID', 32], ['Date', 56], ['User', 130], ['Book', 146], ['Status', 54], ['Fine', 44]]
+        : [['ID', 32], ['Date', 56], ['User', 130], ['Book', 198], ['Status', 54]];
     $rowH = 16.0;
     $innerX = RPDF_M + 12;
     $innerW = RPDF_CONTENT_W - 24;
@@ -653,7 +659,10 @@ function rpdf_records_table(RpdfLayout $l, array $rows, string $emptyText): void
             $userNumber = trim((string)($row['user_number'] ?? ''));
             $user = trim(trim((string)($row['borrower_name'] ?? '')) . ($userNumber !== '' ? ' (' . $userNumber . ')' : ''));
             $cells = ['#' . (int)($row['record_id'] ?? 0), (string)($row['activity_date'] ?? '-'), $user !== '' ? $user : '-',
-                (string)($row['title'] ?? '-'), ucfirst(strtolower((string)($row['status'] ?? ''))), number_format((float)($row['fine'] ?? 0), 2)];
+                (string)($row['title'] ?? '-'), ucfirst(strtolower((string)($row['status'] ?? '')))];
+            if ($finesOn) {
+                $cells[] = number_format((float)($row['fine'] ?? 0), 2);
+            }
             $x = $innerX + 6;
             foreach ($cols as $c => [$label, $w]) {
                 $label === 'Fine'
@@ -705,6 +714,8 @@ function reports_build_branded_pdf(array $r): string {
     $periodWord = reports_modal_period_word((string)$r['period']);
     $totals = (array)$r['totals'];
     $entry = (array)$r['entry_report'];
+    // Overdue fines off (Settings): no fine tile or column anywhere.
+    $finesOn = !empty($r['fines_on']);
     $isEntry = $type === 'entry_log';
     $borrowDaily = (array)$r['borrow_daily'];
     $searchDaily = (array)$r['search_daily'];
@@ -750,7 +761,10 @@ function reports_build_branded_pdf(array $r): string {
         $topCount = $top ? (int)$top['borrow_count'] : 0;
         $sentence = $top ? $top['borrower_name'] . ' led with ' . number_format($topCount) . ' ' . ($topCount === 1 ? 'borrow' : 'borrows') . ' this ' . $periodWord . '.' : 'No borrowing by students or faculty yet this ' . $periodWord . '.';
     } elseif ($type === 'detailed_transactions') {
-        $tiles = [['value' => number_format((int)$totals['total']), 'label' => 'Records'], ['value' => number_format((int)$totals['overdue']), 'label' => 'Overdue'], ['value' => number_format((float)$totals['total_fine'], 0), 'label' => 'Fines (PHP)']];
+        $tiles = [['value' => number_format((int)$totals['total']), 'label' => 'Records'], ['value' => number_format((int)$totals['overdue']), 'label' => 'Overdue']];
+        if ($finesOn) {
+            $tiles[] = ['value' => number_format((float)$totals['total_fine'], 0), 'label' => 'Fines (PHP)'];
+        }
         $sentence = (int)$totals['total'] > 0 ? (reports_modal_borrow_sentence($totals, $periodWord) . ' Every loan in the range is listed below.') : reports_modal_empty_text('loans', $periodWord);
     } else {
         $tiles = [['value' => number_format((int)$totals['total']), 'label' => 'Total'], ['value' => number_format((int)$totals['borrowed']), 'label' => 'Borrowed'], ['value' => number_format((int)$totals['overdue']), 'label' => 'Overdue']];
@@ -768,10 +782,10 @@ function reports_build_branded_pdf(array $r): string {
             rpdf_bar_grid($layout, array_map(fn($s) => ['title' => $s['title'], 'rows' => $s['rows']], $entry['sections']), 'entries');
         }
     } elseif ($type === 'detailed_transactions') {
-        rpdf_records_table($layout, (array)$r['detailed_rows'], reports_modal_empty_text('loans', $periodWord));
+        rpdf_records_table($layout, (array)$r['detailed_rows'], reports_modal_empty_text('loans', $periodWord), $finesOn);
     } else {
         if ($scope['show_totals']) {
-            rpdf_stat_tiles($layout, $totals);
+            rpdf_stat_tiles($layout, $totals, $finesOn);
         }
         if ($scope['show_status']) {
             rpdf_bar_card($layout, 'Status breakdown', array_map(fn($row) => ['label' => ucfirst((string)$row['status']), 'total' => $row['total']], (array)$r['status_breakdown']), false, 'loans', 'No loans this ' . $periodWord . '.');
@@ -797,7 +811,7 @@ function reports_build_branded_pdf(array $r): string {
             rpdf_bar_grid($layout, array_map(fn($s) => ['title' => $s['title'], 'rows' => $s['rows']], $entry['sections']), 'entries');
         }
         if ($scope['show_detailed']) {
-            rpdf_records_table($layout, (array)$r['detailed_rows'], reports_modal_empty_text('loans', $periodWord));
+            rpdf_records_table($layout, (array)$r['detailed_rows'], reports_modal_empty_text('loans', $periodWord), $finesOn);
         }
     }
 

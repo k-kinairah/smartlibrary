@@ -5330,6 +5330,11 @@ body.modal-open {
     margin: 2px 0 10px;
 }
 
+/* Overdue fines off (Settings): no "Est. Fines" card, three cards. */
+.overdue-summary-grid.is-three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .overdue-summary-card {
     text-decoration: none;
     border: 1px solid rgba(151, 201, 173, 0.28);
@@ -10935,6 +10940,11 @@ body {
     margin-bottom: 14px;
 }
 
+/* Overdue fines off (Settings): no "Total Fine" tile, five tiles. */
+.reports-modal-tiles.is-five {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 .reports-modal-tile {
     padding: 11px 12px;
     border-radius: 12px;
@@ -11148,7 +11158,8 @@ body {
 }
 
 @media (max-width: 980px) {
-    .reports-modal-tiles {
+    .reports-modal-tiles,
+    .reports-modal-tiles.is-five {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
@@ -13266,5 +13277,171 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
 @media (max-width: 420px) {
     .export-date-fields {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================================
+   Settings page (admin/settings.php): overdue fines on/off.
+   Text inherits the panel colours of each theme; the switch and
+   the number field get their own light-theme values below.
+   ============================================================ */
+.settings-panel {
+    max-width: 760px;
+}
+
+.settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(159, 211, 189, 0.2);
+}
+
+.settings-row-text {
+    min-width: 0;
+}
+
+.settings-label {
+    display: block;
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.settings-help {
+    margin: 4px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+    opacity: 0.85;
+}
+
+.settings-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex: none;
+    cursor: pointer;
+}
+
+.settings-switch input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+}
+
+.settings-switch-track {
+    position: relative;
+    width: 50px;
+    height: 28px;
+    border-radius: 999px;
+    background: rgba(159, 211, 189, 0.28);
+    border: 1px solid rgba(159, 211, 189, 0.45);
+    transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.settings-switch-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    transition: transform 0.18s ease;
+}
+
+.settings-switch input:checked + .settings-switch-track {
+    background: #0e8660;
+    border-color: #0e8660;
+}
+
+.settings-switch input:checked + .settings-switch-track .settings-switch-knob {
+    transform: translateX(22px);
+}
+
+.settings-switch input:focus-visible + .settings-switch-track {
+    outline: 3px solid #3fcf8e;
+    outline-offset: 2px;
+}
+
+.settings-switch-text {
+    min-width: 26px;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.settings-switch-on {
+    display: none;
+}
+
+.settings-switch input:checked ~ .settings-switch-text .settings-switch-on {
+    display: inline;
+}
+
+.settings-switch input:checked ~ .settings-switch-text .settings-switch-off {
+    display: none;
+}
+
+.settings-input {
+    flex: none;
+    width: 150px;
+    height: 44px;
+    padding: 0 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(159, 211, 189, 0.45);
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.settings-input:focus-visible {
+    outline: 3px solid #3fcf8e;
+    outline-offset: 2px;
+}
+
+.settings-status {
+    margin: 12px 0 0;
+    font-size: 14px;
+}
+
+.settings-actions {
+    padding-top: 14px;
+}
+
+[data-theme="light"] .settings-row {
+    border-bottom-color: #d9ece2;
+}
+
+[data-theme="light"] .settings-switch-track {
+    background: #dbe7e1;
+    border-color: #b9d3c6;
+}
+
+[data-theme="light"] .settings-input {
+    background: #ffffff;
+    border-color: #b9d3c6;
+}
+
+[data-theme="light"] .settings-switch input:focus-visible + .settings-switch-track,
+[data-theme="light"] .settings-input:focus-visible {
+    outline-color: #0b7a56;
+}
+
+@media (max-width: 640px) {
+    .settings-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
     }
 }

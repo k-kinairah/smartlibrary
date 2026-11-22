@@ -63,6 +63,7 @@ function admin_icon(string $key): string {
         'activity' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12h4l2-5.5 4 11 2-5.5h4.5"></path></svg>',
         'edit' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.2 5.3 18.7 9.8 8.4 20H4v-4.4L14.2 5.3Z"></path><path d="m12.6 6.9 3.5 3.5"></path></svg>',
         'trash' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"></path><path d="M9.5 7V5.2a1.2 1.2 0 0 1 1.2-1.2h2.6a1.2 1.2 0 0 1 1.2 1.2V7"></path><path d="M7.5 7 8.3 19a1.6 1.6 0 0 0 1.6 1.5h4.2a1.6 1.6 0 0 0 1.6-1.5L16.5 7"></path><path d="M10.3 11v6"></path><path d="M13.7 11v6"></path></svg>',
+        'settings' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9"></path><path d="M17 7h3"></path><circle cx="15" cy="7" r="2"></circle><path d="M4 17h3"></path><path d="M11 17h9"></path><circle cx="9" cy="17" r="2"></circle><path d="M4 12h12"></path><path d="M20 12h0"></path><circle cx="18" cy="12" r="2"></circle></svg>',
         'currency' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.2"></circle><path d="M12 7.5v9"></path><path d="M14.8 9.3c-.5-.8-1.5-1.2-2.8-1.2-1.8 0-3 .9-3 2.1 0 1.1.9 1.6 2.6 2 1.9.4 3.2 1 3.2 2.2 0 1.2-1.3 2.1-3 2.1-1.4 0-2.5-.5-3-1.3"></path></svg>',
         'search' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"></circle><path d="m19.5 19.5-4.2-4.2"></path></svg>',
         'arrow-left' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"></path><path d="m11 6-6 6 6 6"></path></svg>',
@@ -250,6 +251,7 @@ function stat_chip_meta(string $title): array {
         <a class="nav-link <?= $currentPage === 'reports.php' ? 'active' : '' ?>" href="reports.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('reports') ?></span><span>Reports</span></a>
         <a class="nav-link <?= $currentPage === 'archived_history.php' ? 'active' : '' ?>" href="archived_history.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('archives') ?></span><span>Archives</span></a>
         <a class="nav-link <?= $currentPage === 'export_center.php' ? 'active' : '' ?>" href="export_center.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('export') ?></span><span>Data Export</span></a>
+        <a class="nav-link <?= $currentPage === 'settings.php' ? 'active' : '' ?>" href="settings.php"><span class="nav-icon" aria-hidden="true"><?= admin_icon('settings') ?></span><span>Settings</span></a>
 
         <div class="sidebar-footer">
             <a href="../logout.php" class="logout-btn"><span class="nav-icon" aria-hidden="true"><?= admin_icon('logout') ?></span><span>Logout</span></a>

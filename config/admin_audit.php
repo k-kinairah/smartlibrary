@@ -6,7 +6,9 @@ function smartlib_admin_audit_actions(): array {
         'added', 'updated', 'deleted', 'returned', 'missing', 'status_changed', 'retrieved',
         // Cover fix-up actions from the Edit Book modal (admin/manage_books.php)
         // and the bulk book importer (admin/bulk_import_books.php).
-        'cover_refetched', 'cover_uploaded', 'cover_cleared', 'bulk_imported'
+        'cover_refetched', 'cover_uploaded', 'cover_cleared', 'bulk_imported',
+        // Library settings (admin/settings.php), e.g. overdue fines on/off.
+        'settings_changed'
     ];
 }
 
@@ -180,7 +182,8 @@ function smartlib_admin_audit_action_label(string $action): string {
         'cover_refetched' => 'Cover Re-fetched',
         'cover_uploaded' => 'Cover Uploaded',
         'cover_cleared' => 'Cover Cleared',
-        'bulk_imported' => 'Bulk Imported'
+        'bulk_imported' => 'Bulk Imported',
+        'settings_changed' => 'Settings Changed'
     ];
 
     $key = strtolower(trim($action));

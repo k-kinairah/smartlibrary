@@ -2134,7 +2134,7 @@ ${receiptFlankLabel("verify", "Verification")}
 
             <div class="receipt-note-rule" aria-hidden="true"></div>
             <div class="receipt-note">Please return this book on or before the due date</div>
-            <div class="receipt-note">Late returns may incur fines</div>
+            ${document.body?.dataset.finesEnabled === "1" ? '<div class="receipt-note">Late returns may incur fines</div>' : ''}
         `;
     };
 
@@ -2900,6 +2900,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const MY_BOOKS_PAGE_SIZE = { active: 2, missing: 3, history: 5, favorites: 4 };
     let myBooksPageState = { active: 1, missing: 1, history: 1, favorites: 1 };
     let myBooksLastPayload = null;
+    // Overdue fines can be switched off in the librarian's Settings (the
+    // default); fetch_my_checked_out.php says which in fines_enabled. A
+    // missing flag counts as off.
+    let myBooksFinesOn = false;
 
     const paginateSlice = (items, section) => {
         const perPage = MY_BOOKS_PAGE_SIZE[section];
@@ -2953,7 +2957,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <span><strong>Borrowed:</strong> ${esc(book.date_borrowed_label || book.date_borrowed || 'N/A')}</span>
                     <span><strong>Due:</strong> ${esc(book.due_date_label || book.due_date || 'N/A')}</span>
                     ${book.date_returned_label ? `<span><strong>Returned:</strong> ${esc(book.date_returned_label)}</span>` : ''}
-                    ${Number(book.fine || 0) > 0 ? `<span><strong>Fine:</strong> ${money(book.fine)}</span>` : ''}
+                    ${myBooksFinesOn && Number(book.fine || 0) > 0 ? `<span><strong>Fine:</strong> ${money(book.fine)}</span>` : ''}
                 </div>
                 <p class="my-book-due-note ${esc(String(book.status || '').toLowerCase())}">${esc(dueNote(book))}</p>
             </div>
@@ -3016,7 +3020,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <strong>${esc(book.title || 'Untitled')}</strong>
                         <span>${esc(book.date_borrowed_label || book.date_borrowed || 'N/A')}</span>
                         <span>${esc(book.date_returned_label || book.date_returned || 'N/A')}</span>
-                        <span>${Number(book.fine || 0) > 0 ? money(book.fine) : 'No fine'}</span>
+                        <span>${myBooksFinesOn ? (Number(book.fine || 0) > 0 ? money(book.fine) : 'No fine') : ''}</span>
                     </div>
                 `).join("")}
             </div>
@@ -3030,6 +3034,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // re-render a different page instantly from memory instead of
         // re-fetching fetch_my_checked_out.php every time.
         myBooksLastPayload = payload;
+        myBooksFinesOn = !Array.isArray(payload) && payload?.fines_enabled === true;
 
         const legacyBooks = Array.isArray(payload) ? payload : null;
         const account = legacyBooks ? { active_books: legacyBooks, books: legacyBooks } : payload;
@@ -3075,7 +3080,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // clear, amber/red + warning triangle when something's owed, so the
         // header reads as one lively row instead of a card-within-a-card.
         const hasActiveFine = Number(summary.active_fines || 0) > 0;
-        const fineChip = `
+        const fineChip = !myBooksFinesOn ? '' : `
             <span class="head-chip fine ${hasActiveFine ? 'warn' : 'ok'}">
                 <svg viewBox="0 0 24 24" aria-hidden="true">${hasActiveFine
                     ? '<path d="M12 3 2 20h20L12 3Z"></path><path d="M12 9v5"></path><path d="M12 17h.01"></path>'

@@ -96,6 +96,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 require_once 'config/session_guard.php';
+require_once 'config/library_settings.php';
+// Overdue fines can be off (Settings, the default): then no fines sentence.
+$finesOn = smartlib_fines_enabled($conn);
 $userId = smartlib_active_session_user_id($conn); // 0 if signed out, inactive or deleted
 if ($userId <= 0) {
     respond(['status' => 'error', 'message' => 'Please sign in first.'], 401);
@@ -307,6 +310,7 @@ $dueCallout = '<table role="presentation" width="100%" cellpadding="0" cellspaci
 $g12 = $gap(12);
 $g20 = $gap(20);
 
+$finesSentenceHtml = $finesOn ? ' Late returns may incur fines.' : '';
 $htmlBody = <<<HTML
 <!doctype html>
 <html lang="en">
@@ -342,7 +346,7 @@ $htmlBody = <<<HTML
                     {$g20}
                     {$verifySection}
                     {$g20}
-                    <div style="background:#eef6f2;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.6;font-style:italic;text-align:center;color:#2c4a42;">Please return this book on or before the due date. Late returns may incur fines.</div>
+                    <div style="background:#eef6f2;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.6;font-style:italic;text-align:center;color:#2c4a42;">Please return this book on or before the due date.{$finesSentenceHtml}</div>
                   </td>
                 </tr>
               </table>
@@ -373,7 +377,7 @@ $textBody = "SMARTLIB BORROWING RECEIPT\n"
     . "DUE DATE: {$dueDate}\n\n"
     . "VERIFICATION\n"
     . "Transaction ID: {$transactionId}\n\n"
-    . "Please return this book on or before the due date. Late returns may incur fines.";
+    . "Please return this book on or before the due date." . ($finesOn ? ' Late returns may incur fines.' : '');
 
 $sent = auth_send_multipart_email($email, $subject, $htmlBody, $textBody, $inlineImages);
 if ($barcodeFile !== null) {

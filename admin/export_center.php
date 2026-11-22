@@ -20,6 +20,8 @@ function export_center_scalar(mysqli $conn, string $sql): int {
 
 smartlib_ensure_borrow_renewal_columns($conn);
 sync_overdue_status_and_fines($conn);
+// Overdue fines can be off (Settings, the default): then no fine wording.
+$finesOn = smartlib_fines_enabled($conn);
 
 $exportCards = [
     [
@@ -42,7 +44,7 @@ $exportCards = [
         'type' => 'users',
         'icon' => 'people',
         'title' => 'Borrowers & Staff',
-        'description' => 'User directory without passwords, including program or department, role, status, active loans, and fine totals.',
+        'description' => 'User directory without passwords, including program or department, role, status, ' . ($finesOn ? 'active loans, and fine totals.' : 'and active loans.'),
         'count' => export_center_scalar($conn, 'SELECT COUNT(*) FROM library_users'),
         'count_label' => 'accounts'
     ],
@@ -50,7 +52,7 @@ $exportCards = [
         'type' => 'borrow_records',
         'icon' => 'swap',
         'title' => 'Borrow Records',
-        'description' => 'Full circulation history with borrower, book, dates, status, fine, and renewal details.',
+        'description' => 'Full circulation history with borrower, book, dates, status, ' . ($finesOn ? 'fine, and renewal details.' : 'and renewal details.'),
         'count' => export_center_scalar($conn, 'SELECT COUNT(*) FROM borrow_records'),
         'count_label' => 'records'
     ],
@@ -134,7 +136,7 @@ $exportCards = [
                     ['icon' => 'book-open', 'name' => 'Books Summary', 'use' => 'Inventory checks, title lists, copy availability summaries', 'tier' => 'none', 'note' => 'No passwords or borrower data'],
                     ['icon' => 'layers', 'name' => 'Book Copies', 'use' => 'Accession-number audits and copy status checking', 'tier' => 'none', 'note' => 'No borrower data'],
                     ['icon' => 'people', 'name' => 'Borrowers & Staff', 'use' => 'Account review, active-loan counts, user status checks', 'tier' => 'personal', 'note' => 'Names, ID numbers and emails; password column excluded'],
-                    ['icon' => 'swap', 'name' => 'Borrow Records', 'use' => 'Complete circulation reporting and fine reconciliation', 'tier' => 'personal', 'note' => 'Includes borrower identity needed for library operations'],
+                    ['icon' => 'swap', 'name' => 'Borrow Records', 'use' => $finesOn ? 'Complete circulation reporting and fine reconciliation' : 'Complete circulation reporting', 'tier' => 'personal', 'note' => 'Includes borrower identity needed for library operations'],
                     ['icon' => 'alert-triangle', 'name' => 'Overdue & Missing', 'use' => 'Follow-up lists for unresolved loans', 'tier' => 'personal', 'note' => 'Includes borrower identity needed for follow-up'],
                     ['icon' => 'user-check', 'name' => 'Top Borrowers', 'use' => 'Recognition lists and borrowing-pattern reviews', 'tier' => 'personal', 'note' => 'Names, ID numbers and programs; top 100 only'],
                 ];

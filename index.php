@@ -3,6 +3,7 @@ session_start();
 require 'config/db_connect.php';
 require 'config/csrf.php';
 require_once 'config/session_guard.php';
+require_once 'config/library_settings.php';
 
 // Signs out an account that was deactivated or deleted since login, so the
 // header below shows the signed-out state; refreshes name/role otherwise.
@@ -81,7 +82,7 @@ try {
     <link rel="icon" href="assets/images/stjude_seal_64.png" type="image/png">
     <link rel="stylesheet" href="assets/css/kiosk.css?v=<?= $kioskCssVer ?>">
 </head>
-<body>
+<body data-fines-enabled="<?= smartlib_fines_enabled($conn) ? '1' : '0' ?>">
 
 <div id="discover-view">
     <div class="discover-section" id="discover-section">

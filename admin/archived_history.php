@@ -16,6 +16,17 @@ if (!smartlib_active_staff_session($conn)) {
     exit;
 }
 require_once '../config/admin_audit.php';
+require_once '../config/library_settings.php';
+
+/** Overdue fines on? (Settings; off by default.) Off hides the fine on return entries. */
+function archived_fines_on(): bool {
+    static $on = null;
+    if ($on === null) {
+        global $conn;
+        $on = ($conn instanceof mysqli) && smartlib_fines_enabled($conn);
+    }
+    return $on;
+}
 
 function safe_query(mysqli $conn, string $sql) {
     try {
@@ -68,6 +79,7 @@ function meta_summary_priority_fields(string $action, string $entity): array {
         'updated|user' => ['user_number', 'role', 'pin_changed', 'program_id'],
         'deleted|user' => ['user_number', 'loans_deleted', 'copies_reset_to_available', 'role'],
         'retrieved|book' => ['retrieved_from_activity_id', 'isbn', 'author'],
+        'settings_changed|settings' => ['detail'],
     ];
     return $map[$action . '|' . $entity] ?? [];
 }
@@ -83,6 +95,7 @@ function meta_field_label(string $key): string {
         'copy_status' => 'Copy marked',
         'accession_no' => 'Accession',
         'isbn' => 'ISBN',
+        'detail' => 'Change',
     ];
     return $labels[$key] ?? ucfirst(str_replace('_', ' ', $key));
 }
@@ -130,6 +143,11 @@ function meta_summary(?string $json, string $action = '', string $entity = ''): 
     if (empty($decoded)) {
         $raw = trim((string)$json);
         return $raw === '' ? '-' : $raw;
+    }
+
+    // Fines off: an older return entry's stored fine is not shown.
+    if (!archived_fines_on()) {
+        unset($decoded['fine']);
     }
 
     $priority = meta_summary_priority_fields($action, $entity);

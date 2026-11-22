@@ -93,7 +93,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_action'])) {
 
                 $returnDate = date('Y-m-d');
                 $dueDate = (string)($record['due_date'] ?? '');
-                $returnFine = smartlib_overdue_fine_amount($dueDate, $returnDate);
+                // Fines off (Settings): store 0. On: the saved rate, counting
+                // only days late from the day fines were switched on.
+                $finesForReturn = smartlib_fines_settings($conn);
+                $returnFine = $finesForReturn['enabled']
+                    ? smartlib_overdue_fine_amount($dueDate, $returnDate, $finesForReturn['rate'], $finesForReturn['start_date'])
+                    : 0.0;
 
                 $updateRecord = $conn->prepare(
                     "UPDATE borrow_records
@@ -125,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_action'])) {
                 $updateCopy->execute();
                 $updateCopy->close();
 
-                smartlib_admin_audit_log($conn, 'returned', 'borrow_record', $recordId, (string)($record['book_title'] ?? 'Borrow Record #' . $recordId), [
+                $returnAuditMeta = [
                     'record_id' => $recordId,
                     'copy_id' => $copyId,
                     'book_id' => (int)($record['book_id'] ?? 0),
@@ -134,8 +139,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_action'])) {
                     'borrower_number' => (string)($record['borrower_number'] ?? ''),
                     'previous_status' => $currentStatus,
                     'new_status' => 'returned',
-                    'fine' => $returnFine
-                ]);
+                ];
+                if ($finesForReturn['enabled']) {
+                    $returnAuditMeta['fine'] = $returnFine;
+                }
+                smartlib_admin_audit_log($conn, 'returned', 'borrow_record', $recordId, (string)($record['book_title'] ?? 'Borrow Record #' . $recordId), $returnAuditMeta);
 
                 $conn->commit();
                 set_borrow_flash('success', 'Book return has been recorded successfully.');
@@ -217,6 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_action'])) {
 }
 
 sync_overdue_status_and_fines($conn);
+$finesOn = smartlib_fines_enabled($conn);
 
 $flash = $_SESSION['borrow_flash'] ?? null;
 unset($_SESSION['borrow_flash']);
@@ -416,7 +425,7 @@ require 'layout_top.php';
                     <th>Due</th>
                     <th>Returned</th>
                     <th>Status</th>
-                    <th>Fine</th>
+                    <?php if ($finesOn): ?><th>Fine</th><?php endif; ?>
                     <th>Action</th>
                 </tr>
             </thead>
@@ -461,7 +470,7 @@ require 'layout_top.php';
                             <td><?= htmlspecialchars((string)($row['due_date'] ?? '-')) ?></td>
                             <td><?= htmlspecialchars((string)($row['date_returned'] ?? '-')) ?></td>
                             <td><span class="<?= htmlspecialchars($statusTextClass) ?>"><?= htmlspecialchars($statusText) ?></span></td>
-                            <td><?= htmlspecialchars($fine) ?></td>
+                            <?php if ($finesOn): ?><td><?= htmlspecialchars($fine) ?></td><?php endif; ?>
                             <td>
                                 <div class="borrow-action-row">
                                     <?php if ($canMarkReturned): ?>
@@ -493,7 +502,7 @@ require 'layout_top.php';
                             </td>
                         </tr>
                         <tr id="detail-<?= $rid ?>" class="borrow-detail-row" hidden>
-                            <td colspan="9">
+                            <td colspan="<?= $finesOn ? 9 : 8 ?>">
                                 <div class="borrow-detail-grid">
                                     <div><strong>ISBN</strong><span><?= htmlspecialchars($isbn) ?></span></div>
                                     <div><strong>Accession No</strong><span><?= htmlspecialchars($accession) ?></span></div>
@@ -506,7 +515,7 @@ require 'layout_top.php';
                     <?php endwhile; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="9">No borrow records found.</td>
+                        <td colspan="<?= $finesOn ? 9 : 8 ?>">No borrow records found.</td>
                     </tr>
                 <?php endif; ?>
             </tbody>

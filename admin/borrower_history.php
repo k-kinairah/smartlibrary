@@ -2,6 +2,8 @@
 <?php
 require_once '../config/db_connect.php';
 require_once '../config/borrow_fine_rules.php';
+// Overdue fines can be off (Settings, the default): then no amount shows.
+$finesOn = smartlib_fines_enabled($conn);
 
 function borrower_history_qres(mysqli $conn, string $sql) {
     try {
@@ -147,7 +149,7 @@ $backHref = 'manage_users.php';
             <a href="<?= htmlspecialchars($backHref) ?>" class="borrower-history-back-link" aria-label="Back to Users" title="Back to Users"><?= admin_icon('arrow-left') ?></a>
             Borrower History
         </h1>
-        <p class="page-subtitle">Complete borrowing record, current loans, overdue items, missing books, and fine totals.</p>
+        <p class="page-subtitle">Complete borrowing record, current loans, overdue items, missing books<?= $finesOn ? ', and fine totals' : '' ?>.</p>
     </div>
 </div>
 
@@ -179,13 +181,17 @@ $backHref = 'manage_users.php';
     </section>
 
     <section class="stats-grid borrow-status-chips borrower-history-chips">
-        <?php foreach ([
+        <?php
+        $historyChips = [
             ['title' => 'Total Records', 'value' => number_format((int)$totals['all_records'])],
             ['title' => 'Current Loans', 'value' => number_format((int)$totals['active_records'])],
             ['title' => 'Overdue', 'value' => number_format((int)$totals['overdue_records'])],
             ['title' => 'Missing', 'value' => number_format((int)$totals['missing_records'])],
-            ['title' => 'Active Fine', 'value' => 'PHP ' . number_format((float)$totals['unpaid_active_fine'], 2)],
-        ] as $historyChip): ?>
+        ];
+        if ($finesOn) {
+            $historyChips[] = ['title' => 'Active Fine', 'value' => 'PHP ' . number_format((float)$totals['unpaid_active_fine'], 2)];
+        }
+        foreach ($historyChips as $historyChip): ?>
             <?php $chipMeta = stat_chip_meta($historyChip['title']); ?>
             <article class="stat-card glass-card borrow-chip<?= $historyChip['title'] === 'Active Fine' ? ' stat-card-wide' : '' ?>">
                 <div class="metric-head-row">
@@ -202,7 +208,7 @@ $backHref = 'manage_users.php';
             <div class="panel-head"><h2>Current Loans</h2></div>
             <div class="table-wrap borrower-history-table-wrap">
                 <table class="data-table borrower-history-table">
-                    <thead><tr><th>Book</th><th>Due</th><th>Status</th><th>Fine</th></tr></thead>
+                    <thead><tr><th>Book</th><th>Due</th><th>Status</th><?php if ($finesOn): ?><th>Fine</th><?php endif; ?></tr></thead>
                     <tbody>
                     <?php if (!empty($activeRecords)): ?>
                         <?php foreach ($activeRecords as $record): ?>
@@ -211,11 +217,11 @@ $backHref = 'manage_users.php';
                                 <td><strong><?= htmlspecialchars((string)$record['title']) ?></strong><small><?= htmlspecialchars((string)$record['accession_no']) ?></small></td>
                                 <td><?= htmlspecialchars(borrower_history_format_date((string)$record['due_date'])) ?></td>
                                 <td><span class="<?= htmlspecialchars(borrower_history_status_class($status)) ?>"><?= htmlspecialchars(ucfirst($status)) ?></span></td>
-                                <td>PHP <?= number_format((float)($record['fine'] ?? 0), 2) ?></td>
+                                <?php if ($finesOn): ?><td>PHP <?= number_format((float)($record['fine'] ?? 0), 2) ?></td><?php endif; ?>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <tr><td colspan="4" class="dashboard-empty-cell">No current borrowed books.</td></tr>
+                        <tr><td colspan="<?= $finesOn ? 4 : 3 ?>" class="dashboard-empty-cell">No current borrowed books.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
@@ -226,19 +232,19 @@ $backHref = 'manage_users.php';
             <div class="panel-head"><h2>Missing Books</h2></div>
             <div class="table-wrap borrower-history-table-wrap">
                 <table class="data-table borrower-history-table">
-                    <thead><tr><th>Book</th><th>Borrowed</th><th>Fine</th><th>Record</th></tr></thead>
+                    <thead><tr><th>Book</th><th>Borrowed</th><?php if ($finesOn): ?><th>Fine</th><?php endif; ?><th>Record</th></tr></thead>
                     <tbody>
                     <?php if (!empty($missingRecords)): ?>
                         <?php foreach ($missingRecords as $record): ?>
                             <tr>
                                 <td><strong><?= htmlspecialchars((string)$record['title']) ?></strong><small><?= htmlspecialchars((string)$record['accession_no']) ?></small></td>
                                 <td><?= htmlspecialchars(borrower_history_format_date((string)$record['date_borrowed'])) ?></td>
-                                <td>PHP <?= number_format((float)($record['fine'] ?? 0), 2) ?></td>
+                                <?php if ($finesOn): ?><td>PHP <?= number_format((float)($record['fine'] ?? 0), 2) ?></td><?php endif; ?>
                                 <td>#<?= (int)($record['record_id'] ?? 0) ?></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <tr><td colspan="4" class="dashboard-empty-cell">No missing books for this borrower.</td></tr>
+                        <tr><td colspan="<?= $finesOn ? 4 : 3 ?>" class="dashboard-empty-cell">No missing books for this borrower.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
@@ -251,7 +257,7 @@ $backHref = 'manage_users.php';
         <div class="table-wrap">
             <table class="data-table borrower-history-table borrower-history-full-table">
                 <thead>
-                    <tr><th>Record</th><th>Book</th><th>Borrowed</th><th>Due</th><th>Returned</th><th>Status</th><th>Fine</th></tr>
+                    <tr><th>Record</th><th>Book</th><th>Borrowed</th><th>Due</th><th>Returned</th><th>Status</th><?php if ($finesOn): ?><th>Fine</th><?php endif; ?></tr>
                 </thead>
                 <tbody>
                     <?php if (!empty($records)): ?>
@@ -264,11 +270,11 @@ $backHref = 'manage_users.php';
                                 <td><?= htmlspecialchars(borrower_history_format_date((string)$record['due_date'])) ?></td>
                                 <td><?= htmlspecialchars(borrower_history_format_date((string)$record['date_returned'])) ?></td>
                                 <td><span class="<?= htmlspecialchars(borrower_history_status_class($status)) ?>"><?= htmlspecialchars(ucfirst($status)) ?></span></td>
-                                <td>PHP <?= number_format((float)($record['fine'] ?? 0), 2) ?></td>
+                                <?php if ($finesOn): ?><td>PHP <?= number_format((float)($record['fine'] ?? 0), 2) ?></td><?php endif; ?>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <tr><td colspan="7" class="dashboard-empty-cell">No borrow history yet.</td></tr>
+                        <tr><td colspan="<?= $finesOn ? 7 : 6 ?>" class="dashboard-empty-cell">No borrow history yet.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

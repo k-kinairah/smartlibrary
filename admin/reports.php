@@ -16,6 +16,10 @@ if (!smartlib_active_staff_session($conn)) {
     exit;
 }
 require_once '../config/entry_report_helpers.php';
+require_once '../config/library_settings.php';
+// Overdue fines can be off (Settings, the default): then no fine tile,
+// column or amount appears on screen or in the PDFs.
+$finesOn = smartlib_fines_enabled($conn);
 require_once __DIR__ . '/includes/reports_modal_view.php';
 require_once __DIR__ . '/includes/top_borrowers.php';
 
@@ -361,8 +365,10 @@ function reports_build_visual_pdf(array $report): string {
             ['label' => 'Returned', 'value' => number_format((int)($totals['returned'] ?? 0))],
             ['label' => 'Overdue', 'value' => number_format((int)($totals['overdue'] ?? 0))],
             ['label' => 'Missing', 'value' => number_format((int)($totals['missing'] ?? 0))],
-            ['label' => 'Total Fine', 'value' => number_format((float)($totals['total_fine'] ?? 0), 2)]
         ];
+        if (!empty($report['fines_on'])) {
+            $metricCards[] = ['label' => 'Total Fine', 'value' => number_format((float)($totals['total_fine'] ?? 0), 2)];
+        }
 
         $cardW = ($contentW - (12 * 2)) / 3;
         $cardH = 52;
@@ -417,7 +423,8 @@ function reports_build_visual_pdf(array $report): string {
         $addText($contentX, $cursorY - 2, 'Detailed Records', 16, true, [0.10, 0.25, 0.18]);
         $cursorY -= 20;
 
-        $drawDetailHeader = function () use (&$cursorY, $contentX, $contentW, $addRect, $addText): void {
+        $pdfFinesOn = !empty($report['fines_on']);
+        $drawDetailHeader = function () use (&$cursorY, $contentX, $contentW, $addRect, $addText, $pdfFinesOn): void {
             $addRect($contentX, $cursorY - 16, $contentW, 16, [0.87, 0.93, 0.89], [0.77, 0.84, 0.80], 0.6);
             $x = $contentX + 4;
             $addText($x, $cursorY - 11, 'ID', 9, true, [0.18, 0.32, 0.25]); $x += 38;
@@ -425,7 +432,9 @@ function reports_build_visual_pdf(array $report): string {
             $addText($x, $cursorY - 11, 'User', 9, true, [0.18, 0.32, 0.25]); $x += 128;
             $addText($x, $cursorY - 11, 'Book', 9, true, [0.18, 0.32, 0.25]); $x += 185;
             $addText($x, $cursorY - 11, 'Status', 9, true, [0.18, 0.32, 0.25]); $x += 58;
-            $addText($x, $cursorY - 11, 'Fine', 9, true, [0.18, 0.32, 0.25]);
+            if ($pdfFinesOn) {
+                $addText($x, $cursorY - 11, 'Fine', 9, true, [0.18, 0.32, 0.25]);
+            }
             $cursorY -= 16;
         };
 
@@ -458,7 +467,9 @@ function reports_build_visual_pdf(array $report): string {
             $addText($x, $cursorY - 11, $userText, 8, false, [0.18, 0.30, 0.24]); $x += 128;
             $addText($x, $cursorY - 11, $bookText, 8, false, [0.18, 0.30, 0.24]); $x += 185;
             $addText($x, $cursorY - 11, $statusText, 8, true, [0.18, 0.30, 0.24]); $x += 58;
-            $addText($x, $cursorY - 11, $fineText, 8, true, [0.18, 0.30, 0.24]);
+            if ($pdfFinesOn) {
+                $addText($x, $cursorY - 11, $fineText, 8, true, [0.18, 0.30, 0.24]);
+            }
 
             $cursorY -= $rowHeight;
             $index++;
@@ -1285,6 +1296,7 @@ if (in_array($exportMode, ['summary', 'detailed', 'summary_pdf', 'detailed_pdf']
 
     require_once __DIR__ . '/includes/reports_pdf.php';
     $pdfBinary = reports_build_branded_pdf([
+        'fines_on' => $finesOn,
         'title' => str_replace('Smartlib', 'SmartLib', ucwords(strtolower($reportTitle))),
         'report_type' => $reportType,
         'report_label' => $reportLabel,
@@ -1381,7 +1393,7 @@ $quickReports = [
     [
         'group' => 'borrowing',
         'title' => 'Detailed Transactions',
-        'description' => 'Record-level report including users, titles, status, and fines.',
+        'description' => 'Record-level report including users, titles, status' . ($finesOn ? ', and fines.' : '.'),
         'view_url' => reports_build_url(['period' => $period, 'year' => (string)$year, 'month' => (string)$month, 'quarter' => (string)$quarter, 'week' => (string)$week, 'day' => $day, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'status' => $statusFilter, 'trend_bucket' => $trendBucket, 'quick_type' => 'detailed_transactions']),
         'preview_url' => reports_build_url(['period' => $period, 'year' => (string)$year, 'month' => (string)$month, 'quarter' => (string)$quarter, 'week' => (string)$week, 'day' => $day, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'status' => $statusFilter, 'trend_bucket' => $trendBucket, 'quick_type' => 'detailed_transactions', 'preview_modal' => '1']),
         'download_url' => reports_build_url(['period' => $period, 'year' => (string)$year, 'month' => (string)$month, 'quarter' => (string)$quarter, 'week' => (string)$week, 'day' => $day, 'date_from' => $dateFrom, 'date_to' => $dateTo, 'status' => $statusFilter, 'trend_bucket' => $trendBucket, 'quick_type' => 'detailed_transactions', 'export' => 'detailed'])
@@ -1524,8 +1536,10 @@ if ($isModalPreview) {
         ['label' => 'Returned', 'value' => (int)$totals['returned'], 'text' => number_format((int)$totals['returned']), 'warn' => false],
         ['label' => 'Overdue', 'value' => (int)$totals['overdue'], 'text' => number_format((int)$totals['overdue']), 'warn' => true],
         ['label' => 'Missing', 'value' => (int)$totals['missing'], 'text' => number_format((int)$totals['missing']), 'warn' => true],
-        ['label' => 'Total Fine', 'value' => (float)$totals['total_fine'], 'text' => 'PHP ' . number_format((float)$totals['total_fine'], 2), 'warn' => true],
     ];
+    if ($finesOn) {
+        $tiles[] = ['label' => 'Total Fine', 'value' => (float)$totals['total_fine'], 'text' => 'PHP ' . number_format((float)$totals['total_fine'], 2), 'warn' => true];
+    }
     ?>
     <p class="reports-modal-metaline"><?= implode('<span class="reports-modal-sep" aria-hidden="true">&middot;</span>', array_map('htmlspecialchars', $metaParts)) ?></p>
     <?php if ($modalReportType === 'entry_log' && !empty($entryReport['ok']) && (int)$entryReport['total'] > 0): ?>
@@ -1550,7 +1564,7 @@ if ($isModalPreview) {
     <?php endif; ?>
 
     <?php if ($modalScope['show_totals']): ?>
-        <div class="reports-modal-tiles">
+        <div class="reports-modal-tiles<?= count($tiles) === 5 ? ' is-five' : '' ?>">
             <?php foreach ($tiles as $tile): ?>
                 <?php $tileClass = $tile['value'] > 0 ? ($tile['warn'] ? ' is-warning' : '') : ' is-quiet'; ?>
                 <article class="reports-modal-tile<?= $tileClass ?>"><span><?= htmlspecialchars($tile['label']) ?></span><strong><?= htmlspecialchars($tile['text']) ?></strong></article>
@@ -1606,7 +1620,7 @@ if ($isModalPreview) {
                 <div class="table-wrap">
                     <table class="data-table reports-mini-table reports-modal-table">
                         <thead>
-                            <tr><th>Record #</th><th>Date</th><th>User</th><th>Book</th><th>Status</th><th>Fine</th></tr>
+                            <tr><th>Record #</th><th>Date</th><th>User</th><th>Book</th><th>Status</th><?php if ($finesOn): ?><th>Fine</th><?php endif; ?></tr>
                         </thead>
                         <tbody>
                             <?php foreach ($modalPreviewRows as $row): ?>
@@ -1623,7 +1637,7 @@ if ($isModalPreview) {
                                     <td><?= htmlspecialchars($userDisplay !== '' ? $userDisplay : '-') ?></td>
                                     <td><?= htmlspecialchars((string)($row['title'] ?? '-')) ?></td>
                                     <td><span class="badge status-<?= htmlspecialchars($statusClass) ?>"><?= htmlspecialchars(ucfirst($statusVal !== '' ? $statusVal : 'unknown')) ?></span></td>
-                                    <td><?= number_format((float)($row['fine'] ?? 0), 2) ?></td>
+                                    <?php if ($finesOn): ?><td><?= number_format((float)($row['fine'] ?? 0), 2) ?></td><?php endif; ?>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

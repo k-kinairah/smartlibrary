@@ -1,16 +1,12 @@
 <?php
+// Overdue fines can be switched off (the default) on admin/settings.php;
+// see config/library_settings.php (smartlib_fines_settings()).
+require_once __DIR__ . '/library_settings.php';
 
 if (!function_exists('smartlib_fine_rate_per_business_day')) {
+    /** The default rate (env SMARTLIB_FINE_PER_BUSINESS_DAY, else 10.00); the saved setting wins, see smartlib_fines_settings(). */
     function smartlib_fine_rate_per_business_day(): float {
-        $envValue = getenv('SMARTLIB_FINE_PER_BUSINESS_DAY');
-        if ($envValue !== false && is_numeric($envValue)) {
-            $rate = (float)$envValue;
-            if ($rate >= 0) {
-                return round($rate, 2);
-            }
-        }
-
-        return 10.00;
+        return smartlib_fine_default_rate();
     }
 }
 
@@ -36,7 +32,13 @@ if (!function_exists('smartlib_parse_ymd')) {
 }
 
 if (!function_exists('smartlib_business_days_late')) {
-    function smartlib_business_days_late(string $dueDateRaw, string $asOfDateRaw): int {
+    /**
+     * Weekdays late up to $asOfDateRaw. With $startDateRaw (the day fines
+     * were switched on) only weekdays after that day count: counting starts
+     * at max(due date + 1, start date + 1), so nothing accrues for the time
+     * fines were off, and switching on today charges nothing until tomorrow.
+     */
+    function smartlib_business_days_late(string $dueDateRaw, string $asOfDateRaw, ?string $startDateRaw = null): int {
         $dueDate = smartlib_parse_ymd($dueDateRaw);
         $asOfDate = smartlib_parse_ymd($asOfDateRaw);
 
@@ -45,6 +47,13 @@ if (!function_exists('smartlib_business_days_late')) {
         }
 
         $cursor = $dueDate->modify('+1 day');
+        $startDate = $startDateRaw !== null ? smartlib_parse_ymd($startDateRaw) : null;
+        if ($startDate) {
+            $firstChargeable = $startDate->modify('+1 day');
+            if ($firstChargeable > $cursor) {
+                $cursor = $firstChargeable;
+            }
+        }
         $daysLate = 0;
 
         while ($cursor <= $asOfDate) {
@@ -60,13 +69,13 @@ if (!function_exists('smartlib_business_days_late')) {
 }
 
 if (!function_exists('smartlib_overdue_fine_amount')) {
-    function smartlib_overdue_fine_amount(string $dueDateRaw, string $asOfDateRaw, ?float $dailyRate = null): float {
+    function smartlib_overdue_fine_amount(string $dueDateRaw, string $asOfDateRaw, ?float $dailyRate = null, ?string $startDateRaw = null): float {
         $rate = $dailyRate ?? smartlib_fine_rate_per_business_day();
         if ($rate <= 0) {
             return 0.0;
         }
 
-        $daysLate = smartlib_business_days_late($dueDateRaw, $asOfDateRaw);
+        $daysLate = smartlib_business_days_late($dueDateRaw, $asOfDateRaw, $startDateRaw);
         if ($daysLate <= 0) {
             return 0.0;
         }
@@ -108,8 +117,17 @@ if (!function_exists('smartlib_ensure_borrow_renewal_columns')) {
     }
 }
 if (!function_exists('sync_overdue_status_and_fines')) {
+    /**
+     * Flips borrowed <-> overdue by due date and keeps the fine column in
+     * step. With fines OFF (library_settings, the default) only the status
+     * is written; the fine column is never touched. With fines ON the saved
+     * rate applies, counting only days late after fines_start_date; loans
+     * returned before that date keep the fine stored for them (history is
+     * never rewritten by switching fines on).
+     */
     function sync_overdue_status_and_fines(mysqli $conn, ?int $userId = null): void {
         $today = (new DateTimeImmutable('today'))->format('Y-m-d');
+        $fines = smartlib_fines_settings($conn);
         $whereUser = ($userId !== null && $userId > 0) ? ' AND user_id = ' . (int)$userId : '';
 
         $sql = "
@@ -125,17 +143,24 @@ if (!function_exists('sync_overdue_status_and_fines')) {
             return;
         }
 
-        $updateStmt = $conn->prepare(
-            "UPDATE borrow_records
-             SET status = ?, fine = ?
-             WHERE record_id = ?"
-        );
+        $updateStmt = $fines['enabled']
+            ? $conn->prepare(
+                "UPDATE borrow_records
+                 SET status = ?, fine = ?
+                 WHERE record_id = ?"
+            )
+            : $conn->prepare(
+                "UPDATE borrow_records
+                 SET status = ?
+                 WHERE record_id = ?"
+            );
 
         if (!$updateStmt) {
             return;
         }
 
-        $rate = smartlib_fine_rate_per_business_day();
+        $rate = $fines['rate'];
+        $startDate = $fines['start_date'];
 
         while ($row = $res->fetch_assoc()) {
             $recordId = (int)($row['record_id'] ?? 0);
@@ -158,6 +183,9 @@ if (!function_exists('sync_overdue_status_and_fines')) {
             if ($currentStatus === 'returned' && $returnDateRaw !== '') {
                 $effectiveDate = substr($returnDateRaw, 0, 10);
                 $targetStatus = 'returned';
+                if ($fines['enabled'] && $startDate !== null && $effectiveDate < $startDate) {
+                    continue;
+                }
             } else {
                 $due = smartlib_parse_ymd($dueDateRaw);
                 $todayDt = smartlib_parse_ymd($today);
@@ -166,7 +194,16 @@ if (!function_exists('sync_overdue_status_and_fines')) {
                 $effectiveDate = $today;
             }
 
-            $targetFine = smartlib_overdue_fine_amount($dueDateRaw, $effectiveDate, $rate);
+            if (!$fines['enabled']) {
+                // Fines off: status only, the fine column stays as it is.
+                if ($targetStatus !== $currentStatus) {
+                    $updateStmt->bind_param('si', $targetStatus, $recordId);
+                    $updateStmt->execute();
+                }
+                continue;
+            }
+
+            $targetFine = smartlib_overdue_fine_amount($dueDateRaw, $effectiveDate, $rate, $startDate);
 
             if ($targetStatus !== $currentStatus || abs($targetFine - $currentFine) > 0.009) {
                 $updateStmt->bind_param('sdi', $targetStatus, $targetFine, $recordId);

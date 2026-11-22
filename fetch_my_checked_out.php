@@ -69,6 +69,10 @@ if ($userId <= 0) {
 
 smartlib_ensure_borrow_renewal_columns($conn);
 sync_overdue_status_and_fines($conn, $userId);
+// Overdue fines can be off (Settings, the default): then no amount is sent,
+// renewing never depends on a fine, and the page hides every fine line
+// (fines_enabled in the response).
+$finesOn = smartlib_fines_enabled($conn);
 
 $userStmt = $conn->prepare(
     // program_name can now hold a faculty/staff department (department first, else program).
@@ -145,6 +149,10 @@ if ($summaryStmt) {
         }
     }
 }
+if (!$finesOn) {
+    $summary['total_fines'] = 0.0;
+    $summary['active_fines'] = 0.0;
+}
 
 $sql = "
     SELECT
@@ -203,7 +211,7 @@ if ($res) {
         $renewCount = (int)($row['renew_count'] ?? 0);
         $policy = smartlib_loan_policy_for_role((string)$borrower['role']);
         $maxRenewals = max(0, (int)($policy['max_renewals'] ?? 1));
-        $fine = round((float)($row['fine'] ?? 0), 2);
+        $fine = $finesOn ? round((float)($row['fine'] ?? 0), 2) : 0.0;
         $canRenew = ($status === 'borrowed' && $daysUntilDue !== null && $daysUntilDue >= 0 && $fine <= 0 && $renewCount < $maxRenewals);
         $renewNote = 'Renewal unavailable';
         if ($canRenew) {
@@ -216,7 +224,7 @@ if ($res) {
             $renewNote = 'Returned books do not need renewal';
         } elseif ($renewCount >= $maxRenewals) {
             $renewNote = 'Renewal already used';
-        } elseif ($fine > 0) {
+        } elseif ($finesOn && $fine > 0) {
             $renewNote = 'Settle fines before renewing';
         }
 
@@ -315,6 +323,7 @@ $summary['favorites_limit'] = (int)FAVORITES_LIMIT;
 
 respond([
     'status' => 'success',
+    'fines_enabled' => $finesOn,
     'borrower' => $borrower,
     'summary' => $summary,
     'books' => $books,

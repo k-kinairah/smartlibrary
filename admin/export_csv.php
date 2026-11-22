@@ -228,6 +228,17 @@ if ($type === 'top_borrowers') {
     export_csv_send_rows($type, ['rank', 'borrower_number', 'borrower_name', 'role', 'program', 'borrow_count', 'last_borrowed'], $tbOut);
 }
 
+// Overdue fines off (Settings, the default): no fine column in any export.
+// The writer only outputs the listed headers, so dropping them is enough.
+if (!smartlib_fines_enabled($conn)) {
+    foreach ($exports as $exportKey => $exportDef) {
+        $exports[$exportKey]['headers'] = array_values(array_filter(
+            $exportDef['headers'],
+            static fn(string $h): bool => !in_array($h, ['fine', 'total_fines'], true)
+        ));
+    }
+}
+
 if (!isset($exports[$type])) {
     export_csv_fail('Unknown export type.', 404);
 }

@@ -35,6 +35,9 @@ if ($recordId <= 0) {
 
 smartlib_ensure_borrow_renewal_columns($conn);
 sync_overdue_status_and_fines($conn, $userId);
+// Overdue fines can be off (Settings, the default): then a fine never
+// blocks renewing and the fine column is left alone.
+$finesOn = smartlib_fines_enabled($conn);
 
 $policy = smartlib_loan_policy_for_role($userRole);
 $roleLoanDays = max(1, (int)($policy['days'] ?? 7));
@@ -89,9 +92,11 @@ try {
         respond(['status' => 'error', 'message' => 'This loan has no valid due date. Please ask the librarian for help.'], 422);
     }
 
-    if ($dueDate < $today || $fine > 0) {
+    if ($dueDate < $today || ($finesOn && $fine > 0)) {
         $conn->rollback();
-        respond(['status' => 'error', 'message' => 'Overdue loans or loans with fines cannot be renewed online.'], 422);
+        respond(['status' => 'error', 'message' => $finesOn
+            ? 'Overdue loans or loans with fines cannot be renewed online.'
+            : 'Overdue loans cannot be renewed online.'], 422);
     }
 
     if ($renewCount >= $maxRenewals) {
@@ -110,7 +115,7 @@ try {
     $newDueDate = $dueDate->modify('+' . $loanDays . ' days')->format('Y-m-d');
     $update = $conn->prepare(
         "UPDATE borrow_records
-         SET due_date = ?, renew_count = renew_count + 1, last_renewed_at = NOW(), fine = 0
+         SET due_date = ?, renew_count = renew_count + 1, last_renewed_at = NOW()" . ($finesOn ? ', fine = 0' : '') . "
          WHERE record_id = ? AND user_id = ? AND status = 'borrowed'"
     );
 

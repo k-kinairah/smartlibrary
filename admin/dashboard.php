@@ -315,6 +315,8 @@ function activity_action_label(string $status): string {
 }
 
 sync_overdue_status_and_fines($conn);
+// Overdue fines can be off (Settings, the default): then no amount shows.
+$finesOn = smartlib_fines_enabled($conn);
 
 $totalBooks = safe_scalar_int($conn, 'SELECT COUNT(*) FROM books');
 $totalStudents = safe_scalar_int($conn, "SELECT COUNT(*) FROM library_users WHERE role = 'student'");
@@ -322,7 +324,9 @@ $totalFaculty = safe_scalar_int($conn, "SELECT COUNT(*) FROM library_users WHERE
 $totalBorrows = safe_scalar_int($conn, 'SELECT COUNT(*) FROM borrow_records');
 $totalPrograms = safe_scalar_int($conn, 'SELECT COUNT(*) FROM programs');
 $overdueDashboardCount = safe_scalar_int($conn, "SELECT COUNT(*) FROM borrow_records WHERE status = 'overdue'");
-$overdueFineTotal = safe_scalar_float($conn, "SELECT COALESCE(SUM(fine), 0) FROM borrow_records WHERE status = 'overdue'");
+$overdueFineTotal = $finesOn
+    ? safe_scalar_float($conn, "SELECT COALESCE(SUM(fine), 0) FROM borrow_records WHERE status = 'overdue'")
+    : 0.0;
 $longestDaysOverdue = safe_scalar_int($conn, "SELECT COALESCE(MAX(DATEDIFF(CURDATE(), due_date)), 0) FROM borrow_records WHERE status = 'overdue' AND due_date IS NOT NULL");
 $highPriorityOverdueCount = safe_scalar_int($conn, "SELECT COUNT(*) FROM borrow_records WHERE status = 'overdue' AND due_date IS NOT NULL AND DATEDIFF(CURDATE(), due_date) >= 7");
 
@@ -881,21 +885,23 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
     <article class="panel glass-card chart-panel compact-panel overdue-books-panel">
         <div class="panel-head overdue-panel-head">
             <div>
-                <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('clock') ?></span>Overdue & Fines</h2>
-                <p class="panel-sub">Priority returns, estimated fines, and quick email reminders</p>
+                <h2><span class="panel-icon" aria-hidden="true"><?= admin_icon('clock') ?></span><?= $finesOn ? 'Overdue &amp; Fines' : 'Overdue' ?></h2>
+                <p class="panel-sub"><?= $finesOn ? 'Priority returns, estimated fines, and quick email reminders' : 'Priority returns and quick email reminders' ?></p>
             </div>
             <a class="panel-link-btn" href="borrow_records.php?status=overdue">View all</a>
         </div>
 
-        <div class="overdue-summary-grid" aria-label="Overdue summary">
+        <div class="overdue-summary-grid<?= $finesOn ? '' : ' is-three' ?>" aria-label="Overdue summary">
             <a class="overdue-summary-card" href="borrow_records.php?status=overdue">
                 <span>Overdue</span>
                 <strong><?= number_format($overdueDashboardCount) ?></strong>
             </a>
+            <?php if ($finesOn): ?>
             <a class="overdue-summary-card" href="borrow_records.php?status=overdue">
                 <span>Est. Fines</span>
                 <strong>PHP <?= number_format($overdueFineTotal, 2) ?></strong>
             </a>
+            <?php endif; ?>
             <a class="overdue-summary-card overdue-summary-card-alert" href="borrow_records.php?status=overdue">
                 <span>7+ Days Late</span>
                 <strong><?= number_format($highPriorityOverdueCount) ?></strong>
@@ -913,7 +919,7 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
                         <th>Name</th>
                         <th>Book Title</th>
                         <th>Late</th>
-                        <th>Fine</th>
+                        <?php if ($finesOn): ?><th>Fine</th><?php endif; ?>
                         <th class="overdue-action-col">Action</th>
                     </tr>
                 </thead>
@@ -932,7 +938,7 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
                                 </td>
                                 <td><?= htmlspecialchars((string)($row['title'] ?? 'Unknown Book')) ?></td>
                                 <td><?= number_format((int)($row['days_overdue'] ?? 0)) ?>d</td>
-                                <td>PHP <?= number_format((float)($row['fine'] ?? 0), 2) ?></td>
+                                <?php if ($finesOn): ?><td>PHP <?= number_format((float)($row['fine'] ?? 0), 2) ?></td><?php endif; ?>
                                 <td class="overdue-action-col">
                                     <button
                                         type="button"
@@ -947,7 +953,7 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="5" class="dashboard-empty-cell">No overdue books right now.</td>
+                            <td colspan="<?= $finesOn ? 5 : 4 ?>" class="dashboard-empty-cell">No overdue books right now.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
