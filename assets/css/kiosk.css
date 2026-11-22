@@ -23024,3 +23024,248 @@ html body #search-view .search-hero .search-hero-ornament .sho-diamond {
     width: 56px !important;
   }
 }
+
+
+/* ============================================================
+   Kiosk Polish v207 (Phone: Log Out dialog, filter card, dock)
+   ------------------------------------------------------------
+   Phones only (max-width 600px); tablet and kiosk sizes are unchanged.
+   - Log Out confirmation: the 440px desktop dialog was only shrunk to
+     94vw, so on a phone it filled the screen with desktop-size type and
+     52px buttons. It becomes a compact card.
+   - Filter card: tighter padding, slimmer Subject / Year tabs, no
+     prev/next arrows (the chip row already scrolls by swipe and shows an
+     edge fade), and "Active filters" + "Clear filters" on one line, with
+     the active chips wrapping below.
+   - Search dock: a more solid mint fill so cover art under the glass no
+     longer tints it (the pink cast over red covers), a smaller seal and
+     title, and Sign In as one green pill instead of
+     text | divider | icon | round button.
+   ============================================================ */
+@media (max-width: 600px) {
+  /* ---------- Log Out confirmation ---------- */
+  html body #logout-confirm-modal .modal-panel.logout-confirm-panel {
+    width: min(330px, calc(100vw - 44px)) !important;
+    max-width: calc(100vw - 44px) !important;
+    padding: 24px 20px 20px !important;
+    border-radius: 24px !important;
+  }
+
+  html body #logout-confirm-modal .logout-confirm-panel .logout-confirm-icon {
+    width: 46px !important;
+    height: 46px !important;
+    border-radius: 14px !important;
+  }
+
+  html body #logout-confirm-modal .logout-confirm-panel .logout-confirm-icon svg {
+    width: 23px !important;
+    height: 23px !important;
+  }
+
+  html body #logout-confirm-modal .logout-confirm-panel .logout-confirm-title {
+    margin-top: 14px !important;
+    font-size: 20px !important;
+  }
+
+  html body #logout-confirm-modal .logout-confirm-panel .logout-confirm-text {
+    max-width: 270px !important;
+    margin-top: 8px !important;
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+  }
+
+  html body #logout-confirm-modal .logout-confirm-panel .logout-confirm-actions {
+    gap: 10px !important;
+    margin-top: 20px !important;
+  }
+
+  html body #logout-confirm-modal #logout-confirm-cancel-btn,
+  html body #logout-confirm-modal #logout-confirm-submit-btn {
+    height: 46px !important;
+    padding: 0 10px !important;
+    border-radius: 13px !important;
+    font-size: 15px !important;
+  }
+
+  html body #logout-confirm-modal #logout-confirm-submit-btn {
+    box-shadow:
+      0 8px 18px rgba(155, 35, 32, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+  }
+
+  html body #logout-confirm-modal #logout-confirm-submit-btn::before {
+    width: 17px !important;
+    height: 17px !important;
+  }
+
+  /* ---------- filter card ---------- */
+  html body #search-view .filter-card.filter-core {
+    padding: 14px 14px 12px !important;
+    border-radius: 22px !important;
+  }
+
+  html body #search-view .filter-card.filter-core .filter-top-tabs {
+    padding: 4px !important;
+    margin: 0 !important;
+  }
+
+  html body #search-view .filter-card.filter-core .filter-top-tab {
+    height: 38px !important;
+    min-height: 0 !important;
+    padding: 0 12px !important;
+    font-size: 14px !important;
+  }
+
+  html body #search-view .filter-card.filter-core .filter-top-tab.active,
+  html body #search-view .filter-card.filter-core .filter-top-tab.active:hover {
+    box-shadow:
+      0 3px 8px rgba(2, 40, 30, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+  }
+
+  html body #search-view .filter-card.filter-core .filter-box-p {
+    margin-top: 12px !important;
+    padding: 0 !important;
+  }
+
+  html body #search-view .filter-card.filter-core .filter-label {
+    margin: 0 0 2px 2px !important;
+    font-size: 11px !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  html body #search-view .filter-card.filter-core .chip-carousel {
+    gap: 0 !important;
+    margin-top: 4px !important;
+  }
+
+  html body #search-view .filter-card.filter-core .chip-scroll-btn {
+    display: none !important;
+  }
+
+  html body #search-view .filter-card.filter-core .chip-carousel .chip-container {
+    gap: 8px !important;
+    /* side room so a selected chip's shadow is not cut into a square */
+    margin: 0 -10px !important;
+    padding: 4px 10px 14px !important;
+  }
+
+  html body #search-view .filter-card.filter-core .chip-carousel .chip {
+    height: 36px !important;
+    min-height: 0 !important;
+    padding: 0 14px !important;
+    font-size: 14px !important;
+  }
+
+  html body #search-view .filter-card.filter-core .active-filter-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 8px 10px !important;
+    margin-top: 0 !important;
+    padding: 12px 0 0 !important;
+  }
+
+  html body #search-view .filter-card.filter-core .active-filter-row > span {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    margin: 0 !important;
+    font-size: 14px !important;
+    white-space: nowrap !important;
+  }
+
+  html body #search-view .filter-card.filter-core .active-filter-row #clear-active.clear-all {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    height: 32px !important;
+    padding: 0 12px 0 10px !important;
+    gap: 6px !important;
+    font-size: 13px !important;
+  }
+
+  html body #search-view .filter-card.filter-core .active-filter-row #active-filters {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+
+  html body #search-view .filter-card.filter-core .active-filter-row #active-filters:empty {
+    display: none !important;
+  }
+
+  /* ---------- search dock ---------- */
+  html body #search-view .header.search-header,
+  html body #search-view .search-header {
+    min-height: 0 !important;
+    padding: 7px 8px 7px 10px !important;
+    background:
+      linear-gradient(112deg, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0.3) 48%, rgba(255, 255, 255, 0) 66%),
+      linear-gradient(100deg, rgba(246, 253, 249, 0.9) 0%, rgba(234, 249, 241, 0.88) 60%, rgba(220, 245, 232, 0.88) 100%) !important;
+    backdrop-filter: blur(24px) saturate(1.2) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(1.2) !important;
+  }
+
+  html body #search-view .search-header .logo-area {
+    gap: 10px !important;
+    min-width: 0 !important;
+  }
+
+  html body #search-view .search-header .logo {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+  }
+
+  html body #search-view .search-header .title h2 {
+    font-size: 18px !important;
+    line-height: 1.1 !important;
+  }
+
+  html body #search-view .search-header .btn-login,
+  html body #search-view .search-header .btn-login:hover,
+  html body #search-view .search-header .btn-login:active,
+  html body #search-view .search-header .btn-login:focus {
+    flex-direction: row-reverse !important;
+    gap: 7px !important;
+    min-height: 40px !important;
+    height: 40px !important;
+    padding: 0 16px 0 14px !important;
+    background: linear-gradient(160deg, #059669, #047e59 60%, #06684a) !important;
+    box-shadow:
+      0 6px 14px rgba(4, 100, 70, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+    color: #ffffff !important;
+  }
+
+  html body #search-view .search-header .btn-login .btn-login-text {
+    padding-right: 0 !important;
+  }
+
+  html body #search-view .search-header .btn-login .btn-login-text::after,
+  html body #search-view .search-header .btn-login .btn-login-caret {
+    display: none !important;
+  }
+
+  html body #search-view .search-header .btn-login .btn-login-text strong {
+    font-size: 14.5px !important;
+    font-weight: 800 !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+
+  html body #search-view .search-header .btn-login .btn-login-icon,
+  html body #search-view .search-header .btn-login .btn-login-icon svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  html body #search-view .search-header .btn-login .btn-login-icon svg {
+    stroke: #ffffff !important;
+  }
+
+  html body #search-view .search-header .btn-login:focus-visible {
+    outline: 3px solid rgba(5, 150, 105, 0.55) !important;
+    outline-offset: 2px !important;
+  }
+}
