@@ -19,7 +19,7 @@
             return rootTheme;
         }
 
-        return 'dark';
+        return 'light';
     }
 
     function setTheme(theme, shouldPersist) {

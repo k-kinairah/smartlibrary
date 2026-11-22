@@ -125,19 +125,22 @@ function stat_chip_meta(string $title): array {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en"<?= $adminPalettePilot ? ' data-palette="green"' : '' ?><?= $adminDarkVariant !== '' ? ' data-dark-variant="' . $adminDarkVariant . '"' : '' ?>>
+<html lang="en" data-theme="light"<?= $adminPalettePilot ? ' data-palette="green"' : '' ?><?= $adminDarkVariant !== '' ? ' data-dark-variant="' . $adminDarkVariant . '"' : '' ?>>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
+        // Light is the default; a saved choice from the Appearance switch
+        // wins. Runs before the stylesheets so a saved dark never flashes
+        // light (and <html> already says light for the no-script case).
         (function () {
             try {
                 var key = 'smartlib-admin-theme';
                 var storedTheme = localStorage.getItem(key);
-                var resolvedTheme = (storedTheme === 'light' || storedTheme === 'dark') ? storedTheme : 'dark';
+                var resolvedTheme = (storedTheme === 'light' || storedTheme === 'dark') ? storedTheme : 'light';
                 document.documentElement.setAttribute('data-theme', resolvedTheme);
             } catch (error) {
-                document.documentElement.setAttribute('data-theme', 'dark');
+                document.documentElement.setAttribute('data-theme', 'light');
             }
         }());
     </script>
@@ -225,11 +228,11 @@ function stat_chip_meta(string $title): array {
                     id="adminThemeToggle"
                     class="theme-toggle-btn"
                     aria-label="Switch theme"
-                    aria-pressed="false"
+                    aria-pressed="true"
                 >
                     <span class="theme-toggle-copy">
                         <span class="theme-toggle-label">Appearance</span>
-                        <span class="theme-toggle-state">Dark mode</span>
+                        <span class="theme-toggle-state">Light mode</span>
                     </span>
                     <span class="theme-toggle-switch" aria-hidden="true">
                         <span class="theme-toggle-knob"></span>
