@@ -1447,6 +1447,137 @@ let signinCountdownEndTs = 0;
         }
     };
 
+    // Book modal: open at once with a placeholder built from what the tapped
+    // tile already shows (cover, title, author), then swap in get_book.php's
+    // html when it lands. bookModalSeq works like loadBooksSeq: a response
+    // only counts if it belongs to the latest tap and the modal is still
+    // open, so closing mid-load or tapping a second book drops the old one.
+    // get_book.php is never cached here -- availability must stay fresh.
+    let bookModalSeq = 0;
+
+    const buildBookModalPreview = (preview, extraClass) => {
+        const root = document.createElement("div");
+        root.className = "bm2-loading" + (extraClass ? " " + extraClass : "");
+
+        const body = document.createElement("div");
+        body.className = "bm2-body";
+
+        const left = document.createElement("div");
+        left.className = "bm2-left";
+        const frame = document.createElement("div");
+        frame.className = "bm2-cover-frame";
+        // Reuse the tile's cover only if it has already loaded, so the
+        // placeholder never starts a request of its own.
+        const coverImg = preview?.coverImg;
+        if (coverImg && coverImg.complete && coverImg.naturalWidth > 0) {
+            const img = document.createElement("img");
+            img.className = "book-cover-lg";
+            img.alt = "Book cover";
+            img.src = coverImg.currentSrc || coverImg.src;
+            frame.appendChild(img);
+        } else {
+            const ph = document.createElement("div");
+            ph.className = "bml-cover bml-shimmer";
+            frame.appendChild(ph);
+        }
+        left.appendChild(frame);
+
+        const right = document.createElement("div");
+        right.className = "bm2-right";
+        if (preview?.title) {
+            const title = document.createElement("h2");
+            title.className = "bml-title";
+            title.textContent = preview.title;
+            right.appendChild(title);
+        } else {
+            const bar = document.createElement("div");
+            bar.className = "bml-bar bml-bar-title bml-shimmer";
+            right.appendChild(bar);
+        }
+        if (preview?.author) {
+            const author = document.createElement("p");
+            author.className = "bml-author";
+            author.textContent = preview.author;
+            right.appendChild(author);
+        } else {
+            const bar = document.createElement("div");
+            bar.className = "bml-bar bml-bar-author bml-shimmer";
+            right.appendChild(bar);
+        }
+
+        body.append(left, right);
+        root.appendChild(body);
+        return { root, right };
+    };
+
+    const renderBookModalLoading = (content, preview) => {
+        const { root, right } = buildBookModalPreview(preview);
+        const block = document.createElement("div");
+        block.className = "bml-block bml-shimmer";
+        const lines = document.createElement("div");
+        lines.className = "bml-lines";
+        ["", "bml-bar-short", "", "bml-bar-mid"].forEach((cls) => {
+            const bar = document.createElement("div");
+            bar.className = "bml-bar bml-shimmer" + (cls ? " " + cls : "");
+            lines.appendChild(bar);
+        });
+        right.append(block, lines);
+
+        const foot = document.createElement("div");
+        foot.className = "bm2-foot";
+        const stats = document.createElement("div");
+        stats.className = "bml-bar bml-bar-stat bml-shimmer";
+        const action = document.createElement("div");
+        action.className = "bml-bar bml-bar-btn bml-shimmer";
+        foot.append(stats, action);
+        root.appendChild(foot);
+
+        content.replaceChildren(root);
+        content.setAttribute("aria-busy", "true");
+    };
+
+    const renderBookModalError = (content, preview, onRetry) => {
+        const { root, right } = buildBookModalPreview(preview, "bm2-load-failed");
+        const retry = document.createElement("button");
+        retry.type = "button";
+        retry.className = "bml-retry";
+        retry.textContent = "Couldn't load this book. Tap to try again.";
+        retry.addEventListener("click", onRetry);
+        right.appendChild(retry);
+        content.replaceChildren(root);
+        content.removeAttribute("aria-busy");
+    };
+
+    const openBookModal = (url, preview, onLoaded) => {
+        const content = document.getElementById("book-modal-content");
+        const modalBook = document.getElementById("book-modal");
+        if (!content || !modalBook) return;
+
+        const seq = ++bookModalSeq;
+        renderBookModalLoading(content, preview);
+        modalBook.classList.remove("hidden");
+
+        const isCurrent = () => seq === bookModalSeq && !modalBook.classList.contains("hidden");
+
+        fetch(url)
+            .then(res => {
+                if (!res.ok) throw new Error("get_book.php returned " + res.status);
+                return res.text();
+            })
+            .then(html => {
+                if (!isCurrent()) return;
+                content.removeAttribute("aria-busy");
+                content.innerHTML = html;
+                if (typeof onLoaded === "function") {
+                    onLoaded(content.querySelector(".book-modal-v2"));
+                }
+            })
+            .catch(() => {
+                if (!isCurrent()) return;
+                renderBookModalError(content, preview, () => openBookModal(url, preview, onLoaded));
+            });
+    };
+
     document.addEventListener("click", e => {
         const heartBtn = e.target.closest(".fav-heart-btn");
         if (heartBtn) {
@@ -1461,26 +1592,22 @@ let signinCountdownEndTs = 0;
             const sourcePanelKey = discoverImg.closest(".discover-panel")?.dataset.panelKey || "discover";
             const rawBookId = String(discoverImg.dataset.bookId || discoverImg.dataset.id || "").trim();
             const discoverBookId = Number.parseInt(rawBookId, 10);
+            const discoverPreview = {
+                coverImg: discoverImg instanceof HTMLImageElement ? discoverImg : discoverImg.querySelector("img"),
+                title: String(discoverImg.dataset.title || "").trim(),
+                author: String(discoverImg.dataset.author || "").trim()
+            };
 
             if (Number.isFinite(discoverBookId) && discoverBookId > 0) {
                 if (typeof window.smartlibTrackRecommendation === "function") {
                     window.smartlibTrackRecommendation("open", sourcePanelKey, discoverBookId);
                 }
 
-                fetch("get_book.php?id=" + discoverBookId)
-                    .then(res => res.text())
-                    .then(html => {
-                        const content = document.getElementById("book-modal-content");
-                        const modalBook = document.getElementById("book-modal");
-                        if (content && modalBook) {
-                            content.innerHTML = html;
-                            const modalRoot = content.querySelector(".book-modal-v2");
-                            if (modalRoot) {
-                                modalRoot.dataset.sourcePanel = sourcePanelKey;
-                            }
-                            modalBook.classList.remove("hidden");
-                        }
-                    });
+                openBookModal("get_book.php?id=" + discoverBookId, discoverPreview, modalRoot => {
+                    if (modalRoot) {
+                        modalRoot.dataset.sourcePanel = sourcePanelKey;
+                    }
+                });
                 return;
             }
 
@@ -1489,24 +1616,15 @@ let signinCountdownEndTs = 0;
             const cover = (discoverImg.dataset.cover || srcCover || "").trim();
 
             if (cover) {
-                fetch("get_book.php?cover=" + encodeURIComponent(cover))
-                    .then(res => res.text())
-                    .then(html => {
-                        const content = document.getElementById("book-modal-content");
-                        const modalBook = document.getElementById("book-modal");
-                        if (content && modalBook) {
-                            content.innerHTML = html;
-                            const modalRoot = content.querySelector(".book-modal-v2");
-                            if (modalRoot) {
-                                modalRoot.dataset.sourcePanel = sourcePanelKey;
-                                const modalBookId = Number.parseInt(String(modalRoot.dataset.bookId || ""), 10);
-                                if (Number.isFinite(modalBookId) && modalBookId > 0 && typeof window.smartlibTrackRecommendation === "function") {
-                                    window.smartlibTrackRecommendation("open", sourcePanelKey, modalBookId);
-                                }
-                            }
-                            modalBook.classList.remove("hidden");
+                openBookModal("get_book.php?cover=" + encodeURIComponent(cover), discoverPreview, modalRoot => {
+                    if (modalRoot) {
+                        modalRoot.dataset.sourcePanel = sourcePanelKey;
+                        const modalBookId = Number.parseInt(String(modalRoot.dataset.bookId || ""), 10);
+                        if (Number.isFinite(modalBookId) && modalBookId > 0 && typeof window.smartlibTrackRecommendation === "function") {
+                            window.smartlibTrackRecommendation("open", sourcePanelKey, modalBookId);
                         }
-                    });
+                    }
+                });
             }
             return;
         }
@@ -1519,20 +1637,17 @@ let signinCountdownEndTs = 0;
             window.smartlibTrackRecommendation("open", "search_results", cardBookId);
         }
 
-        fetch("get_book.php?id=" + card.dataset.id)
-            .then(res => res.text())
-            .then(html => {
-                const content = document.getElementById("book-modal-content");
-                const modalBook = document.getElementById("book-modal");
-                if (content && modalBook) {
-                    content.innerHTML = html;
-                    const modalRoot = content.querySelector(".book-modal-v2");
-                    if (modalRoot) {
-                        modalRoot.dataset.sourcePanel = "search_results";
-                    }
-                    modalBook.classList.remove("hidden");
-                }
-            });
+        const cardPreview = {
+            coverImg: card.querySelector(".book-cover"),
+            title: card.querySelector(".book-title")?.textContent.trim() || "",
+            author: card.querySelector(".book-subtitle")?.textContent.trim() || ""
+        };
+
+        openBookModal("get_book.php?id=" + card.dataset.id, cardPreview, modalRoot => {
+            if (modalRoot) {
+                modalRoot.dataset.sourcePanel = "search_results";
+            }
+        });
     });
 
     document.getElementById("close-book-modal")?.addEventListener("click", () => {

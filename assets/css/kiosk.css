@@ -19031,6 +19031,196 @@ html body #book-modal .bm2-room-note::before {
   }
 }
 
+/* ---------- loading / failed placeholder ---------- */
+/* filters.js opens #book-modal the moment a book is tapped and shows
+   .bm2-loading (the tile's cover, title and author plus shimmer bars)
+   until get_book.php answers. It reuses the .bm2-body/-left/-right/-foot
+   layout above so the panel doesn't jump when the real html lands.
+   Shimmer is a transform-only sweep; no blur or backdrop-filter. */
+html body #book-modal .bm2-loading {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  color: var(--bm2-text) !important;
+  font-family: "Manrope", sans-serif !important;
+  animation: bmlFadeIn 0.16s ease-out both;
+}
+
+html body #book-modal .bm2-loading .bm2-right {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+}
+
+html body #book-modal .bml-cover {
+  width: 200px;
+  height: 304px;
+  border-radius: 12px;
+}
+
+html body #book-modal .bml-title {
+  margin: 44px 52px 0 0 !important;
+  padding: 0 !important;
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  line-height: 1.16 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--bm2-strong) !important;
+  text-align: left !important;
+  overflow-wrap: anywhere !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 3 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+html body #book-modal .bml-author {
+  margin: 4px 0 0 !important;
+  padding: 0 !important;
+  font-size: 17px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  color: var(--bm2-muted) !important;
+  text-align: left !important;
+  overflow-wrap: anywhere !important;
+}
+
+html body #book-modal .bml-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: rgba(14, 134, 96, 0.1);
+}
+
+html body #book-modal .bml-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: translateX(-100%);
+  animation: bmlShimmer 1.3s ease-in-out infinite;
+}
+
+html body #book-modal .bml-bar {
+  height: 14px;
+  border-radius: 7px;
+}
+
+html body #book-modal .bml-bar-title {
+  width: 72%;
+  height: 30px;
+  margin: 46px 52px 0 0;
+  border-radius: 10px;
+}
+
+html body #book-modal .bml-bar-author {
+  width: 40%;
+  height: 16px;
+  margin-top: 12px;
+}
+
+html body #book-modal .bml-block {
+  height: 92px;
+  margin-top: 26px;
+  border-radius: 16px;
+}
+
+html body #book-modal .bml-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+html body #book-modal .bml-bar-short { width: 55%; }
+html body #book-modal .bml-bar-mid { width: 80%; }
+
+html body #book-modal .bml-bar-stat {
+  width: 220px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+html body #book-modal .bml-bar-btn {
+  width: 180px;
+  height: 48px;
+  border-radius: 999px;
+}
+
+html body #book-modal .bml-retry {
+  align-self: flex-start !important;
+  margin: 26px 0 8px !important;
+  padding: 12px 18px !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(138, 83, 0, 0.35) !important;
+  background: rgba(255, 244, 222, 0.85) !important;
+  color: var(--bm2-amber) !important;
+  font: 600 15px/1.35 "Manrope", sans-serif !important;
+  text-align: left !important;
+  cursor: pointer !important;
+}
+
+html body #book-modal .bml-retry:hover {
+  background: #fff4de !important;
+}
+
+html body #book-modal .bml-retry:focus-visible {
+  outline: 2px solid var(--bm2-accent) !important;
+  outline-offset: 2px !important;
+}
+
+@keyframes bmlShimmer {
+  to { transform: translateX(100%); }
+}
+
+@keyframes bmlFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Like the real title/author at 960px+: wrap to the column, don't widen it. */
+@media (min-width: 960px) {
+  html body #book-modal .bml-title,
+  html body #book-modal .bml-author {
+    contain: inline-size !important;
+  }
+}
+
+@media (max-width: 959.98px) {
+  html body #book-modal .bml-cover {
+    width: 180px;
+    height: 273px;
+  }
+
+  html body #book-modal .bml-title,
+  html body #book-modal .bml-bar-title {
+    margin-top: 0 !important;
+    margin-right: 0 !important;
+  }
+}
+
+@media (max-width: 559.98px) {
+  html body #book-modal .bml-title {
+    font-size: 26px !important;
+  }
+
+  html body #book-modal .bml-bar-stat,
+  html body #book-modal .bml-bar-btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body #book-modal .bm2-loading {
+    animation: none !important;
+  }
+
+  html body #book-modal .bml-shimmer::after {
+    animation: none !important;
+    display: none !important;
+  }
+}
+
 
 /* ============================================================
    Kiosk Polish v199 (Header Dock: Mint Glass)
