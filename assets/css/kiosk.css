@@ -18384,6 +18384,12 @@ html body #book-modal .bm2-read-more {
   display: none !important;
 }
 
+/* Signed-out "Sign in to borrow" is phone-only: above 600px its whole
+   action area is gone, as before the button existed. */
+html body #book-modal .bm2-foot-action.bm2-foot-action-signin {
+  display: none !important;
+}
+
 /* ---------- title + author ---------- */
 html body #book-modal .book-modal-v2 .book-modal-title {
   margin: 14px 0 0 !important;
@@ -19548,6 +19554,39 @@ html body #book-modal .bml-retry:focus-visible {
     width: 100% !important;
     height: 54px !important;
     justify-content: center !important;
+  }
+
+  /* Signed out: white button, green outline (opens the sign-in modal). */
+  html body #book-modal .bm2-foot-action.bm2-foot-action-signin {
+    display: flex !important;
+  }
+
+  html body #book-modal .bm2-signin-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    width: 100% !important;
+    height: 54px !important;
+    margin: 0 !important;
+    padding: 0 20px !important;
+    border: 1.5px solid var(--bm2-accent) !important;
+    border-radius: 16px !important;
+    background: #ffffff !important;
+    color: #07603f !important;
+    font: 700 17px/1.2 "Manrope", sans-serif !important;
+    cursor: pointer !important;
+    box-shadow: 0 6px 16px rgba(14, 134, 96, 0.14) !important;
+  }
+
+  html body #book-modal .bm2-signin-btn::before {
+    content: "" !important;
+    flex: none !important;
+    width: 20px !important;
+    height: 20px !important;
+    background: currentColor !important;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='3.6'/%3E%3Cpath d='M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6'/%3E%3C/svg%3E") center/contain no-repeat !important;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='3.6'/%3E%3Cpath d='M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6'/%3E%3C/svg%3E") center/contain no-repeat !important;
   }
 
   /* ---- loading / error placeholder (filters.js) ---- */

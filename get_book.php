@@ -591,10 +591,17 @@ if (is_numeric($totalCopiesRaw) && (int)$totalCopiesRaw >= 1 && (int)$totalCopie
 }
 
 // Room-use-only books never get a .checkout-btn (the server refuses them too).
+// Signed-out visitors get "Sign in to borrow", shown on phones only: the
+// extra class hides the whole action area above 600px (kiosk.css), so the
+// kiosk/desktop footer stays as it was, with no button.
+$actionClass = '';
 if ($isRoomOnly) {
     $actionHtml = "<div class='bm2-room-note' role='note'>" . h($roomOnlyNote) . "</div>";
 } elseif ($canCheckout) {
     $actionHtml = "<button type='button' class='checkout-btn" . ($isUnavailable ? ' bm2-btn-unavailable' : '') . "' data-book-id='" . intval($bookId) . "'" . $checkoutDisabled . ">" . h($checkoutLabel) . "</button>";
+} elseif (!isset($_SESSION['user_id'])) {
+    $actionHtml = "<button type='button' class='bm2-signin-btn'>Sign in to borrow</button>";
+    $actionClass = ' bm2-foot-action-signin';
 } else {
     $actionHtml = '';
 }
@@ -701,7 +708,7 @@ echo "
                 </div>
             </div>
         </div>
-        <div class='bm2-foot-action'>" . $actionHtml . "</div>
+        <div class='bm2-foot-action" . $actionClass . "'>" . $actionHtml . "</div>
     </div>
 </div>
 ";

@@ -1266,6 +1266,15 @@ let signinCountdownEndTs = 0;
         showAccountModal();
     });
 
+    // Book modal "Sign in to borrow" (phones, signed out; get_book.php):
+    // same sign-in modal as the header button. The book modal sits above
+    // the sign-in modal (z-index 9430 vs 2000), so it closes first.
+    document.addEventListener("click", (e) => {
+        if (!e.target.closest("#book-modal .bm2-signin-btn")) return;
+        document.getElementById("book-modal")?.classList.add("hidden");
+        showAccountModal();
+    });
+
     try {
         // ?signin=<anything> just opens the sign-in modal (the value is ignored).
         if (new URLSearchParams(window.location.search).has("signin")) {
