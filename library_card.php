@@ -5,6 +5,7 @@ require 'config/barcode_code128.php';
 require 'config/library_card_helpers.php';
 require 'config/auth_security.php';
 require 'config/csrf.php';
+require_once 'config/auth_email_template.php';
 
 // "Done" exits the card view and resets the kiosk for the next person --
 // without this, one person's name and barcode could sit on screen
@@ -72,22 +73,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'email
 
     $firstName = (string)$holder['first_name'];
     $cardCid = 'smartlib_card_image';
-    $name = htmlspecialchars($firstName !== '' ? $firstName : 'there', ENT_QUOTES, 'UTF-8');
     $subject = 'YOUR SMARTLIB LIBRARY CARD';
-    $html = '<!doctype html><html lang="en"><head><meta charset="UTF-8"></head>'
-        . '<body style="margin:0;padding:0;background:#eef3f8;font-family:Arial,Helvetica,sans-serif;color:#1e293b;">'
-        . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef3f8;padding:24px 12px;"><tr><td align="center">'
-        . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;background:#ffffff;border:1px solid #dbe4ee;border-radius:14px;overflow:hidden;">'
-        . '<tr><td style="background:#0f5132;padding:18px 24px;color:#ffffff;text-align:center;">'
-        . '<div style="font-size:18px;font-weight:700;letter-spacing:.6px;color:#ffd84d;">SMARTLIB</div>'
-        . '<div style="font-size:12px;opacity:.9;margin-top:4px;">Digital Library Card</div></td></tr>'
-        . '<tr><td style="padding:24px;text-align:center;">'
-        . '<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#475569;">Hi ' . $name . ', here is your SmartLib library card.</p>'
-        . '<img src="cid:' . $cardCid . '" alt="Library card" width="340" style="display:block;margin:0 auto 16px;width:100%;max-width:340px;height:auto;border-radius:10px;">'
-        . '<p style="margin:0;font-size:12.5px;line-height:1.6;color:#64748b;">The door scanner reads printed cards, not phone screens &mdash; keep this for your records, and print your card at the library if you have not already.</p>'
-        . '</td></tr></table></td></tr></table></body></html>';
-    $text = "SMARTLIB Library Card\n\nHi " . ($firstName !== '' ? $firstName : 'there') . ", here is your SmartLib library card (see the attached image).\n\n"
-        . "The door scanner reads printed cards, not phone screens -- keep this for your records, and print your card at the library if you have not already.";
+    $emailOptions = [
+        'variant' => 'card',
+        'preheader' => 'Your SmartLib library card is inside.',
+        'eyebrow' => 'LIBRARY CARD',
+        'title' => 'Your library card',
+        // RAW first name: the template escapes it.
+        'intro' => 'Hi ' . ($firstName !== '' ? $firstName : 'there') . ', here is your SmartLib library card.',
+        'image_cid' => $cardCid,
+        'image_alt' => 'Library card',
+        'tip_label' => 'GOOD TO KNOW',
+        'tip' => 'The door scanner reads printed cards, not phone screens. Keep this for your records, and print your card at the library if you have not already.',
+        'footer' => 'You received this because you chose “Send to email” on your SmartLib card page.',
+    ];
+    $html = smartlib_auth_email_html($emailOptions);
+    $text = smartlib_auth_email_text($emailOptions);
 
     $sent = auth_send_multipart_email(
         (string)($holder['email'] ?? ''),
