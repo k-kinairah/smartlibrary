@@ -572,6 +572,11 @@ $policy = smartlib_loan_policy_for_book($sessionRole !== '' ? $sessionRole : 'st
 $isRoomOnly = !empty($policy['room_only']);
 $roomOnlyNote = 'For use inside the library'; // placeholder wording: change it here only
 $loanLabelText = 'Loan period' . (!empty($policy['is_faculty_rate']) ? ' · Faculty' : '');
+// Phones show the shorter "Faculty loan" (kiosk.css swaps the two spans
+// at 600px and below); bigger screens keep the full label.
+$loanLabelHtml = !empty($policy['is_faculty_rate'])
+    ? "<span class='bm2-label-full'>" . h($loanLabelText) . "</span><span class='bm2-label-short'>Faculty loan</span>"
+    : h($loanLabelText);
 $loanValueText = $isRoomOnly ? 'Room use only' : (string)$policy['label'];
 
 // One dot per copy (filled = available), only for 1-6 copies.
@@ -637,13 +642,15 @@ echo "
         </div>
 
         <div class='bm2-right'>
-            <div class='bm2-top'>
-                <span class='bm2-seal' aria-hidden='true'></span>
-                <div class='bm2-tags'>" . $tagsHtml . "</div>
-            </div>
+            <div class='bm2-head'>
+                <div class='bm2-top'>
+                    <span class='bm2-seal' aria-hidden='true'></span>
+                    <div class='bm2-tags'>" . $tagsHtml . "</div>
+                </div>
 
-            <h2 class='book-modal-title" . $titleSizeClass . "'>" . h($title) . "</h2>
-            <p class='book-modal-author-sub'>" . h($author) . "</p>
+                <h2 class='book-modal-title" . $titleSizeClass . "'>" . h($title) . "</h2>
+                <p class='book-modal-author-sub'>" . h($author) . "</p>
+            </div>
 
             <div class='bm2-loc'>
                 <div class='bm2-loc-head'><span class='bm2-icon'>" . icon_svg('pin') . "</span>Where to find it</div>
@@ -689,7 +696,7 @@ echo "
             <div class='bm2-stat bm2-loan'>
                 <span class='bm2-icon bm2-loan-icon'>" . icon_svg($isRoomOnly ? 'book-open' : 'availability') . "</span>
                 <div>
-                    <div class='bm2-label'>" . h($loanLabelText) . "</div>
+                    <div class='bm2-label'>" . $loanLabelHtml . "</div>
                     <div class='bm2-stat-value'>" . h($loanValueText) . "</div>
                 </div>
             </div>

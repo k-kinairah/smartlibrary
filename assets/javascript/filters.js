@@ -1582,26 +1582,31 @@ let signinCountdownEndTs = 0;
 
         const right = document.createElement("div");
         right.className = "bm2-right";
+        // Same wrapper as get_book.php: a box beside the cover on phones,
+        // display:contents (no box) on bigger screens.
+        const head = document.createElement("div");
+        head.className = "bm2-head";
         if (preview?.title) {
             const title = document.createElement("h2");
             title.className = "bml-title";
             title.textContent = preview.title;
-            right.appendChild(title);
+            head.appendChild(title);
         } else {
             const bar = document.createElement("div");
             bar.className = "bml-bar bml-bar-title bml-shimmer";
-            right.appendChild(bar);
+            head.appendChild(bar);
         }
         if (preview?.author) {
             const author = document.createElement("p");
             author.className = "bml-author";
             author.textContent = preview.author;
-            right.appendChild(author);
+            head.appendChild(author);
         } else {
             const bar = document.createElement("div");
             bar.className = "bml-bar bml-bar-author bml-shimmer";
-            right.appendChild(bar);
+            head.appendChild(bar);
         }
+        right.appendChild(head);
 
         body.append(left, right);
         root.appendChild(body);
@@ -1646,6 +1651,29 @@ let signinCountdownEndTs = 0;
         content.removeAttribute("aria-busy");
     };
 
+    // Phones (600px and below, see kiosk.css) clamp "About this book" to
+    // three lines; add a Read more link when the text is actually cut.
+    // Bigger screens keep their scrolling paragraph and get no link.
+    const phoneBookModalQuery = window.matchMedia("(max-width: 600px)");
+    const addBookModalReadMore = (content) => {
+        if (!phoneBookModalQuery.matches) return;
+        const description = content.querySelector(".book-modal-v2 .book-description");
+        const text = description?.querySelector("p");
+        if (!description || !text || text.scrollHeight <= text.clientHeight + 1) return;
+
+        const toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.className = "bm2-read-more";
+        toggle.textContent = "Read more";
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.addEventListener("click", () => {
+            const expanded = description.classList.toggle("is-expanded");
+            toggle.textContent = expanded ? "Show less" : "Read more";
+            toggle.setAttribute("aria-expanded", String(expanded));
+        });
+        description.appendChild(toggle);
+    };
+
     const openBookModal = (url, preview, onLoaded) => {
         const content = document.getElementById("book-modal-content");
         const modalBook = document.getElementById("book-modal");
@@ -1666,6 +1694,7 @@ let signinCountdownEndTs = 0;
                 if (!isCurrent()) return;
                 content.removeAttribute("aria-busy");
                 content.innerHTML = html;
+                addBookModalReadMore(content);
                 if (typeof onLoaded === "function") {
                     onLoaded(content.querySelector(".book-modal-v2"));
                 }
