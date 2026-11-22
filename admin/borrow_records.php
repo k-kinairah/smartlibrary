@@ -415,7 +415,7 @@ require 'layout_top.php';
 
 <section class="panel glass-card data-table-panel">
     <div class="table-wrap">
-        <table class="data-table borrow-table">
+        <table class="data-table borrow-table<?= $finesOn ? '' : ' borrow-table-no-fine' ?>">
             <thead>
                 <tr>
                     <th>Record #</th>

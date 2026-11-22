@@ -913,7 +913,7 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
         </div>
 
         <div class="table-wrap compact-table-wrap overdue-table-wrap">
-            <table class="data-table insight-table overdue-preview-table">
+            <table class="data-table insight-table overdue-preview-table<?= $finesOn ? '' : ' overdue-preview-table-no-fine' ?>">
                 <thead>
                     <tr>
                         <th>Name</th>

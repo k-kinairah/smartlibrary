@@ -5277,6 +5277,24 @@ body.modal-open {
     border-bottom-right-radius: 12px;
 }
 
+/* Overdue fines off (Settings): four columns. At the two-column dashboard
+   width (~1280-1400px) 20% left the 102px "Send Reminder" button a few px
+   wider than its cell; give Action a little more room and padding. */
+[data-theme="light"] .overdue-books-panel .overdue-preview-table.overdue-preview-table-no-fine th:nth-child(2),
+[data-theme="light"] .overdue-books-panel .overdue-preview-table.overdue-preview-table-no-fine td:nth-child(2) {
+    width: 42% !important;
+}
+
+[data-theme="light"] .overdue-books-panel .overdue-preview-table.overdue-preview-table-no-fine th:nth-child(4),
+[data-theme="light"] .overdue-books-panel .overdue-preview-table.overdue-preview-table-no-fine td:nth-child(4) {
+    width: 24% !important;
+}
+
+[data-theme="light"] .overdue-books-panel .overdue-preview-table.overdue-preview-table-no-fine tbody td:nth-child(4) {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+}
+
 /* Overdue fine dashboard */
 .overdue-panel-head {
     gap: 12px;
@@ -9938,6 +9956,14 @@ select:focus {
 
 .borrow-table th:nth-child(9),
 .borrow-table td:nth-child(9) {
+    width: 128px !important;
+}
+
+/* Overdue fines off (Settings): no Fine column, so Action is the 8th
+   column and needs the 128px the 9th gets above (it would otherwise
+   inherit the Fine column's 72px and clip the Returned / Missing pills). */
+.borrow-table.borrow-table-no-fine th:nth-child(8),
+.borrow-table.borrow-table-no-fine td:nth-child(8) {
     width: 128px !important;
 }
 
