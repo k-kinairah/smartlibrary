@@ -2,13 +2,16 @@
 
    Only loaded, and only active, where layout_top.php puts
    data-palette="green" on <html> -- every admin page that uses the shared
-   layout. Those pages also always get data-dark-variant="neutral".
+   layout. Those pages also get data-dark-variant (layout_top.php's
+   $adminDarkVariant): "pine" now -- see "Pine aurora dark" at the end.
 
    What each mode looks like now:
    - Light: white / faint cool-neutral surfaces, seal green for text, icons
      and buttons, seal gold on the highlighted-panel stripe.
-   - Dark: neutral charcoal surfaces (the "Variant B" blocks below), with
-     green and gold only as accents.
+   - Dark: Pine aurora (data-dark-variant="pine", the last sections of this
+     file): very dark pine page, glass-pine cards, marigold highlights and
+     pine-teal buttons. The charcoal ("Variant B") and deep-navy blue
+     variants below are kept for reference, unused.
    - The first deep-green dark (Reset PIN's field) is still defined here
      (the plain html[data-palette="green"] token block and the [data-theme=
      "dark"] background), kept for reference. Variant B always overrides it,
@@ -1165,4 +1168,484 @@ html[data-palette="green"][data-theme="light"] .sidebar-header h2 {
    (#9a6500 was 4.2:1 on its amber tint). */
 html[data-palette="green"][data-theme="light"] .copy-detail-status-missing {
     color: #7a5000 !important;
+}
+
+
+/* Pine aurora dark (data-dark-variant="pine"): token base. A copy of the plain
+   html[data-palette="green"] block at the top (the base the approved mockup was
+   rendered on), so the luminance mapping -- and text contrast -- carry over.
+   The hand-written "Pine aurora" section at the end sets the surfaces. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] {
+    --pb-7f9cc0: 83, 168, 146;
+    --pb-85a2c6: 85, 176, 151;
+    --pb-88a4c8: 87, 178, 153;
+    --pb-8fb3de: 102, 193, 168;
+    --pb-92accf: 97, 185, 162;
+    --pb-9fbfe4: 126, 203, 182;
+    --pb-a9c2de: 134, 206, 186;
+    --pb-cfe2fa: 206, 230, 217;
+    --pb-d7e8fa: 215, 235, 224;
+    --pb-040e1c: 4, 16, 12;
+    --pb-050d1a: 4, 15, 12;
+    --pb-081628: 7, 25, 19;
+    --pb-0a1428: 6, 24, 18;
+    --pb-0a1626: 7, 25, 19;
+    --pb-0a162a: 7, 26, 19;
+    --pb-0a192d: 8, 28, 22;
+    --pb-0a1e38: 9, 35, 26;
+    --pb-0d2440: 11, 41, 31;
+    --pb-0f2846: 12, 44, 34;
+    --pb-0f3f84: 30, 72, 61;
+    --pb-142846: 13, 46, 35;
+    --pb-14345c: 23, 58, 48;
+    --pb-143c6e: 27, 66, 56;
+    --pb-16324f: 15, 56, 42;
+    --pb-163a5e: 26, 62, 53;
+    --pb-1b3567: 25, 61, 51;
+    --pb-1c2f45: 21, 51, 41;
+    --pb-1c4573: 31, 76, 64;
+    --pb-1c5ca3: 41, 101, 85;
+    --pb-1d6895: 45, 110, 92;
+    --pb-204488: 32, 79, 66;
+    --pb-21447a: 31, 76, 64;
+    --pb-285aa0: 41, 100, 85;
+    --pb-295082: 36, 87, 74;
+    --pb-2b5490: 38, 93, 79;
+    --pb-2b6dc5: 50, 121, 102;
+    --pb-2c4a70: 33, 80, 68;
+    --pb-2c5488: 38, 93, 78;
+    --pb-2c64a3: 45, 110, 92;
+    --pb-2f5f9a: 43, 104, 88;
+    --pb-33465c: 41, 74, 66;
+    --pb-345170: 40, 87, 75;
+    --pb-379fe0: 68, 167, 141;
+    --pb-3a6aa8: 48, 117, 98;
+    --pb-3b6c95: 47, 115, 97;
+    --pb-3f7cc2: 55, 135, 114;
+    --pb-4677b5: 53, 130, 109;
+    --pb-477fcd: 57, 140, 117;
+    --pb-4a5d73: 63, 99, 89;
+    --pb-4a6178: 63, 102, 92;
+    --pb-4a6378: 64, 104, 93;
+    --pb-4a7bb9: 55, 135, 113;
+    --pb-4a89c4: 60, 147, 124;
+    --pb-4d7ebd: 56, 138, 116;
+    --pb-4d8ad4: 61, 150, 127;
+    --pb-56687c: 75, 109, 100;
+    --pb-5a7088: 78, 117, 107;
+    --pb-5a82aa: 71, 138, 121;
+    --pb-5a96d2: 66, 161, 136;
+    --pb-5b6f86: 79, 116, 107;
+    --pb-5e9bd6: 68, 167, 140;
+    --pb-5e9df0: 70, 171, 144;
+    --pb-5eb6e7: 95, 190, 164;
+    --pb-5f80ad: 71, 138, 120;
+    --pb-6b83a0: 89, 138, 125;
+    --pb-6ea8d8: 73, 180, 151;
+    --pb-6eafe6: 87, 186, 160;
+    --pb-6fa3df: 72, 177, 149;
+    --pb-6fabf0: 82, 185, 157;
+    --pb-77a9da: 77, 182, 154;
+    --pb-79b8ff: 109, 196, 173;
+    --pb-7fb8ec: 107, 194, 171;
+    --pb-83bbff: 117, 199, 177;
+    --pb-86aed8: 90, 187, 161;
+    --pb-8cb9eb: 112, 197, 174;
+    --pb-8fb3dd: 102, 192, 168;
+    --pb-8fc3ea: 129, 203, 183;
+    --pb-9fb6d4: 119, 194, 174;
+    --pb-9fb8d0: 129, 193, 176;
+    --pb-9fc7ff: 144, 210, 192;
+    --pb-9fd8ff: 168, 219, 206;
+    --pb-a9b8c9: 152, 191, 180;
+    --pb-a9c8e8: 144, 210, 192;
+    --pb-aacdf5: 153, 214, 197;
+    --pb-b4c6da: 156, 206, 193;
+    --pb-b4cadc: 158, 210, 196;
+    --pb-b4d2f5: 164, 218, 203;
+    --pb-b9cee2: 158, 215, 199;
+    --pb-b9d3ea: 166, 218, 204;
+    --pb-c9dbee: 194, 224, 208;
+    --pb-cfdef2: 200, 227, 212;
+    --pb-cfe3f7: 207, 230, 218;
+    --pb-d7e3f0: 209, 231, 219;
+    --pb-d7e6ff: 213, 233, 223;
+    --pb-d7e8f7: 215, 235, 224;
+    --pb-dbe6f4: 213, 233, 223;
+    --pb-dce8f7: 217, 235, 225;
+    --pb-dce9fb: 218, 236, 227;
+    --pb-dcebfa: 221, 237, 228;
+    --pb-dde8f6: 217, 235, 226;
+    --pb-e2f1ff: 230, 242, 235;
+    --pb-e3ebf8: 223, 238, 230;
+    --pb-e3ecf9: 223, 239, 231;
+    --pb-e3edff: 225, 239, 232;
+    --pb-e6edf7: 225, 239, 232;
+    --pb-e6eefa: 227, 241, 233;
+    --pb-e7eef9: 227, 241, 233;
+    --pb-e7f0fb: 230, 242, 235;
+    --pb-e9f0fa: 230, 242, 236;
+    --pb-eaf1fb: 232, 243, 237;
+    --pb-eaf3fc: 235, 244, 239;
+    --pb-eaf4ff: 236, 245, 240;
+    --pb-eef2f7: 234, 244, 238;
+    --pb-eef3fa: 235, 244, 239;
+    --pb-eef3fb: 235, 245, 240;
+    --pb-eef4fc: 237, 246, 241;
+    --pb-f1f6fc: 240, 247, 244;
+    --pb-f2f8ff: 242, 249, 245;
+    --pb-f3f7fd: 242, 249, 245;
+    --pb-f4f8fd: 243, 249, 246;
+    --pb-f5f9ff: 245, 250, 247;
+    --pb-f6f9fd: 245, 250, 247;
+    --pb-f7fafe: 246, 250, 248;
+    --pb-f8fbff: 248, 252, 250;
+}
+
+/* ---------------------------------------------------------------------
+   Pine aurora dark (data-dark-variant="pine") -- the dark mode now in use.
+   Built from the school seal: pine green #1a4e42 and marigold #d89a2b on
+   a very dark pine page, no decorative blue. Marigold marks highlights
+   (panel stripes, the active nav bar, icon chips, book titles); primary
+   buttons are pine-teal. Semantic colours stay as they are: status pills
+   (--st-tone), Archives action badges (--act-tone), the Reports family
+   colours (--rp-tone) and the chart data series.
+   Every selector carries the full html[data-palette][data-theme]
+   [data-dark-variant] prefix plus !important so it wins over admin.css
+   and the palette rules above; light mode is never matched.
+   ------------------------------------------------------------------- */
+
+/* ---------- page ---------- */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] {
+    background-color: #050e0c !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] body {
+    background:
+        radial-gradient(900px 520px at 8% -10%, rgba(26, 98, 80, 0.55), transparent 60%),
+        radial-gradient(700px 420px at 100% 0%, rgba(216, 154, 43, 0.16), transparent 60%),
+        radial-gradient(1000px 640px at 50% 125%, rgba(20, 80, 66, 0.35), transparent 60%),
+        #050e0c !important;
+    background-attachment: fixed !important;
+    background-size: 100% 100vh !important;
+    background-repeat: no-repeat !important;
+    color: #e0e8e2 !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .main-content {
+    background: transparent !important;
+}
+
+/* ---------- cards, panels, sidebar: glass pine with a lit edge ---------- */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .glass-card,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .stat-card,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .panel,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .sidebar {
+    background:
+        linear-gradient(180deg, rgba(18, 52, 44, 0.93), rgba(8, 24, 20, 0.93)) padding-box,
+        linear-gradient(145deg, rgba(232, 181, 74, 0.58), rgba(232, 181, 74, 0.06) 35%, rgba(90, 190, 165, 0.06) 62%, rgba(90, 190, 165, 0.36)) border-box !important;
+    border-color: transparent !important;
+    border-style: solid !important;
+    box-shadow: 0 22px 46px rgba(0, 0, 0, 0.55), 0 0 44px rgba(26, 120, 98, 0.1) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .dashboard-metrics .metric-card::after,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .glass-card::before {
+    display: none !important;
+}
+
+/* Highlight panels: their existing top stripe (3px, as in every dark
+   variant) in marigold. Border widths are never changed in this section,
+   so switching dark variants moves nothing. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .panel.dashboard-scan-panel.glass-card,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .arrival-activity-row .panel.overdue-books-panel.glass-card.chart-panel,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .arrival-activity-row .panel.live-activity-panel.glass-card.compact-panel,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .arrival-activity-row .panel.chart-panel.compact-panel.glass-card,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .panel.course-popularity-panel.glass-card {
+    border-top-color: rgba(236, 186, 80, 0.9) !important;
+}
+
+/* ---------- header bar, theme switch, sidebar ---------- */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .welcome,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .theme-toggle-btn {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(120, 200, 175, 0.2) !important;
+    box-shadow: none !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .theme-toggle-knob {
+    background: #e0a63a !important;
+    box-shadow: none !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .theme-toggle-label {
+    color: #d3e2da !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .sidebar-role {
+    background: rgba(232, 181, 74, 0.14) !important;
+    border-color: rgba(232, 181, 74, 0.42) !important;
+    color: #f1dca6 !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .nav-link {
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #e0e8e2 !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .nav-link:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .nav-link.active {
+    background: linear-gradient(90deg, rgba(44, 150, 124, 0.36), rgba(44, 150, 124, 0.06)) !important;
+    box-shadow: 0 0 24px rgba(40, 150, 124, 0.18) !important;
+    color: #ffffff !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .nav-link.active::before {
+    background: linear-gradient(#f2cc78, #d89a2b) !important;
+    box-shadow: 0 0 12px rgba(232, 181, 74, 0.7) !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .nav-link .nav-icon {
+    background: rgba(255, 255, 255, 0.055) !important;
+    box-shadow: none !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .nav-link.active .nav-icon {
+    background: rgba(232, 181, 74, 0.14) !important;
+    color: #f7d98f !important;
+}
+
+/* ---------- icon chips and metric icons: marigold ---------- */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .page-icon,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .panel-icon,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .welcome-icon {
+    background: rgba(232, 181, 74, 0.14) !important;
+    border-color: rgba(232, 181, 74, 0.42) !important;
+    box-shadow: none !important;
+    color: #f7d98f !important;
+}
+
+/* Only the neutral-count icons (Dashboard); green / gold / red metric icons
+   keep their meaning (positive / attention / missing). */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .metric-icon-badge--blue {
+    color: #f2c66f !important;
+}
+
+/* ---------- buttons ---------- */
+/* Primary: pine-teal, white label. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] a.btn-primary,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] button.btn-primary,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .btn-primary,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .dashboard-scan-panel a.btn-primary.dashboard-scan-btn,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .dashboard-scan-btn,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .filters-inline button,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .reports-download-link,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .confirm-modal-confirm.is-positive,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .reports-modal-headline-tile {
+    background: linear-gradient(180deg, #20846d 0%, #176451 100%) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    box-shadow: 0 8px 22px rgba(30, 140, 115, 0.42) !important;
+    color: #ffffff !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .reports-modal-headline-tile {
+    box-shadow: none !important;
+}
+
+/* Secondary: quiet outline with a marigold edge. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .panel-link-btn,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] a.panel-link-btn,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .export-download-btn {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(232, 181, 74, 0.42) !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+}
+
+/* Overdue panel "Remind" (Prompt 20). */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .overdue-action-col .od-remind-btn {
+    background: linear-gradient(180deg, #20846d 0%, #176451 100%) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .overdue-action-col .od-remind-btn:focus-visible {
+    outline: 3px solid rgba(110, 214, 186, 0.85) !important;
+    outline-offset: 2px !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .overdue-action-col .od-remind[data-state="sent"] .od-remind-btn:disabled {
+    background: rgba(160, 200, 185, 0.1) !important;
+    border-color: rgba(160, 200, 185, 0.3) !important;
+    color: #a9c4b8 !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .overdue-action-col .od-remind-status {
+    color: #a9bdb3 !important;
+}
+
+/* ---------- dashboard overdue tiles, live activity ---------- */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .overdue-summary-card {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(120, 200, 175, 0.2) !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .overdue-summary-card-alert {
+    background: rgba(216, 154, 43, 0.11) !important;
+    border-color: rgba(216, 154, 43, 0.55) !important;
+}
+
+/* Live Kiosk Activity rows: border-top/right/bottom only -- the 3px left bar
+   keeps its status colour (returned green, missing coral). "Checked out"
+   rows keyed .status-overdue used a literal blue for the same calm
+   check-out accent the other check-out rows get from the tokens; pine here. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .live-activity-item {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-top-color: rgba(120, 200, 175, 0.13) !important;
+    border-right-color: rgba(120, 200, 175, 0.13) !important;
+    border-bottom-color: rgba(120, 200, 175, 0.13) !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .live-activity-item.status-overdue {
+    border-left-color: rgba(112, 197, 174, 0.45) !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .live-activity-main strong {
+    color: #ffffff !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .live-activity-book {
+    color: #f2c66f !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .live-activity-meta {
+    background: rgba(255, 255, 255, 0.07) !important;
+    color: #a9bdb3 !important;
+}
+
+/* ---------- tables ---------- */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .insight-table tbody tr {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(120, 200, 175, 0.13) !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .insight-table th,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .data-table thead th {
+    color: #bccdc4 !important;
+}
+
+/* ---------- modals: solid deep-pine card with a gold hairline ---------- */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .overlay-card {
+    background: linear-gradient(165deg, #0b1f1a 0%, #07140f 100%) !important;
+    border-color: rgba(232, 181, 74, 0.35) !important;
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* ---------- text ---------- */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] h1,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] h2,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .page-heading,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .metric-value,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .overdue-summary-card strong {
+    color: #ffffff !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .metric-label,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .insight-table td {
+    color: #e0e8e2 !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .metric-meta,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .panel-sub,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .page-subtitle,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .overdue-due-date,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .overdue-summary-card span {
+    color: #a9bdb3 !important;
+}
+
+/* Button hover (pine): the base hover brightens, which takes white on the
+   #20846d top stop from 4.58:1 to about 4.0:1. Here hover deepens a step
+   and adds glow instead, so the label stays above 4.5:1. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .btn-primary:hover,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .dashboard-scan-btn:hover,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .filters-inline button:hover,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .reports-download-link:hover,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .confirm-modal-confirm.is-positive:hover,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .overdue-action-col .od-remind-btn:hover:not(:disabled) {
+    background: linear-gradient(180deg, #1d7c66 0%, #155d4b 100%) !important;
+    box-shadow: 0 10px 26px rgba(30, 140, 115, 0.55) !important;
+    filter: none !important;
+}
+
+/* Keyboard focus on pine buttons and links: a light teal ring. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .btn-primary:focus-visible,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .panel-link-btn:focus-visible,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .filters-inline button:focus-visible,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .nav-link:focus-visible {
+    outline: 3px solid rgba(110, 214, 186, 0.85) !important;
+    outline-offset: 2px !important;
+}
+
+/* ---------- Dashboard: Top Borrowers ---------- */
+/* The #1 spotlight card ran green -> mint (#62d49b); white text on its
+   light end was 1.6-3.0:1 (in the blue dark mode too). Deep pine -> teal,
+   a softer sheen and pine / marigold glows instead of lime and cyan. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #top-borrowers-panel .tb-hero {
+    background: linear-gradient(150deg, #0a4a3c 0%, #115f4b 50%, #156b56 100%) !important;
+    box-shadow: 0 24px 46px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(232, 181, 74, 0.35) inset !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #top-borrowers-panel .tb-hero::after {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 36%) !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #top-borrowers-panel .tb-glow--1 {
+    background: radial-gradient(circle, rgba(232, 181, 74, 0.14), transparent 62%) !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #top-borrowers-panel .tb-glow--2 {
+    background: radial-gradient(circle, rgba(26, 98, 80, 0.55), transparent 62%) !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #top-borrowers-panel .tb-glow--3 {
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.06), transparent 62%) !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #top-borrowers-panel .tb-hero .tb-meta {
+    opacity: 1 !important;
+    color: #e6f1ec !important;
+}
+
+/* Rank avatars are a set of distinct hues; #2 was the one blue. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #top-borrowers-panel .tb-av--2 {
+    background: rgba(160, 190, 178, 0.22) !important;
+    color: #cfe0d8 !important;
+}
+
+/* ---------- Reports ---------- */
+/* Zero-count rows (#9aa39f): 3.0-3.5:1 on the pine bar tracks. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .reports-modal-bars li.is-muted .reports-modal-bar-label,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .reports-modal-bars li.is-muted .reports-modal-bar-value,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .reports-modal-bars li.is-muted .reports-modal-bar-value small {
+    color: #c2ccc7 !important;
+}
+
+/* Field labels on the report filter bar ("Report Period"): 4.1:1 on the
+   gold-tinted period card. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .reports-filter-bar label,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .reports-filters label {
+    color: #d8eee6 !important;
+}
+
+/* Hero rings: the 13-16% white circle lines ran through the "borrows" label
+   (4.3:1 at that pixel); fainter in pine. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #top-borrowers-panel .tb-ring-deco--1,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #top-borrowers-panel .tb-ring-deco--2 {
+    border-color: rgba(255, 255, 255, 0.07) !important;
 }

@@ -27,11 +27,13 @@ $roleLabel = $currentRole === 'admin' ? 'Administrator' : 'Librarian';
 // admin page. Set this to false to fall back to the original blue palette:
 // admin.css still carries the blue values as the token defaults.
 $adminPalettePilot = true;
-// Dark mode under the palette is the deep-navy BLUE variant (original blue
-// design, darker surfaces so it passes WCAG AA). The charcoal ('neutral') and
+// Dark mode under the palette is the PINE AURORA variant ('pine'): very
+// dark pine page, glass-pine cards, marigold highlights, pine-teal buttons,
+// built from the school seal (assets/css/admin_palette_green.css, "Pine
+// aurora"). The deep-navy blue ('blue'), charcoal ('neutral') and
 // deep-green dark CSS are still in the stylesheet for reference, unused.
 // Light mode is the same whatever this is set to.
-$adminDarkVariant = $adminPalettePilot ? 'blue' : '';
+$adminDarkVariant = $adminPalettePilot ? 'pine' : '';
 
 function admin_icon(string $key): string {
     $icons = [
