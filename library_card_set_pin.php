@@ -57,16 +57,17 @@ if (!$stageOk) {
     $messageType = 'error';
     $canSetPin = false;
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Same rule and trimming as every other PIN entry point
-    // (admin/manage_users.php, reset_pin.php).
-    $pin = trim((string)($_POST['pin'] ?? ''));
-    $confirmPin = trim((string)($_POST['confirm_pin'] ?? ''));
+    // Same rule as every other PIN entry point (admin/manage_users.php,
+    // reset_pin.php): exactly 4 digits, auth_kiosk_pin_valid(). Not trimmed,
+    // kept as a string (a leading zero stays).
+    $pin = (string)($_POST['pin'] ?? '');
+    $confirmPin = (string)($_POST['confirm_pin'] ?? '');
 
     if (!smartlib_csrf_verify($csrfKey, $_POST['csrf_token'] ?? '')) {
         $message = 'Your session expired. Please enter your PIN again.';
         $messageType = 'error';
-    } elseif (!preg_match('/^\d{4,}$/', $pin)) {
-        $message = 'Please enter a kiosk PIN of at least 4 digits.';
+    } elseif (!auth_kiosk_pin_valid($pin)) {
+        $message = AUTH_KIOSK_PIN_MESSAGE;
         $messageType = 'error';
     } elseif ($confirmPin !== $pin) {
         $message = 'PINs don\'t match.';
@@ -140,7 +141,7 @@ $eyeIcons = '<svg class="icon-eye" viewBox="0 0 24 24" role="presentation" aria-
                 <div class="field">
                     <label for="pin">Create your kiosk PIN</label>
                     <div class="password-field-wrap">
-                        <input id="pin" name="pin" type="password" inputmode="numeric" maxlength="20" pattern="\d{4,}" autocomplete="new-password" placeholder="At least 4 digits" required autofocus>
+                        <input id="pin" name="pin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="new-password" placeholder="4 digits" required autofocus>
                         <button type="button" id="pin_toggle" class="password-toggle-btn" aria-controls="pin" aria-label="Show PIN" aria-pressed="false">
                         <?= $eyeIcons ?>
                         </button>
@@ -149,7 +150,7 @@ $eyeIcons = '<svg class="icon-eye" viewBox="0 0 24 24" role="presentation" aria-
                 <div class="field">
                     <label for="confirm_pin">Confirm PIN</label>
                     <div class="password-field-wrap">
-                        <input id="confirm_pin" name="confirm_pin" type="password" inputmode="numeric" maxlength="20" pattern="\d{4,}" autocomplete="new-password" placeholder="Re-enter PIN" required>
+                        <input id="confirm_pin" name="confirm_pin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="new-password" placeholder="Re-enter PIN" required>
                         <button type="button" id="confirm_pin_toggle" class="password-toggle-btn" aria-controls="confirm_pin" aria-label="Show PIN" aria-pressed="false">
                         <?= $eyeIcons ?>
                         </button>
@@ -191,6 +192,28 @@ $eyeIcons = '<svg class="icon-eye" viewBox="0 0 24 24" role="presentation" aria-
 
     wirePasswordToggle('pin', 'pin_toggle');
     wirePasswordToggle('confirm_pin', 'confirm_pin_toggle');
+
+    // Digits only, at most 4, as the user types or pastes (the server still
+    // checks: exactly 4 digits).
+    ['pin', 'confirm_pin'].forEach(function (id) {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.addEventListener('input', function () {
+            const clean = input.value.replace(/[^0-9]/g, '').slice(0, 4);
+            if (clean !== input.value) input.value = clean;
+        });
+        // A paste keeps its digits first and then the first 4, so "12-34"
+        // or "1234 5" becomes "1234" (maxlength alone would cut it first).
+        input.addEventListener('paste', function (e) {
+            const text = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+            e.preventDefault();
+            const v = input.value;
+            const s = input.selectionStart ?? v.length;
+            const en = input.selectionEnd ?? v.length;
+            input.value = (v.slice(0, s) + text + v.slice(en)).replace(/[^0-9]/g, '').slice(0, 4);
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+    });
 })();
 </script>
 <script src="assets/javascript/kiosk-idle.js?v=<?= @filemtime(__DIR__ . '/assets/javascript/kiosk-idle.js') ?: time() ?>" data-idle-ms="120000"></script>

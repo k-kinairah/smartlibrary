@@ -16,6 +16,16 @@ const AUTH_RESET_MAX_REQUESTS_PER_HOUR = 3;
 const AUTH_RESET_MIN_SECONDS_BETWEEN_REQUESTS = 60;
 const AUTH_RESET_IP_MAX_REQUESTS_PER_HOUR = 30;
 const AUTH_EMAIL_EMBED_IMAGES = false;
+// Kiosk PIN (students and faculty): exactly 4 digits whenever a PIN is SET
+// (sign-up PIN step, Forgot PIN reset, Manage Users add/edit). Checked on the
+// untrimmed value and kept as a string, so " 1234" is refused and "0123"
+// keeps its leading zero. Sign-in is NOT limited: older accounts with a 5+
+// digit PIN keep signing in until they reset it.
+const AUTH_KIOSK_PIN_MESSAGE = 'Your PIN must be exactly 4 digits.';
+
+function auth_kiosk_pin_valid(string $pin): bool {
+    return preg_match('/^[0-9]{4}\z/', $pin) === 1;
+}
 
 function auth_safe_query(mysqli $conn, string $sql) {
     try {

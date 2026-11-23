@@ -49,8 +49,8 @@ function updatePinHint(hintEl, roleValue, isEditForm) {
 
     if (roleNeedsNumericPin(roleValue)) {
         hintEl.textContent = isEditForm
-            ? 'Leave blank to keep current PIN. For Student/Faculty, new PIN must be at least 4 digits.'
-            : 'For Student/Faculty accounts, PIN must be at least 4 digits.';
+            ? 'Leave blank to keep current PIN. For Student/Faculty, the PIN must be exactly 4 digits.'
+            : 'For Student/Faculty accounts, the PIN must be exactly 4 digits.';
         hintEl.classList.add('is-strict');
     } else {
         hintEl.textContent = isEditForm
@@ -113,8 +113,8 @@ if (createUserForm) {
         const pinValue = createPin.value.trim();
         createPin.setCustomValidity('');
 
-        if (roleNeedsNumericPin(createRole.value) && !/^\d{4,}$/.test(pinValue)) {
-            const msg = 'For Student/Faculty accounts, PIN must be at least 4 digits.';
+        if (roleNeedsNumericPin(createRole.value) && !/^[0-9]{4}$/.test(pinValue)) {
+            const msg = 'Your PIN must be exactly 4 digits.';
             e.preventDefault();
             createPin.setCustomValidity(msg);
             createPin.reportValidity();
@@ -145,8 +145,8 @@ if (editUserForm) {
         const newPin = pinInput.value.trim();
         pinInput.setCustomValidity('');
 
-        if (newPin !== '' && roleNeedsNumericPin(editRole.value) && !/^\d{4,}$/.test(newPin)) {
-            const msg = 'For Student/Faculty accounts, new PIN must be at least 4 digits.';
+        if (newPin !== '' && roleNeedsNumericPin(editRole.value) && !/^[0-9]{4}$/.test(newPin)) {
+            const msg = 'Your PIN must be exactly 4 digits.';
             e.preventDefault();
             pinInput.setCustomValidity(msg);
             pinInput.reportValidity();

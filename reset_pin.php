@@ -22,7 +22,10 @@ $secretWord = $isStaffReset ? 'password' : 'PIN';
 $newSecretError = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $newPin = trim((string)($_POST['new_pin'] ?? ''));
+    // Staff passwords are trimmed as before; a kiosk PIN is checked untrimmed
+    // (auth_kiosk_pin_valid), so a valid one equals $newPin.
+    $newPinRaw = (string)($_POST['new_pin'] ?? '');
+    $newPin = trim($newPinRaw);
     $confirmPin = trim((string)($_POST['confirm_pin'] ?? ''));
 
     if ($token === '' || strlen($token) < 20) {
@@ -44,8 +47,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = $staffProblem;
             $messageType = 'error';
             $newSecretError = true;
-        } elseif (!auth_user_is_staff($conn, (int)($tokenRow['user_id'] ?? 0)) && !preg_match('/^\d{4,}$/', $newPin)) {
-            $message = 'PIN must be at least 4 digits.';
+        } elseif (!auth_user_is_staff($conn, (int)($tokenRow['user_id'] ?? 0)) && !auth_kiosk_pin_valid($newPinRaw)) {
+            $message = AUTH_KIOSK_PIN_MESSAGE;
             $messageType = 'error';
             $newSecretError = true;
         } else {
@@ -144,22 +147,22 @@ $logoVer = @filemtime(__DIR__ . '/assets/images/stjude_logo.jpg') ?: 1;
 $secretTitle = ucfirst($secretWord);
 $secretRule = $isStaffReset
     ? 'At least ' . AUTH_STAFF_PASSWORD_MIN . ' characters, with a letter and a number'
-    : 'At least 4 digits, numbers only';
+    : 'Exactly 4 digits, numbers only';
 $secretAttrs = $isStaffReset
     ? 'autocomplete="new-password" maxlength="' . AUTH_STAFF_PASSWORD_MAX_BYTES . '"'
-    : 'inputmode="numeric" pattern="[0-9]{4,}" autocomplete="new-password" maxlength="20"';
+    : 'inputmode="numeric" pattern="[0-9]{4}" autocomplete="new-password" maxlength="4"';
 // Escaped once here; the PIN wording keeps each sentence on its own line
 // (as in the mockup), the longer staff wording just wraps.
 $subLineHtml = $isStaffReset
     ? htmlspecialchars('Choose a new password of at least ' . (int)AUTH_STAFF_PASSWORD_MIN . ' characters with a letter and a number. This link works once.')
-    : 'Choose a new PIN of at least 4 digits.<br>This link works once.';
+    : 'Choose a new 4-digit PIN.<br>This link works once.';
 
 // Server-side field errors, worded like the live checks in the script below.
 $newRuleText = $secretRule;
 if ($newSecretError) {
     $newRuleText = $message;
 } elseif ($fieldError['new']) {
-    $newRuleText = $isStaffReset ? 'Enter a new password' : 'Enter a new PIN (at least 4 digits)';
+    $newRuleText = $isStaffReset ? 'Enter a new password' : 'Enter a new PIN (4 digits)';
 }
 $confirmRuleText = "Type the same {$secretWord} again";
 if ($fieldError['confirm'] && $message === $mismatchMessage) {
@@ -583,7 +586,8 @@ $eyeIcons = '<svg class="icon-eye" viewBox="0 0 24 24" aria-hidden="true"><path 
     wirePasswordToggle('new_pin', 'new_pin_toggle');
     wirePasswordToggle('confirm_pin', 'confirm_pin_toggle');
 
-    // Live feedback while typing. Mirrors the server's rules (PIN: /^\d{4,}$/;
+    // Live feedback while typing. Mirrors the server's rules (PIN: exactly 4
+    // digits, /^[0-9]{4}$/;
     // staff password: 10+ characters with a letter and a number; both entries
     // equal) only to guide the user -- the server still checks everything.
     const form = document.getElementById('reset-pin-form');
@@ -596,6 +600,27 @@ $eyeIcons = '<svg class="icon-eye" viewBox="0 0 24 24" aria-hidden="true"><path 
     const pinRule = document.getElementById('new_pin_rule');
     const confirmRule = document.getElementById('confirm_pin_rule');
     const MIN = STAFF ? STAFF_MIN : 4;
+
+    // PIN: digits only, at most 4, as the user types or pastes.
+    if (!STAFF) {
+        [pin, confirm].forEach(function (input) {
+            input.addEventListener('input', function () {
+                const clean = input.value.replace(/[^0-9]/g, '').slice(0, 4);
+                if (clean !== input.value) input.value = clean;
+            });
+            // A paste keeps its digits first and then the first 4, so "12-34"
+            // or "1234 5" becomes "1234" (maxlength alone would cut it first).
+            input.addEventListener('paste', function (e) {
+                const text = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+                e.preventDefault();
+                const v = input.value;
+                const s = input.selectionStart ?? v.length;
+                const en = input.selectionEnd ?? v.length;
+                input.value = (v.slice(0, s) + text + v.slice(en)).replace(/[^0-9]/g, '').slice(0, 4);
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+        });
+    }
 
     function setState(field, rule, input, state, text) {
         field.classList.toggle('is-ok', state === 'ok');
@@ -635,7 +660,7 @@ $eyeIcons = '<svg class="icon-eye" viewBox="0 0 24 24" aria-hidden="true"><path 
         if (STAFF) return checkStaffPassword(forceErrors);
         const v = pin.value;
         if (v === '') {
-            setState(pinField, pinRule, pin, forceErrors ? 'bad' : 'neutral', forceErrors ? 'Enter a new PIN (at least 4 digits)' : 'At least 4 digits, numbers only');
+            setState(pinField, pinRule, pin, forceErrors ? 'bad' : 'neutral', forceErrors ? 'Enter a new PIN (4 digits)' : 'Exactly 4 digits, numbers only');
             return false;
         }
         if (!/^\d+$/.test(v)) {
@@ -647,7 +672,11 @@ $eyeIcons = '<svg class="icon-eye" viewBox="0 0 24 24" aria-hidden="true"><path 
             setState(pinField, pinRule, pin, forceErrors ? 'bad' : 'neutral', left + ' more digit' + (left === 1 ? '' : 's') + ' needed');
             return false;
         }
-        setState(pinField, pinRule, pin, 'ok', 'At least 4 digits, numbers only');
+        if (v.length > MIN) {
+            setState(pinField, pinRule, pin, 'bad', 'Your PIN must be exactly 4 digits.');
+            return false;
+        }
+        setState(pinField, pinRule, pin, 'ok', 'Exactly 4 digits, numbers only');
         return true;
     }
 

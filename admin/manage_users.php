@@ -136,8 +136,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_user'])) {
         $flash = ['type' => 'error', 'message' => 'Please choose a department from the list.'];
     } elseif ($role === 'student' && $schoolLevel === null) {
         $flash = ['type' => 'error', 'message' => 'Please choose a school level.'];
-    } elseif (in_array($role, ['student', 'faculty'], true) && !preg_match('/^\d{4,}$/', $pin)) {
-        $flash = ['type' => 'error', 'message' => 'For Student/Faculty accounts, PIN must be at least 4 digits.'];
+    } elseif (in_array($role, ['student', 'faculty'], true) && !auth_kiosk_pin_valid((string)($_POST['pin'] ?? ''))) {
+        // Exactly 4 digits, checked untrimmed (a valid PIN equals $pin).
+        $flash = ['type' => 'error', 'message' => AUTH_KIOSK_PIN_MESSAGE];
     } elseif (in_array($role, ['librarian', 'admin'], true) && ($staffProblem = auth_staff_password_problem($pin, $userNumber)) !== '') {
         // Same rule as a staff reset link: staff sign in with a password + 2FA.
         $flash = ['type' => 'error', 'message' => 'For Librarian/Admin accounts: ' . $staffProblem];
@@ -316,11 +317,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
 
         if (
             $flash['message'] === ''
-            && $newPin !== ''
+            && (string)($_POST['edit_pin'] ?? '') !== ''
             && in_array($role, ['student', 'faculty'], true)
-            && !preg_match('/^\d{4,}$/', $newPin)
+            && !auth_kiosk_pin_valid((string)($_POST['edit_pin'] ?? ''))
         ) {
-            $editPinPopupMessage = 'For Student/Faculty accounts, new PIN must be at least 4 digits.';
+            // Exactly 4 digits, checked untrimmed (blank keeps the current PIN).
+            $editPinPopupMessage = AUTH_KIOSK_PIN_MESSAGE;
             $flash = ['type' => 'error', 'message' => $editPinPopupMessage];
         }
 
@@ -809,7 +811,7 @@ require 'layout_top.php';
             <input type="text" name="user_number" placeholder="Student/Faculty/Librarian ID" required>
             <input type="email" name="email" placeholder="Email" required>
             <input type="password" name="pin" placeholder="PIN / Password" required>
-            <small class="pin-rule-note" id="createPinHint">Student/Faculty: at least 4 digits. Librarian/Admin: at least <?= (int)AUTH_STAFF_PASSWORD_MIN ?> characters with a letter and a number.</small>
+            <small class="pin-rule-note" id="createPinHint">Student/Faculty: exactly 4 digits. Librarian/Admin: at least <?= (int)AUTH_STAFF_PASSWORD_MIN ?> characters with a letter and a number.</small>
 
             <select name="school_level" aria-label="School level">
                 <?php foreach (LIBRARY_CARD_SCHOOL_LEVELS as $levelValue => $levelLabel): ?>
@@ -864,7 +866,7 @@ require 'layout_top.php';
             <input type="text" name="edit_user_number" placeholder="Student/Faculty/Librarian ID" value="<?= htmlspecialchars((string)($editUserData['user_number'] ?? '')) ?>" required>
             <input type="email" name="edit_email" placeholder="Email (optional)" value="<?= htmlspecialchars((string)($editUserData['email'] ?? '')) ?>">
             <input type="password" name="edit_pin" placeholder="New PIN / Password (optional)" autocomplete="new-password">
-            <small class="pin-rule-note" id="editPinHint">Leave blank to keep current PIN/password. Student/Faculty: at least 4 digits. Librarian/Admin: at least <?= (int)AUTH_STAFF_PASSWORD_MIN ?> characters with a letter and a number.</small>
+            <small class="pin-rule-note" id="editPinHint">Leave blank to keep current PIN/password. Student/Faculty: exactly 4 digits. Librarian/Admin: at least <?= (int)AUTH_STAFF_PASSWORD_MIN ?> characters with a letter and a number.</small>
 
             <?php
             $editRoleNow = (string)($editUserData['role'] ?? '');
@@ -980,6 +982,42 @@ function roleNeedsNumericPin(roleValue) {
     return role === 'student' || role === 'faculty';
 }
 
+// Student/Faculty: the PIN box takes digits only, at most 4 (typed or
+// pasted). Librarian/Admin: the same box is a free-text password again.
+function applyPinInputMode(input, roleValue) {
+    if (!input) return;
+    if (roleNeedsNumericPin(roleValue)) {
+        input.setAttribute('maxlength', '4');
+        input.setAttribute('inputmode', 'numeric');
+        input.setAttribute('pattern', '[0-9]{4}');
+        const clean = input.value.replace(/[^0-9]/g, '').slice(0, 4);
+        if (clean !== input.value) input.value = clean;
+    } else {
+        input.removeAttribute('maxlength');
+        input.removeAttribute('inputmode');
+        input.removeAttribute('pattern');
+    }
+    if (!input.dataset.pinModeBound) {
+        input.dataset.pinModeBound = '1';
+        input.addEventListener('input', function () {
+            if (input.getAttribute('inputmode') !== 'numeric') return;
+            const clean = input.value.replace(/[^0-9]/g, '').slice(0, 4);
+            if (clean !== input.value) input.value = clean;
+        });
+        // A paste keeps its digits first and then the first 4 (PIN mode only).
+        input.addEventListener('paste', function (e) {
+            if (input.getAttribute('inputmode') !== 'numeric') return;
+            const text = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+            e.preventDefault();
+            const v = input.value;
+            const s = input.selectionStart ?? v.length;
+            const en = input.selectionEnd ?? v.length;
+            input.value = (v.slice(0, s) + text + v.slice(en)).replace(/[^0-9]/g, '').slice(0, 4);
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+    }
+}
+
 const STAFF_PASSWORD_MIN = <?= (int)AUTH_STAFF_PASSWORD_MIN ?>;
 
 // Mirrors auth_staff_password_problem() so staff see the rule before
@@ -1011,8 +1049,8 @@ function updatePinHint(hintEl, roleValue, isEditForm, wasStaff) {
 
     if (roleNeedsNumericPin(roleValue)) {
         hintEl.textContent = isEditForm
-            ? 'Leave blank to keep current PIN. For Student/Faculty, new PIN must be at least 4 digits.'
-            : 'For Student/Faculty accounts, PIN must be at least 4 digits.';
+            ? 'Leave blank to keep current PIN. For Student/Faculty, the PIN must be exactly 4 digits.'
+            : 'For Student/Faculty accounts, the PIN must be exactly 4 digits.';
         hintEl.classList.add('is-strict');
     } else {
         hintEl.textContent = isEditForm
@@ -1084,10 +1122,12 @@ if (createUserForm) {
         const createDepartment = createUserForm.querySelector('select[name="department_id"]');
         const createLevel = createUserForm.querySelector('select[name="school_level"]');
         updatePinHint(createHint, createRole.value, false);
+        applyPinInputMode(createPin, createRole.value);
         syncAffiliationFields(createRole, createProgram, createDepartment, createLevel);
         createRole.addEventListener('change', function () {
             if (createPin) createPin.setCustomValidity('');
             updatePinHint(createHint, createRole.value, false);
+        applyPinInputMode(createPin, createRole.value);
             syncAffiliationFields(createRole, createProgram, createDepartment, createLevel);
         });
         if (createLevel) {
@@ -1116,8 +1156,8 @@ if (createUserForm) {
             return;
         }
 
-        if (roleNeedsNumericPin(createRole.value) && !/^\d{4,}$/.test(pinValue)) {
-            const msg = 'For Student/Faculty accounts, PIN must be at least 4 digits.';
+        if (roleNeedsNumericPin(createRole.value) && !/^[0-9]{4}$/.test(createPin.value)) {
+            const msg = 'Your PIN must be exactly 4 digits.';
             e.preventDefault();
             createPin.setCustomValidity(msg);
             createPin.reportValidity();
@@ -1141,10 +1181,12 @@ if (editUserForm) {
         const editDepartment = editUserForm.querySelector('select[name="edit_department_id"]');
         const editLevel = editUserForm.querySelector('select[name="edit_school_level"]');
         updatePinHint(editHint, editRole.value, true, editWasStaff);
+        applyPinInputMode(pinInput, editRole.value);
         syncAffiliationFields(editRole, editProgram, editDepartment, editLevel);
         editRole.addEventListener('change', function () {
             if (pinInput) pinInput.setCustomValidity('');
             updatePinHint(editHint, editRole.value, true, editWasStaff);
+        applyPinInputMode(pinInput, editRole.value);
             syncAffiliationFields(editRole, editProgram, editDepartment, editLevel);
         });
         if (editLevel) {
@@ -1179,8 +1221,8 @@ if (editUserForm) {
             return;
         }
 
-        if (newPin !== '' && roleNeedsNumericPin(editRole.value) && !/^\d{4,}$/.test(newPin)) {
-            const msg = 'For Student/Faculty accounts, new PIN must be at least 4 digits.';
+        if (pinInput.value !== '' && roleNeedsNumericPin(editRole.value) && !/^[0-9]{4}$/.test(pinInput.value)) {
+            const msg = 'Your PIN must be exactly 4 digits.';
             e.preventDefault();
             pinInput.setCustomValidity(msg);
             pinInput.reportValidity();
