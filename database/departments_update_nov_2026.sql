@@ -5,9 +5,15 @@
 --   College of Education
 --   College of Allied Health Sciences
 --   College of Criminal Justice Education
---   Student Operations Group
+--   College of Arts and Sciences      (new)
+--   Student Operations Group          (new, always the very bottom)
 -- Registrar, GSD, OCOO, Finance, Marketing, CSDL and ITS are replaced by the
 -- single "Student Operations Group".
+--
+-- Ordering: College of Arts and Sciences gets sort_order 45, right after the
+-- other colleges (10-40). Student Operations Group gets the highest
+-- sort_order of every OTHER department row (retired ones included) + 1, so
+-- it is always last; once it is there a re-run leaves it unchanged.
 --
 -- Nothing is deleted. The seven old rows are only RETIRED (is_active = 0):
 -- they drop out of the sign-up dropdown and the Manage Users "Add User"
@@ -26,12 +32,22 @@
 -- every department while the column is missing, so uploading the code first
 -- would show the old list rather than break).
 --
--- Safe to run more than once: the second run retires 0 and adds 0.
+-- Safe to run more than once: the second run adds 0, moves 0 and retires 0.
 
 ALTER TABLE departments
   ADD COLUMN IF NOT EXISTS is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER sort_order;
 
--- After every existing row (the old list ends at 110), so it is last.
+-- One INSERT per new department, each only if no row has that name yet.
+INSERT INTO departments (department_name, sort_order, is_active)
+SELECT 'College of Arts and Sciences', 45, 1
+FROM DUAL
+WHERE NOT EXISTS (
+  SELECT 1 FROM departments WHERE department_name = 'College of Arts and Sciences'
+);
+
+SELECT ROW_COUNT() AS arts_and_sciences_added;
+
+-- Placeholder sort_order; the UPDATE below puts it last.
 INSERT INTO departments (department_name, sort_order, is_active)
 SELECT 'Student Operations Group', 120, 1
 FROM DUAL
@@ -39,7 +55,21 @@ WHERE NOT EXISTS (
   SELECT 1 FROM departments WHERE department_name = 'Student Operations Group'
 );
 
-SELECT ROW_COUNT() AS departments_added;
+SELECT ROW_COUNT() AS student_operations_group_added;
+
+-- Student Operations Group = (highest sort_order of every OTHER row) + 1.
+-- Only changes the row when it is not already there, so a re-run moves 0.
+UPDATE departments d
+JOIN (
+  SELECT MAX(sort_order) + 1 AS last_order
+  FROM departments
+  WHERE department_name <> 'Student Operations Group'
+) m
+SET d.sort_order = m.last_order
+WHERE d.department_name = 'Student Operations Group'
+  AND d.sort_order <> m.last_order;
+
+SELECT ROW_COUNT() AS student_operations_group_moved;
 
 UPDATE departments
 SET is_active = 0
