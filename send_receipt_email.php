@@ -97,6 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 require_once 'config/session_guard.php';
 require_once 'config/library_settings.php';
+require_once 'config/library_card_helpers.php'; // library_card_school_level_label()
 // Overdue fines can be off (Settings, the default): then no fines sentence.
 $finesOn = smartlib_fines_enabled($conn);
 $userId = smartlib_active_session_user_id($conn); // 0 if signed out, inactive or deleted
@@ -133,6 +134,8 @@ $loanStmt = $conn->prepare(
             COALESCE(u.first_name, '') AS first_name,
             COALESCE(u.last_name, '') AS last_name,
             COALESCE(u.email, '') AS email,
+            COALESCE(u.role, '') AS role,
+            COALESCE(u.school_level, '') AS school_level,
             COALESCE(p.program_name, '') AS program_name
      FROM borrow_records br
      JOIN book_copies bc ON bc.copy_id = br.copy_id
@@ -170,6 +173,15 @@ $userNumber = esc_text((string)$loan['user_number']);
 $studentName = $orNa(esc_text(trim($loan['first_name'] . ' ' . $loan['last_name'])));
 $studentId = $orNa($userNumber);
 $course = $orNa(esc_text((string)$loan['program_name']));
+// Junior/Senior High students have no program: "Level: Junior High School" /
+// "Level: Senior High School", as on the kiosk receipt (checkout_book.php).
+// College students and faculty keep "Course" exactly as before.
+$courseLabel = 'Course';
+$receiptLevel = (string)$loan['school_level'];
+if (strtolower((string)$loan['role']) === 'student' && ($receiptLevel === 'jhs' || $receiptLevel === 'shs')) {
+    $courseLabel = 'Level';
+    $course = esc_text(library_card_school_level_label($receiptLevel));
+}
 $title = esc_text((string)$loan['title']) ?: 'Book';
 $author = esc_text((string)$loan['author']) ?: 'Unknown Author';
 $accession = $orNa(esc_text((string)$loan['accession_no']));
@@ -288,7 +300,7 @@ $barcodeTray = '<div style="background:#ffffff;border:1px dashed #b9d3c9;border-
 
 $studentSection = $flankLabel('Student Information', $toneStudent) . $gap(6)
     . $hero($hName, $toneStudent) . $gap(10)
-    . $strip([['ID Number', $hId, true], ['Course', $hCourse, false]]);
+    . $strip([['ID Number', $hId, true], [$courseLabel, $hCourse, false]]);
 $bookSection = $flankLabel('Book Information', $toneBook) . $gap(6)
     . $hero($hTitle, $toneBook) . $gap(10)
     // Author gets its own row: three no-wrap columns side by side are wider
@@ -366,7 +378,7 @@ $textBody = "SMARTLIB BORROWING RECEIPT\n"
     . "STUDENT INFORMATION\n"
     . "Name: {$studentName}\n"
     . "ID Number: {$studentId}\n"
-    . "Course: {$course}\n\n"
+    . "{$courseLabel}: {$course}\n\n"
     . "BOOK INFORMATION\n"
     . "Title: {$title}\n"
     . "Author: {$author}\n"
