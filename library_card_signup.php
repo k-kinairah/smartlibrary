@@ -279,9 +279,12 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
         <button type="submit" class="btn">Send verification code</button>
     </form>
 
-    <div class="panel-footer">
-        <a class="link" href="library_card_reprint.php">Already have a card? <strong>Reprint my card</strong></a>
-        <a class="link" href="index.php">Back to SmartLib</a>
+    <div class="su-already">
+        <div class="su-already-label">Already registered?</div>
+        <div class="su-already-actions">
+            <a class="su-already-btn su-already-btn--gold" href="library_card_reprint.php"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="8.5" cy="11" r="2"/><path d="M5.8 16c.5-1.5 1.6-2.2 2.7-2.2s2.2.7 2.7 2.2"/><path d="M14 10h4"/><path d="M14 13.5h3"/></svg>Reprint my card</a>
+            <a class="su-already-btn" href="index.php"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Back to SmartLib</a>
+        </div>
     </div>
 </div>
 <script>

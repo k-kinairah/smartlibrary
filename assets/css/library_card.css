@@ -1195,3 +1195,116 @@ input.code-input::placeholder {
         break-inside: avoid;
     }
 }
+
+
+/* ============================================================
+   Sign-up page footer: "Already registered?" + two pill buttons
+   ------------------------------------------------------------
+   library_card_signup.php only. New class names (su-already-*), so the
+   shared .panel-footer / .link used by the reprint, verify-code and set-PIN
+   pages are untouched. The wrapper's bottom padding plus the panel's own
+   12px gives about 18px below the buttons on this page only.
+   ============================================================ */
+.su-already {
+    margin-top: 16px;
+    padding-bottom: 6px;
+}
+
+.su-already-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 11px;
+    color: rgba(200, 228, 214, 0.72);
+    font-size: 11.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.su-already-label::before,
+.su-already-label::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(194, 224, 207, 0.18);
+}
+
+.su-already-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.su-already-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 46px;
+    box-sizing: border-box;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(194, 224, 207, 0.3);
+    background: rgba(255, 255, 255, 0.04);
+    color: #e9f5ee;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color 0.14s ease, border-color 0.14s ease;
+}
+
+.su-already-btn svg {
+    width: 17px;
+    height: 17px;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.su-already-btn--gold {
+    border-color: rgba(255, 228, 138, 0.55);
+    color: #ffe9a0;
+    background: rgba(255, 228, 138, 0.07);
+}
+
+/* Hover: a slightly brighter fill and border, no movement or glow. */
+.su-already-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(194, 224, 207, 0.45);
+    color: #e9f5ee;
+    text-decoration: none;
+}
+
+.su-already-btn--gold:hover {
+    background: rgba(255, 228, 138, 0.12);
+    border-color: rgba(255, 228, 138, 0.75);
+    color: #ffe9a0;
+}
+
+.su-already-btn:active {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.su-already-btn--gold:active {
+    background: rgba(255, 228, 138, 0.04);
+}
+
+.su-already-btn:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
+/* Two columns need about 344px of footer width ("Back to SmartLib" plus its
+   icon is ~167px on one line), which the page has from ~406px wide; below
+   420px the buttons stack instead of wrapping or squeezing. */
+@media (max-width: 420px) {
+    .su-already-actions {
+        grid-template-columns: 1fr;
+    }
+}
