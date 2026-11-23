@@ -235,9 +235,9 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
     <script>
     // Cardholder name: never break inside a word and never hide part of it.
     // Picks the largest size from 4.3mm down to 2.4mm (0.1mm steps) at which
-    // no word is cut and the name fits in 3 lines; at 2.4mm a 4th line is
-    // allowed, and only if that fails too may a word break (overflow-wrap:
-    // anywhere). The card is sized in mm and scaled by CSS zoom, so the
+    // no word is cut and the name fits in 3 lines; at 2.4mm a 4th and then a
+    // 5th line are allowed, and only if that fails too may a word break
+    // (overflow-wrap: anywhere, clamped at the lines it takes). The card is sized in mm and scaled by CSS zoom, so the
     // result is the same at every screen width and in print. Names that fit
     // at 4.3mm keep the stylesheet's look (no inline size or line-height).
     // Safe to run repeatedly: it starts again from 4.3mm each time.
@@ -275,7 +275,16 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
             var lines = 3;
             if (!fits(3)) {
                 lines = 4;
-                if (!fits(4)) el.style.overflowWrap = 'anywhere';
+                if (!fits(4)) {
+                    lines = 5;
+                    if (!fits(5)) {
+                        // A word wider than the card even at 2.4mm: break it,
+                        // and clamp at however many lines that takes, so no
+                        // part of the name is ever hidden.
+                        el.style.overflowWrap = 'anywhere';
+                        lines = Math.max(5, lineCount());
+                    }
+                }
             }
             el.style.webkitLineClamp = String(lines);
             el.style.maxHeight = '';
