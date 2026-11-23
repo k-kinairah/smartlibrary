@@ -14395,3 +14395,246 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
         margin-left: auto;
     }
 }
+
+/* ============================================================
+   Add Book window: premium dropdowns for Category, Program and Section
+   (#bookModal only). Chrome/Edge 135+ "customizable select"
+   (appearance: base-select) as progressive enhancement: inside
+   @supports the select draws its own arrow (::picker-icon) and a styled
+   popup (::picker(select)) that is as wide as the select and sits in the
+   top layer, so the window body never clips or scrolls it. Every other
+   browser keeps the plain select from the block above, with a themed
+   native list (color-scheme). Nothing here applies in forced-colors
+   mode. Base = dark; light below; pine dark in admin_palette_green.css.
+   The :is(#ids) part only raises specificity over the window's own
+   input rules (border, background, !important).
+   ============================================================ */
+@media not (forced-colors: active) {
+    #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) {
+        color-scheme: dark;
+    }
+
+    [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) {
+        color-scheme: light;
+    }
+
+    @supports (appearance: base-select) {
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect),
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect)::picker(select) {
+            -webkit-appearance: base-select;
+            appearance: base-select;
+        }
+
+        /* Closed select: same box, text and filled / placeholder look as
+           before; the arrow is now ::picker-icon (the background-image
+           chevron is switched off so only one arrow shows). Padding 13 / 10,
+           a 4px gap before the 8px arrow and slightly tighter tracking
+           keep room for names up to "BSBA Marketing Management". The
+           <button><selectedcontent> inside the select (manage_books.php)
+           holds the chosen text so a name that is still too long ends in
+           "..." instead of pushing the arrow out. */
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect),
+        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px 0 13px !important;
+            letter-spacing: -0.015em;
+            background-image: none !important;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect)::picker-icon {
+            content: "";
+            flex: none;
+            width: 8px;
+            height: 8px;
+            margin-left: 4px;
+            border-right: 2px solid currentColor;
+            border-bottom: 2px solid currentColor;
+            transform: rotate(45deg) translateY(-2px);
+            opacity: 0.75;
+            transition: transform 0.18s ease;
+        }
+
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) > button {
+            display: flex;
+            align-items: center;
+            flex: 1 1 auto;
+            min-width: 0;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            background: none;
+            color: inherit;
+            font: inherit;
+            letter-spacing: inherit;
+            cursor: inherit;
+        }
+
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) selectedcontent {
+            display: block;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect):open::picker-icon {
+            transform: rotate(225deg) translate(-2px, -1px);
+        }
+
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect):open {
+            border-color: #5fc9ae !important;
+            box-shadow: 0 0 0 3px rgba(95, 201, 174, 0.25) !important;
+            outline: none !important;
+        }
+
+        /* Popup */
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect)::picker(select) {
+            box-sizing: border-box;
+            width: anchor-size(width);
+            /* Under the select; above it only when the list does not fit
+               below (the default picks whichever side is taller). */
+            position-area: block-end span-inline-end;
+            position-try-fallbacks: block-start span-inline-end;
+            position-try-order: normal;
+            max-height: min(318px, 52vh);
+            margin-top: 6px;
+            margin-bottom: 6px;
+            padding: 6px;
+            border-radius: 16px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            background: linear-gradient(180deg, #10302a 0%, #08181a 100%);
+            border: 1px solid rgba(232, 181, 74, 0.45);
+            box-shadow: 0 24px 54px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(0, 0, 0, 0.3), 0 0 36px rgba(26, 120, 98, 0.14);
+            scrollbar-color: rgba(120, 200, 175, 0.4) transparent;
+            opacity: 1;
+            transform: none;
+            transition: opacity 0.16s ease, transform 0.16s ease, overlay 0.16s allow-discrete, display 0.16s allow-discrete;
+        }
+
+        @starting-style {
+            #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect)::picker(select) {
+                opacity: 0;
+                transform: translateY(-4px);
+            }
+        }
+
+        /* Rows */
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            box-sizing: border-box;
+            min-height: 38px;
+            padding: 0 12px;
+            border-radius: 10px;
+            background: transparent !important;
+            color: #e0e8e2 !important;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600 !important;
+            line-height: 1.2;
+            letter-spacing: normal;
+            cursor: pointer;
+            outline: none;
+        }
+
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:hover,
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:focus-visible {
+            background: rgba(255, 255, 255, 0.07) !important;
+        }
+
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:focus-visible {
+            outline: 2px solid #6ed6ba;
+            outline-offset: -2px;
+        }
+
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:checked:not([value=""]) {
+            background: rgba(232, 181, 74, 0.14) !important;
+            color: #f7d98f !important;
+            font-weight: 800 !important;
+        }
+
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option::checkmark {
+            order: 2;
+            content: "";
+            flex: none;
+            width: 5px;
+            height: 10px;
+            margin-left: auto;
+            border-right: 2px solid currentColor;
+            border-bottom: 2px solid currentColor;
+            transform: rotate(45deg) translate(-1px, -1px);
+        }
+
+        /* "Select Category" etc.: muted, never ticked or tinted. */
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""],
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""]:checked {
+            background: transparent !important;
+            color: #9fb5ab !important;
+            font-weight: 500 !important;
+        }
+
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""]:hover,
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""]:focus-visible {
+            background: rgba(255, 255, 255, 0.07) !important;
+        }
+
+        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""]::checkmark {
+            content: none;
+            display: none;
+        }
+
+        /* ---------- light ---------- */
+        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect):open {
+            border-color: #2f8466 !important;
+            box-shadow: 0 0 0 3px rgba(47, 132, 102, 0.22) !important;
+        }
+
+        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect)::picker(select) {
+            background: #ffffff;
+            border: 1px solid #b5d3c6;
+            box-shadow: 0 18px 44px rgba(20, 60, 48, 0.26), 0 2px 6px rgba(20, 60, 48, 0.1);
+            scrollbar-color: #9cc6b6 transparent;
+        }
+
+        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option {
+            color: #17382e !important;
+        }
+
+        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""],
+        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""]:checked {
+            background: transparent !important;
+            color: #5d726a !important;
+        }
+
+        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:hover,
+        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:focus-visible,
+        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""]:hover,
+        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""]:focus-visible {
+            background: #eaf4ef !important;
+        }
+
+        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:focus-visible {
+            outline-color: #1d6149 !important;
+        }
+
+        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:checked:not([value=""]) {
+            background: #dcefe6 !important;
+            color: #0f4a38 !important;
+        }
+
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect)::picker(select),
+    #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect)::picker-icon {
+        transition: none;
+    }
+}

@@ -31,6 +31,19 @@ function closeBookModal() {
     bookModalOpener = null;
 }
 
+// True when el is a select whose popup is open, or sits inside one.
+// ':open' is unknown to older browsers: matches() then throws, and their
+// native popups do not pass Escape to the page anyway.
+function addBookSelectIsOpen(el) {
+    const select = el && el.closest ? el.closest('select') : null;
+    if (!select) return false;
+    try {
+        return select.matches(':open');
+    } catch (error) {
+        return false;
+    }
+}
+
 function focusAddBookTitle() {
     const title = document.getElementById('abTitleInput');
     if (!title) return;
@@ -41,7 +54,9 @@ function focusAddBookTitle() {
 }
 
 // Escape closes the Add Book window (the delete confirmation has its own
-// Escape handler further down and is never open at the same time).
+// Escape handler further down and is never open at the same time). With a
+// dropdown open, Escape only closes the dropdown: the select (or the
+// option focused in its popup) still matches :open when the key arrives.
 // Tab and Shift+Tab wrap around inside the window instead of moving to
 // the page behind it.
 document.addEventListener('keydown', function (event) {
@@ -49,6 +64,7 @@ document.addEventListener('keydown', function (event) {
     const modal = document.getElementById('bookModal');
     if (!modal || !modal.classList.contains('show')) return;
     if (event.key === 'Escape') {
+        if (event.defaultPrevented || addBookSelectIsOpen(document.activeElement)) return;
         event.preventDefault();
         closeBookModal();
         return;
@@ -56,7 +72,7 @@ document.addEventListener('keydown', function (event) {
     const focusable = Array.from(modal.querySelectorAll(
         'button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
     )).filter(function (el) {
-        return el.offsetParent !== null;
+        return el.offsetParent !== null && !(el.tagName !== 'SELECT' && el.closest('select'));
     });
     if (!focusable.length) return;
     const first = focusable[0];

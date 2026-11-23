@@ -128,22 +128,24 @@ function stat_chip_meta(string $title): array {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en" data-theme="light"<?= $adminPalettePilot ? ' data-palette="green"' : '' ?><?= $adminDarkVariant !== '' ? ' data-dark-variant="' . $adminDarkVariant . '"' : '' ?>>
+<html lang="en" data-theme="dark"<?= $adminPalettePilot ? ' data-palette="green"' : '' ?><?= $adminDarkVariant !== '' ? ' data-dark-variant="' . $adminDarkVariant . '"' : '' ?>>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
-        // Light is the default; a saved choice from the Appearance switch
-        // wins. Runs before the stylesheets so a saved dark never flashes
-        // light (and <html> already says light for the no-script case).
+        // Dark is the default; a saved choice from the Appearance switch
+        // (localStorage, written only when someone clicks it) wins. Runs
+        // before the stylesheets so a saved light never flashes dark, and
+        // a first visit paints dark at once (<html> already says dark for
+        // the no-script case). If storage is blocked, dark.
         (function () {
             try {
                 var key = 'smartlib-admin-theme';
                 var storedTheme = localStorage.getItem(key);
-                var resolvedTheme = (storedTheme === 'light' || storedTheme === 'dark') ? storedTheme : 'light';
+                var resolvedTheme = (storedTheme === 'light' || storedTheme === 'dark') ? storedTheme : 'dark';
                 document.documentElement.setAttribute('data-theme', resolvedTheme);
             } catch (error) {
-                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.setAttribute('data-theme', 'dark');
             }
         }());
     </script>
@@ -230,12 +232,14 @@ function stat_chip_meta(string $title): array {
                     type="button"
                     id="adminThemeToggle"
                     class="theme-toggle-btn"
-                    aria-label="Switch theme"
-                    aria-pressed="true"
+                    data-theme="dark"
+                    aria-label="Switch to light mode"
+                    title="Switch to light mode"
+                    aria-pressed="false"
                 >
                     <span class="theme-toggle-copy">
                         <span class="theme-toggle-label">Appearance</span>
-                        <span class="theme-toggle-state">Light mode</span>
+                        <span class="theme-toggle-state">Dark mode</span>
                     </span>
                     <span class="theme-toggle-switch" aria-hidden="true">
                         <span class="theme-toggle-knob"></span>

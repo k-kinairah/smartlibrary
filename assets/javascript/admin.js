@@ -19,7 +19,8 @@
             return rootTheme;
         }
 
-        return 'light';
+        // Same default as the inline script in admin/layout_top.php.
+        return 'dark';
     }
 
     function setTheme(theme, shouldPersist) {

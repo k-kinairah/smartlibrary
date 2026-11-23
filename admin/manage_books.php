@@ -1704,7 +1704,12 @@ require 'layout_top.php';
                         <div class="ab-grid">
                             <div class="ab-field">
                                 <label class="ab-label" for="abCategorySelect">Category</label>
+                                <?php /* The <button><selectedcontent> inside these three selects is the
+                                   customizable-select button (Chrome/Edge 135+, styled in admin.css):
+                                   it shows the chosen option and lets a long name end in "...".
+                                   Other browsers drop it while parsing and show the plain select. */ ?>
                                 <select class="ab-input ab-select" id="abCategorySelect" name="category_id">
+                                    <button type="button" class="ab-select-button"><selectedcontent></selectedcontent></button>
                                     <option value="">Select Category</option>
                                     <?php foreach ($categoryOptions as $categoryOption): ?>
                                         <?php $cid = (int)($categoryOption['category_id'] ?? 0); ?>
@@ -1715,6 +1720,7 @@ require 'layout_top.php';
                             <div class="ab-field">
                                 <label class="ab-label" for="abProgramSelect">Program</label>
                                 <select class="ab-input ab-select" id="abProgramSelect" name="program_id">
+                                    <button type="button" class="ab-select-button"><selectedcontent></selectedcontent></button>
                                     <option value="">Select Program</option>
                                     <?php foreach ($programOptions as $programOption): ?>
                                         <?php $pid = (int)($programOption['program_id'] ?? 0); ?>
@@ -1725,6 +1731,7 @@ require 'layout_top.php';
                             <div class="ab-field">
                                 <label class="ab-label" for="abSectionSelect">Section<span class="ab-req" aria-hidden="true"></span></label>
                                 <select class="ab-input ab-select" id="abSectionSelect" name="location_section" required>
+                                    <button type="button" class="ab-select-button"><selectedcontent></selectedcontent></button>
                                     <option value="">Select Section</option>
                                     <?php foreach (manage_books_section_options($librarySections, (string)($addBookForm['location_section'] ?? '')) as $sec => $secLabel): ?>
                                         <option value="<?= htmlspecialchars((string)$sec) ?>" <?= ((string)($addBookForm['location_section'] ?? '') === (string)$sec) ? 'selected' : '' ?>><?= htmlspecialchars($secLabel) ?></option>

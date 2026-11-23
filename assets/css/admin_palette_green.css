@@ -1749,3 +1749,53 @@ html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #bookMod
     background: linear-gradient(180deg, #1a7360 0%, #125543 100%);
     box-shadow: 0 10px 24px rgba(23, 100, 81, 0.55);
 }
+
+/* ---------- Add Book window: dropdowns (Category, Program, Section) ---------- */
+/* Pine colours for the customizable select in admin.css: deep pine popup
+   with a gold hairline, gold tint on the chosen row. Plain selects in
+   other browsers get a dark native list (color-scheme). */
+@media not (forced-colors: active) {
+    html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) {
+        color-scheme: dark;
+    }
+
+    @supports (appearance: base-select) {
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect):open {
+            border-color: #5fc9ae !important;
+            box-shadow: 0 0 0 3px rgba(95, 201, 174, 0.25) !important;
+        }
+
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect)::picker(select) {
+            background: linear-gradient(180deg, #10302a 0%, #08181a 100%);
+            border: 1px solid rgba(232, 181, 74, 0.45);
+            box-shadow: 0 24px 54px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(0, 0, 0, 0.3), 0 0 36px rgba(26, 120, 98, 0.14);
+            scrollbar-color: rgba(120, 200, 175, 0.4) transparent;
+        }
+
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option {
+            color: #e0e8e2 !important;
+        }
+
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""],
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""]:checked {
+            background: transparent !important;
+            color: #9fb5ab !important;
+        }
+
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:hover,
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:focus-visible,
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""]:hover,
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""]:focus-visible {
+            background: rgba(255, 255, 255, 0.07) !important;
+        }
+
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:focus-visible {
+            outline-color: #6ed6ba !important;
+        }
+
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:checked:not([value=""]) {
+            background: rgba(232, 181, 74, 0.14) !important;
+            color: #f7d98f !important;
+        }
+    }
+}
