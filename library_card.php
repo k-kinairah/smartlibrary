@@ -177,7 +177,15 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
                 <div class="lc-body">
                     <div class="lc-holder">
                         <div class="lc-label">Cardholder</div>
-                        <div class="lc-name<?= mb_strlen($fullName) > 22 ? ' lc-name-long' : '' ?>"><?= htmlspecialchars($fullName) ?></div>
+                        <?php
+                        // No-JS fallback size: a long word (10+ letters) or a long name
+                        // (over 22 characters) starts at the smaller 3.2mm. With JS,
+                        // fitCardholderNames() below sizes the name to fit instead.
+                        $nameWords = preg_split('/\s+/u', trim($fullName), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+                        $longestNameWord = $nameWords ? max(array_map('mb_strlen', $nameWords)) : 0;
+                        $nameIsLong = $longestNameWord >= 10 || mb_strlen($fullName) > 22;
+                        ?>
+                        <div class="lc-name<?= $nameIsLong ? ' lc-name-long' : '' ?>"><?= htmlspecialchars($fullName) ?></div>
                         <span class="lc-role">
                             <?php if ((string)$holder['role'] === 'faculty'): ?>
                                 <svg class="lc-role-icon-faculty" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"></rect><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path><path d="M3 13h18"></path></svg>
@@ -225,6 +233,69 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
         </div>
     </div>
     <script>
+    // Cardholder name: never break inside a word and never hide part of it.
+    // Picks the largest size from 4.3mm down to 2.4mm (0.1mm steps) at which
+    // no word is cut and the name fits in 3 lines; at 2.4mm a 4th line is
+    // allowed, and only if that fails too may a word break (overflow-wrap:
+    // anywhere). The card is sized in mm and scaled by CSS zoom, so the
+    // result is the same at every screen width and in print. Names that fit
+    // at 4.3mm keep the stylesheet's look (no inline size or line-height).
+    // Safe to run repeatedly: it starts again from 4.3mm each time.
+    function fitCardholderNames() {
+        document.querySelectorAll('.library-card').forEach(function (card) {
+            var el = card.querySelector('.lc-name');
+            if (!el) return;
+            var BASE = 4.3, FLOOR = 2.4, STEP = 0.1;
+            function lineCount() {
+                var r = document.createRange();
+                r.selectNodeContents(el);
+                var tops = [];
+                Array.prototype.forEach.call(r.getClientRects(), function (q) {
+                    var t = Math.round(q.top);
+                    if (!tops.some(function (x) { return Math.abs(x - t) < 3; })) tops.push(t);
+                });
+                return tops.length || 1;
+            }
+            function fits(maxLines) {
+                return el.scrollWidth <= el.clientWidth + 1 && lineCount() <= maxLines;
+            }
+            // The PHP no-JS fallback class (3.2mm) would come back as soon as
+            // the inline size is cleared for a name that fits at 4.3mm.
+            el.classList.remove('lc-name-long');
+            el.style.lineHeight = '';
+            el.style.webkitLineClamp = 'unset';
+            el.style.overflowWrap = 'normal';
+            el.style.maxHeight = 'none';
+            var size = BASE;
+            el.style.fontSize = size + 'mm';
+            while (!fits(3) && size - STEP >= FLOOR - 0.001) {
+                size = Math.round((size - STEP) * 10) / 10;
+                el.style.fontSize = size + 'mm';
+            }
+            var lines = 3;
+            if (!fits(3)) {
+                lines = 4;
+                if (!fits(4)) el.style.overflowWrap = 'anywhere';
+            }
+            el.style.webkitLineClamp = String(lines);
+            el.style.maxHeight = '';
+            el.style.fontSize = size < BASE ? size + 'mm' : '';
+            el.style.lineHeight = size < BASE ? '1.12' : '';
+            el.setAttribute('data-fit-size', size);
+        });
+    }
+    fitCardholderNames();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitCardholderNames);
+    (function () {
+        var fitTimer = null;
+        window.addEventListener('resize', function () {
+            clearTimeout(fitTimer);
+            fitTimer = setTimeout(fitCardholderNames, 150);
+        });
+        window.addEventListener('beforeprint', fitCardholderNames);
+        window.addEventListener('afterprint', fitCardholderNames);
+    })();
+
     (function () {
         var card = document.querySelector('.library-card');
         var downloadBtn = document.getElementById('lc-download-btn');
@@ -362,39 +433,54 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
                 ctx.fillText(out, c.x, baseline);
             }
 
-            // Draws an element's text across however many lines the browser
-            // actually wrapped it into (read via getClientRects()), so the
-            // 3-line-clamp long-name case never has to be reimplemented here.
+            // Draws an element's text exactly as the browser laid it out: each
+            // character's own rect (a Range per character) says which line it
+            // is on, a new line starts whenever the top moves by more than 3px,
+            // and each line is drawn at its own rect. So the image matches the
+            // card line for line, including a break after a hyphen.
             function drawWrappedText(ctx, el) {
-                var range = document.createRange();
-                range.selectNodeContents(el);
-                var rects = range.getClientRects();
-                var text = el.textContent;
-                if (rects.length <= 1) {
-                    drawTextLine(ctx, text, el, el.getBoundingClientRect());
-                    return;
-                }
-                var lineRectsArr = [];
-                for (var i = 0; i < rects.length; i++) { lineRectsArr.push(rects[i]); }
-                var cs = getComputedStyle(el);
-                var fontSizeTrue = parseFloat(cs.fontSize) * scale;
-                ctx.font = (cs.fontWeight || '400') + ' ' + fontSizeTrue + 'px ' + (cs.fontFamily || 'Arial');
-                var maxWidth = toCanvasRect(lineRectsArr[0]).w + 2;
-                var words = text.split(/\s+/).filter(Boolean);
                 var lines = [];
-                var cur = '';
-                for (var w = 0; w < words.length; w++) {
-                    var test = cur ? cur + ' ' + words[w] : words[w];
-                    if (ctx.measureText(test).width > maxWidth && cur) {
-                        lines.push(cur);
-                        cur = words[w];
-                    } else {
-                        cur = test;
+                var cur = null;
+                var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+                var node;
+                var range = document.createRange();
+                while ((node = walker.nextNode())) {
+                    for (var i = 0; i < node.length; i++) {
+                        range.setStart(node, i);
+                        range.setEnd(node, i + 1);
+                        var rects = range.getClientRects();
+                        var q = null;
+                        for (var r = 0; r < rects.length; r++) {
+                            if (rects[r].width > 0) { q = rects[r]; break; }
+                        }
+                        if (!q) { q = rects.length ? rects[0] : null; }
+                        if (!q) { continue; }
+                        if (!cur || Math.abs(q.top - cur.top) > 3) {
+                            cur = { text: '', top: q.top, left: q.left, right: q.right, bottom: q.bottom };
+                            lines.push(cur);
+                        }
+                        cur.text += node.data.charAt(i);
+                        if (q.width > 0) {
+                            cur.left = Math.min(cur.left, q.left);
+                            cur.right = Math.max(cur.right, q.right);
+                        }
+                        cur.top = Math.min(cur.top, q.top);
+                        cur.bottom = Math.max(cur.bottom, q.bottom);
                     }
                 }
-                if (cur) { lines.push(cur); }
-                for (var k = 0; k < lines.length && k < lineRectsArr.length; k++) {
-                    drawTextLine(ctx, lines[k], el, lineRectsArr[k]);
+                // Only lines the card actually shows: a line pushed below the
+                // name box (clamped, which only the anywhere fallback can
+                // leave) must not be drawn over the role pill.
+                var boxBottom = el.getBoundingClientRect().bottom + 1;
+                for (var k = 0; k < lines.length; k++) {
+                    var text = lines[k].text.replace(/\s+$/, '');
+                    if (!text || lines[k].bottom > boxBottom) { continue; }
+                    drawTextLine(ctx, text, el, {
+                        left: lines[k].left,
+                        top: lines[k].top,
+                        width: lines[k].right - lines[k].left,
+                        height: lines[k].bottom - lines[k].top
+                    });
                 }
             }
 

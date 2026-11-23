@@ -986,10 +986,13 @@ input.code-input::placeholder {
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    /* No-JS default only: library_card.php's fitCardholderNames() sets this
+       (and the size, line-height and clamp) inline while it fits the name. */
     overflow-wrap: anywhere;
 }
-/* Long names (over 22 characters) step down a size so they fit in full
-   within three lines instead of being cut off. */
+/* No-JS fallback for long names (a 10+ letter word or over 22 characters,
+   set in library_card.php): a smaller size so they fit within three lines.
+   With JS the script removes this class and sizes the name to fit. */
 .library-card .lc-name-long {
     font-size: 3.2mm;
     line-height: 1.12;
