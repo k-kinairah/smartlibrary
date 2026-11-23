@@ -13471,3 +13471,208 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
         gap: 12px;
     }
 }
+
+
+/* ============================================================
+   Dashboard Overdue panel: "Remind" button + last-sent status
+   ------------------------------------------------------------
+   admin/dashboard.php renders .od-remind in the Action cell
+   (.overdue-action-col); assets/javascript/admin_dashboard.js drives the
+   states (data-state idle | busy | sent | error). New class names, so the
+   older .overdue-reminder-btn rules above (and the one in
+   admin_palette_green.css) no longer apply to the dashboard; they are left
+   in place, unused. Dark is the base theme; [data-theme="light"] overrides.
+   ============================================================ */
+.overdue-action-col .od-remind {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    max-width: 100%;
+}
+
+.overdue-action-col .od-remind-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 32px;
+    min-width: 96px;
+    margin: 0;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(111, 224, 168, 0.5);
+    background: linear-gradient(180deg, #1d7a50 0%, #176240 100%);
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: none;
+    white-space: nowrap;
+    box-shadow: none;
+    text-shadow: none;
+    transform: none;
+    cursor: pointer;
+    transition: filter 0.15s ease, background-color 0.15s ease;
+}
+
+.overdue-action-col .od-remind-btn:hover:not(:disabled) {
+    filter: brightness(1.08);
+    transform: none;
+    box-shadow: none;
+}
+
+.overdue-action-col .od-remind-btn:focus-visible {
+    outline: 3px solid rgba(111, 224, 168, 0.75);
+    outline-offset: 2px;
+}
+
+.overdue-action-col .od-remind-ico {
+    width: 15px;
+    height: 15px;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.overdue-action-col .od-remind-ico.is-spinning {
+    animation: od-remind-spin 1s linear infinite;
+}
+
+@keyframes od-remind-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .overdue-action-col .od-remind-ico.is-spinning {
+        animation: none;
+    }
+}
+
+/* Busy keeps the ready colors; Sent is a quiet, disabled pill. */
+.overdue-action-col .od-remind[data-state="busy"] .od-remind-btn:disabled {
+    cursor: progress;
+    opacity: 1;
+}
+
+.overdue-action-col .od-remind[data-state="sent"] .od-remind-btn:disabled {
+    background: rgba(138, 168, 154, 0.12);
+    border-color: rgba(138, 168, 154, 0.3);
+    color: #9fbcae;
+    cursor: default;
+    opacity: 1;
+    filter: none;
+}
+
+.overdue-action-col .od-remind-btn.is-error {
+    background: linear-gradient(180deg, #a5352b 0%, #8a2a22 100%);
+    border-color: rgba(255, 160, 150, 0.5);
+    color: #ffffff;
+}
+
+.overdue-action-col .od-remind-status {
+    display: block;
+    max-width: 100%;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.25;
+    color: #9db6a9;
+    text-align: center;
+    white-space: normal;
+}
+
+.overdue-action-col .od-remind[data-state="error"] .od-remind-status {
+    color: #ffb4a8;
+}
+
+/* ---------- light theme ---------- */
+/* Top stop #1f8054 instead of #23895a: white on #23895a is 4.38:1, under
+   WCAG AA; #1f8054 is 4.91:1, and 4.61:1 with the light hover below. */
+[data-theme="light"] .overdue-action-col .od-remind-btn {
+    background: linear-gradient(180deg, #1f8054 0%, #1b6e48 100%);
+    border-color: #1b6e48;
+    color: #ffffff;
+}
+
+[data-theme="light"] .overdue-action-col .od-remind-btn:hover:not(:disabled) {
+    filter: brightness(1.04);
+}
+
+[data-theme="light"] .overdue-action-col .od-remind-btn:focus-visible {
+    outline-color: rgba(27, 110, 72, 0.55);
+}
+
+[data-theme="light"] .overdue-action-col .od-remind[data-state="sent"] .od-remind-btn:disabled {
+    background: rgba(95, 125, 109, 0.1);
+    border-color: rgba(95, 125, 109, 0.3);
+    color: #4f6d5d;
+}
+
+[data-theme="light"] .overdue-action-col .od-remind-btn.is-error {
+    background: linear-gradient(180deg, #b33a2f 0%, #962f26 100%);
+    border-color: #962f26;
+    color: #ffffff;
+}
+
+[data-theme="light"] .overdue-action-col .od-remind-status {
+    color: #5b6d63;
+}
+
+[data-theme="light"] .overdue-action-col .od-remind[data-state="error"] .od-remind-status {
+    color: #9b2d22;
+}
+
+/* ---------- column widths ----------
+   The Action cell must hold the 96px button plus its padding. With overdue
+   fines ON the table has five columns, but the light layout above sizes only
+   four (20/46/14/20%), so Action collapsed to 0 px; these give all five a
+   width. Fines OFF keeps its existing four-column widths. */
+[data-theme="light"] .overdue-books-panel .overdue-preview-table:not(.overdue-preview-table-no-fine) th:nth-child(1),
+[data-theme="light"] .overdue-books-panel .overdue-preview-table:not(.overdue-preview-table-no-fine) td:nth-child(1) {
+    width: 19% !important;
+}
+
+[data-theme="light"] .overdue-books-panel .overdue-preview-table:not(.overdue-preview-table-no-fine) th:nth-child(2),
+[data-theme="light"] .overdue-books-panel .overdue-preview-table:not(.overdue-preview-table-no-fine) td:nth-child(2) {
+    width: 30% !important;
+}
+
+[data-theme="light"] .overdue-books-panel .overdue-preview-table:not(.overdue-preview-table-no-fine) th:nth-child(3),
+[data-theme="light"] .overdue-books-panel .overdue-preview-table:not(.overdue-preview-table-no-fine) td:nth-child(3) {
+    width: 10% !important;
+}
+
+[data-theme="light"] .overdue-books-panel .overdue-preview-table:not(.overdue-preview-table-no-fine) th:nth-child(4),
+[data-theme="light"] .overdue-books-panel .overdue-preview-table:not(.overdue-preview-table-no-fine) td:nth-child(4) {
+    width: 17% !important;
+    text-align: left !important;
+}
+
+[data-theme="light"] .overdue-books-panel .overdue-preview-table:not(.overdue-preview-table-no-fine) th:nth-child(5),
+[data-theme="light"] .overdue-books-panel .overdue-preview-table:not(.overdue-preview-table-no-fine) td:nth-child(5) {
+    display: table-cell !important;
+    width: 24% !important;
+    text-align: center !important;
+}
+
+[data-theme="light"] .overdue-books-panel .overdue-preview-table tbody td.overdue-action-col {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+}
+
+.overdue-books-panel .overdue-preview-table:not(.overdue-preview-table-no-fine) th:nth-child(4),
+.overdue-books-panel .overdue-preview-table:not(.overdue-preview-table-no-fine) td:nth-child(4) {
+    width: 96px !important;
+}
+
+.overdue-books-panel .overdue-preview-table th.overdue-action-col,
+.overdue-books-panel .overdue-preview-table td.overdue-action-col {
+    width: 128px !important; /* dark layout; the light layout uses the % widths above */
+    text-align: center !important;
+}

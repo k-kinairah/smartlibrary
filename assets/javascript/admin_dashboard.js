@@ -407,18 +407,46 @@
     }
 
 
-    function markReminderSent(btn, message) {
-        btn.disabled = true;
-        btn.textContent = 'Sent';
-        btn.classList.remove('is-error');
-        btn.classList.add('is-sent');
-        if (message) {
-            btn.title = message;
+    // Overdue panel "Remind" button (admin/dashboard.php, .od-remind).
+    // States: idle (Remind) -> busy (Sending...) -> sent (Sent, disabled),
+    // or error (Retry) that resets after 2.4 s. The endpoint and its 24-hour
+    // cooldown are unchanged (send_overdue_reminder_email.php).
+    const REMIND_ICONS = {
+        mail: '<rect x="3.5" y="5.5" width="17" height="13" rx="2.4"/><path d="m4.5 7.5 7.5 5.5 7.5-5.5"/>',
+        check: '<path d="m5.5 12.5 4.2 4.2 8.8-9.4"/>',
+        spin: '<path d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5"/>'
+    };
+
+    function setRemindState(btn, state, label, icon, statusText) {
+        const wrap = btn.closest('.od-remind');
+        const ico = btn.querySelector('.od-remind-ico');
+        const lbl = btn.querySelector('.od-remind-label');
+        const status = wrap ? wrap.querySelector('.od-remind-status') : null;
+        if (wrap) wrap.dataset.state = state;
+        if (ico) {
+            ico.innerHTML = REMIND_ICONS[icon] || REMIND_ICONS.mail;
+            ico.classList.toggle('is-spinning', icon === 'spin');
         }
+        if (lbl) lbl.textContent = label;
+        if (status && statusText !== null) status.textContent = statusText;
+        btn.disabled = state === 'busy' || state === 'sent';
+        btn.classList.toggle('is-error', state === 'error');
+    }
+
+    // "Sent today" / "Sent yesterday" for a cooldown answer: the server sends
+    // next_allowed_at = last send + 24 h in its own clock, and the table
+    // carries the server's date (data-today), so the browser's time zone
+    // does not matter.
+    function cooldownStatus(btn, nextAllowedAt) {
+        const today = btn.closest('table')?.dataset.today || '';
+        const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(nextAllowedAt || ''));
+        if (!today || !m) return 'Sent today';
+        const sent = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]) - 1));
+        return sent.toISOString().slice(0, 10) === today ? 'Sent today' : 'Sent yesterday';
     }
 
     function bindOverdueReminderButtons() {
-        const buttons = document.querySelectorAll('.overdue-reminder-btn');
+        const buttons = document.querySelectorAll('.od-remind-btn');
         if (!buttons.length) return;
 
         buttons.forEach((btn) => {
@@ -432,10 +460,9 @@
                     return;
                 }
 
-                const originalText = btn.textContent.trim() || 'Send Reminder';
-                btn.disabled = true;
-                btn.classList.remove('is-error');
-                btn.textContent = 'Sending...';
+                const status = btn.closest('.od-remind')?.querySelector('.od-remind-status');
+                const previousStatus = status ? status.textContent : '';
+                setRemindState(btn, 'busy', 'Sending\u2026', 'spin', null);
 
                 try {
                     const res = await fetch('../send_overdue_reminder_email.php', {
@@ -454,23 +481,26 @@
                         payload = {};
                     }
 
-                    if (payload.status === 'success' || payload.status === 'cooldown') {
-                        markReminderSent(btn, payload.message || 'Reminder sent.');
+                    if (payload.status === 'success') {
+                        setRemindState(btn, 'sent', 'Sent', 'check', 'Sent just now');
+                        btn.title = payload.message || 'Reminder sent.';
+                        return;
+                    }
+                    if (payload.status === 'cooldown') {
+                        setRemindState(btn, 'sent', 'Sent', 'check', cooldownStatus(btn, payload.next_allowed_at));
+                        btn.title = payload.message || 'Reminder already sent.';
                         return;
                     }
 
                     throw new Error(payload.message || 'Unable to send reminder right now.');
                 } catch (err) {
                     const msg = (err && err.message) ? err.message : 'Failed to send reminder.';
-                    btn.disabled = false;
-                    btn.textContent = 'Retry';
-                    btn.classList.add('is-error');
+                    setRemindState(btn, 'error', 'Retry', 'mail', "Couldn't send. Try again.");
                     btn.title = msg;
 
                     window.setTimeout(() => {
-                        if (!btn.classList.contains('is-sent')) {
-                            btn.textContent = originalText;
-                            btn.classList.remove('is-error');
+                        if (btn.closest('.od-remind')?.dataset.state === 'error') {
+                            setRemindState(btn, 'idle', 'Remind', 'mail', previousStatus);
                         }
                     }, 2400);
                 }

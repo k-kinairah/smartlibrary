@@ -442,6 +442,42 @@ if ($overdueRes && $overdueRes->num_rows > 0) {
         ];
     }
 }
+// Last reminder per overdue row shown above: one query for those rows only.
+// overdue_reminder_logs is created lazily by send_overdue_reminder_email.php,
+// so a missing table just means "never reminded". Times use the dashboard's
+// clock (Asia/Manila, config/db_connect.php); the endpoint's cooldown is 24 h.
+$overdueLastSent = [];
+$overdueRecordIds = array_values(array_filter(array_map(static fn($r) => (int)$r['record_id'], $overdueRows)));
+if ($overdueRecordIds && table_exists($conn, 'overdue_reminder_logs')) {
+    $lastSentRes = safe_query(
+        $conn,
+        'SELECT record_id, MAX(sent_at) AS last_sent FROM overdue_reminder_logs WHERE record_id IN ('
+        . implode(',', $overdueRecordIds) . ') GROUP BY record_id'
+    );
+    if ($lastSentRes) {
+        while ($lastSentRow = $lastSentRes->fetch_assoc()) {
+            $lastSentTs = strtotime((string)($lastSentRow['last_sent'] ?? ''));
+            if ($lastSentTs !== false) {
+                $overdueLastSent[(int)$lastSentRow['record_id']] = $lastSentTs;
+            }
+        }
+    }
+}
+
+/** Remind cell state: [state 'idle'|'sent', button label, status line]. */
+function overdue_remind_view(?int $lastSentTs): array {
+    if ($lastSentTs === null) {
+        return ['idle', 'Remind', 'Not reminded yet'];
+    }
+    if ($lastSentTs > time() - 86400) {
+        // Inside the 24-hour cooldown: the server would answer "cooldown".
+        $day = date('Y-m-d', $lastSentTs) === date('Y-m-d') ? 'today' : 'yesterday';
+        return ['sent', 'Sent', 'Sent ' . $day . ', ' . date('g:i A', $lastSentTs)];
+    }
+    $dayLabel = date('Y', $lastSentTs) === date('Y') ? date('M j', $lastSentTs) : date('M j, Y', $lastSentTs);
+    return ['idle', 'Remind', 'Last sent ' . $dayLabel];
+}
+
 $searchLogsEnabled = table_exists($conn, 'search_logs');
 $topSearchRows = [];
 $searchKeywordLabels = [];
@@ -913,7 +949,7 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
         </div>
 
         <div class="table-wrap compact-table-wrap overdue-table-wrap">
-            <table class="data-table insight-table overdue-preview-table<?= $finesOn ? '' : ' overdue-preview-table-no-fine' ?>">
+            <table class="data-table insight-table overdue-preview-table<?= $finesOn ? '' : ' overdue-preview-table-no-fine' ?>" data-today="<?= htmlspecialchars(date('Y-m-d')) ?>">
                 <thead>
                     <tr>
                         <th>Name</th>
@@ -939,15 +975,26 @@ $chartJson = json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | 
                                 <td><?= htmlspecialchars((string)($row['title'] ?? 'Unknown Book')) ?></td>
                                 <td><?= number_format((int)($row['days_overdue'] ?? 0)) ?>d</td>
                                 <?php if ($finesOn): ?><td>PHP <?= number_format((float)($row['fine'] ?? 0), 2) ?></td><?php endif; ?>
+                                <?php
+                                    $remindRecordId = (int)($row['record_id'] ?? 0);
+                                    [$remindState, $remindLabel, $remindStatus] = overdue_remind_view($overdueLastSent[$remindRecordId] ?? null);
+                                    $remindIcon = $remindState === 'sent'
+                                        ? '<path d="m5.5 12.5 4.2 4.2 8.8-9.4"/>'
+                                        : '<rect x="3.5" y="5.5" width="17" height="13" rx="2.4"/><path d="m4.5 7.5 7.5 5.5 7.5-5.5"/>';
+                                ?>
                                 <td class="overdue-action-col">
-                                    <button
-                                        type="button"
-                                        class="btn-status activate overdue-reminder-btn"
-                                        data-record-id="<?= (int)($row['record_id'] ?? 0) ?>"
-                                        data-user-id="<?= (int)($row['user_id'] ?? 0) ?>"
-                                        title="Send email reminder">
-                                        Send Reminder
-                                    </button>
+                                    <div class="od-remind" data-state="<?= $remindState ?>">
+                                        <button
+                                            type="button"
+                                            class="od-remind-btn"
+                                            data-record-id="<?= $remindRecordId ?>"
+                                            data-user-id="<?= (int)($row['user_id'] ?? 0) ?>"
+                                            aria-label="Send overdue reminder email to <?= htmlspecialchars((string)($row['borrower'] ?? 'Unknown User')) ?>"
+                                            title="Send email reminder"<?= $remindState === 'sent' ? ' disabled' : '' ?>>
+                                            <svg class="od-remind-ico" viewBox="0 0 24 24" aria-hidden="true"><?= $remindIcon ?></svg><span class="od-remind-label"><?= $remindLabel ?></span>
+                                        </button>
+                                        <small class="od-remind-status" aria-live="polite"><?= htmlspecialchars($remindStatus) ?></small>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
