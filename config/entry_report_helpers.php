@@ -24,10 +24,15 @@ const ENTRY_REPORT_NOT_SPECIFIED = 'Not specified';
  * so the page can say so instead of showing zeros.
  */
 function entry_report_fetch_rows(mysqli $conn, string $dateFrom, string $dateTo): ?array {
+    // Junior/Senior High students count under their level in "Entries by
+    // Course" (they have no program); College students and faculty under
+    // their program as before. The level is the one stored at scan time,
+    // else the account's.
+    $courseExpr = "COALESCE(" . library_card_school_level_label_sql('COALESCE(e.school_level, u.school_level)') . ", p.program_name)";
     try {
         $stmt = $conn->prepare(
             "SELECT HOUR(e.created_at) AS hour_of_day,
-                    p.program_name,
+                    {$courseExpr} AS program_name,
                     d.department_name,
                     COALESCE(e.year_level, u.year_level) AS entry_year,
                     COALESCE(e.gender, u.gender) AS entry_gender,
@@ -37,7 +42,7 @@ function entry_report_fetch_rows(mysqli $conn, string $dateFrom, string $dateTo)
              LEFT JOIN programs p ON p.program_id = COALESCE(e.program_id, u.program_id)
              LEFT JOIN departments d ON d.department_id = COALESCE(e.department_id, u.department_id)
              WHERE e.created_at >= ? AND e.created_at < DATE_ADD(?, INTERVAL 1 DAY)
-             GROUP BY hour_of_day, p.program_name, d.department_name, entry_year, entry_gender"
+             GROUP BY hour_of_day, {$courseExpr}, d.department_name, entry_year, entry_gender"
         );
         $stmt->bind_param('ss', $dateFrom, $dateTo);
         $stmt->execute();

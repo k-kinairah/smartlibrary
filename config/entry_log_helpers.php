@@ -28,10 +28,11 @@ function entry_log_scan(mysqli $conn, string $rawId, int $scannedByUserId): arra
     }
 
     $stmt = $conn->prepare(
-        // program_name can now hold a faculty/staff department (department first, else program).
+        // program_name can now hold a faculty/staff department (department
+        // first), else a Junior/Senior High student's level, else the program.
         "SELECT u.user_id, u.user_number, u.first_name, u.last_name, u.role, u.status,
-                u.program_id, u.department_id, u.year_level, u.gender,
-                COALESCE(NULLIF(d.department_name, ''), p.program_name, '') AS program_name
+                u.program_id, u.department_id, u.school_level, u.year_level, u.gender,
+                COALESCE(NULLIF(d.department_name, ''), " . library_card_school_level_label_sql('u.school_level') . ", p.program_name, '') AS program_name
          FROM library_users u
          LEFT JOIN programs p ON p.program_id = u.program_id
          LEFT JOIN departments d ON d.department_id = u.department_id
@@ -87,19 +88,20 @@ function entry_log_scan(mysqli $conn, string $rawId, int $scannedByUserId): arra
     $role = (string)$user['role'];
     $programId = $user['program_id'] !== null ? (int)$user['program_id'] : null;
     $departmentId = $user['department_id'] !== null ? (int)$user['department_id'] : null;
+    $schoolLevel = $user['school_level'] !== null ? (string)$user['school_level'] : null;
     $yearLevel = $user['year_level'] !== null ? (int)$user['year_level'] : null;
     $gender = $user['gender'];
     $storedNumber = (string)$user['user_number'];
 
     $stmt = $conn->prepare(
         "INSERT INTO library_entry_logs (
-            user_id, user_number, account_type, program_id, department_id, year_level, gender, scanned_by_user_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+            user_id, user_number, account_type, program_id, department_id, school_level, year_level, gender, scanned_by_user_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
     );
     if (!$stmt) {
         return ['status' => 'error'] + $person;
     }
-    $stmt->bind_param('issiiisi', $userId, $storedNumber, $role, $programId, $departmentId, $yearLevel, $gender, $scannedByUserId);
+    $stmt->bind_param('issiisisi', $userId, $storedNumber, $role, $programId, $departmentId, $schoolLevel, $yearLevel, $gender, $scannedByUserId);
     $ok = $stmt->execute();
     $stmt->close();
     if (!$ok) {

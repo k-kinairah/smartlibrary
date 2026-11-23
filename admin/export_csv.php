@@ -19,6 +19,7 @@ if (!smartlib_active_staff_session($conn)) {
 }
 require_once '../config/borrow_fine_rules.php';
 require_once __DIR__ . '/includes/top_borrowers.php';
+require_once '../config/library_card_helpers.php';
 
 function export_csv_fail(string $message, int $statusCode = 404): void {
     http_response_code($statusCode);
@@ -145,7 +146,8 @@ $exports = [
                     COALESCE(u.first_name, '') AS first_name,
                     COALESCE(u.last_name, '') AS last_name,
                     COALESCE(u.email, '') AS email,
-                    COALESCE(p.program_name, '') AS program,
+                    -- Junior/Senior High students: their level (they have no program)
+                    COALESCE(" . library_card_school_level_label_sql('u.school_level') . ", p.program_name, '') AS program,
                     COALESCE(d.department_name, '') AS department,
                     COALESCE(u.role, '') AS role,
                     COALESCE(u.status, '') AS status,

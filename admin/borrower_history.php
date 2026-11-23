@@ -2,6 +2,7 @@
 <?php
 require_once '../config/db_connect.php';
 require_once '../config/borrow_fine_rules.php';
+require_once '../config/library_card_helpers.php';
 // Overdue fines can be off (Settings, the default): then no amount shows.
 $finesOn = smartlib_fines_enabled($conn);
 
@@ -51,11 +52,12 @@ if ($userId > 0) {
     sync_overdue_status_and_fines($conn, $userId);
 
     $userStmt = $conn->prepare(
-        // program_name can now hold a faculty/staff department (department first,
-        // else program). Left NULL when neither, so the page's "General
-        // Collection" fallback still shows, as before.
+        // program_name can now hold a faculty/staff department (department first),
+        // else a Junior/Senior High student's level, else program. Left NULL
+        // when none, so the page's "General Collection" fallback still shows,
+        // as before.
         "SELECT u.user_id, u.user_number, u.first_name, u.last_name, u.email, u.role, u.status,
-                COALESCE(NULLIF(d.department_name, ''), p.program_name) AS program_name
+                COALESCE(NULLIF(d.department_name, ''), " . library_card_school_level_label_sql('u.school_level') . ", p.program_name) AS program_name
          FROM library_users u
          LEFT JOIN programs p ON p.program_id = u.program_id
          LEFT JOIN departments d ON d.department_id = u.department_id

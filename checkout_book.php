@@ -3,6 +3,7 @@ session_start();
 require 'config/db_connect.php';
 require_once 'config/borrow_fine_rules.php';
 require_once 'config/loan_policy.php';
+require_once 'config/library_card_helpers.php';
 
 header('Content-Type: application/json');
 
@@ -177,11 +178,13 @@ try {
     $courseLabel = 'Course';
 
     $userStmt = $conn->prepare(
-        // program_name can now hold a faculty/staff department (department first, else program).
+        // program_name can now hold a faculty/staff department (department
+        // first), else a Junior/Senior High student's level, else the program.
         "SELECT CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) AS full_name,
                 COALESCE(u.user_number, '') AS user_number,
-                COALESCE(NULLIF(d.department_name, ''), p.program_name, '') AS program_name,
-                COALESCE(u.role, '') AS role
+                COALESCE(NULLIF(d.department_name, ''), " . library_card_school_level_label_sql('u.school_level') . ", p.program_name, '') AS program_name,
+                COALESCE(u.role, '') AS role,
+                COALESCE(u.school_level, '') AS school_level
          FROM library_users u
          LEFT JOIN programs p ON p.program_id = u.program_id
          LEFT JOIN departments d ON d.department_id = u.department_id
@@ -208,7 +211,16 @@ try {
             }
 
             $course = trim((string)($u['program_name'] ?? ''));
-            $courseLabel = strtolower((string)($u['role'] ?? '')) === 'faculty' ? 'Department' : 'Course';
+            $userRoleLower = strtolower((string)($u['role'] ?? ''));
+            $userLevel = (string)($u['school_level'] ?? '');
+            if ($userRoleLower === 'faculty') {
+                $courseLabel = 'Department';
+            } elseif ($userRoleLower === 'student' && ($userLevel === 'jhs' || $userLevel === 'shs')) {
+                // "Level: Junior High School" / "Level: Senior High School".
+                $courseLabel = 'Level';
+            } else {
+                $courseLabel = 'Course';
+            }
         }
     }
 

@@ -4,6 +4,7 @@ require 'config/db_connect.php';
 require_once 'config/borrow_fine_rules.php';
 require_once 'config/loan_policy.php';
 require_once 'config/book_cover.php';
+require_once 'config/library_card_helpers.php';
 
 header('Content-Type: application/json');
 
@@ -75,9 +76,10 @@ sync_overdue_status_and_fines($conn, $userId);
 $finesOn = smartlib_fines_enabled($conn);
 
 $userStmt = $conn->prepare(
-    // program_name can now hold a faculty/staff department (department first, else program).
+    // program_name can now hold a faculty/staff department (department first),
+    // else a Junior/Senior High student's level, else the program.
     "SELECT u.user_id, u.user_number, u.first_name, u.last_name, u.role,
-            COALESCE(NULLIF(d.department_name, ''), p.program_name, '') AS program_name
+            COALESCE(NULLIF(d.department_name, ''), " . library_card_school_level_label_sql('u.school_level') . ", p.program_name, '') AS program_name
      FROM library_users u
      LEFT JOIN programs p ON p.program_id = u.program_id
      LEFT JOIN departments d ON d.department_id = u.department_id

@@ -15,6 +15,8 @@
  *    the same expression admin/reports.php filters on.
  */
 
+require_once __DIR__ . '/../../config/library_card_helpers.php';
+
 if (!function_exists('smartlib_top_borrowers_date')) {
     function smartlib_top_borrowers_date(?string $value): ?string {
         $value = trim((string)$value);
@@ -54,8 +56,9 @@ if (!function_exists('smartlib_top_borrowers')) {
                        COALESCE(u.user_number, '') AS borrower_number,
                        TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) AS borrower_name,
                        u.role,
-                       -- program_name can now hold a faculty/staff department (department first, else program)
-                       COALESCE(NULLIF(d.department_name, ''), p.program_name, '') AS program_name,
+                       -- program_name can now hold a faculty/staff department (department first),
+                       -- else a Junior/Senior High student's level, else the program
+                       COALESCE(NULLIF(d.department_name, ''), " . library_card_school_level_label_sql('u.school_level') . ", p.program_name, '') AS program_name,
                        COUNT(br.record_id) AS borrow_count,
                        MAX({$dateExpr}) AS last_borrowed
                 FROM borrow_records br
@@ -63,7 +66,7 @@ if (!function_exists('smartlib_top_borrowers')) {
                 LEFT JOIN programs p ON p.program_id = u.program_id
                 LEFT JOIN departments d ON d.department_id = u.department_id
                 WHERE " . implode(' AND ', $where) . "
-                GROUP BY u.user_id, u.user_number, u.first_name, u.last_name, u.role, p.program_name, d.department_name
+                GROUP BY u.user_id, u.user_number, u.first_name, u.last_name, u.role, p.program_name, d.department_name, u.school_level
                 HAVING COUNT(br.record_id) > 0
                 ORDER BY borrow_count DESC, last_borrowed DESC, borrower_name ASC, u.user_id ASC
                 LIMIT {$limit}";
