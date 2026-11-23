@@ -88,20 +88,35 @@ function library_card_get_programs(mysqli $conn): array {
 
 /**
  * Faculty/staff departments (database/faculty_departments_setup.sql), in the
- * school's own order. Returns [] if the table is missing, so the sign-up page
- * still renders (faculty then cannot pick one and get the "choose" error).
+ * school's own order. By default only ACTIVE ones (the sign-up dropdown and
+ * Manage Users "Add User"); departments retired by
+ * database/departments_update_nov_2026.sql stay in the table so people
+ * already registered under one keep it, and $includeRetired = true lists
+ * them too. Until that file has added is_active, every department counts as
+ * active. Returns [] if the table is missing, so the sign-up page still
+ * renders (faculty then cannot pick one and get the "choose" error).
  */
-function library_card_get_departments(mysqli $conn): array {
-    $departments = [];
-    try {
-        $res = $conn->query("SELECT department_id, department_name FROM departments ORDER BY sort_order ASC, department_name ASC");
-        while ($res && ($row = $res->fetch_assoc())) {
+function library_card_get_departments(mysqli $conn, bool $includeRetired = false): array {
+    $queries = $includeRetired
+        ? []
+        : ["SELECT department_id, department_name FROM departments WHERE is_active = 1 ORDER BY sort_order ASC, department_name ASC"];
+    $queries[] = "SELECT department_id, department_name FROM departments ORDER BY sort_order ASC, department_name ASC";
+    foreach ($queries as $sql) {
+        try {
+            $res = $conn->query($sql);
+        } catch (Throwable $e) {
+            continue; // is_active missing: fall back to every department
+        }
+        if (!$res) {
+            continue;
+        }
+        $departments = [];
+        while ($row = $res->fetch_assoc()) {
             $departments[(int)$row['department_id']] = (string)$row['department_name'];
         }
-    } catch (Throwable $e) {
-        return [];
+        return $departments;
     }
-    return $departments;
+    return [];
 }
 
 function library_card_normalize_email(string $email): string {

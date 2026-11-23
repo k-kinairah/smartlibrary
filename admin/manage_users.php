@@ -84,8 +84,11 @@ $editUserData = [
 ];
 
 // Faculty/staff departments (database/faculty_departments_setup.sql), in the
-// school's order. Faculty get a department instead of a program.
+// school's order. Faculty get a department instead of a program. Add User
+// offers only active departments; Edit User also keeps a retired one the
+// person already has (database/departments_update_nov_2026.sql).
 $departmentsList = library_card_get_departments($conn);
+$allDepartmentsList = library_card_get_departments($conn, true);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_user'])) {
     if (!smartlib_csrf_verify('manage_users_csrf', $_POST['csrf_token'] ?? '')) {
@@ -215,7 +218,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
     $programIdRaw = trim((string)($_POST['edit_program_id'] ?? ''));
     $programId = ctype_digit($programIdRaw) ? (int)$programIdRaw : null;
     $departmentIdRaw = trim((string)($_POST['edit_department_id'] ?? ''));
-    $departmentId = ctype_digit($departmentIdRaw) && isset($departmentsList[(int)$departmentIdRaw]) ? (int)$departmentIdRaw : null;
+    // Active departments, plus a retired one only if this person already has it
+    // (so saving the form never blanks or changes it).
+    $currentDepartmentId = null;
+    $editUserIdForDept = (int)($_POST['edit_user_id'] ?? 0);
+    if ($editUserIdForDept > 0) {
+        $curDeptStmt = $conn->prepare("SELECT department_id FROM library_users WHERE user_id = ? LIMIT 1");
+        if ($curDeptStmt) {
+            $curDeptStmt->bind_param('i', $editUserIdForDept);
+            $curDeptStmt->execute();
+            $curDeptRow = $curDeptStmt->get_result()->fetch_assoc();
+            $curDeptStmt->close();
+            $currentDepartmentId = isset($curDeptRow['department_id']) ? (int)$curDeptRow['department_id'] : null;
+        }
+    }
+    $departmentId = null;
+    if (ctype_digit($departmentIdRaw)) {
+        $postedDepartmentId = (int)$departmentIdRaw;
+        if (isset($departmentsList[$postedDepartmentId])
+            || ($postedDepartmentId === $currentDepartmentId && isset($allDepartmentsList[$postedDepartmentId]))) {
+            $departmentId = $postedDepartmentId;
+        }
+    }
     $schoolLevelRaw = trim((string)($_POST['edit_school_level'] ?? ''));
     $schoolLevel = isset(LIBRARY_CARD_SCHOOL_LEVELS[$schoolLevelRaw]) ? $schoolLevelRaw : null;
     $role = strtolower(trim((string)($_POST['edit_role'] ?? 'student')));
@@ -864,10 +888,19 @@ require 'layout_top.php';
                 <?php endforeach; ?>
             </select>
 
-            <?php $editIsFaculty = ($editUserData['role'] ?? '') === 'faculty'; ?>
+            <?php
+            $editIsFaculty = ($editUserData['role'] ?? '') === 'faculty';
+            // Active departments, plus the person's own retired one (selected).
+            $editCurrentDepartmentId = (int)($editUserData['department_id'] ?? 0);
+            $editDepartmentOptions = array_filter(
+                $allDepartmentsList,
+                static fn($did) => isset($departmentsList[$did]) || (int)$did === $editCurrentDepartmentId,
+                ARRAY_FILTER_USE_KEY
+            );
+            ?>
             <select name="edit_department_id"<?= $editIsFaculty ? '' : ' hidden' ?>>
                 <option value="">No Department</option>
-                <?php foreach ($departmentsList as $did => $dname): ?>
+                <?php foreach ($editDepartmentOptions as $did => $dname): ?>
                     <option value="<?= (int)$did ?>" <?= (int)($editUserData['department_id'] ?? 0) === (int)$did ? 'selected' : '' ?>><?= htmlspecialchars((string)$dname) ?></option>
                 <?php endforeach; ?>
             </select>

@@ -21,6 +21,8 @@ SELECT n.program_name
 FROM (
   SELECT 'BS Radiologic Technology' AS program_name
   UNION ALL SELECT 'BS Accountancy'
+  UNION ALL SELECT 'BS Elementary Education'
+  UNION ALL SELECT 'BS Secondary Education'
 ) AS n
 WHERE NOT EXISTS (
   SELECT 1 FROM programs p WHERE p.program_name = n.program_name
