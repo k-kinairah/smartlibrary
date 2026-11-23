@@ -13676,3 +13676,722 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     width: 128px !important; /* dark layout; the light layout uses the % widths above */
     text-align: center !important;
 }
+
+/* ============================================================
+   Add Book window ("Cover preview" layout), admin/manage_books.php
+   #bookModal only. A cover preview on the left, grouped fields on the
+   right, a body that scrolls inside the window and a footer that stays
+   visible. Everything is scoped to #bookModal and the ab- classes, so the
+   Edit Book window and every other page are untouched. Base = dark
+   (other dark variants); [data-theme="light"] below; pine dark in
+   admin_palette_green.css.
+   ============================================================ */
+#bookModal .ab-card {
+    --ab-req: #d89a2b;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: min(728px, 96vw);
+    max-height: 92vh;
+    border-radius: 24px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #11302a 0%, #0a1d18 100%);
+    border: 1px solid rgba(232, 181, 74, 0.4);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55);
+    color: #eef4f0;
+    animation: modalCardIn 0.2s ease;
+}
+
+#bookModal .ab-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 22px 16px;
+    flex: 0 0 auto;
+}
+
+#bookModal .ab-chip {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    background: rgba(232, 181, 74, 0.14);
+    color: #f7d98f;
+}
+
+#bookModal .ab-chip svg,
+#bookModal .ab-close svg,
+#bookModal .ab-step svg,
+#bookModal .ab-btn-icon svg {
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+#bookModal .ab-chip svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 1.8;
+}
+
+#bookModal .ab-chip svg *,
+#bookModal .ab-btn-icon svg * {
+    fill: none;
+    stroke: currentColor;
+}
+
+#bookModal .ab-head-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+#bookModal .ab-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: #eef4f0 !important;
+}
+
+#bookModal .ab-subtitle {
+    margin: 2px 0 0;
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 1.35;
+    color: #bccdc4;
+}
+
+#bookModal .ab-close {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border-radius: 999px;
+    border: 1px solid rgba(120, 200, 175, 0.28);
+    background: rgba(255, 255, 255, 0.04);
+    color: #d6e4dd;
+    cursor: pointer;
+    transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+#bookModal .ab-close svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2.2;
+}
+
+#bookModal .ab-close:hover {
+    background: rgba(224, 90, 90, 0.16);
+    border-color: rgba(224, 90, 90, 0.5);
+    color: #ffc2c2;
+}
+
+#bookModal .ab-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    margin: 0;
+}
+
+#bookModal .ab-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: grid;
+    grid-template-columns: 196px minmax(0, 1fr);
+    gap: 22px;
+    padding: 4px 22px 20px;
+}
+
+/* ---------- cover preview ---------- */
+#bookModal .ab-preview {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding-top: 2px;
+}
+
+#bookModal .ab-cover {
+    width: 176px;
+    height: 264px;
+    border-radius: 7px;
+    overflow: hidden;
+    flex: 0 0 auto;
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+#bookModal .ab-cover img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+#bookModal .ab-preview-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+#bookModal .ab-pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: rgba(232, 181, 74, 0.14);
+    color: #f7d98f;
+}
+
+#bookModal .ab-caption {
+    margin: 0;
+    font-size: 11.5px;
+    font-weight: 500;
+    line-height: 1.45;
+    text-align: center;
+    color: #bccdc4;
+}
+
+/* ---------- field groups ---------- */
+#bookModal .ab-fields {
+    min-width: 0;
+}
+
+#bookModal .ab-alert {
+    margin: 0 0 14px;
+    padding: 9px 12px;
+    border-radius: 12px;
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: 1.4;
+    background: rgba(224, 90, 90, 0.14);
+    border: 1px solid rgba(224, 90, 90, 0.5);
+    color: #ffc9c9;
+}
+
+#bookModal .ab-group {
+    margin: 0 0 18px;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+}
+
+#bookModal .ab-group:last-child {
+    margin-bottom: 0;
+}
+
+/* Small-caps label followed by a hairline. A floated legend lays out
+   like an ordinary block, so it can be a flex row. */
+#bookModal .ab-group-label {
+    float: left;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 10px;
+    padding: 0;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.3;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #e8b54a;
+}
+
+#bookModal .ab-group-label::after {
+    content: "";
+    flex: 1 1 auto;
+    height: 1px;
+    background: rgba(120, 200, 175, 0.2);
+}
+
+#bookModal .ab-grid {
+    clear: both;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 14px;
+}
+
+#bookModal .ab-span-2 {
+    grid-column: 1 / -1;
+}
+
+#bookModal .ab-field {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+#bookModal .ab-label {
+    display: flex;
+    align-items: center;
+    margin: 0 0 5px;
+    font-size: 11.5px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #bccdc4;
+}
+
+#bookModal .ab-req {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-left: 5px;
+    border-radius: 50%;
+    background: var(--ab-req);
+    flex: 0 0 auto;
+}
+
+#bookModal .ab-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+#bookModal .ab-hint {
+    margin-top: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: #bccdc4;
+}
+
+/* ---------- inputs ---------- */
+#bookModal .ab-input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 40px;
+    min-height: 40px;
+    margin: 0;
+    padding: 0 13px !important;
+    border-radius: 13px !important;
+    border: 1px solid rgba(120, 200, 175, 0.22) !important;
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    color: #eef4f0 !important;
+    font: inherit;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    line-height: 1.2;
+    box-shadow: none !important;
+    filter: none !important;
+    transition: border-color 0.16s ease, background-color 0.16s ease;
+}
+
+#bookModal .ab-input::placeholder {
+    color: #9fb5ab !important;
+    opacity: 1;
+    font-weight: 500;
+}
+
+#bookModal input.ab-input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+#bookModal input.ab-input[type="number"]::-webkit-inner-spin-button,
+#bookModal input.ab-input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+#bookModal .ab-select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    /* Room for the text: the chevron (15px at 11px from the edge) needs
+       30px, and a hair of negative tracking lets program names such as
+       "BS Business Administration" fit in the two-column width. */
+    padding-right: 30px !important;
+    letter-spacing: -0.01em;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23e8b54a' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 11px center !important;
+    background-size: 15px !important;
+}
+
+#bookModal .ab-select option {
+    color: #1f3b2e;
+    background: #ffffff;
+}
+
+#bookModal .ab-input:focus,
+#bookModal .ab-input:focus-visible,
+#bookModal .ab-step-input:focus-visible,
+#bookModal .ab-close:focus-visible,
+#bookModal .ab-step:focus-visible,
+#bookModal .ab-btn:focus-visible {
+    outline: 2px solid #6ed6ba !important;
+    outline-offset: 2px !important;
+}
+
+/* ---------- copies ---------- */
+#bookModal .ab-copies {
+    clear: both;
+    display: grid;
+    grid-template-columns: 118px minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+}
+
+#bookModal .ab-stepper {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    width: 118px;
+    height: 40px;
+    padding: 0 5px;
+    border-radius: 13px;
+    border: 1px solid rgba(120, 200, 175, 0.22);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+#bookModal .ab-step {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border-radius: 9px;
+    border: 1px solid rgba(120, 200, 175, 0.28);
+    background: rgba(120, 200, 175, 0.1);
+    color: #eef4f0;
+    cursor: pointer;
+}
+
+#bookModal .ab-step svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2.4;
+}
+
+#bookModal .ab-step:hover {
+    background: rgba(120, 200, 175, 0.2);
+}
+
+#bookModal .ab-step-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    height: 30px;
+    margin: 0;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    color: #eef4f0 !important;
+    font: inherit;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    text-align: center;
+    box-shadow: none !important;
+}
+
+#bookModal .ab-accession-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 10px;
+}
+
+/* ---------- footer ---------- */
+#bookModal .ab-foot {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 22px;
+    border-top: 1px solid rgba(120, 200, 175, 0.16);
+    background: rgba(0, 0, 0, 0.12);
+}
+
+#bookModal .ab-foot-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #bccdc4;
+}
+
+#bookModal .ab-foot-note .ab-req {
+    margin-left: 0;
+}
+
+#bookModal .ab-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#bookModal .ab-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    height: 40px;
+    padding: 0 18px;
+    border-radius: 999px;
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, color 0.16s ease;
+}
+
+#bookModal .ab-btn-ghost {
+    border: 1px solid rgba(120, 200, 175, 0.35);
+    background: transparent;
+    color: #dce9e3;
+}
+
+#bookModal .ab-btn-ghost:hover {
+    background: rgba(120, 200, 175, 0.1);
+}
+
+#bookModal .ab-btn-primary {
+    border: 0;
+    background: linear-gradient(180deg, #20846d 0%, #176451 100%);
+    color: #ffffff;
+    box-shadow: 0 8px 20px rgba(23, 100, 81, 0.4);
+}
+
+#bookModal .ab-btn-primary:hover {
+    background: linear-gradient(180deg, #1a7360 0%, #125543 100%);
+}
+
+#bookModal .ab-btn-icon svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+}
+
+/* ---------- light ---------- */
+[data-theme="light"] #bookModal .ab-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f3f8f5 100%);
+    border: 1.5px solid #7ab5a0;
+    box-shadow: 0 24px 56px rgba(20, 52, 42, 0.2), 0 2px 8px rgba(20, 52, 42, 0.08);
+    color: #1f3b2e;
+}
+
+[data-theme="light"] #bookModal .ab-chip {
+    background: linear-gradient(160deg, #e7f3ee 0%, #d4e9e0 100%);
+    color: #1d6149;
+}
+
+[data-theme="light"] #bookModal .ab-title {
+    color: #173a2f !important;
+}
+
+[data-theme="light"] #bookModal .ab-subtitle {
+    color: #4d665d;
+}
+
+[data-theme="light"] #bookModal .ab-close {
+    border-color: #c7ddd3;
+    background: #ffffff;
+    color: #35524a;
+}
+
+[data-theme="light"] #bookModal .ab-close:hover {
+    background: #fdecec;
+    border-color: #e3a5a5;
+    color: #b3232c;
+}
+
+[data-theme="light"] #bookModal .ab-cover {
+    background: #e7efeb;
+    box-shadow: 0 14px 28px rgba(20, 52, 42, 0.22), 0 2px 6px rgba(20, 52, 42, 0.12);
+}
+
+[data-theme="light"] #bookModal .ab-pill {
+    background: rgba(216, 154, 43, 0.16);
+    color: #7a4f05;
+}
+
+[data-theme="light"] #bookModal .ab-caption {
+    color: #4d665d;
+}
+
+[data-theme="light"] #bookModal .ab-alert {
+    background: #fdeeee;
+    border-color: #e6a9ab;
+    color: #9b2226;
+}
+
+[data-theme="light"] #bookModal .ab-group-label {
+    color: #2d6b55;
+}
+
+[data-theme="light"] #bookModal .ab-group-label::after {
+    background: #d3e5dd;
+}
+
+[data-theme="light"] #bookModal .ab-label,
+[data-theme="light"] #bookModal .ab-foot-note,
+[data-theme="light"] #bookModal .ab-hint {
+    color: #35524a;
+}
+
+[data-theme="light"] #bookModal .ab-input {
+    background-color: #ffffff !important;
+    border-color: #c7ddd3 !important;
+    color: #1f3b2e !important;
+}
+
+[data-theme="light"] #bookModal input.ab-input:not(:placeholder-shown),
+[data-theme="light"] #bookModal select.ab-input:not(:has(option[value=""]:checked)) {
+    border-color: #a9cbbd !important;
+}
+
+[data-theme="light"] #bookModal .ab-input::placeholder {
+    color: #5d726a !important;
+}
+
+[data-theme="light"] #bookModal .ab-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232d6b55' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") !important;
+}
+
+[data-theme="light"] #bookModal .ab-input:focus,
+[data-theme="light"] #bookModal .ab-input:focus-visible,
+[data-theme="light"] #bookModal .ab-step-input:focus-visible,
+[data-theme="light"] #bookModal .ab-close:focus-visible,
+[data-theme="light"] #bookModal .ab-step:focus-visible,
+[data-theme="light"] #bookModal .ab-btn:focus-visible {
+    outline-color: #1d6149 !important;
+}
+
+[data-theme="light"] #bookModal .ab-stepper {
+    background: #ffffff;
+    border-color: #a9cbbd;
+}
+
+[data-theme="light"] #bookModal .ab-step {
+    background: #eaf4f0;
+    border-color: #c7ddd3;
+    color: #1d6149;
+}
+
+[data-theme="light"] #bookModal .ab-step:hover {
+    background: #d9ece4;
+}
+
+[data-theme="light"] #bookModal .ab-step-input {
+    background: transparent !important;
+    color: #173a2f !important;
+}
+
+[data-theme="light"] #bookModal .ab-foot {
+    border-top-color: #d3e5dd;
+    background: #f3f8f5;
+}
+
+[data-theme="light"] #bookModal .ab-btn-ghost {
+    border-color: #a9cbbd;
+    background: #ffffff;
+    color: #2d6b55;
+}
+
+[data-theme="light"] #bookModal .ab-btn-ghost:hover {
+    background: #eef6f2;
+}
+
+[data-theme="light"] #bookModal .ab-btn-primary {
+    background: linear-gradient(180deg, #2f8466 0%, #1d6149 100%);
+    box-shadow: 0 8px 18px rgba(29, 97, 73, 0.28);
+}
+
+[data-theme="light"] #bookModal .ab-btn-primary:hover {
+    background: linear-gradient(180deg, #276f56 0%, #17503c 100%);
+}
+
+/* ---------- smaller screens ---------- */
+/* Below 760px: the preview becomes a compact row above the fields. */
+@media (max-width: 759.98px) {
+    #bookModal .ab-body {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+        padding: 2px 18px 18px;
+    }
+
+    #bookModal .ab-head {
+        padding: 18px 18px 14px;
+    }
+
+    #bookModal .ab-foot {
+        padding: 12px 18px;
+    }
+
+    #bookModal .ab-preview {
+        position: static;
+        flex-direction: row;
+        align-items: center;
+        gap: 14px;
+        padding-top: 0;
+    }
+
+    #bookModal .ab-cover {
+        width: 72px;
+        height: 108px;
+        border-radius: 5px;
+    }
+
+    #bookModal .ab-preview-text {
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    #bookModal .ab-caption {
+        text-align: left;
+    }
+}
+
+/* Under 520px: one column. */
+@media (max-width: 519.98px) {
+    #bookModal .ab-grid,
+    #bookModal .ab-copies {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    #bookModal .ab-span-2 {
+        grid-column: auto;
+    }
+
+    #bookModal .ab-foot {
+        flex-wrap: wrap;
+    }
+
+    #bookModal .ab-actions {
+        margin-left: auto;
+    }
+}

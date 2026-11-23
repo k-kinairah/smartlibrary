@@ -138,11 +138,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_book'])) {
     $programId = (int)($_POST['program_id'] ?? 0);
 
     $locationSection = trim((string)($_POST['location_section'] ?? ''));
-    $locationClass = trim((string)($_POST['location_class'] ?? ''));
-    $locationShelf = trim((string)($_POST['location_shelf'] ?? ''));
-    $locationRow = trim((string)($_POST['location_row'] ?? ''));
-    $locationPosition = trim((string)($_POST['location_position'] ?? ''));
     $callNumber = trim((string)($_POST['call_number'] ?? ''));
+    // The Add Book window asks for Section and Call Number only. The class
+    // letter comes from the call number's first letter when that letter is
+    // a Library of Congress class we list (e.g. "HF5635 .B35 2019" -> H);
+    // E and F share the list's "E/F" entry. Otherwise (a digit, a letter
+    // we don't list) it stays empty. Shelf, row and position are left
+    // empty; they can still be set later in the Edit Book window.
+    $callNumberFirstLetter = strtoupper(substr($callNumber, 0, 1));
+    if ($callNumberFirstLetter === 'E' || $callNumberFirstLetter === 'F') {
+        $callNumberFirstLetter = 'E/F';
+    }
+    $locationClass = ($callNumberFirstLetter !== '' && isset($libraryClassLabels[$callNumberFirstLetter]))
+        ? $callNumberFirstLetter
+        : '';
+    $locationShelf = '';
+    $locationRow = '';
+    $locationPosition = '';
 
     $copyCountRaw = trim((string)($_POST['copy_count'] ?? ''));
     $copyCount = 0;
@@ -1609,116 +1621,172 @@ require 'layout_top.php';
     </div>
 </section>
 
-<div class="overlay-modal<?= $openAddBookModal ? ' show' : '' ?>" id="bookModal" aria-hidden="<?= $openAddBookModal ? 'false' : 'true' ?>">
-    <div class="overlay-card glass-card">
-        <div class="panel-head">
-            <h2><span class="modal-icon" aria-hidden="true"><?= admin_icon('books') ?></span>Add Book</h2>
-            <button class="icon-close" onclick="closeBookModal()">&times;</button>
+<?php
+    // Add Book window ("Cover preview" layout, ab- classes in admin.css and
+    // admin_palette_green.css; behaviour in manage_books_admin.js).
+    $initialCopyCountRaw = trim((string)($addBookForm['copy_count'] ?? ''));
+    $initialCopyCount = '';
+    if ($initialCopyCountRaw !== '' && ctype_digit($initialCopyCountRaw)) {
+        $tmpCount = (int)$initialCopyCountRaw;
+        if ($tmpCount >= 1 && $tmpCount <= 200) {
+            $initialCopyCount = (string)$tmpCount;
+        }
+    }
+    // A fresh window starts at 1 copy (the stepper's minimum); a window
+    // reopened after an error keeps what was sent (blank if it was invalid).
+    if (!$openAddBookModal && $initialCopyCountRaw === '') {
+        $initialCopyCount = '1';
+    }
+    $renderAccessionCount = $initialCopyCount !== '' ? (int)$initialCopyCount : 0;
+    $initialAccessions = is_array($addBookForm['accession_numbers'] ?? null) ? $addBookForm['accession_numbers'] : [];
+    $addBookError = ($openAddBookModal && ($flash['type'] ?? '') === 'error') ? (string)($flash['message'] ?? '') : '';
+?>
+<div class="overlay-modal ab-modal<?= $openAddBookModal ? ' show' : '' ?>" id="bookModal" aria-hidden="<?= $openAddBookModal ? 'false' : 'true' ?>">
+    <div class="ab-card" role="dialog" aria-modal="true" aria-labelledby="abTitle" aria-describedby="abSubtitle">
+        <div class="ab-head">
+            <span class="ab-chip" aria-hidden="true"><?= admin_icon('books') ?></span>
+            <div class="ab-head-text">
+                <h2 class="ab-title" id="abTitle">Add Book</h2>
+                <p class="ab-subtitle" id="abSubtitle">Add a title to the catalog</p>
+            </div>
+            <button type="button" class="ab-close" onclick="closeBookModal()" aria-label="Close">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+            </button>
         </div>
 
-        <form method="POST" class="form-grid book-form-grid">
-            <?php
-                $initialCopyCountRaw = trim((string)($addBookForm['copy_count'] ?? ''));
-                $initialCopyCount = '';
-                if ($initialCopyCountRaw !== '' && ctype_digit($initialCopyCountRaw)) {
-                    $tmpCount = (int)$initialCopyCountRaw;
-                    if ($tmpCount >= 1 && $tmpCount <= 200) {
-                        $initialCopyCount = (string)$tmpCount;
-                    }
-                }
-                $renderAccessionCount = $initialCopyCount !== '' ? (int)$initialCopyCount : 0;
-                $initialAccessions = is_array($addBookForm['accession_numbers'] ?? null) ? $addBookForm['accession_numbers'] : [];
-            ?>
+        <form method="POST" class="ab-form" id="addBookForm">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
 
-            <div class="book-form-col book-form-col-inputs">
-                <input type="text" name="title" placeholder="Title" required value="<?= htmlspecialchars((string)($addBookForm['title'] ?? '')) ?>">
-                <input type="text" name="isbn" placeholder="ISBN" value="<?= htmlspecialchars((string)($addBookForm['isbn'] ?? '')) ?>">
-                <input type="text" name="author" placeholder="Author" value="<?= htmlspecialchars((string)($addBookForm['author'] ?? '')) ?>">
-                <input type="text" name="publisher" placeholder="Publisher" value="<?= htmlspecialchars((string)($addBookForm['publisher'] ?? '')) ?>">
-                <input type="number" name="year_published" placeholder="Year" min="1900" max="2100" value="<?= htmlspecialchars((string)($addBookForm['year_published'] ?? '')) ?>">
-                <input type="text" name="call_number" placeholder="Call Number" required value="<?= htmlspecialchars((string)($addBookForm['call_number'] ?? '')) ?>">
-                <input
-                    type="text"
-                    name="copy_count"
-                    id="copyCountInput"
-                    placeholder="Number of Copies"
-                    inputmode="numeric"
-                    autocomplete="off"
-                    required
-                    value="<?= htmlspecialchars($initialCopyCount) ?>">
+            <div class="ab-body">
+                <div class="ab-preview">
+                    <div class="ab-cover">
+                        <img id="abCoverImg" src="book_cover_preview.php?<?= htmlspecialchars(http_build_query(['title' => (string)($addBookForm['title'] ?? ''), 'author' => (string)($addBookForm['author'] ?? ''), 'category_id' => (int)($addBookForm['category_id'] ?? 0)])) ?>" alt="Generated cover preview" width="176" height="264">
+                    </div>
+                    <div class="ab-preview-text">
+                        <span class="ab-pill">Live preview</span>
+                        <p class="ab-caption">Looks up the real cover when you save. Until one is found, this generated cover is shown.</p>
+                    </div>
+                </div>
 
-                <div class="book-accession-block">
-                    <div class="book-accession-head">
-                        <strong>Accession Numbers (per copy)</strong>
-                        <span class="book-accession-hint">Enter one accession number for each copy.</span>
-                    </div>
-                    <div class="book-accession-inputs" id="accessionInputsWrap">
-                        <?php for ($i = 0; $i < $renderAccessionCount; $i++): ?>
-                            <?php $accValue = (string)($initialAccessions[$i] ?? ''); ?>
-                            <input type="text" name="accession_numbers[]" placeholder="Accession #<?= $i + 1 ?>" value="<?= htmlspecialchars($accValue) ?>">
-                        <?php endfor; ?>
-                    </div>
+                <div class="ab-fields">
+                    <?php if ($addBookError !== ''): ?>
+                        <p class="ab-alert" role="alert"><?= htmlspecialchars($addBookError) ?></p>
+                    <?php endif; ?>
+
+                    <fieldset class="ab-group">
+                        <legend class="ab-group-label">Book details</legend>
+                        <div class="ab-grid">
+                            <div class="ab-field ab-span-2">
+                                <label class="ab-label" for="abTitleInput">Title<span class="ab-req" aria-hidden="true"></span></label>
+                                <input class="ab-input" type="text" id="abTitleInput" name="title" placeholder="e.g. Principles of Accounting" required value="<?= htmlspecialchars((string)($addBookForm['title'] ?? '')) ?>">
+                            </div>
+                            <div class="ab-field">
+                                <label class="ab-label" for="abAuthorInput">Author</label>
+                                <input class="ab-input" type="text" id="abAuthorInput" name="author" placeholder="Last name, First name" value="<?= htmlspecialchars((string)($addBookForm['author'] ?? '')) ?>">
+                            </div>
+                            <div class="ab-field">
+                                <label class="ab-label" for="abPublisherInput">Publisher</label>
+                                <input class="ab-input" type="text" id="abPublisherInput" name="publisher" placeholder="Publisher" value="<?= htmlspecialchars((string)($addBookForm['publisher'] ?? '')) ?>">
+                            </div>
+                            <div class="ab-field">
+                                <label class="ab-label" for="abIsbnInput">ISBN</label>
+                                <input class="ab-input" type="text" id="abIsbnInput" name="isbn" placeholder="978…" value="<?= htmlspecialchars((string)($addBookForm['isbn'] ?? '')) ?>">
+                            </div>
+                            <div class="ab-field">
+                                <label class="ab-label" for="abYearInput">Year</label>
+                                <input class="ab-input" type="number" id="abYearInput" name="year_published" placeholder="e.g. 2019" min="1900" max="2100" value="<?= htmlspecialchars((string)($addBookForm['year_published'] ?? '')) ?>">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="ab-group">
+                        <legend class="ab-group-label">Catalog</legend>
+                        <div class="ab-grid">
+                            <div class="ab-field">
+                                <label class="ab-label" for="abCategorySelect">Category</label>
+                                <select class="ab-input ab-select" id="abCategorySelect" name="category_id">
+                                    <option value="">Select Category</option>
+                                    <?php foreach ($categoryOptions as $categoryOption): ?>
+                                        <?php $cid = (int)($categoryOption['category_id'] ?? 0); ?>
+                                        <option value="<?= $cid ?>" <?= (int)($addBookForm['category_id'] ?? 0) === $cid ? 'selected' : '' ?>><?= htmlspecialchars((string)($categoryOption['category_name'] ?? '')) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="ab-field">
+                                <label class="ab-label" for="abProgramSelect">Program</label>
+                                <select class="ab-input ab-select" id="abProgramSelect" name="program_id">
+                                    <option value="">Select Program</option>
+                                    <?php foreach ($programOptions as $programOption): ?>
+                                        <?php $pid = (int)($programOption['program_id'] ?? 0); ?>
+                                        <option value="<?= $pid ?>" <?= (int)($addBookForm['program_id'] ?? 0) === $pid ? 'selected' : '' ?>><?= htmlspecialchars((string)($programOption['program_name'] ?? '')) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="ab-field">
+                                <label class="ab-label" for="abSectionSelect">Section<span class="ab-req" aria-hidden="true"></span></label>
+                                <select class="ab-input ab-select" id="abSectionSelect" name="location_section" required>
+                                    <option value="">Select Section</option>
+                                    <?php foreach (manage_books_section_options($librarySections, (string)($addBookForm['location_section'] ?? '')) as $sec => $secLabel): ?>
+                                        <option value="<?= htmlspecialchars((string)$sec) ?>" <?= ((string)($addBookForm['location_section'] ?? '') === (string)$sec) ? 'selected' : '' ?>><?= htmlspecialchars($secLabel) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="ab-field">
+                                <label class="ab-label" for="abCallNumberInput">Call number<span class="ab-req" aria-hidden="true"></span></label>
+                                <input class="ab-input" type="text" id="abCallNumberInput" name="call_number" placeholder="e.g. HF5635 .B35 2019" required value="<?= htmlspecialchars((string)($addBookForm['call_number'] ?? '')) ?>">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="ab-group">
+                        <legend class="ab-group-label">Copies</legend>
+                        <div class="ab-copies">
+                            <div class="ab-field ab-copies-count">
+                                <label class="ab-label" for="copyCountInput">Copies<span class="ab-req" aria-hidden="true"></span></label>
+                                <div class="ab-stepper">
+                                    <button type="button" class="ab-step" data-step="-1" aria-label="One copy fewer" aria-controls="copyCountInput">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"></path></svg>
+                                    </button>
+                                    <input
+                                        class="ab-step-input"
+                                        type="text"
+                                        name="copy_count"
+                                        id="copyCountInput"
+                                        inputmode="numeric"
+                                        autocomplete="off"
+                                        aria-describedby="abCopiesHint"
+                                        required
+                                        value="<?= htmlspecialchars($initialCopyCount) ?>">
+                                    <button type="button" class="ab-step" data-step="1" aria-label="One copy more" aria-controls="copyCountInput">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12"></path></svg>
+                                    </button>
+                                </div>
+                                <span class="ab-hint" id="abCopiesHint">1 to 200</span>
+                            </div>
+                            <div class="ab-field ab-accessions" role="group" aria-labelledby="abAccessionLabel">
+                                <span class="ab-label" id="abAccessionLabel">Accession numbers<span class="ab-req" aria-hidden="true"></span><span class="ab-sr"> (required, one per copy)</span></span>
+                                <div class="ab-accession-grid" id="accessionInputsWrap">
+                                    <?php for ($i = 0; $i < $renderAccessionCount; $i++): ?>
+                                        <?php $accValue = (string)($initialAccessions[$i] ?? ''); ?>
+                                        <input class="ab-input" type="text" name="accession_numbers[]" placeholder="Accession #<?= $i + 1 ?>" aria-label="Accession number, copy <?= $i + 1 ?>" value="<?= htmlspecialchars($accValue) ?>">
+                                    <?php endfor; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
                 </div>
             </div>
 
-            <div class="book-form-col book-form-col-selects">
-                <select name="category_id">
-                    <option value="">Select Category</option>
-                    <?php foreach ($categoryOptions as $categoryOption): ?>
-                        <?php $cid = (int)($categoryOption['category_id'] ?? 0); ?>
-                        <option value="<?= $cid ?>" <?= (int)($addBookForm['category_id'] ?? 0) === $cid ? 'selected' : '' ?>><?= htmlspecialchars((string)($categoryOption['category_name'] ?? '')) ?></option>
-                    <?php endforeach; ?>
-                </select>
-
-                <select name="program_id">
-                    <option value="">Select Program</option>
-                    <?php foreach ($programOptions as $programOption): ?>
-                        <?php $pid = (int)($programOption['program_id'] ?? 0); ?>
-                        <option value="<?= $pid ?>" <?= (int)($addBookForm['program_id'] ?? 0) === $pid ? 'selected' : '' ?>><?= htmlspecialchars((string)($programOption['program_name'] ?? '')) ?></option>
-                    <?php endforeach; ?>
-                </select>
-
-                <select name="location_section" required>
-                    <option value="">Select Section</option>
-                    <?php foreach (manage_books_section_options($librarySections, (string)($addBookForm['location_section'] ?? '')) as $sec => $secLabel): ?>
-                        <option value="<?= htmlspecialchars((string)$sec) ?>" <?= ((string)($addBookForm['location_section'] ?? '') === (string)$sec) ? 'selected' : '' ?>><?= htmlspecialchars($secLabel) ?></option>
-                    <?php endforeach; ?>
-                </select>
-
-                <select name="location_class">
-                    <option value="">Select Class Letter (optional)</option>
-                    <?php foreach ($libraryClassLabels as $classCode => $classLabel): ?>
-                        <option value="<?= htmlspecialchars($classCode) ?>" <?= ((string)($addBookForm['location_class'] ?? '') === (string)$classCode) ? 'selected' : '' ?>><?= htmlspecialchars($classLabel) ?></option>
-                    <?php endforeach; ?>
-                </select>
-
-                <select name="location_shelf">
-                    <option value="">Select Shelf Code (optional)</option>
-                    <?php foreach ($shelfOptions as $shelf): ?>
-                        <option value="<?= htmlspecialchars($shelf) ?>" <?= ((string)($addBookForm['location_shelf'] ?? '') === (string)$shelf) ? 'selected' : '' ?>><?= htmlspecialchars($shelf) ?></option>
-                    <?php endforeach; ?>
-                </select>
-
-                <select name="location_row">
-                    <option value="">Select Row (optional)</option>
-                    <?php foreach ($rowOptions as $rowOpt): ?>
-                        <option value="<?= htmlspecialchars($rowOpt) ?>" <?= ((string)($addBookForm['location_row'] ?? '') === (string)$rowOpt) ? 'selected' : '' ?>><?= htmlspecialchars($rowOpt) ?></option>
-                    <?php endforeach; ?>
-                </select>
-
-                <select name="location_position">
-                    <option value="">Select Position (optional)</option>
-                    <?php foreach ($positionOptions as $pos): ?>
-                        <option value="<?= htmlspecialchars($pos) ?>" <?= ((string)($addBookForm['location_position'] ?? '') === (string)$pos) ? 'selected' : '' ?>><?= htmlspecialchars($pos) ?></option>
-                    <?php endforeach; ?>
-                </select>
+            <div class="ab-foot">
+                <span class="ab-foot-note"><span class="ab-req" aria-hidden="true"></span>Required</span>
+                <div class="ab-actions">
+                    <button type="button" class="ab-btn ab-btn-ghost" onclick="closeBookModal()">Cancel</button>
+                    <button type="submit" name="add_book" class="ab-btn ab-btn-primary">
+                        <span class="ab-btn-icon" aria-hidden="true"><?= admin_icon('plus-circle') ?></span>
+                        Add Book
+                    </button>
+                </div>
             </div>
-
-            <button type="submit" name="add_book" class="btn-primary form-submit modal-submit-btn">
-                <span class="modal-submit-icon" aria-hidden="true"><?= admin_icon('plus-circle') ?></span>
-                Add Book
-            </button>
         </form>
     </div>
 </div>

@@ -5,11 +5,19 @@
  * touching the PHP.
  */
 
+// Add Book window: the element that opened it gets focus back on close.
+let bookModalOpener = null;
+
 function openBookModal() {
     const modal = document.getElementById('bookModal');
     if (!modal) return;
+    if (document.activeElement && !modal.contains(document.activeElement)) {
+        bookModalOpener = document.activeElement;
+    }
     modal.classList.add('show');
     modal.setAttribute('aria-hidden', 'false');
+    focusAddBookTitle();
+    refreshAddBookCoverPreview(true);
 }
 
 function closeBookModal() {
@@ -17,7 +25,146 @@ function closeBookModal() {
     if (!modal) return;
     modal.classList.remove('show');
     modal.setAttribute('aria-hidden', 'true');
+    if (bookModalOpener && typeof bookModalOpener.focus === 'function' && document.contains(bookModalOpener)) {
+        bookModalOpener.focus();
+    }
+    bookModalOpener = null;
 }
+
+function focusAddBookTitle() {
+    const title = document.getElementById('abTitleInput');
+    if (!title) return;
+    // After the window is displayed, so the focus actually lands.
+    window.requestAnimationFrame(function () {
+        title.focus({ preventScroll: true });
+    });
+}
+
+// Escape closes the Add Book window (the delete confirmation has its own
+// Escape handler further down and is never open at the same time).
+// Tab and Shift+Tab wrap around inside the window instead of moving to
+// the page behind it.
+document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape' && event.key !== 'Tab') return;
+    const modal = document.getElementById('bookModal');
+    if (!modal || !modal.classList.contains('show')) return;
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        closeBookModal();
+        return;
+    }
+    const focusable = Array.from(modal.querySelectorAll(
+        'button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+    )).filter(function (el) {
+        return el.offsetParent !== null;
+    });
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+    }
+});
+
+// Live cover preview: the same generated cover book_cover.php serves, drawn
+// by book_cover_preview.php from the title, author and category typed so
+// far. 250ms debounce; a newer request aborts the one in flight; if a
+// request fails the last good image stays. Never blocks typing or saving.
+const addBookCoverImg = document.getElementById('abCoverImg');
+let addBookCoverTimer = null;
+let addBookCoverAbort = null;
+let addBookCoverObjectUrl = null;
+let addBookCoverLastQuery = null;
+
+function addBookCoverQuery() {
+    const form = document.getElementById('addBookForm');
+    if (!form) return null;
+    const read = function (name) {
+        const el = form.elements.namedItem(name);
+        return el && typeof el.value === 'string' ? el.value.trim().slice(0, 255) : '';
+    };
+    const params = new URLSearchParams();
+    params.set('title', read('title'));
+    params.set('author', read('author'));
+    params.set('category_id', read('category_id'));
+    return params.toString();
+}
+
+function refreshAddBookCoverPreview(immediate) {
+    if (!addBookCoverImg || !window.fetch) return;
+    clearTimeout(addBookCoverTimer);
+    const run = function () {
+        const query = addBookCoverQuery();
+        if (query === null) return;
+        if (query === addBookCoverLastQuery) return;
+        if (addBookCoverAbort) addBookCoverAbort.abort();
+        const controller = window.AbortController ? new AbortController() : null;
+        addBookCoverAbort = controller;
+        fetch('book_cover_preview.php?' + query, {
+            credentials: 'same-origin',
+            cache: 'no-store',
+            signal: controller ? controller.signal : undefined
+        }).then(function (response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.blob();
+        }).then(function (blob) {
+            if (controller && controller.signal.aborted) return;
+            const url = URL.createObjectURL(blob);
+            addBookCoverImg.src = url;
+            if (addBookCoverObjectUrl) URL.revokeObjectURL(addBookCoverObjectUrl);
+            addBookCoverObjectUrl = url;
+            addBookCoverLastQuery = query;
+        }).catch(function () {
+            // Keep the last good image; the next change tries again.
+        }).finally(function () {
+            if (addBookCoverAbort === controller) addBookCoverAbort = null;
+        });
+    };
+    if (immediate) {
+        run();
+    } else {
+        addBookCoverTimer = setTimeout(run, 250);
+    }
+}
+
+(function () {
+    const form = document.getElementById('addBookForm');
+    if (!form) return;
+    ['title', 'author', 'category_id'].forEach(function (name) {
+        const el = form.elements.namedItem(name);
+        if (!el) return;
+        el.addEventListener('input', function () { refreshAddBookCoverPreview(false); });
+        el.addEventListener('change', function () { refreshAddBookCoverPreview(false); });
+    });
+
+    // Copies stepper: the number stays a plain text input (copyCountInput);
+    // the buttons step it within 1-200 (the server's range) and dispatch an
+    // input event so the accession fields follow.
+    form.querySelectorAll('.ab-step').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const input = document.getElementById('copyCountInput');
+            if (!input) return;
+            const step = Number.parseInt(btn.getAttribute('data-step') || '0', 10);
+            const current = /^\d+$/.test(input.value.trim()) ? Number.parseInt(input.value.trim(), 10) : 0;
+            let next = current + step;
+            if (current < 1) next = 1;
+            next = Math.min(200, Math.max(1, next));
+            input.value = String(next);
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+    });
+
+    // Reopened by the server after a failed save: same as opening it.
+    const modal = document.getElementById('bookModal');
+    if (modal && modal.classList.contains('show')) {
+        focusAddBookTitle();
+        refreshAddBookCoverPreview(true);
+    }
+})();
 
 window.addEventListener('click', function (e) {
     if (e.target.id === 'bookModal') {
@@ -59,8 +206,10 @@ function renderAccessionInputs() {
     for (let i = 0; i < targetCount; i += 1) {
         const input = document.createElement('input');
         input.type = 'text';
+        input.className = 'ab-input';
         input.name = 'accession_numbers[]';
         input.placeholder = 'Accession #' + (i + 1);
+        input.setAttribute('aria-label', 'Accession number, copy ' + (i + 1));
         input.value = existingValues[i] || '';
         accessionInputsWrap.appendChild(input);
     }
