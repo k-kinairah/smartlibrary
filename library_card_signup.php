@@ -18,6 +18,7 @@ $form = [
     'email' => '',
     'user_number' => '',
     'account_type' => '',
+    'school_level' => '',
     'program_id' => '',
     'department_id' => '',
     'year_level' => '',
@@ -31,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $form['email'] = library_card_normalize_email((string)($_POST['email'] ?? ''));
     $form['user_number'] = library_card_normalize_id((string)($_POST['user_number'] ?? ''));
     $form['account_type'] = trim((string)($_POST['account_type'] ?? ''));
+    $form['school_level'] = trim((string)($_POST['school_level'] ?? ''));
     $form['program_id'] = trim((string)($_POST['program_id'] ?? ''));
     $form['department_id'] = trim((string)($_POST['department_id'] ?? ''));
     $form['year_level'] = trim((string)($_POST['year_level'] ?? ''));
@@ -44,15 +46,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $departmentId = ctype_digit($form['department_id']) && isset($departments[(int)$form['department_id']]) ? (int)$form['department_id'] : null;
     $yearLevel = ctype_digit($form['year_level']) && isset(LIBRARY_CARD_YEAR_LEVELS[(int)$form['year_level']]) ? (int)$form['year_level'] : null;
     $gender = isset(LIBRARY_CARD_GENDERS[$form['gender']]) ? $form['gender'] : null;
+    $schoolLevel = isset(LIBRARY_CARD_SCHOOL_LEVELS[$form['school_level']]) ? $form['school_level'] : null;
     if ($role === 'faculty') {
-        // Faculty/staff have no year level and no program (they pick a
-        // department); ignore anything the hidden fields submitted.
+        // Faculty/staff have no year level, no program and no school level
+        // (they pick a department); ignore anything the hidden fields submitted.
         $yearLevel = null;
         $programId = null;
+        $schoolLevel = null;
     } elseif ($role === 'student') {
         // Students keep Program / course; a department is never stored for them.
         $departmentId = null;
+        if ($schoolLevel !== null && $schoolLevel !== 'college') {
+            // Junior/Senior High: level only. No program or year level, even
+            // if the hidden fields were posted.
+            $programId = null;
+            $yearLevel = null;
+        }
     }
+    $isCollegeStudent = $role === 'student' && $schoolLevel === 'college';
 
     if (!smartlib_csrf_verify($csrfKey, $_POST['csrf_token'] ?? '')) {
         $message = 'Your session expired. Please submit the form again.';
@@ -72,16 +83,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!library_card_id_format_ok($form['user_number'])) {
         $message = 'Please enter a valid school ID number.';
         $messageType = 'error';
-    } elseif ($role === 'student' && $form['program_id'] !== '' && $programId === null) {
+    } elseif ($role === 'student' && $schoolLevel === null) {
+        $message = 'Please choose your school level.';
+        $messageType = 'error';
+    } elseif ($isCollegeStudent && $form['program_id'] !== '' && $programId === null) {
         $message = 'Please choose your program from the list.';
         $messageType = 'error';
-    } elseif ($role === 'student' && $programId === null) {
+    } elseif ($isCollegeStudent && $programId === null) {
         $message = 'Please choose your program.';
         $messageType = 'error';
     } elseif ($role === 'faculty' && $departmentId === null) {
         $message = 'Please choose your department.';
         $messageType = 'error';
-    } elseif ($role === 'student' && $yearLevel === null) {
+    } elseif ($isCollegeStudent && $yearLevel === null) {
         $message = 'Please choose your year level.';
         $messageType = 'error';
     } elseif ($gender === null) {
@@ -105,6 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'email' => $form['email'],
                 'program_id' => $programId,
                 'department_id' => $departmentId,
+                'school_level' => $schoolLevel,
                 'year_level' => $yearLevel,
                 'gender' => $gender
             // No PIN yet: it is chosen after the emailed code is verified
@@ -194,7 +209,25 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
             </div>
         </div>
 
-        <div class="field" id="program_field" <?= $form['account_type'] === 'faculty' ? 'hidden' : '' ?>>
+        <?php
+        // Server-side first render (also the no-JS view): School level for
+        // students, Program / course and Year level only for a College
+        // student, Department only for faculty. The script below applies the
+        // same rules as the choices change.
+        $showSchoolLevel = $form['account_type'] !== 'faculty';
+        $showCollegeFields = $form['account_type'] === 'student' && $form['school_level'] === 'college';
+        ?>
+        <div class="field" id="school_level_field" <?= $showSchoolLevel ? '' : 'hidden' ?>>
+            <label for="school_level">School level</label>
+            <select id="school_level" name="school_level">
+                <option value="">Select your level</option>
+                <?php foreach (LIBRARY_CARD_SCHOOL_LEVELS as $levelValue => $levelLabel): ?>
+                    <option value="<?= htmlspecialchars($levelValue) ?>" <?= $form['school_level'] === $levelValue ? 'selected' : '' ?>><?= htmlspecialchars($levelLabel) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <div class="field" id="program_field" <?= $showCollegeFields ? '' : 'hidden' ?>>
             <label for="program_id">Program / course</label>
             <select id="program_id" name="program_id">
                 <option value="">Select your program</option>
@@ -213,7 +246,7 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
             </select>
         </div>
         <div class="field-row">
-            <div class="field" id="year_level_field" <?= $form['account_type'] === 'faculty' ? 'hidden' : '' ?>>
+            <div class="field" id="year_level_field" <?= $showCollegeFields ? '' : 'hidden' ?>>
                 <label for="year_level">Year level</label>
                 <select id="year_level" name="year_level">
                     <option value="">Select year</option>
@@ -239,7 +272,7 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
                 <span class="consent-check" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"></path></svg>
                 </span>
-                <span class="consent-text">I understand my info is used to manage my library account, and my program or department, year level, and gender only for anonymous usage stats.</span>
+                <span class="consent-text">I understand my info is used to manage my library account, and my school level, program or department, year level, and gender only for anonymous usage stats.</span>
             </label>
         </div>
 
@@ -259,23 +292,31 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
     // in config/library_card_helpers.php). The server ignores year level
     // for faculty regardless.
     // Faculty/staff also swap Program / course for Department.
+    // Students pick a School level; Program / course and Year level are only
+    // for College (Junior/Senior High pick nothing else). The server applies
+    // the same rules and ignores hidden fields.
     const roleInputs = document.querySelectorAll('input[name="account_type"]');
     const yearField = document.getElementById('year_level_field');
     const programField = document.getElementById('program_field');
     const departmentField = document.getElementById('department_field');
+    const levelField = document.getElementById('school_level_field');
+    const levelSelect = document.getElementById('school_level');
     if (!roleInputs.length || !yearField) return;
 
     function sync() {
         const checked = document.querySelector('input[name="account_type"]:checked');
         const isFaculty = !!checked && checked.value === 'faculty';
-        yearField.hidden = isFaculty;
-        if (programField) programField.hidden = isFaculty;
+        const isCollege = !!checked && checked.value === 'student' && !!levelSelect && levelSelect.value === 'college';
+        if (levelField) levelField.hidden = isFaculty;
+        yearField.hidden = !isCollege;
+        if (programField) programField.hidden = !isCollege;
         if (departmentField) departmentField.hidden = !isFaculty;
     }
 
     roleInputs.forEach(function (input) {
         input.addEventListener('change', sync);
     });
+    if (levelSelect) levelSelect.addEventListener('change', sync);
     sync();
 })();
 

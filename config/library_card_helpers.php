@@ -25,11 +25,10 @@ const LIBRARY_CARD_RESEND_COOLDOWN_SECONDS = 60;
 // Per email, not per IP: students on campus Wi-Fi share one public IP.
 const LIBRARY_CARD_MAX_REQUESTS_PER_HOUR = 5;
 
-// Report demographics. Year level is students only; faculty store NULL.
-// College programs here are all 4-year (no 5-year programs offered), so
-// there is no "5th year or above" choice -- this form is for the college
-// side of the school only; it doesn't cover the Grade 1-12 basic
-// education side at all.
+// Report demographics. Year level is college students only; faculty and
+// Junior/Senior High students store NULL. College programs here are all
+// 4-year (no 5-year programs offered), so there is no "5th year or above"
+// choice.
 const LIBRARY_CARD_YEAR_LEVELS = [
     1 => '1st year',
     2 => '2nd year',
@@ -41,6 +40,41 @@ const LIBRARY_CARD_GENDERS = [
     'male' => 'Male',
     'prefer_not_to_say' => 'Prefer not to say',
 ];
+// Students only (library_users.school_level, database/school_level_setup.sql);
+// faculty, librarian and admin store NULL. The form also covers the basic
+// education side: Junior High and Senior High students pick only their level
+// (no grade, program or year level) and keep role 'student'. A student with
+// NULL school_level (older rows) counts as College.
+const LIBRARY_CARD_SCHOOL_LEVELS = [
+    'college' => 'College',
+    'jhs' => 'Junior High School',
+    'shs' => 'Senior High School',
+];
+
+/** "College" / "Junior High School" / "Senior High School"; '' if unknown. */
+function library_card_school_level_label(?string $level): string {
+    return LIBRARY_CARD_SCHOOL_LEVELS[(string)$level] ?? '';
+}
+
+/**
+ * SQL for a student's basic-education level label: 'Junior High School' or
+ * 'Senior High School' for jhs/shs, NULL for anything else (College, NULL,
+ * faculty). $levelExpr is a trusted column expression such as
+ * "u.school_level". Display queries put it after the department and before
+ * the program, so College students and faculty come out exactly as before.
+ * The CONVERT keeps it working when the expression mixes columns of tables
+ * with different collations (library_entry_logs vs library_users).
+ */
+function library_card_school_level_label_sql(string $levelExpr): string {
+    $cases = '';
+    foreach (LIBRARY_CARD_SCHOOL_LEVELS as $value => $label) {
+        if ($value === 'college') {
+            continue;
+        }
+        $cases .= " WHEN '" . $value . "' THEN '" . $label . "'";
+    }
+    return "(CASE CONVERT({$levelExpr} USING utf8mb4){$cases} ELSE NULL END)";
+}
 
 /** Same list and order as the admin user form (admin/manage_users.php). */
 function library_card_get_programs(mysqli $conn): array {
@@ -322,16 +356,17 @@ function library_card_create_verification(mysqli $conn, array $signup, string $i
 
     $programId = $signup['program_id'] ?? null;
     $departmentId = $signup['department_id'] ?? null;
+    $schoolLevel = $signup['school_level'] ?? null;
     $yearLevel = $signup['year_level'] ?? null;
     $gender = $signup['gender'] ?? null;
 
     $stmt = $conn->prepare(
         "INSERT INTO auth_signup_verifications (
             purpose, user_id, user_number, account_type, first_name, last_name,
-            program_id, department_id, year_level, gender, email_to,
+            program_id, department_id, school_level, year_level, gender, email_to,
             code_hash, pin_hash, requested_ip, attempt_count, max_attempts, expires_at, created_at
         ) VALUES (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, NOW() + INTERVAL ? MINUTE, NOW()
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, NOW() + INTERVAL ? MINUTE, NOW()
         )"
     );
     if (!$stmt) {
@@ -339,9 +374,9 @@ function library_card_create_verification(mysqli $conn, array $signup, string $i
     }
 
     $stmt->bind_param(
-        'sissssiiisssssii',
+        'sissssiisisssssii',
         $purpose, $userId, $signup['user_number'], $signup['account_type'], $signup['first_name'], $signup['last_name'],
-        $programId, $departmentId, $yearLevel, $gender, $signup['email'], $hash, $pinHash, $ip, $maxAttempts, $ttl
+        $programId, $departmentId, $schoolLevel, $yearLevel, $gender, $signup['email'], $hash, $pinHash, $ip, $maxAttempts, $ttl
     );
     $ok = $stmt->execute();
     $verificationId = (int)$stmt->insert_id;
@@ -358,7 +393,7 @@ function library_card_create_verification(mysqli $conn, array $signup, string $i
 function library_card_get_verification(mysqli $conn, int $verificationId): ?array {
     $stmt = $conn->prepare(
         "SELECT verification_id, purpose, user_id, user_number, account_type, first_name, last_name,
-                program_id, department_id, year_level, gender, email_to, code_hash, pin_hash, attempt_count, max_attempts, expires_at, used_at,
+                program_id, department_id, school_level, year_level, gender, email_to, code_hash, pin_hash, attempt_count, max_attempts, expires_at, used_at,
                 (expires_at <= NOW()) AS is_expired
          FROM auth_signup_verifications
          WHERE verification_id = ?
@@ -415,10 +450,10 @@ function library_card_create_account(mysqli $conn, array $verification): array {
         $stmt = $conn->prepare(
             "INSERT INTO library_users (
                 user_number, first_name, last_name, email, email_verified_at,
-                card_issued_at, registration_source, password, program_id, department_id, year_level, gender,
+                card_issued_at, registration_source, password, program_id, department_id, school_level, year_level, gender,
                 role, status, created_at
             ) VALUES (
-                ?, ?, ?, ?, NOW(), NOW(), 'self_signup', ?, ?, ?, ?, ?, ?, 'active', NOW()
+                ?, ?, ?, ?, NOW(), NOW(), 'self_signup', ?, ?, ?, ?, ?, ?, ?, 'active', NOW()
             )"
         );
         if (!$stmt) {
@@ -427,12 +462,21 @@ function library_card_create_account(mysqli $conn, array $verification): array {
         $pinHash = $verification['pin_hash'] ?? null;
         $programId = $verification['program_id'] !== null ? (int)$verification['program_id'] : null;
         $departmentId = isset($verification['department_id']) && $verification['department_id'] !== null ? (int)$verification['department_id'] : null;
+        // Students only. A student signup staged before school_level existed
+        // (still in flight at deploy time) carries NULL: that is College.
+        $schoolLevel = null;
+        if ($role === 'student') {
+            $schoolLevel = (string)($verification['school_level'] ?? '');
+            if (!isset(LIBRARY_CARD_SCHOOL_LEVELS[$schoolLevel])) {
+                $schoolLevel = 'college';
+            }
+        }
         $yearLevel = $verification['year_level'] !== null ? (int)$verification['year_level'] : null;
         $gender = $verification['gender'];
         $stmt->bind_param(
-            'sssssiiiss',
+            'sssssiisiss',
             $verification['user_number'], $verification['first_name'], $verification['last_name'],
-            $verification['email_to'], $pinHash, $programId, $departmentId, $yearLevel, $gender, $role
+            $verification['email_to'], $pinHash, $programId, $departmentId, $schoolLevel, $yearLevel, $gender, $role
         );
         $stmt->execute();
         $userId = (int)$stmt->insert_id;
