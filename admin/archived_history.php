@@ -401,6 +401,28 @@ if ($tableReady && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('Retrieved book ID was not generated.');
             }
 
+            // Programs saved when the book was deleted (main first): the main
+            // one is 'primary', the others 'manual'; programs that no longer
+            // exist are skipped.
+            $restoreProgramIds = is_array($meta['program_ids'] ?? null) ? $meta['program_ids'] : [];
+            if (!empty($restoreProgramIds)) {
+                $bookProgramsCheck = safe_query($conn, "SHOW TABLES LIKE 'book_programs'");
+                if ($bookProgramsCheck && $bookProgramsCheck->num_rows > 0) {
+                    $seenRestorePrograms = [];
+                    foreach ($restoreProgramIds as $restoreProgramId) {
+                        $restoreProgramId = valid_fk_id($conn, 'programs', 'program_id', $restoreProgramId);
+                        if ($restoreProgramId <= 0 || isset($seenRestorePrograms[$restoreProgramId])) {
+                            continue;
+                        }
+                        $seenRestorePrograms[$restoreProgramId] = true;
+                        $restoreSource = $restoreProgramId === $programId ? 'primary' : 'manual';
+                        if (!safe_query($conn, "INSERT INTO book_programs (book_id, program_id, source) VALUES ({$newBookId}, {$restoreProgramId}, '{$restoreSource}')")) {
+                            throw new RuntimeException('Failed to restore the book\'s programs.');
+                        }
+                    }
+                }
+            }
+
             $meta['restored_book_id'] = $newBookId;
             $meta['restored_at'] = date('Y-m-d H:i:s');
             if ($actorUserId > 0) {

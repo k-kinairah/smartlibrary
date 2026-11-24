@@ -240,14 +240,25 @@ function bulk_import_validate_row(
         }
     }
 
+    // One or more programs separated by ";" -- the first is the main one
+    // (books.program_id), the others are cross-listed in book_programs.
+    // A single name works exactly as before.
     $programId = 0;
-    if ($programName !== '') {
-        $key = strtolower($programName);
-        if (!array_key_exists($key, $programByName)) {
-            $errors[] = 'Program "' . $programName . '" does not match any existing program.';
-        } else {
-            $programId = $programByName[$key];
+    $programIds = [];
+    foreach (explode(';', $programName) as $programPart) {
+        $programPart = trim($programPart);
+        if ($programPart === '') {
+            continue;
         }
+        $key = strtolower($programPart);
+        if (!array_key_exists($key, $programByName)) {
+            $errors[] = 'Program "' . $programPart . '" does not match any existing program.';
+        } elseif (!in_array($programByName[$key], $programIds, true)) {
+            $programIds[] = $programByName[$key];
+        }
+    }
+    if (!empty($programIds)) {
+        $programId = $programIds[0];
     }
 
     if ($isbn !== '') {
@@ -326,6 +337,7 @@ function bulk_import_validate_row(
             'category_id' => $categoryId,
             'category_name' => $categoryName,
             'program_id' => $programId,
+            'program_ids' => $programIds,
             'program_name' => $programName,
             'location_section' => $locationSection,
             'location_class' => $locationClass,
@@ -457,6 +469,12 @@ function bulk_import_insert_book(
         $copyStmt->close();
         $copyStmt = null;
 
+        // Programs: main 'primary', others 'manual' (same as Add Book).
+        $programIds = array_values(array_map('intval', (array)($data['program_ids'] ?? ($programId > 0 ? [$programId] : []))));
+        if (!empty($programIds) && table_exists($conn, 'book_programs')) {
+            manage_books_sync_book_programs($conn, $newBookId, $programIds, $programId);
+        }
+
         $conn->commit();
 
         return ['ok' => true, 'book_id' => $newBookId, 'error' => ''];
@@ -485,7 +503,7 @@ function bulk_import_insert_book(
 function bulk_import_csv_template_content(): string {
     $header = implode(',', BULK_IMPORT_CSV_COLUMNS);
     $example1 = '"The Hobbit","Tolkien, J.R.R.","HarperCollins","9780547928227","2012","Literature","BS Business Administration","P-TOL-2012","General Collection","P","YA-01","First row","Eye Level","ACC-10001"';
-    $example2 = '"Intro to Psychology","Myers, David G.","Worth Publishers","","2018","Psychology","","BF-MYE-2018","General Collection","B","PSY-01","Second row","Middle Shelf","ACC-10002;ACC-10003"';
+    $example2 = '"Intro to Psychology","Myers, David G.","Worth Publishers","","2018","Psychology","BS Psychology;BS Nursing","BF-MYE-2018","General Collection","B","PSY-01","Second row","Middle Shelf","ACC-10002;ACC-10003"';
     return $header . "\r\n" . $example1 . "\r\n" . $example2 . "\r\n";
 }
 
@@ -1022,7 +1040,7 @@ require 'layout_top.php';
                 <span class="bulk-import-howto-icon"><?= admin_icon('edit') ?></span>
                 <div class="bulk-import-howto-text">
                     <h4>2. Fill in one row per book</h4>
-                    <p>Multiple copies? List their accession numbers in one cell separated by <code>;</code></p>
+                    <p>Multiple copies? List their accession numbers in one cell separated by <code>;</code> Several programs work the same way; the first is the main one.</p>
                 </div>
             </div>
             <div class="bulk-import-howto-item">

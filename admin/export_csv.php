@@ -96,6 +96,21 @@ $type = strtolower(trim((string)($_GET['type'] ?? '')));
 smartlib_ensure_borrow_renewal_columns($conn);
 sync_overdue_status_and_fines($conn);
 
+// Books export, program column: the main program first, then the other
+// linked programs (book_programs) by name, separated by "; ". A book with
+// one program reads exactly as before.
+$bookProgramsExportSql = "COALESCE(p.program_name, '')";
+$bookProgramsCheck = $conn->query("SHOW TABLES LIKE 'book_programs'");
+if ($bookProgramsCheck instanceof mysqli_result && $bookProgramsCheck->num_rows > 0) {
+    $bookProgramsExportSql = "COALESCE(CONCAT_WS('; ',
+                        p.program_name,
+                        (SELECT GROUP_CONCAT(px.program_name ORDER BY px.program_name SEPARATOR '; ')
+                         FROM book_programs bpx
+                         INNER JOIN programs px ON px.program_id = bpx.program_id
+                         WHERE bpx.book_id = b.book_id AND bpx.program_id <> COALESCE(b.program_id, 0))
+                    ), '')";
+}
+
 $exports = [
     'books' => [
         'headers' => ['book_id', 'isbn', 'title', 'author', 'publisher', 'year_published', 'category', 'program', 'location', 'call_number', 'copy_count', 'available_copies', 'borrowed_copies', 'lost_copies', 'created_at'],
@@ -107,7 +122,7 @@ $exports = [
                     COALESCE(b.publisher, '') AS publisher,
                     COALESCE(b.year_published, '') AS year_published,
                     COALESCE(c.category_name, '') AS category,
-                    COALESCE(p.program_name, '') AS program,
+                    {$bookProgramsExportSql} AS program,
                     TRIM(CONCAT(COALESCE(ll.section, ''), CASE WHEN ll.shelf_code IS NULL OR ll.shelf_code = '' THEN '' ELSE CONCAT(' / ', ll.shelf_code) END)) AS location,
                     COALESCE(b.call_number, '') AS call_number,
                     COUNT(bc.copy_id) AS copy_count,

@@ -1799,3 +1799,111 @@ html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #bookMod
         }
     }
 }
+
+/* ---------- Program picker (Add Book / Edit Book, pp- classes) ---------- */
+/* Deep pine panel with a gold hairline, gold-tinted ticked rows with gold
+   checkboxes, gold "+N" / MAIN pills. Layout in admin.css. */
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #bookModal .pp-field {
+    border-color: rgba(120, 200, 175, 0.22);
+    background: rgba(255, 255, 255, 0.04);
+    color: #eef4f0;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #bookModal .pp-field:not(.is-empty) {
+    border-color: rgba(120, 200, 175, 0.38);
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #bookModal .pp-field.is-empty .pp-summary {
+    color: #9fb5ab;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-more-pill,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-main-pill,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .manage-books-table .pp-cell-pill {
+    border-color: rgba(232, 181, 74, 0.5);
+    background: rgba(232, 181, 74, 0.14);
+    color: #f7d98f;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-picker.is-open .pp-field {
+    border-color: #5fc9ae;
+    box-shadow: 0 0 0 3px rgba(95, 201, 174, 0.25);
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-field:focus-visible,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-check:focus-visible,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-clear:focus-visible,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-done:focus-visible {
+    outline: 2px solid #6ed6ba;
+    outline-offset: 2px;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-panel {
+    background: linear-gradient(180deg, #10302a 0%, #08181a 100%);
+    border-color: rgba(232, 181, 74, 0.45);
+    color: #e0e8e2;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-search {
+    border-color: rgba(120, 200, 175, 0.22);
+    background: rgba(255, 255, 255, 0.04);
+    color: #9fb5ab;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-search .pp-search-input {
+    color: #eef4f0 !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-search .pp-search-input::placeholder {
+    color: #9fb5ab !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-row {
+    color: #e0e8e2;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-row:hover,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-row:has(.pp-check:focus-visible) {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-program-row.is-checked {
+    background: rgba(232, 181, 74, 0.14);
+    color: #f7d98f;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-row .pp-check {
+    border-color: #7f9c91 !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-row .pp-check:checked,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-row .pp-check:indeterminate {
+    border-color: #e8b54a !important;
+    background-color: #e8b54a !important;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-count,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-empty {
+    color: #9fb5ab;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-selected-count {
+    color: #eef4f0;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-help {
+    color: #bccdc4;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-clear {
+    color: #cfe3da;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-done {
+    background: linear-gradient(180deg, #20846d 0%, #176451 100%);
+    color: #ffffff;
+}
+
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-done:hover {
+    background: linear-gradient(180deg, #1a7360 0%, #125543 100%);
+}

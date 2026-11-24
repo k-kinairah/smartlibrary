@@ -188,6 +188,19 @@ $sql = "
 
 $where = [];
 
+// Books cross-listed to a program (book_programs) match its name too.
+// table_exists() here is a fixed list of known tables (see above), so the
+// table is also probed directly -- a plain query, not an information_schema
+// lookup -- and only when there is a search term.
+$hasBookProgramsTable = false;
+if ($search !== '' && table_exists($conn, 'book_programs')) {
+    try {
+        $hasBookProgramsTable = $conn->query('SELECT 1 FROM book_programs LIMIT 0') !== false;
+    } catch (Throwable $e) {
+        $hasBookProgramsTable = false;
+    }
+}
+
 if ($search !== '') {
     $s = esc($conn, $search);
     $where[] = "(
@@ -195,7 +208,12 @@ if ($search !== '') {
         OR b.author LIKE '%$s%'
         OR b.isbn LIKE '%$s%'
         OR {$genreExpr} LIKE '%$s%'
-        OR p.program_name LIKE '%$s%'
+        OR p.program_name LIKE '%$s%'" . ($hasBookProgramsTable ? "
+        OR EXISTS (
+            SELECT 1 FROM book_programs bpx
+            INNER JOIN programs px ON px.program_id = bpx.program_id
+            WHERE bpx.book_id = b.book_id AND px.program_name LIKE '%$s%'
+        )" : '') . "
     )";
 }
 

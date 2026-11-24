@@ -103,6 +103,14 @@ $flash = ['type' => '', 'message' => ''];
 $openAddBookModal = false;
 $openEditBookModal = false;
 $hasBookCopiesTable = table_exists($conn, 'book_copies');
+// Several programs per book: book_programs holds every linked program; the
+// main one also stays in books.program_id (see manage_books_functions.php).
+$hasBookProgramsTable = table_exists($conn, 'book_programs');
+$programNameById = [];
+foreach ($programOptions as $programOption) {
+    $programNameById[(int)$programOption['program_id']] = (string)$programOption['program_name'];
+}
+$programIdSet = array_fill_keys(array_keys($programNameById), true);
 $addBookForm = [
     'isbn' => '',
     'title' => '',
@@ -111,6 +119,7 @@ $addBookForm = [
     'year_published' => '',
     'category_id' => 0,
     'program_id' => 0,
+    'program_ids' => [],
     'location_section' => '',
     'location_class' => '',
     'location_shelf' => '',
@@ -135,7 +144,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_book'])) {
     $isbn = trim((string)($_POST['isbn'] ?? ''));
 
     $categoryId = (int)($_POST['category_id'] ?? 0);
-    $programId = (int)($_POST['program_id'] ?? 0);
+    // Ticked programs (program_ids[]) and the main one (main_program_id);
+    // an old single program_id post still works. books.program_id = main.
+    $programSelection = manage_books_program_selection($_POST, $programIdSet);
+    $programIds = $programSelection['ids'];
+    $programId = $programSelection['main'];
 
     $locationSection = trim((string)($_POST['location_section'] ?? ''));
     $callNumber = trim((string)($_POST['call_number'] ?? ''));
@@ -180,6 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_book'])) {
         'year_published' => $year,
         'category_id' => $categoryId,
         'program_id' => $programId,
+        'program_ids' => $programIds,
         'location_section' => $locationSection,
         'location_class' => $locationClass,
         'location_shelf' => $locationShelf,
@@ -354,6 +368,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_book'])) {
             $copyStmt->close();
             $copyStmt = null;
 
+            if ($hasBookProgramsTable) {
+                manage_books_sync_book_programs($conn, $newBookId, $programIds, $programId);
+            }
+
             manage_books_log_activity(
                 $conn,
                 'added',
@@ -429,7 +447,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_book'])) {
     $year = trim((string)($_POST['year_published'] ?? ''));
     $isbn = trim((string)($_POST['isbn'] ?? ''));
     $categoryId = (int)($_POST['category_id'] ?? 0);
-    $programId = (int)($_POST['program_id'] ?? 0);
+    $programSelection = manage_books_program_selection($_POST, $programIdSet);
+    $programIds = $programSelection['ids'];
+    $programId = $programSelection['main'];
 
     $locationSection = trim((string)($_POST['location_section'] ?? ''));
     $locationClass = trim((string)($_POST['location_class'] ?? ''));
@@ -477,6 +497,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_book'])) {
         'year_published' => $year,
         'category_id' => $categoryId,
         'program_id' => $programId,
+        'program_ids' => $programIds,
         'location_section' => $locationSection,
         'location_class' => $locationClass,
         'location_shelf' => $locationShelf,
@@ -678,6 +699,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_book'])) {
             $coreUpd->execute();
             $coreUpd->close();
 
+            if ($hasBookProgramsTable) {
+                manage_books_sync_book_programs($conn, $bookId, $programIds, $programId);
+            }
+
             if ($hasLocationTable && $hasBookLocationId) {
                 // Section only is enough (class/shelf/row/position optional).
                 $locationId = manage_books_resolve_location_id(
@@ -812,6 +837,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_book'])) {
                 b.isbn,
                 b.author,
                 b.year_published,
+                b.program_id,
                 COALESCE(COUNT(bc.copy_id), 0) AS total_copies_before_delete
              FROM books b
              LEFT JOIN book_copies bc ON bc.book_id = b.book_id
@@ -827,6 +853,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_book'])) {
                 $bookSnapshot = $snapshotRes->fetch_assoc() ?: null;
             }
             $snapshotStmt->close();
+        }
+
+        // The book's programs (main first), read before the delete removes
+        // its book_programs rows, so Archived History can restore them.
+        $deletedProgramIds = [];
+        if (is_array($bookSnapshot)) {
+            $deletedMainProgramId = (int)($bookSnapshot['program_id'] ?? 0);
+            $deletedLinks = $hasBookProgramsTable ? (manage_books_fetch_book_programs($conn, [$bookId])[$bookId] ?? []) : [];
+            $deletedProgramIds = manage_books_ordered_program_ids($deletedMainProgramId, $deletedLinks, $programNameById);
         }
 
         $deleteStmt = $conn->prepare('DELETE FROM books WHERE book_id = ?');
@@ -848,6 +883,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_book'])) {
                     'year_published' => (string)($bookSnapshot['year_published'] ?? ''),
                     'total_copies_before_delete' => (int)($bookSnapshot['total_copies_before_delete'] ?? 0)
                 ];
+                if (!empty($deletedProgramIds)) {
+                    $deleteMeta['program_id'] = (int)($bookSnapshot['program_id'] ?? 0);
+                    $deleteMeta['program_ids'] = $deletedProgramIds;
+                }
 
                 manage_books_log_activity($conn, 'deleted', $archivedBookId, $archivedTitle, $deleteMeta);
             }
@@ -1079,7 +1118,12 @@ if ($search !== '') {
         OR b.year_published LIKE '%{$safeSearch}%'
         OR c.category_name LIKE '%{$safeSearch}%'
         OR p.program_name LIKE '%{$safeSearch}%'
-        OR bc.accession_no LIKE '%{$safeSearch}%'
+        OR bc.accession_no LIKE '%{$safeSearch}%'" . ($hasBookProgramsTable ? "
+        OR EXISTS (
+            SELECT 1 FROM book_programs bpx
+            INNER JOIN programs px ON px.program_id = bpx.program_id
+            WHERE bpx.book_id = b.book_id AND px.program_name LIKE '%{$safeSearch}%'
+        )" : '') . "
     )";
 }
 
@@ -1129,6 +1173,12 @@ if ($books) {
         $bookRows[] = $bookRow;
     }
 }
+
+// Programs per listed book (one query): the Program column shows the main
+// program plus "+N" for the others.
+$bookProgramMap = ($hasBookProgramsTable && !empty($bookRows))
+    ? manage_books_fetch_book_programs($conn, array_column($bookRows, 'book_id'))
+    : [];
 
 $bookCopyMap = [];
 if (!empty($bookRows)) {
@@ -1261,6 +1311,7 @@ $editForm = [
     'year_published' => (string)($editBook['year_published'] ?? ''),
     'category_id' => (int)($editBook['category_id'] ?? 0),
     'program_id' => (int)($editBook['program_id'] ?? 0),
+    'program_ids' => [],
     'cover' => (string)($editBook['cover'] ?? ''),
     'location_section' => 'Circulation',
     'location_class' => 'T',
@@ -1274,6 +1325,10 @@ $editForm = [
 ];
 
 if ($editBook) {
+    $editBookLinks = $hasBookProgramsTable
+        ? (manage_books_fetch_book_programs($conn, [(int)$editBook['book_id']])[(int)$editBook['book_id']] ?? [])
+        : [];
+    $editForm['program_ids'] = manage_books_ordered_program_ids((int)$editForm['program_id'], $editBookLinks, $programNameById);
     $editForm['location_section'] = (string)($editBook['loc_section'] ?? $editForm['location_section']);
     $editForm['location_class'] = (string)($editBook['loc_class_code'] ?? $editForm['location_class']);
     $editForm['location_shelf'] = (string)($editBook['loc_shelf_code'] ?? $editForm['location_shelf']);
@@ -1412,7 +1467,7 @@ require 'layout_top.php';
 
 <section class="panel glass-card data-table-panel">
     <div class="table-wrap">
-        <table class="data-table manage-books-table">
+        <table class="data-table manage-books-table pp-program-table">
             <thead>
                 <tr>
                     <th>Book ID</th>
@@ -1421,6 +1476,7 @@ require 'layout_top.php';
                     <th>Author</th>
                     <th>Year</th>
                     <th>Genre</th>
+                    <th>Program</th>
                     <th>Copies</th>
                     <th>Status</th>
                     <th>Action</th>
@@ -1467,6 +1523,29 @@ require 'layout_top.php';
                             <td><?= htmlspecialchars($row['author'] ?? '') ?></td>
                             <td><?= htmlspecialchars($row['year_published'] ?? '') ?></td>
                             <td><?= htmlspecialchars($row['genre_name'] ?? 'Uncategorized') ?></td>
+                            <?php
+                                $rowMainProgramId = (int)($row['program_id'] ?? 0);
+                                $rowProgramIds = manage_books_ordered_program_ids($rowMainProgramId, $bookProgramMap[$bookId] ?? [], $programNameById);
+                                $rowOtherNames = [];
+                                foreach ($rowProgramIds as $rowProgramId) {
+                                    if ($rowProgramId !== $rowMainProgramId) {
+                                        $rowOtherNames[] = $programNameById[$rowProgramId];
+                                    }
+                                }
+                                $rowAllNames = [];
+                                foreach ($rowProgramIds as $rowProgramId) {
+                                    $rowAllNames[] = $programNameById[$rowProgramId];
+                                }
+                            ?>
+                            <td class="pp-program-cell">
+                                <?php if ($rowMainProgramId > 0 && isset($programNameById[$rowMainProgramId])): ?>
+                                    <span class="pp-cell-name"><?= htmlspecialchars($programNameById[$rowMainProgramId]) ?></span><?php if (!empty($rowOtherNames)): ?> <span class="pp-cell-pill" title="<?= htmlspecialchars(implode(', ', $rowAllNames)) ?>">+<?= count($rowOtherNames) ?><span class="pp-sr"> more: <?= htmlspecialchars(implode(', ', $rowOtherNames)) ?></span></span><?php endif; ?>
+                                <?php elseif (!empty($rowProgramIds)): ?>
+                                    <span class="pp-cell-name pp-cell-multi" title="<?= htmlspecialchars(implode(', ', $rowAllNames)) ?>"><?= count($rowProgramIds) === count($programNameById) ? 'All programs' : (count($rowProgramIds) . (count($rowProgramIds) === 1 ? ' program' : ' programs')) ?></span>
+                                <?php else: ?>
+                                    <span class="pp-cell-none">-</span>
+                                <?php endif; ?>
+                            </td>
                             <td>
                                 <div class="book-copies-cell">
                                     <span><?= number_format($available) ?> / <?= number_format($total) ?></span>
@@ -1507,7 +1586,7 @@ require 'layout_top.php';
                             </td>
                         </tr>
                         <tr class="book-copy-details-row" id="copy-details-<?= $bookId ?>" hidden>
-                            <td colspan="9">
+                            <td colspan="10">
                                 <div class="book-copy-details-wrap">
                                     <?php $copies = $copiesForRow; ?>
                                     <?php if (!empty($copies)): ?>
@@ -1614,7 +1693,7 @@ require 'layout_top.php';
                         </tr>
                     <?php endforeach; ?>
                 <?php else: ?>
-                    <tr><td colspan="9">No books found.</td></tr>
+                    <tr><td colspan="10">No books found.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
@@ -1718,15 +1797,15 @@ require 'layout_top.php';
                                 </select>
                             </div>
                             <div class="ab-field">
-                                <label class="ab-label" for="abProgramSelect">Program</label>
-                                <select class="ab-input ab-select" id="abProgramSelect" name="program_id">
-                                    <button type="button" class="ab-select-button"><selectedcontent></selectedcontent></button>
-                                    <option value="">Select Program</option>
-                                    <?php foreach ($programOptions as $programOption): ?>
-                                        <?php $pid = (int)($programOption['program_id'] ?? 0); ?>
-                                        <option value="<?= $pid ?>" <?= (int)($addBookForm['program_id'] ?? 0) === $pid ? 'selected' : '' ?>><?= htmlspecialchars((string)($programOption['program_name'] ?? '')) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
+                                <span class="ab-label" id="abProgramLabel">Program</span>
+                                <?= manage_books_render_program_picker([
+                                    'id' => 'abPrograms',
+                                    'context' => 'add',
+                                    'label_id' => 'abProgramLabel',
+                                    'programs' => $programOptions,
+                                    'ids' => (array)($addBookForm['program_ids'] ?? []),
+                                    'main' => (int)($addBookForm['program_id'] ?? 0),
+                                ]) ?>
                             </div>
                             <div class="ab-field">
                                 <label class="ab-label" for="abSectionSelect">Section<span class="ab-req" aria-hidden="true"></span></label>
@@ -1916,16 +1995,17 @@ require 'layout_top.php';
                         </select>
                     </label>
 
-                    <label class="edit-field">
-                        <span class="edit-field-label">Program</span>
-                        <select name="program_id">
-                            <option value="">Select Program</option>
-                            <?php foreach ($programOptions as $programOption): ?>
-                                <?php $pid = (int)($programOption['program_id'] ?? 0); ?>
-                                <option value="<?= $pid ?>" <?= (int)($editForm['program_id'] ?? 0) === $pid ? 'selected' : '' ?>><?= htmlspecialchars((string)($programOption['program_name'] ?? '')) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </label>
+                    <div class="edit-field">
+                        <span class="edit-field-label" id="ebProgramLabel">Program</span>
+                        <?= manage_books_render_program_picker([
+                            'id' => 'ebPrograms',
+                            'context' => 'edit',
+                            'label_id' => 'ebProgramLabel',
+                            'programs' => $programOptions,
+                            'ids' => (array)($editForm['program_ids'] ?? []),
+                            'main' => (int)($editForm['program_id'] ?? 0),
+                        ]) ?>
+                    </div>
                 </div>
 
                 <fieldset class="edit-location-group">

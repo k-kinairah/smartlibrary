@@ -23,6 +23,7 @@ function openBookModal() {
 function closeBookModal() {
     const modal = document.getElementById('bookModal');
     if (!modal) return;
+    closeAllProgramPickers();
     modal.classList.remove('show');
     modal.setAttribute('aria-hidden', 'true');
     if (bookModalOpener && typeof bookModalOpener.focus === 'function' && document.contains(bookModalOpener)) {
@@ -434,3 +435,368 @@ window.addEventListener('keydown', function (event) {
         closeDeleteBookConfirm();
     }
 });
+
+// ---------------------------------------------------------------------
+// Program picker (Add Book and Edit Book): several programs per book.
+// Markup: manage_books_render_program_picker() in
+// admin/includes/manage_books_functions.php; look: pp- rules in admin.css
+// and admin_palette_green.css.
+//
+// The checkboxes (program_ids[]) are real form fields, so without this
+// script the list simply posts. With it, the list becomes a panel under a
+// button. The order programs are ticked in is remembered: the first one
+// ticked is the main program (hidden main_program_id); unticking it makes
+// the next-earliest ticked program the main. "All programs" ticks the rest
+// without choosing a main by itself.
+// ---------------------------------------------------------------------
+const programPickers = [];
+
+function closeAllProgramPickers() {
+    programPickers.forEach(function (picker) {
+        picker.close(false);
+    });
+}
+
+function initProgramPicker(root) {
+    const field = root.querySelector('.pp-field');
+    const panel = root.querySelector('.pp-panel');
+    const mainInput = root.querySelector('.pp-main-input');
+    const search = root.querySelector('.pp-search-input');
+    const allCheck = root.querySelector('.pp-all-check');
+    const list = root.querySelector('.pp-list');
+    const rows = Array.from(root.querySelectorAll('.pp-program-row'));
+    const checks = rows.map(function (row) { return row.querySelector('.pp-program-check'); });
+    const emptyNote = root.querySelector('.pp-empty');
+    const countNote = root.querySelector('.pp-selected-count');
+    const summaryText = root.querySelector('.pp-summary-text');
+    const summarySr = root.querySelector('.pp-summary-sr');
+    const morePill = root.querySelector('.pp-more-pill');
+    const clearBtn = root.querySelector('.pp-clear');
+    const doneBtn = root.querySelector('.pp-done');
+    if (!field || !panel || !mainInput || !list || !checks.length) return;
+
+    const total = checks.length;
+    const usePopover = typeof panel.showPopover === 'function';
+    let isOpen = false;
+    // The side the panel opened on; it stays there while it still fits
+    // (e.g. when a search makes the list shorter).
+    let openSide = null;
+
+    root.classList.add('pp-js');
+    if (usePopover) panel.setAttribute('popover', 'manual');
+
+    const nameOf = function (check) {
+        const name = check.parentElement.querySelector('.pp-name');
+        return name ? name.textContent : '';
+    };
+
+    // Programs ticked one by one, in the order they were ticked (these can
+    // become the main program). Programs ticked by "All programs" are
+    // ticked but not in this list.
+    let order = [];
+    const startMain = mainInput.value;
+    if (startMain) {
+        order.push(startMain);
+        checks.forEach(function (check) {
+            if (check.checked && check.value !== startMain) order.push(check.value);
+        });
+    }
+
+    function tickedChecks() {
+        return checks.filter(function (check) { return check.checked; });
+    }
+
+    function syncMain() {
+        const ticked = new Set(tickedChecks().map(function (check) { return check.value; }));
+        order = order.filter(function (id) { return ticked.has(id); });
+        mainInput.value = order.length ? order[0] : '';
+    }
+
+    function render() {
+        const ticked = tickedChecks();
+        const count = ticked.length;
+        const main = mainInput.value;
+
+        rows.forEach(function (row, i) {
+            const check = checks[i];
+            row.classList.toggle('is-checked', check.checked);
+            const pill = row.querySelector('.pp-main-pill');
+            if (pill) pill.hidden = !(main && check.value === main);
+        });
+
+        if (allCheck) {
+            allCheck.checked = count === total;
+            allCheck.indeterminate = count > 0 && count < total;
+        }
+        if (countNote) countNote.textContent = count + ' selected';
+
+        let text = 'Select programs';
+        let more = 0;
+        if (count > 0 && !main && count === total) {
+            text = 'All programs';
+        } else if (count > 0 && main) {
+            const mainCheck = checks.find(function (check) { return check.value === main; });
+            text = mainCheck ? nameOf(mainCheck) : '';
+            more = count - 1;
+        } else if (count > 0) {
+            const names = ticked.map(nameOf).sort(function (a, b) {
+                return a.localeCompare(b, undefined, { sensitivity: 'base', numeric: true });
+            });
+            text = names[0];
+            more = count - 1;
+        }
+        field.classList.toggle('is-empty', count === 0);
+        if (summaryText) summaryText.textContent = text;
+        if (summarySr) summarySr.textContent = more > 0 ? ', plus ' + more + ' more' : '';
+        if (morePill) {
+            morePill.hidden = more <= 0;
+            morePill.textContent = '+' + more;
+        }
+    }
+
+    checks.forEach(function (check) {
+        check.addEventListener('change', function () {
+            if (check.checked) {
+                if (order.indexOf(check.value) === -1) order.push(check.value);
+            } else {
+                order = order.filter(function (id) { return id !== check.value; });
+            }
+            syncMain();
+            render();
+        });
+    });
+
+    if (allCheck) {
+        allCheck.addEventListener('change', function () {
+            const everything = tickedChecks().length === total;
+            checks.forEach(function (check) { check.checked = !everything; });
+            if (everything) order = [];
+            syncMain();
+            render();
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
+            checks.forEach(function (check) { check.checked = false; });
+            order = [];
+            syncMain();
+            render();
+            if (search) search.focus();
+        });
+    }
+
+    // ---- search ----
+    function applyFilter() {
+        const query = search ? search.value.trim().toLowerCase() : '';
+        let shown = 0;
+        rows.forEach(function (row) {
+            const match = query === '' || (row.getAttribute('data-pp-name') || '').indexOf(query) !== -1;
+            row.hidden = !match;
+            if (match) shown += 1;
+        });
+        if (emptyNote) emptyNote.hidden = shown > 0;
+        // A shorter list must stay attached to the field when it opened above.
+        place();
+    }
+    if (search) search.addEventListener('input', applyFilter);
+
+    // ---- placing the panel ----
+    function place() {
+        if (!isOpen) return;
+        const rect = field.getBoundingClientRect();
+        const viewW = document.documentElement.clientWidth;
+        const viewH = window.innerHeight;
+        const width = Math.min(332, viewW - 24);
+        panel.style.width = width + 'px';
+        list.style.maxHeight = '';
+        let left = rect.right - width;
+        left = Math.max(12, Math.min(left, viewW - 12 - width));
+        panel.style.left = left + 'px';
+
+        let height = panel.offsetHeight;
+        const below = viewH - rect.bottom - 6 - 12;
+        const above = rect.top - 6 - 12;
+        let top;
+        let flipped = false;
+        if (openSide === 'above' && height <= above) {
+            top = rect.top - 6 - height;
+            flipped = true;
+        } else if (height <= below) {
+            top = rect.bottom + 6;
+        } else if (height <= above) {
+            top = rect.top - 6 - height;
+            flipped = true;
+        } else {
+            // Neither side fits: use the taller side and shorten the list.
+            const room = Math.max(below, above);
+            const cut = height - room;
+            list.style.maxHeight = Math.max(72, list.clientHeight - cut) + 'px';
+            height = panel.offsetHeight;
+            if (below >= above) {
+                top = rect.bottom + 6;
+            } else {
+                top = rect.top - 6 - height;
+                flipped = true;
+            }
+        }
+        panel.style.top = Math.max(12, top) + 'px';
+        root.classList.toggle('is-above', flipped);
+        openSide = flipped ? 'above' : 'below';
+    }
+
+    function onViewportChange() {
+        place();
+    }
+
+    function open() {
+        if (isOpen) return;
+        closeAllProgramPickers();
+        isOpen = true;
+        openSide = null;
+        if (usePopover) {
+            panel.showPopover();
+        } else {
+            panel.classList.add('is-open');
+        }
+        root.classList.add('is-open');
+        field.setAttribute('aria-expanded', 'true');
+        place();
+        // Again once the window's opening animation (if still running) ends,
+        // since it moves the field.
+        window.requestAnimationFrame(place);
+        window.addEventListener('resize', onViewportChange);
+        window.addEventListener('scroll', onViewportChange, true);
+        document.addEventListener('animationend', onViewportChange, true);
+        if (search) search.focus({ preventScroll: true });
+    }
+
+    function close(returnFocus) {
+        if (!isOpen) return;
+        isOpen = false;
+        if (usePopover) {
+            try { panel.hidePopover(); } catch (error) { /* already closed */ }
+        } else {
+            panel.classList.remove('is-open');
+        }
+        root.classList.remove('is-open', 'is-above');
+        field.setAttribute('aria-expanded', 'false');
+        window.removeEventListener('resize', onViewportChange);
+        window.removeEventListener('scroll', onViewportChange, true);
+        document.removeEventListener('animationend', onViewportChange, true);
+        if (search && search.value !== '') {
+            search.value = '';
+            applyFilter();
+        }
+        if (returnFocus) field.focus();
+    }
+
+    field.addEventListener('click', function () {
+        if (isOpen) {
+            close(true);
+        } else {
+            open();
+        }
+    });
+
+    if (doneBtn) {
+        doneBtn.addEventListener('click', function () { close(true); });
+    }
+
+    // Click outside: close; focus goes back to the field unless the click
+    // landed on another control.
+    document.addEventListener('pointerdown', function (event) {
+        if (!isOpen || root.contains(event.target)) return;
+        const onControl = event.target.closest && event.target.closest('input, select, textarea, button, a[href], [tabindex]');
+        close(false);
+        if (!onControl) {
+            // After the browser's own focus change for this click.
+            window.setTimeout(function () { field.focus(); }, 0);
+        }
+    }, true);
+
+    // Focus leaving the picker (Tab past Done, Shift+Tab before the field)
+    // closes the panel.
+    root.addEventListener('focusout', function (event) {
+        if (isOpen && event.relatedTarget && !root.contains(event.relatedTarget)) {
+            close(false);
+        }
+    });
+
+    function navItems() {
+        const items = [];
+        if (allCheck) items.push(allCheck);
+        rows.forEach(function (row, i) {
+            if (!row.hidden) items.push(checks[i]);
+        });
+        return items;
+    }
+
+    function moveTo(item) {
+        if (!item) return;
+        item.focus();
+        const row = item.closest('.pp-row');
+        if (row && row.scrollIntoView) row.scrollIntoView({ block: 'nearest' });
+    }
+
+    root.addEventListener('keydown', function (event) {
+        const target = event.target;
+
+        if (target === field) {
+            if (!isOpen && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+                event.preventDefault();
+                open();
+            }
+            if (isOpen && event.key === 'Escape') {
+                // Escape closes the panel only, never the window behind it.
+                event.preventDefault();
+                event.stopPropagation();
+                close(true);
+            }
+            return;
+        }
+
+        if (!isOpen) return;
+
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            event.stopPropagation();
+            close(true);
+            return;
+        }
+
+        const items = navItems();
+        const index = items.indexOf(target);
+
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            moveTo(target === search ? items[0] : items[Math.min(items.length - 1, index + 1)]);
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            if (index <= 0) {
+                if (search) search.focus();
+            } else {
+                moveTo(items[index - 1]);
+            }
+        } else if ((event.key === 'Home' || event.key === 'End') && target !== search && index !== -1) {
+            event.preventDefault();
+            moveTo(event.key === 'Home' ? items[0] : items[items.length - 1]);
+        } else if (event.key === 'Enter' && target.classList && target.classList.contains('pp-check')) {
+            // Enter on a checkbox must not submit the book form.
+            event.preventDefault();
+            target.click();
+        } else if (event.key === 'Enter' && target === search) {
+            event.preventDefault();
+            moveTo(items[0]);
+        } else if (search && target !== search && event.key.length === 1 && event.key !== ' ' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+            // Typing a letter anywhere in the panel searches.
+            search.focus();
+        }
+    });
+
+    const picker = { close: close };
+    programPickers.push(picker);
+    render();
+}
+
+document.querySelectorAll('.pp-picker').forEach(initProgramPicker);

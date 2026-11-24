@@ -14638,3 +14638,666 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
         transition: none;
     }
 }
+
+/* ============================================================
+   Program picker (several programs per book): Add Book (#bookModal)
+   and Edit Book (#editBookModal) windows, pp- classes. Markup from
+   manage_books_render_program_picker(), behaviour in
+   manage_books_admin.js. A button shows the choice; its panel (a
+   popover in the top layer, so the window's scrolling never clips it)
+   holds a search box, "All programs", one real checkbox per program
+   and a footer. Without JavaScript the panel is a plain checkbox list.
+   Base = dark (other dark variants); light below; pine in
+   admin_palette_green.css. The #ids beat the Edit form's
+   .form-grid input rules (which use !important).
+   ============================================================ */
+:is(#bookModal, #editBookModal) .pp-picker {
+    --pp-req: #d89a2b;
+    position: relative;
+    min-width: 0;
+}
+
+:is(#bookModal, #editBookModal) .pp-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ---------- closed field ---------- */
+:is(#bookModal, #editBookModal) .pp-field {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin: 0;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+#bookModal .pp-field {
+    height: 40px;
+    padding: 0 12px 0 13px;
+    border-radius: 13px;
+    border: 1px solid rgba(120, 200, 175, 0.22);
+    background: rgba(255, 255, 255, 0.04);
+    color: #eef4f0;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+#bookModal .pp-field:not(.is-empty) {
+    border-color: rgba(120, 200, 175, 0.38);
+}
+
+/* Edit window: the same box as its other selects (42px, 12px radius,
+   the form controls' font). */
+#editBookModal .pp-field {
+    height: 42px;
+    min-height: 42px;
+    padding: 0 12px 0 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(var(--pb-8cb9eb), 0.3);
+    background: rgba(var(--pb-3f7cc2), 0.15);
+    color: rgb(var(--pb-eaf4ff));
+}
+
+:is(#bookModal, #editBookModal) .pp-summary {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#bookModal .pp-field.is-empty .pp-summary {
+    color: #9fb5ab;
+    font-weight: 500;
+}
+
+#editBookModal .pp-field.is-empty .pp-summary {
+    color: rgb(var(--pb-9fb6d4));
+}
+
+:is(#bookModal, #editBookModal) .pp-more-pill,
+:is(#bookModal, #editBookModal) .pp-main-pill {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    border: 1px solid rgba(232, 181, 74, 0.5);
+    background: rgba(232, 181, 74, 0.14);
+    color: #f7d98f;
+    font-weight: 800;
+    line-height: 1;
+}
+
+:is(#bookModal, #editBookModal) .pp-more-pill {
+    padding: 3px 7px;
+    font-size: 11px;
+    letter-spacing: 0;
+}
+
+:is(#bookModal, #editBookModal) .pp-more-pill[hidden],
+:is(#bookModal, #editBookModal) .pp-main-pill[hidden] {
+    display: none;
+}
+
+:is(#bookModal, #editBookModal) .pp-chevron {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    margin: 0 3px 0 2px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg) translateY(-2px);
+    opacity: 0.75;
+    transition: transform 0.18s ease;
+}
+
+:is(#bookModal, #editBookModal) .pp-picker.is-open .pp-chevron {
+    transform: rotate(225deg) translate(-2px, -1px);
+}
+
+:is(#bookModal, #editBookModal) .pp-picker.is-open .pp-field {
+    border-color: #5fc9ae;
+    box-shadow: 0 0 0 3px rgba(95, 201, 174, 0.25);
+}
+
+:is(#bookModal, #editBookModal) .pp-field:focus-visible,
+:is(#bookModal, #editBookModal) .pp-check:focus-visible,
+:is(#bookModal, #editBookModal) .pp-clear:focus-visible,
+:is(#bookModal, #editBookModal) .pp-done:focus-visible {
+    outline: 2px solid #6ed6ba;
+    outline-offset: 2px;
+}
+
+/* ---------- panel ---------- */
+:is(#bookModal, #editBookModal) .pp-panel {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #10302a 0%, #08181a 100%);
+    border: 1px solid rgba(232, 181, 74, 0.45);
+    color: #e0e8e2;
+    font-family: inherit;
+    font-size: 13px;
+    text-align: left;
+}
+
+/* With the script: a popover (or, without Popover API support, a fixed
+   box) placed under the field by manage_books_admin.js. */
+:is(#bookModal, #editBookModal) .pp-picker.pp-js .pp-panel {
+    position: fixed;
+    inset: auto;
+    z-index: 1100;
+    width: min(332px, calc(100vw - 24px));
+    margin: 0;
+    box-shadow: 0 24px 54px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(0, 0, 0, 0.3), 0 0 36px rgba(26, 120, 98, 0.14);
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.14s ease, transform 0.14s ease, overlay 0.14s allow-discrete, display 0.14s allow-discrete;
+}
+
+:is(#bookModal, #editBookModal) .pp-picker.pp-js .pp-panel:not(:popover-open):not(.is-open) {
+    display: none;
+}
+
+@starting-style {
+    :is(#bookModal, #editBookModal) .pp-picker.pp-js .pp-panel:popover-open {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+}
+
+/* Without the script: the list is part of the form. */
+:is(#bookModal, #editBookModal) .pp-picker:not(.pp-js) .pp-field,
+:is(#bookModal, #editBookModal) .pp-picker:not(.pp-js) .pp-search,
+:is(#bookModal, #editBookModal) .pp-picker:not(.pp-js) .pp-all-row,
+:is(#bookModal, #editBookModal) .pp-picker:not(.pp-js) .pp-sep,
+:is(#bookModal, #editBookModal) .pp-picker:not(.pp-js) .pp-clear,
+:is(#bookModal, #editBookModal) .pp-picker:not(.pp-js) .pp-done,
+:is(#bookModal, #editBookModal) .pp-picker:not(.pp-js) .pp-selected-count {
+    display: none;
+}
+
+:is(#bookModal, #editBookModal) .pp-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+    padding: 0 12px;
+    margin-bottom: 4px;
+    border-radius: 11px;
+    border: 1px solid rgba(120, 200, 175, 0.22);
+    background: rgba(255, 255, 255, 0.04);
+    color: #9fb5ab;
+}
+
+:is(#bookModal, #editBookModal) .pp-search:focus-within {
+    border-color: #5fc9ae;
+    box-shadow: 0 0 0 2px rgba(95, 201, 174, 0.35);
+}
+
+:is(#bookModal, #editBookModal) .pp-search svg {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+}
+
+:is(#bookModal, #editBookModal) .pp-search .pp-search-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+    height: 34px;
+    min-height: 0;
+    margin: 0;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none;
+    color: #eef4f0 !important;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+:is(#bookModal, #editBookModal) .pp-search .pp-search-input::placeholder {
+    color: #9fb5ab !important;
+    opacity: 1;
+}
+
+:is(#bookModal, #editBookModal) .pp-row {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 36px;
+    min-height: 36px;
+    margin: 0;
+    padding: 0 10px;
+    border-radius: 10px;
+    color: #e0e8e2;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    user-select: none;
+}
+
+:is(#bookModal, #editBookModal) .pp-row:hover,
+:is(#bookModal, #editBookModal) .pp-row:has(.pp-check:focus-visible) {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+:is(#bookModal, #editBookModal) .pp-program-row.is-checked {
+    background: rgba(232, 181, 74, 0.14);
+    color: #f7d98f;
+    font-weight: 700;
+}
+
+:is(#bookModal, #editBookModal) .pp-program-row[hidden] {
+    display: none;
+}
+
+:is(#bookModal, #editBookModal) .pp-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+:is(#bookModal, #editBookModal) .pp-all-row {
+    font-weight: 800;
+}
+
+:is(#bookModal, #editBookModal) .pp-count {
+    flex: none;
+    font-size: 12px;
+    font-weight: 700;
+    color: #9fb5ab;
+}
+
+:is(#bookModal, #editBookModal) .pp-main-pill {
+    padding: 3px 7px;
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+:is(#bookModal, #editBookModal) .pp-sep {
+    flex: none;
+    height: 1px;
+    margin: 4px 6px;
+    background: rgba(120, 200, 175, 0.18);
+}
+
+:is(#bookModal, #editBookModal) .pp-list {
+    max-height: 228px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(120, 200, 175, 0.4) transparent;
+}
+
+:is(#bookModal, #editBookModal) .pp-empty {
+    margin: 0;
+    padding: 10px;
+    font-size: 12.5px;
+    color: #9fb5ab;
+}
+
+:is(#bookModal, #editBookModal) .pp-empty[hidden] {
+    display: none;
+}
+
+/* Checkboxes: real inputs, drawn as 18px rounded boxes. */
+:is(#bookModal, #editBookModal) .pp-row .pp-check {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: none;
+    box-sizing: border-box;
+    width: 18px !important;
+    height: 18px !important;
+    min-height: 0 !important;
+    margin: 0;
+    padding: 0 !important;
+    border: 1.5px solid #7f9c91 !important;
+    border-radius: 5px !important;
+    background: transparent no-repeat center / 12px 12px !important;
+    box-shadow: none !important;
+    cursor: pointer;
+}
+
+:is(#bookModal, #editBookModal) .pp-row .pp-check:checked {
+    border-color: #e8b54a !important;
+    background-color: #e8b54a !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.6l4.6-5' fill='none' stroke='%2310302a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+}
+
+:is(#bookModal, #editBookModal) .pp-row .pp-check:indeterminate {
+    border-color: #e8b54a !important;
+    background-color: #e8b54a !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 6h6' fill='none' stroke='%2310302a' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") !important;
+}
+
+/* ---------- footer ---------- */
+:is(#bookModal, #editBookModal) .pp-foot {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    padding: 10px 4px 2px 6px;
+    border-top: 1px solid rgba(120, 200, 175, 0.18);
+}
+
+:is(#bookModal, #editBookModal) .pp-foot-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+:is(#bookModal, #editBookModal) .pp-selected-count {
+    font-size: 13px;
+    font-weight: 800;
+    color: #eef4f0;
+}
+
+:is(#bookModal, #editBookModal) .pp-help {
+    font-size: 10.5px;
+    font-weight: 500;
+    line-height: 1.35;
+    color: #bccdc4;
+}
+
+:is(#bookModal, #editBookModal) .pp-clear,
+:is(#bookModal, #editBookModal) .pp-done {
+    flex: none;
+    height: 34px;
+    margin: 0;
+    border-radius: 999px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+:is(#bookModal, #editBookModal) .pp-clear {
+    padding: 0 10px;
+    border: 0;
+    background: transparent;
+    color: #cfe3da;
+    font-weight: 700;
+}
+
+:is(#bookModal, #editBookModal) .pp-clear:hover {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+:is(#bookModal, #editBookModal) .pp-done {
+    padding: 0 18px;
+    border: 0;
+    background: linear-gradient(180deg, #20846d 0%, #176451 100%);
+    color: #ffffff;
+    font-weight: 800;
+    box-shadow: 0 8px 18px rgba(23, 100, 81, 0.4);
+}
+
+:is(#bookModal, #editBookModal) .pp-done:hover {
+    background: linear-gradient(180deg, #1a7360 0%, #125543 100%);
+}
+
+/* ---------- light ---------- */
+[data-theme="light"] #bookModal .pp-field {
+    border-color: #c7ddd3;
+    background: #ffffff;
+    color: #1f3b2e;
+}
+
+[data-theme="light"] #bookModal .pp-field:not(.is-empty) {
+    border-color: #a9cbbd;
+}
+
+[data-theme="light"] #editBookModal .pp-field {
+    border-color: rgba(56, 96, 77, 0.24);
+    background: #ffffff;
+    color: #1f3b2e;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-field.is-empty .pp-summary {
+    color: #5d726a;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-more-pill,
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-main-pill {
+    border-color: #ecd59b;
+    background: #fff1cf;
+    color: #6f510e;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-picker.is-open .pp-field {
+    border-color: #2f8466;
+    box-shadow: 0 0 0 3px rgba(47, 132, 102, 0.22);
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-field:focus-visible,
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-check:focus-visible,
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-clear:focus-visible,
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-done:focus-visible {
+    outline-color: #1d6149;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-panel {
+    background: #ffffff;
+    border-color: #b5d3c6;
+    color: #17382e;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-picker.pp-js .pp-panel {
+    box-shadow: 0 18px 44px rgba(20, 60, 48, 0.26), 0 2px 6px rgba(20, 60, 48, 0.1);
+}
+
+/* Opened above the field: the shadow falls upward, so it never greys the
+   field the panel belongs to. */
+:is(#bookModal, #editBookModal) .pp-picker.pp-js.is-above .pp-panel {
+    box-shadow: 0 -24px 54px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(0, 0, 0, 0.3), 0 0 36px rgba(26, 120, 98, 0.14);
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-picker.pp-js.is-above .pp-panel {
+    box-shadow: 0 -18px 44px rgba(20, 60, 48, 0.26), 0 -2px 6px rgba(20, 60, 48, 0.1);
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-search {
+    border-color: #c7ddd3;
+    background: #f4f9f6;
+    color: #5d726a;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-search:focus-within {
+    border-color: #2f8466;
+    box-shadow: 0 0 0 2px rgba(47, 132, 102, 0.25);
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-search .pp-search-input {
+    color: #17382e !important;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-search .pp-search-input::placeholder {
+    color: #5d726a !important;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-row {
+    color: #17382e;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-row:hover,
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-row:has(.pp-check:focus-visible) {
+    background: #eaf4ef;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-program-row.is-checked {
+    background: #dcefe6;
+    color: #0f4a38;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-count,
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-empty {
+    color: #5d726a;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-sep,
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-foot {
+    border-color: #d3e5dd;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-sep {
+    background: #d3e5dd;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-list {
+    scrollbar-color: #9cc6b6 transparent;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-row .pp-check {
+    border-color: #5f8a7b !important;
+    background-color: #ffffff !important;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-row .pp-check:checked,
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-row .pp-check:indeterminate {
+    border-color: #2f8466 !important;
+    background-color: #2f8466 !important;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-row .pp-check:checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.6l4.6-5' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-row .pp-check:indeterminate {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 6h6' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") !important;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-selected-count {
+    color: #17382e;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-help {
+    color: #4d665d;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-clear {
+    color: #2d6b55;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-clear:hover {
+    background: #eef6f2;
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-done {
+    background: linear-gradient(180deg, #2f8466 0%, #1d6149 100%);
+    box-shadow: 0 8px 18px rgba(29, 97, 73, 0.28);
+}
+
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-done:hover {
+    background: linear-gradient(180deg, #276f56 0%, #17503c 100%);
+}
+
+/* ---------- motion and forced colours ---------- */
+@media (prefers-reduced-motion: reduce) {
+    :is(#bookModal, #editBookModal) .pp-picker .pp-panel,
+    :is(#bookModal, #editBookModal) .pp-chevron,
+    :is(#bookModal, #editBookModal) .pp-field {
+        transition: none;
+    }
+}
+
+/* Forced colours: plain system checkboxes and borders. */
+@media (forced-colors: active) {
+    :is(#bookModal, #editBookModal) .pp-row .pp-check {
+        -webkit-appearance: auto;
+        appearance: auto;
+        width: 16px !important;
+        height: 16px !important;
+        border: 0 !important;
+        background: none !important;
+    }
+
+    :is(#bookModal, #editBookModal) .pp-panel,
+    :is(#bookModal, #editBookModal) .pp-field,
+    :is(#bookModal, #editBookModal) .pp-search {
+        border: 1px solid CanvasText;
+    }
+
+    :is(#bookModal, #editBookModal) .pp-program-row.is-checked {
+        outline: 1px solid Highlight;
+    }
+}
+
+/* ---------- Books table: Program column ---------- */
+.manage-books-table.pp-program-table th:nth-child(1), .manage-books-table.pp-program-table td:nth-child(1) { width: 5%; }
+.manage-books-table.pp-program-table th:nth-child(2), .manage-books-table.pp-program-table td:nth-child(2) { width: 9%; }
+.manage-books-table.pp-program-table th:nth-child(3), .manage-books-table.pp-program-table td:nth-child(3) { width: 22%; }
+.manage-books-table.pp-program-table th:nth-child(4), .manage-books-table.pp-program-table td:nth-child(4) { width: 14%; }
+.manage-books-table.pp-program-table th:nth-child(5), .manage-books-table.pp-program-table td:nth-child(5) { width: 5%; }
+.manage-books-table.pp-program-table th:nth-child(6), .manage-books-table.pp-program-table td:nth-child(6) { width: 10%; }
+.manage-books-table.pp-program-table th:nth-child(7), .manage-books-table.pp-program-table td:nth-child(7) { width: 13%; }
+.manage-books-table.pp-program-table th:nth-child(8), .manage-books-table.pp-program-table td:nth-child(8) { width: 7% !important; }
+.manage-books-table.pp-program-table th:nth-child(9), .manage-books-table.pp-program-table td:nth-child(9) { width: 8%; }
+
+.manage-books-table.pp-program-table td:nth-child(7) {
+    word-break: break-word;
+}
+
+.manage-books-table .pp-cell-pill {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 2px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 1px solid rgba(232, 181, 74, 0.5);
+    background: rgba(232, 181, 74, 0.14);
+    color: #f7d98f;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.2;
+    white-space: nowrap;
+    cursor: help;
+}
+
+.manage-books-table .pp-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+[data-theme="light"] .manage-books-table .pp-cell-pill {
+    border-color: #ecd59b;
+    background: #fff1cf;
+    color: #6f510e;
+}
