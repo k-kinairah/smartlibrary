@@ -2,7 +2,7 @@
 // Loan period by book section (librarian rules, 2026-11).
 //
 //   Circulation, Filipiniana, Fiction  -> 7 days
-//   SHS                                -> 5 days
+//   Basic Education (JHS and SHS; older rows may still say SHS) -> 5 days
 //   Reference, Thesis                  -> room use only (nobody can borrow)
 //   Faculty                            -> faculty days (30) on any borrowable book
 //
@@ -28,6 +28,13 @@ if (!function_exists('smartlib_section_key')) {
 
         if ($key === 'general') {
             return 'circulation';
+        }
+
+        // "Basic Education" (JHS and SHS books) is the section's name now;
+        // older rows and free-text bulk imports may still say "SHS". Both
+        // map to the same internal key, 'shs' (5 days).
+        if ($key === 'basic education') {
+            return 'shs';
         }
 
         $known = ['circulation', 'filipiniana', 'fiction', 'shs', 'reference', 'thesis'];

@@ -51,7 +51,7 @@ $librarySections = [
     'Fiction',
     'Reference',
     'Thesis',
-    'SHS'
+    'Basic Education'
 ];
 
 $libraryClassNames = [
