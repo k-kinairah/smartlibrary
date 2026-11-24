@@ -1,0 +1,26 @@
+# Book cover images only (cover_<id>.jpg / .png and the bundled covers).
+# No directory listing, and nothing in here may ever run as a script, even if
+# a file with a script extension ended up in this folder.
+Options -Indexes
+
+<IfModule mod_authz_core.c>
+    <FilesMatch "\.(?i:php[0-9]?|phtml|phar|pht|phps|cgi|pl|py|sh|asp|aspx|jsp)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "\.(?i:php[0-9]?|phtml|phar|pht|phps|cgi|pl|py|sh|asp|aspx|jsp)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
+<IfModule LiteSpeed>
+    php_flag engine off
+</IfModule>

@@ -142,6 +142,14 @@ if (!$tokenInfo) {
 
 $rawToken = (string)($tokenInfo['token'] ?? '');
 $resetUrl = auth_build_absolute_url('/reset_pin.php?token=' . urlencode($rawToken));
+if ($resetUrl === '') {
+    // No trusted address for the link (see auth_build_absolute_url(), which
+    // logged why): retire the token, send nothing, and answer exactly as for
+    // any other request so the visitor learns nothing.
+    auth_mark_reset_token_used($conn, (int)($tokenInfo['token_id'] ?? 0));
+    pin_reset_log('link_refused token_id=' . (int)($tokenInfo['token_id'] ?? 0) . ' user_number=' . substr($identifier, 0, 40));
+    respond_json($genericSuccess);
+}
 $expiryMinutes = AUTH_RESET_TOKEN_TTL_MINUTES;
 // Librarian/admin accounts reset a password (they sign in with a password
 // plus 2FA); students and faculty reset a PIN.

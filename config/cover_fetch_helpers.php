@@ -479,11 +479,25 @@ function fbc_google_cover_url_variants(string $url): array {
  * caller, not just the one that happened to hit it first.
  */
 function fbc_log_line(string $msg): void {
+    $msg = fbc_redact_secrets($msg);
     if (defined('STDERR')) {
         fwrite(STDERR, $msg);
     } else {
         error_log(rtrim($msg, "\r\n"));
     }
+}
+
+/**
+ * Removes API keys from text that is about to be logged: the value of any
+ * key= / api_key= / apikey= query parameter, plus the configured Google
+ * Books key wherever it appears (e.g. inside an error message).
+ */
+function fbc_redact_secrets(string $text): string {
+    $text = (string)preg_replace('/((?:^|[?&;\s])(?:key|api_?key|apikey|access_token|token)=)[^&\s"\'<>]+/i', '$1[redacted]', $text);
+    if (defined('GOOGLE_BOOKS_API_KEY') && (string)GOOGLE_BOOKS_API_KEY !== '') {
+        $text = str_replace([(string)GOOGLE_BOOKS_API_KEY, rawurlencode((string)GOOGLE_BOOKS_API_KEY)], '[redacted]', $text);
+    }
+    return $text;
 }
 
 /**

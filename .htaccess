@@ -11,3 +11,91 @@
         Deny from all
     </FilesMatch>
 </IfModule>
+
+# ---------------------------------------------------------------------------
+# Security batch 1 (2026-11-24). Everything below is additive and guarded so
+# the same file works on local XAMPP (/SmartLib/) and on the live host (web
+# root, LiteSpeed). No rule names a folder path: RewriteRule patterns are
+# relative to this .htaccess folder. /.well-known/ is never touched.
+# ---------------------------------------------------------------------------
+
+# No directory listings (admin/, assets/, logs/, docs/ ...).
+Options -Indexes
+
+# Folders that must never be served: version control, editor settings,
+# working notes, documents and logs. Answer 404 so they look absent.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(\.git|\.svn|\.hg|\.idea|\.vscode|\.claude|_handoff|docs|logs)(/|$) - [R=404,L]
+</IfModule>
+
+# Dotfiles (never .well-known, which is a folder).
+<IfModule mod_authz_core.c>
+    <FilesMatch "^\.(htaccess|htpasswd|user\.ini|gitignore|gitattributes|env)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "^\.(htaccess|htpasswd|user\.ini|gitignore|gitattributes|env)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
+
+# Notes, scripts, data and documents. The app never links or fetches a file
+# with these extensions (its CSV and PDF downloads come from PHP scripts).
+<IfModule mod_authz_core.c>
+    <FilesMatch "\.(?i:md|bat|ps1|csv|tsv|docx|pdf|ini|yml|yaml|lock)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "\.(?i:md|bat|ps1|csv|tsv|docx|pdf|ini|yml|yaml|lock)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
+
+# Security headers on every response (pages, JSON, CSS, images).
+# The enforced CSP only covers framing, plugins and <base>; the full policy
+# runs as Report-Only until the inline scripts are moved into files.
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    Header always set Content-Security-Policy "frame-ancestors 'self'; object-src 'none'; base-uri 'self'"
+    Header always set Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'"
+    Header always unset X-Powered-By
+    Header unset X-Powered-By
+</IfModule>
+
+# PHP: no error text in responses (errors go to the log), and safer session
+# cookies. Only applied where PHP runs as an Apache/LiteSpeed module that
+# reads php_flag/php_value; .user.ini next to this file carries the same
+# settings for PHP-FPM/LSAPI hosts. The Secure cookie flag is not set here:
+# it cannot be made conditional on HTTPS in a way every host accepts.
+<IfModule mod_php.c>
+    php_flag display_errors off
+    php_flag display_startup_errors off
+    php_flag log_errors on
+    php_flag session.cookie_httponly on
+    php_value session.cookie_samesite Lax
+    php_flag session.use_strict_mode on
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag display_errors off
+    php_flag display_startup_errors off
+    php_flag log_errors on
+    php_flag session.cookie_httponly on
+    php_value session.cookie_samesite Lax
+    php_flag session.use_strict_mode on
+</IfModule>
+<IfModule LiteSpeed>
+    php_flag display_errors off
+    php_flag display_startup_errors off
+    php_flag log_errors on
+    php_flag session.cookie_httponly on
+    php_value session.cookie_samesite Lax
+    php_flag session.use_strict_mode on
+</IfModule>

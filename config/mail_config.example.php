@@ -24,6 +24,11 @@ define('SMARTLIB_MAIL_REPLY_TO', '');
 // is built from the request's Host header, which a visitor can forge to point
 // reset links at their own site. Leave empty on local XAMPP.
 define('SMARTLIB_BASE_URL', '');
+// Optional, only used while SMARTLIB_BASE_URL is empty: extra host names whose
+// requests may build emailed links from their own Host header (localhost,
+// 127.0.0.1 and [::1] are always allowed). Any other Host gets no email and
+// an error in the log. Prefer setting SMARTLIB_BASE_URL instead.
+// define('SMARTLIB_ALLOWED_HOSTS', ['library.example.edu.ph', 'www.library.example.edu.ph']);
 
 // LOCAL DEVELOPMENT ONLY. When true, a sign-in 2FA code is also shown on the
 // login screen -- and only for requests from this same machine -- so you are

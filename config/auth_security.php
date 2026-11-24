@@ -618,26 +618,56 @@ function auth_send_multipart_email(string $toEmail, string $subject, string $htm
 }
 
 /**
+ * Whether the request's Host header may be used to build an emailed link
+ * when SMARTLIB_BASE_URL is not set: localhost / 127.0.0.1 / [::1] (any
+ * port), or a host listed in the optional SMARTLIB_ALLOWED_HOSTS array in
+ * config/mail_config.php (compared without the port, case-insensitive).
+ */
+function auth_request_host_is_trusted(string $hostHeader): bool {
+    $hostHeader = strtolower(trim($hostHeader));
+    // Host names, IPv4 and bracketed IPv6 with an optional port; nothing else.
+    if ($hostHeader === '' || !preg_match('/^(\[[0-9a-f:.]+\]|[a-z0-9.-]+)(:[0-9]{1,5})?$/', $hostHeader, $m)) {
+        return false;
+    }
+    $name = $m[1];
+    if (in_array($name, ['localhost', '127.0.0.1', '[::1]'], true)) {
+        return true;
+    }
+    if (defined('SMARTLIB_ALLOWED_HOSTS') && is_array(SMARTLIB_ALLOWED_HOSTS)) {
+        foreach (SMARTLIB_ALLOWED_HOSTS as $allowed) {
+            $allowed = strtolower(trim((string)$allowed));
+            if ($allowed !== '' && ($allowed === $name || $allowed === $hostHeader)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
  * Absolute URL for a link that goes out in an email (e.g. the PIN-reset
  * link). $path is relative to the app root ("/reset_pin.php?token=...").
  *
  * Uses SMARTLIB_BASE_URL from config/mail_config.php when set, so the link
  * can't be pointed at another site by sending a forged Host header. Without
- * it, falls back to the old Host-header-based URL -- fine on local XAMPP, but
- * a live host must set SMARTLIB_BASE_URL.
+ * it, the request's Host is used only when auth_request_host_is_trusted()
+ * accepts it (localhost, or SMARTLIB_ALLOWED_HOSTS). Any other host returns
+ * '' and logs an error: the caller must then send no email.
  */
 function auth_build_absolute_url(string $path): string {
     $base = smartlib_configured_base_url();
     if ($base !== '') {
         return $base . '/' . ltrim($path, '/');
     }
-    if (PHP_OS_FAMILY !== 'Windows') {
-        error_log('SmartLib: SMARTLIB_BASE_URL is not set in config/mail_config.php; emailed links are being built '
-            . 'from the request Host header, which a visitor can forge.');
-    }
 
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host = trim((string)($_SERVER['HTTP_HOST'] ?? 'localhost'));
+    if (!auth_request_host_is_trusted($host)) {
+        error_log('SmartLib: refused to build an emailed link from an untrusted Host header ('
+            . substr(preg_replace('/[^\x20-\x7e]/', '?', $host), 0, 100)
+            . '). Set SMARTLIB_BASE_URL (or SMARTLIB_ALLOWED_HOSTS) in config/mail_config.php.');
+        return '';
+    }
 
     $baseDir = trim((string)dirname((string)($_SERVER['PHP_SELF'] ?? '/')));
     $baseDir = str_replace('\\', '/', $baseDir);
