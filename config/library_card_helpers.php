@@ -262,12 +262,30 @@ function library_card_check_signup_allowed(mysqli $conn, string $email, string $
     if (library_card_too_many_requests($conn, $email)) {
         return ['ok' => false, 'message' => 'Too many codes have been requested for this email. Please try again in an hour.'];
     }
+    if (!library_card_ip_code_allowed($conn)) {
+        return ['ok' => false, 'message' => LIBRARY_CARD_IP_LIMIT_MESSAGE];
+    }
 
     foreach ($retire as $verificationId) {
         library_card_mark_verification_used($conn, $verificationId);
     }
 
     return ['ok' => true];
+}
+
+/**
+ * Ceiling on emailed codes per IP address (security review 2026-11-24,
+ * SR-12): 30 an hour for sign-up and reprint together, on top of the 5 an
+ * hour per email above. The school's kiosks share one public IP, so this is
+ * only a flood ceiling. Counts one code request; fails open (see
+ * config/rate_limit.php).
+ */
+const LIBRARY_CARD_MAX_CODES_PER_IP_PER_HOUR = 30;
+const LIBRARY_CARD_IP_LIMIT_MESSAGE = 'Too many codes have been requested from this network in the last hour. Please try again later or ask the librarian.';
+
+function library_card_ip_code_allowed(mysqli $conn): bool {
+    require_once __DIR__ . '/rate_limit.php';
+    return smartlib_rate_limit_allow($conn, 'card_code_ip', smartlib_rate_limit_ip(), LIBRARY_CARD_MAX_CODES_PER_IP_PER_HOUR, 3600);
 }
 
 /** Hourly cap on codes per email, shared by signup and reprint. */
@@ -346,6 +364,9 @@ function library_card_check_reprint_allowed(mysqli $conn, string $email, string 
 
     if (library_card_too_many_requests($conn, $email)) {
         return ['ok' => false, 'message' => 'Too many codes have been requested for this email. Please try again in an hour.'];
+    }
+    if (!library_card_ip_code_allowed($conn)) {
+        return ['ok' => false, 'message' => LIBRARY_CARD_IP_LIMIT_MESSAGE];
     }
 
     foreach ($retire as $verificationId) {

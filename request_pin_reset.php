@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
 session_start();
 require 'config/db_connect.php';
 require 'config/auth_security.php';
@@ -8,9 +9,39 @@ require_once 'config/auth_email_template.php';
 header('Content-Type: application/json; charset=utf-8');
 
 function respond_json(array $payload, int $statusCode = 200): void {
-    http_response_code($statusCode);
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+    pin_reset_send_reply($payload, $statusCode);
     exit;
+}
+
+/**
+ * Sends the whole reply and closes the connection, but lets the script go
+ * on (security review 2026-11-24, SR-13): the reset email is sent AFTER the
+ * visitor already has the answer, so a registered ID does not answer
+ * slower than an unregistered one. Every reply of this endpoint goes out
+ * this same way, so the headers are identical too.
+ */
+function pin_reset_send_reply(array $payload, int $statusCode = 200): void {
+    $body = (string)json_encode($payload, JSON_UNESCAPED_UNICODE);
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+    ignore_user_abort(true);
+    http_response_code($statusCode);
+    header('Content-Length: ' . strlen($body));
+    header('Connection: close');
+    echo $body;
+    if (function_exists('litespeed_finish_request')) {
+        litespeed_finish_request();
+        return;
+    }
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+        return;
+    }
+    while (ob_get_level() > 0) {
+        @ob_end_flush();
+    }
+    flush();
 }
 
 // One server-log line per outcome, so "I never got the email" can be
@@ -35,7 +66,7 @@ require_once 'config/request_guard.php';
 smartlib_request_guard(['signin_csrf']);
 
 // Same ID normalization as login_handler.php (dashes as printed on the card).
-$identifier = library_card_normalize_id((string)($_POST['identifier'] ?? ''));
+$identifier = library_card_normalize_id(smartlib_request_string($_POST, 'identifier'));
 // The account's real role decides; a posted account_type is ignored.
 $clientIp = auth_client_ip();
 // The same answer whether or not anything was sent (no account
@@ -56,8 +87,28 @@ if (!auth_ensure_reset_table($conn) || !auth_ensure_2fa_table($conn)) {
     respond_json(['status' => 'error', 'message' => 'PIN reset service is unavailable right now.'], 500);
 }
 
-// Cooldown and hourly cap are per ID; the IP only has a high abuse ceiling
-// (see auth_reset_rate_limit_status()).
+// Security review 2026-11-24, SR-13: the 60-second cooldown and the hourly
+// cap are counted on the SUBMITTED ID, whether or not it exists, so a
+// registered and an unregistered ID get exactly the same replies in the
+// same pattern. (The older checks below count reset tokens, which exist only
+// for real accounts; they stay as a backstop and for when the counter table
+// is unavailable -- the limiter fails open, see config/rate_limit.php.)
+require_once 'config/rate_limit.php';
+$idKey = strtolower($identifier);
+$idMinute = smartlib_rate_limit_count($conn, 'pin_reset_id_min', $idKey, AUTH_RESET_MIN_SECONDS_BETWEEN_REQUESTS);
+$idHour = smartlib_rate_limit_count($conn, 'pin_reset_id_hour', $idKey, 3600);
+if (($idMinute !== null && $idMinute >= 1) || ($idHour !== null && $idHour >= AUTH_RESET_MAX_REQUESTS_PER_HOUR)) {
+    pin_reset_log_skip('throttled_id', $identifier);
+    respond_json([
+        'status' => 'success',
+        'message' => $genericMessage . ' Please wait before requesting another reset.'
+    ]);
+}
+smartlib_rate_limit_record($conn, 'pin_reset_id_min', $idKey);
+smartlib_rate_limit_record($conn, 'pin_reset_id_hour', $idKey);
+
+// Token-based cooldown and hourly cap per ID (backstop); the IP only has a
+// high abuse ceiling (see auth_reset_rate_limit_status()).
 $rate = auth_reset_rate_limit_status($conn, $identifier, $clientIp);
 $throttledReason = '';
 if (!empty($rate['too_many']) || !empty($rate['cooldown'])) {
@@ -184,15 +235,18 @@ $html = smartlib_auth_email_html($emailOptions);
 $text = smartlib_auth_email_text($emailOptions);
 
 $tokenId = (int)($tokenInfo['token_id'] ?? 0);
+// Answer first, then send (see pin_reset_send_reply()). A failed send is
+// only logged: telling the visitor "could not be sent" would reveal that
+// the ID is registered.
+pin_reset_send_reply($genericSuccess);
 $sent = auth_send_multipart_email($email, $subject, $html, $text);
 if (!$sent) {
     pin_reset_log('send_failed token_id=' . $tokenId . ' user_number=' . substr($identifier, 0, 40));
-    respond_json(['status' => 'error', 'message' => 'Reset email could not be sent. Check server mail configuration.'], 500);
+    exit;
 }
 
 pin_reset_log('sent token_id=' . $tokenId . ' to=' . auth_mask_email($email) . ' user_number=' . substr($identifier, 0, 40));
-
-respond_json($genericSuccess);
+exit;
 
 
 

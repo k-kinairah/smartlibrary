@@ -13,6 +13,26 @@
 // itself fails (a transient DB error), the request is let through on the
 // session as-is and the error is logged -- a DB hiccup shouldn't lock every
 // librarian out.
+//
+// Idle timeout (security review 2026-11-24, SR-11): every guarded request
+// stamps $_SESSION['last_seen']; a sign-in left unused for longer than the
+// limit for its role is signed out on its next request. The limits are the
+// constants below; config/mail_config.php may define either one first to
+// override it. Only the sign-in is ended -- the library-card sign-up,
+// verification and reprint state and a pending 2FA code live in other
+// session keys and are left alone. A session from before this rule existed
+// (no last_seen yet) just gets a fresh stamp. The kiosk's own 2-minute
+// JavaScript sign-out (assets/javascript/kiosk-idle.js) is separate.
+
+if (is_file(__DIR__ . '/mail_config.php')) {
+    require_once __DIR__ . '/mail_config.php';
+}
+if (!defined('SMARTLIB_IDLE_TIMEOUT_STAFF_SECONDS')) {
+    define('SMARTLIB_IDLE_TIMEOUT_STAFF_SECONDS', 30 * 60);   // librarians / admins
+}
+if (!defined('SMARTLIB_IDLE_TIMEOUT_PATRON_SECONDS')) {
+    define('SMARTLIB_IDLE_TIMEOUT_PATRON_SECONDS', 15 * 60);  // students / faculty
+}
 
 /**
  * Copy an account row's display/access fields into the session, using the
@@ -40,6 +60,80 @@ function smartlib_session_sign_out(): void {
     }
 }
 
+/** Idle limit in seconds for the signed-in role. */
+function smartlib_session_idle_limit(): int {
+    $role = strtolower(trim((string)($_SESSION['role'] ?? '')));
+    return in_array($role, ['librarian', 'admin'], true)
+        ? (int)SMARTLIB_IDLE_TIMEOUT_STAFF_SECONDS
+        : (int)SMARTLIB_IDLE_TIMEOUT_PATRON_SECONDS;
+}
+
+/**
+ * Whether this request ended the sign-in because it had been idle too long
+ * (callers use it to say "you were signed out" instead of "please sign in").
+ * Pass true to record it.
+ */
+function smartlib_session_idle_expired(?bool $set = null): bool {
+    static $expired = false;
+    if ($set !== null) {
+        $expired = $set;
+    }
+    return $expired;
+}
+
+/**
+ * Ends only the sign-in (account keys and the idle stamp) and gives the
+ * session a fresh ID. Library-card and pending-2FA keys and the form
+ * tokens stay, so a half-finished card sign-up is not lost.
+ */
+function smartlib_session_sign_out_idle(): void {
+    foreach (['user_id', 'user_number', 'role', 'name', 'last_auth_at', 'last_seen'] as $key) {
+        unset($_SESSION[$key]);
+    }
+    if (session_status() === PHP_SESSION_ACTIVE && !headers_sent()) {
+        session_regenerate_id(true);
+    }
+}
+
+/**
+ * Idle rule for a signed-in session: false (and signed out) when it has been
+ * idle past the limit for its role, else true with last_seen refreshed.
+ */
+function smartlib_session_touch(): bool {
+    $now = time();
+    $lastSeen = $_SESSION['last_seen'] ?? null;
+    if (is_int($lastSeen) || (is_string($lastSeen) && ctype_digit($lastSeen))) {
+        if ($now - (int)$lastSeen > smartlib_session_idle_limit()) {
+            smartlib_session_sign_out_idle();
+            smartlib_session_idle_expired(true);
+            return false;
+        }
+    }
+    $_SESSION['last_seen'] = $now;
+    return true;
+}
+
+/**
+ * The JSON payload an endpoint sends with HTTP 401 when there is no usable
+ * sign-in: "session_expired" after an idle sign-out (the kiosk then reloads
+ * into its signed-out state), else "signed_out" with the endpoint's own text.
+ */
+function smartlib_session_signed_out_payload(string $message): array {
+    if (smartlib_session_idle_expired()) {
+        return [
+            'status' => 'error',
+            'error' => 'session_expired',
+            'message' => 'You were signed out because the session was idle. Please sign in again.',
+        ];
+    }
+    return ['status' => 'error', 'error' => 'signed_out', 'message' => $message];
+}
+
+/** Where an admin page sends a request without a usable staff sign-in. */
+function smartlib_staff_signed_out_location(string $home = '../index.php'): string {
+    return smartlib_session_idle_expired() ? $home . '?signin=1' : $home;
+}
+
 /**
  * The signed-in user's ID if the account still exists and is active, else 0.
  * An inactive or deleted account is signed out on the spot. For an active
@@ -56,6 +150,12 @@ function smartlib_active_session_user_id(mysqli $conn): int {
     }
     if ($checkedFor === $sessionUserId) {
         return $result;
+    }
+
+    if (!smartlib_session_touch()) {
+        $checkedFor = $sessionUserId;
+        $result = 0;
+        return 0;
     }
 
     try {

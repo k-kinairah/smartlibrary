@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
 session_start();
 require 'config/db_connect.php';
 require 'config/auth_security.php';
@@ -9,7 +10,7 @@ if (!auth_ensure_reset_table($conn)) {
     exit;
 }
 
-$token = trim((string)($_GET['token'] ?? $_POST['token'] ?? ''));
+$token = trim(isset($_GET['token']) ? smartlib_request_string($_GET, 'token') : smartlib_request_string($_POST, 'token'));
 $message = '';
 $messageType = 'info';
 $done = false;
@@ -24,9 +25,9 @@ $newSecretError = false;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Staff passwords are trimmed as before; a kiosk PIN is checked untrimmed
     // (auth_kiosk_pin_valid), so a valid one equals $newPin.
-    $newPinRaw = (string)($_POST['new_pin'] ?? '');
+    $newPinRaw = smartlib_request_string($_POST, 'new_pin');
     $newPin = trim($newPinRaw);
-    $confirmPin = trim((string)($_POST['confirm_pin'] ?? ''));
+    $confirmPin = trim(smartlib_request_string($_POST, 'confirm_pin'));
 
     if ($token === '' || strlen($token) < 20) {
         $message = 'Invalid reset link. Please request a new PIN reset.';

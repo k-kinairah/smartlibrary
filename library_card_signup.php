@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
 session_start();
 require 'config/db_connect.php';
 require 'config/auth_security.php';
@@ -27,17 +28,17 @@ $form = [
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $form['first_name'] = trim((string)($_POST['first_name'] ?? ''));
-    $form['last_name'] = trim((string)($_POST['last_name'] ?? ''));
-    $form['email'] = library_card_normalize_email((string)($_POST['email'] ?? ''));
-    $form['user_number'] = library_card_normalize_id((string)($_POST['user_number'] ?? ''));
-    $form['account_type'] = trim((string)($_POST['account_type'] ?? ''));
-    $form['school_level'] = trim((string)($_POST['school_level'] ?? ''));
-    $form['program_id'] = trim((string)($_POST['program_id'] ?? ''));
-    $form['department_id'] = trim((string)($_POST['department_id'] ?? ''));
-    $form['year_level'] = trim((string)($_POST['year_level'] ?? ''));
-    $form['gender'] = trim((string)($_POST['gender'] ?? ''));
-    $form['data_consent'] = ($_POST['data_consent'] ?? '') === '1' ? '1' : '';
+    $form['first_name'] = trim(smartlib_request_string($_POST, 'first_name'));
+    $form['last_name'] = trim(smartlib_request_string($_POST, 'last_name'));
+    $form['email'] = library_card_normalize_email(smartlib_request_string($_POST, 'email'));
+    $form['user_number'] = library_card_normalize_id(smartlib_request_string($_POST, 'user_number'));
+    $form['account_type'] = trim(smartlib_request_string($_POST, 'account_type'));
+    $form['school_level'] = trim(smartlib_request_string($_POST, 'school_level'));
+    $form['program_id'] = trim(smartlib_request_string($_POST, 'program_id'));
+    $form['department_id'] = trim(smartlib_request_string($_POST, 'department_id'));
+    $form['year_level'] = trim(smartlib_request_string($_POST, 'year_level'));
+    $form['gender'] = trim(smartlib_request_string($_POST, 'gender'));
+    $form['data_consent'] = smartlib_request_string($_POST, 'data_consent') === '1' ? '1' : '';
     // Role is an explicit choice, not inferred from the ID's shape -- see
     // library_card_normalize_id()'s docblock for why.
     $role = in_array($form['account_type'], ['student', 'faculty'], true) ? $form['account_type'] : null;

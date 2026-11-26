@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
 session_start();
 require 'config/db_connect.php';
 
@@ -18,8 +19,8 @@ function normalize_term(string $raw): string {
     return trim((string)$term);
 }
 
-$term = normalize_term((string)($_GET['q'] ?? ''));
-$limit = (int)($_GET['limit'] ?? 12);
+$term = normalize_term(smartlib_request_string($_GET, 'q'));
+$limit = smartlib_request_int($_GET, 'limit', 12);
 if ($limit < 1 || $limit > 12) {
     $limit = 12;
 }

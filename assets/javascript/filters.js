@@ -3,14 +3,18 @@
 // the X-CSRF-Token header (config/request_guard.php checks it). When the
 // server answers 403 {"error":"csrf"} -- the page outlived its session --
 // the page reloads once to get a fresh token, never more than once per 10 s.
+// The same happens for 401 {"error":"session_expired"} (the sign-in was
+// ended after being idle, config/session_guard.php): the reload shows the
+// signed-out kiosk.
 window.smartlibKiosk = window.smartlibKiosk || (function () {
     const RELOAD_KEY = "smartlib-csrf-reload-at";
     const headers = (extra) => Object.assign({}, extra || {}, { "X-CSRF-Token": window.SMARTLIB_KIOSK_CSRF || "" });
     const isCsrfRefusal = async (response) => {
-        if (!response || response.status !== 403) return false;
+        if (!response || (response.status !== 403 && response.status !== 401)) return false;
         try {
             const data = await response.clone().json();
-            return !!data && data.error === "csrf";
+            return !!data && ((response.status === 403 && data.error === "csrf")
+                || (response.status === 401 && data.error === "session_expired"));
         } catch (_) {
             return false;
         }
@@ -3304,6 +3308,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             const res = await fetch("fetch_my_checked_out.php", { credentials: "same-origin" });
+            if (await window.smartlibKiosk.handleRefusal(res)) return;
             const data = await res.json();
 
             if (!res.ok || data.status !== "success") {

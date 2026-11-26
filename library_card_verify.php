@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
 session_start();
 require 'config/db_connect.php';
 require 'config/auth_security.php';
@@ -26,7 +27,7 @@ if ($verificationId <= 0) {
     $messageType = 'error';
     $canEnterCode = false;
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $code = preg_replace('/\D+/', '', (string)($_POST['code'] ?? ''));
+    $code = preg_replace('/\D+/', '', smartlib_request_string($_POST, 'code'));
     $verification = library_card_get_verification($conn, $verificationId);
 
     if (!smartlib_csrf_verify($csrfKey, $_POST['csrf_token'] ?? '')) {

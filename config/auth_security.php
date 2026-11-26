@@ -730,6 +730,7 @@ function auth_finalize_session_login(array $user, string $normalizedRole): void 
     $_SESSION['role'] = $normalizedRole;
     $_SESSION['name'] = trim(((string)($user['first_name'] ?? '')) . ' ' . ((string)($user['last_name'] ?? '')));
     $_SESSION['last_auth_at'] = time();
+    $_SESSION['last_seen'] = time(); // idle-timeout clock starts at sign-in (config/session_guard.php)
 
     unset($_SESSION['pending_2fa']);
 }

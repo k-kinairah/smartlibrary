@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
 // Serves the generated default cover (config/book_cover.php) for a book with
 // no real cover, as an SVG image so it drops into any <img> cover slot.
 require 'config/db_connect.php';
@@ -26,7 +27,7 @@ $genreExpr = column_exists($conn, 'categories', 'category_group')
     ? "TRIM(COALESCE(NULLIF(c.category_group, ''), c.category_name))"
     : "TRIM(c.category_name)";
 
-$bookId = (int)($_GET['id'] ?? 0);
+$bookId = smartlib_request_int($_GET, 'id');
 $title = '';
 $author = '';
 $categoryGroup = '';

@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id']) || !in_array($currentRole, ['librarian', 'admin
 require '../config/db_connect.php';
 require_once '../config/session_guard.php';
 if (!smartlib_active_staff_session($conn)) {
-    header('Location: ../index.php');
+    header('Location: ' . smartlib_staff_signed_out_location());
     exit;
 }
 require_once '../config/admin_audit.php';

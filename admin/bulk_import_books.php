@@ -28,10 +28,11 @@ if (!isset($_SESSION['user_id']) || !in_array($currentRole, ['librarian', 'admin
 require '../config/db_connect.php';
 require_once '../config/session_guard.php';
 if (!smartlib_active_staff_session($conn)) {
-    header('Location: ../index.php');
+    header('Location: ' . smartlib_staff_signed_out_location());
     exit;
 }
 require_once '../config/admin_audit.php';
+require_once '../config/staff_errors.php';
 require_once '../config/csrf.php';
 require_once __DIR__ . '/includes/manage_books_functions.php';
 
@@ -487,13 +488,9 @@ function bulk_import_insert_book(
         }
         $conn->rollback();
 
-        $msg = (string)$e->getMessage();
-        if (stripos($msg, 'duplicate') !== false && stripos($msg, 'isbn') !== false) {
-            $msg = 'ISBN already exists.';
-        } elseif (stripos($msg, 'duplicate') !== false && stripos($msg, 'accession') !== false) {
-            $msg = 'One of the accession numbers already exists.';
-        } elseif ($msg === '') {
-            $msg = 'Unable to save this book.';
+        $msg = smartlib_staff_duplicate_message($e, 'ISBN already exists.', 'One of the accession numbers already exists.');
+        if ($msg === '') {
+            $msg = smartlib_staff_error_message($e, 'Unable to save this book.', 'bulk import');
         }
 
         return ['ok' => false, 'book_id' => 0, 'error' => $msg];

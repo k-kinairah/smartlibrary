@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
 session_start();
 require 'config/db_connect.php';
 require 'config/auth_security.php';
@@ -29,7 +30,7 @@ $challengeId = (int)($pending['challenge_id'] ?? 0);
 $userId = (int)($pending['user_id'] ?? 0);
 $identifier = trim((string)($pending['identifier'] ?? ''));
 $accountType = trim((string)($pending['account_type'] ?? 'librarian'));
-$code = preg_replace('/\D+/', '', (string)($_POST['code'] ?? ''));
+$code = preg_replace('/\D+/', '', smartlib_request_string($_POST, 'code'));
 $clientIp = auth_client_ip();
 
 if ($challengeId <= 0 || $userId <= 0 || $identifier === '') {

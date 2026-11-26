@@ -108,7 +108,7 @@ require_once 'config/library_card_helpers.php'; // library_card_school_level_lab
 $finesOn = smartlib_fines_enabled($conn);
 $userId = smartlib_active_session_user_id($conn); // 0 if signed out, inactive or deleted
 if ($userId <= 0) {
-    respond(['status' => 'error', 'message' => 'Please sign in first.'], 401);
+    respond(smartlib_session_signed_out_payload('Please sign in first.'), 401);
 }
 
 if (!is_array($payload)) {
@@ -121,7 +121,8 @@ if (!is_array($payload)) {
 // themselves contain hyphens, so the record ID and date are read from the
 // end. Everything shown in the email is then read from the database.
 $receipt = $payload['receipt'] ?? null;
-$transactionIdIn = is_array($receipt) ? trim((string)($receipt['transactionId'] ?? '')) : '';
+require_once 'config/request_input.php';
+$transactionIdIn = is_array($receipt) ? trim(smartlib_request_string($receipt, 'transactionId')) : '';
 if (!preg_match('/^.+-(\d{1,10})-(\d{8})$/', $transactionIdIn, $m)) {
     respond(['status' => 'error', 'message' => 'Missing or invalid receipt.'], 422);
 }
@@ -170,6 +171,23 @@ if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         'message' => 'No valid email found on your account. Please update your email in library_users first.'
     ], 422);
 }
+
+// Email ceilings (security review 2026-11-24, SR-12): one receipt email per
+// loan per 10 minutes and 10 per patron per hour. Fails open: see
+// config/rate_limit.php.
+require_once 'config/rate_limit.php';
+$loanKey = (string)$recordId;
+$patronKey = (string)$userId;
+$loanCount = smartlib_rate_limit_count($conn, 'receipt_loan', $loanKey, 600);
+if ($loanCount !== null && $loanCount >= 1) {
+    smartlib_rate_limit_refuse('This receipt was already emailed a few minutes ago. Please check your inbox (and spam folder); you can send it again in 10 minutes.');
+}
+$patronCount = smartlib_rate_limit_count($conn, 'receipt_patron', $patronKey, 3600);
+if ($patronCount !== null && $patronCount >= 10) {
+    smartlib_rate_limit_refuse('You have emailed several receipts in the last hour. Please try again later, or ask the librarian for a copy.');
+}
+smartlib_rate_limit_record($conn, 'receipt_loan', $loanKey);
+smartlib_rate_limit_record($conn, 'receipt_patron', $patronKey);
 
 // Plain values (used in the text part and the subject).
 $orNa = static fn(string $v): string => $v !== '' ? $v : 'N/A';

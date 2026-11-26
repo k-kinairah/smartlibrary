@@ -41,10 +41,13 @@ if (!table_exists($conn, 'recommendation_events')) {
 
 $payload = is_array($guardBody) ? $guardBody : [];
 
-$eventType = strtolower(trim((string)($payload['event_type'] ?? '')));
-$panelKey = trim((string)($payload['panel_key'] ?? ''));
-$bookId = isset($payload['book_id']) ? (int)$payload['book_id'] : 0;
-$userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+require_once 'config/request_input.php';
+$eventType = strtolower(trim(smartlib_request_string($payload, 'event_type')));
+$panelKey = trim(smartlib_request_string($payload, 'panel_key'));
+$bookId = smartlib_request_int($payload, 'book_id');
+require_once 'config/session_guard.php';
+require_once 'config/rate_limit.php';
+$userId = smartlib_active_session_user_id($conn); // 0 when signed out (also applies the idle rule)
 
 $allowed = ['impression', 'open', 'checkout'];
 if (!in_array($eventType, $allowed, true)) {
@@ -55,6 +58,46 @@ if ($panelKey === '') {
     $panelKey = 'unknown';
 }
 $panelKey = substr($panelKey, 0, 40);
+
+// Abuse ceilings (security review 2026-11-24, SR-12): 60 events a minute per
+// kiosk session -- far above what browsing produces -- and 600 a minute per
+// IP as a flood ceiling only (the school's kiosks share one public IP).
+// Fails open: see config/rate_limit.php.
+if (!smartlib_rate_limit_allow($conn, 'events_session', session_id(), 60, 60)
+    || !smartlib_rate_limit_allow($conn, 'events_ip', smartlib_rate_limit_ip(), 600, 60)) {
+    smartlib_rate_limit_refuse('Too many events from this session. Please slow down.', ['tracked' => false]);
+}
+
+// A "checkout" event only counts when it matches a real loan: a signed-in
+// patron who borrowed this book in the last 10 minutes. Anything else is
+// quietly not recorded, so the recommendation statistics cannot be inflated.
+if ($eventType === 'checkout') {
+    $matchesLoan = false;
+    if ($userId > 0 && $bookId > 0) {
+        try {
+            $loanCheck = $conn->prepare(
+                "SELECT 1
+                 FROM borrow_records br
+                 JOIN book_copies bc ON bc.copy_id = br.copy_id
+                 WHERE br.user_id = ? AND bc.book_id = ?
+                   AND br.created_at >= (NOW() - INTERVAL 10 MINUTE)
+                 LIMIT 1"
+            );
+            if ($loanCheck) {
+                $loanCheck->bind_param('ii', $userId, $bookId);
+                $loanCheck->execute();
+                $loanCheck->store_result();
+                $matchesLoan = $loanCheck->num_rows > 0;
+                $loanCheck->close();
+            }
+        } catch (Throwable $e) {
+            error_log('SmartLib track event: checkout match failed: ' . $e->getMessage());
+        }
+    }
+    if (!$matchesLoan) {
+        respond(['status' => 'success', 'tracked' => false, 'event_type' => $eventType, 'panel_key' => $panelKey, 'book_id' => $bookId > 0 ? $bookId : null]);
+    }
+}
 
 $stmt = null;
 

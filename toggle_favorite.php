@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
 session_start();
 require 'config/db_connect.php';
 require_once 'config/loan_policy.php';
@@ -32,10 +33,10 @@ smartlib_request_guard([SMARTLIB_KIOSK_CSRF_KEY]);
 require_once 'config/session_guard.php';
 $userId = smartlib_active_session_user_id($conn); // 0 if signed out, inactive or deleted
 if ($userId <= 0) {
-    respond(['status' => 'error', 'message' => 'Please sign in to save favorites.'], 401);
+    respond(smartlib_session_signed_out_payload('Please sign in to save favorites.'), 401);
 }
 
-$bookId = (int)($_POST['book_id'] ?? 0);
+$bookId = smartlib_request_int($_POST, 'book_id');
 if ($bookId <= 0) {
     respond(['status' => 'error', 'message' => 'Invalid book.'], 400);
 }
@@ -56,7 +57,7 @@ if (!$bookExists) {
 // What the client wants. The kiosk sends "add" or "remove" (the heart's
 // new state), so a stale heart or a second tab can never flip a favorite
 // the wrong way; a request without an action keeps the old toggle.
-$action = strtolower(trim((string)($_POST['action'] ?? 'toggle')));
+$action = strtolower(trim(isset($_POST['action']) ? smartlib_request_string($_POST, 'action') : 'toggle'));
 if (!in_array($action, ['add', 'remove', 'toggle'], true)) {
     $action = 'toggle';
 }

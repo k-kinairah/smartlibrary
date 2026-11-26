@@ -32,7 +32,7 @@ if (!$isStaff) {
         echo json_encode(['status' => 'signed_out']);
         exit;
     }
-    header('Location: ../index.php');
+    header('Location: ' . (function_exists('smartlib_staff_signed_out_location') ? smartlib_staff_signed_out_location() : '../index.php'));
     exit;
 }
 

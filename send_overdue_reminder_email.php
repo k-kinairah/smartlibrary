@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
 session_start();
 require 'config/db_connect.php';
 require_once 'config/mail_sender.php';
@@ -81,7 +82,7 @@ if (!ensure_overdue_reminder_log_table($conn)) {
 
 $payload = is_array($guardBody) ? $guardBody : [];
 
-$recordId = (int)($payload['record_id'] ?? 0);
+$recordId = smartlib_request_int($payload, 'record_id');
 if ($recordId <= 0) {
     respond(['status' => 'error', 'message' => 'Missing overdue record.'], 422);
 }

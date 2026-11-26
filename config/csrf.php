@@ -21,7 +21,8 @@ if (!function_exists('smartlib_csrf_token')) {
 if (!function_exists('smartlib_csrf_verify')) {
     function smartlib_csrf_verify(string $sessionKey, $submittedToken): bool {
         $expected = (string)($_SESSION[$sessionKey] ?? '');
-        $submitted = trim((string)($submittedToken ?? ''));
+        // An array or other non-string value (csrf_token[]=x) is just a wrong token.
+        $submitted = is_string($submittedToken) ? trim($submittedToken) : '';
 
         if ($expected === '' || $submitted === '') {
             return false;

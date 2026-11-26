@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
 session_start();
 require 'config/db_connect.php';
 require 'config/auth_security.php';
@@ -15,8 +16,8 @@ $form = [
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $form['email'] = library_card_normalize_email((string)($_POST['email'] ?? ''));
-    $form['user_number'] = library_card_normalize_id((string)($_POST['user_number'] ?? ''));
+    $form['email'] = library_card_normalize_email(smartlib_request_string($_POST, 'email'));
+    $form['user_number'] = library_card_normalize_id(smartlib_request_string($_POST, 'user_number'));
 
     if (!smartlib_csrf_verify($csrfKey, $_POST['csrf_token'] ?? '')) {
         $message = 'Your session expired. Please submit the form again.';

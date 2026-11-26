@@ -1,9 +1,41 @@
 <?php
 session_start();
 require 'config/db_connect.php';
+require_once 'config/session_guard.php';
+$recSessionUserId = smartlib_active_session_user_id($conn); // idle rule + live account check (signs out if needed)
 require_once 'config/book_cover.php';
 
 header('Content-Type: application/json; charset=utf-8');
+
+// Security review 2026-11-24, SR-18.
+// 1) Flood ceiling: 300 calls a minute per IP (the school's kiosks share one
+//    public IP, so this is far above real use). Fails open.
+require_once 'config/rate_limit.php';
+if (!smartlib_rate_limit_allow($conn, 'recommend_ip', smartlib_rate_limit_ip(), 300, 60)) {
+    smartlib_rate_limit_refuse('Too many requests. Please try again in a minute.');
+}
+// 2) The anonymous (signed-out) answer is the same for every visitor, so it
+//    is kept for 5 minutes in tmp/cache/ (tmp/ is denied over HTTP). No
+//    request parameter changes it; the key carries this script's modified
+//    time so an update starts a fresh cache. A signed-in patron is never
+//    served from, or written to, the cache. The file is written atomically
+//    (temp file + rename). Any cache problem just means an uncached answer.
+$recCacheFile = null;
+if ($recSessionUserId <= 0) {
+    $recCacheDir = __DIR__ . '/tmp/cache';
+    $recCacheFile = $recCacheDir . '/recommend_anon_' . sha1('anon|' . (string)@filemtime(__FILE__)) . '.json';
+    $recCacheMtime = @filemtime($recCacheFile);
+    if ($recCacheMtime !== false && (time() - $recCacheMtime) < 300) {
+        $recCached = @file_get_contents($recCacheFile);
+        if (is_string($recCached) && $recCached !== '') {
+            header('X-SmartLib-Cache: hit');
+            echo $recCached;
+            exit;
+        }
+    }
+    header('X-SmartLib-Cache: miss');
+    ob_start();
+}
 
 function table_exists(mysqli $conn, string $table): bool {
     // 2026-10-10: hardcoded against a known-good table list instead of
@@ -963,3 +995,29 @@ echo json_encode([
     ],
     'panels' => $panels
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+if ($recCacheFile !== null && ob_get_level() > 0) {
+    $recOutput = (string)ob_get_contents();
+    ob_end_flush();
+    try {
+        if ($recOutput !== '' && http_response_code() === 200) {
+            if (!is_dir($recCacheDir)) {
+                @mkdir($recCacheDir, 0755, true);
+            }
+            $recTmp = @tempnam($recCacheDir, 'rec');
+            if ($recTmp !== false && @file_put_contents($recTmp, $recOutput) === strlen($recOutput)) {
+                if (!@rename($recTmp, $recCacheFile)) {
+                    @unlink($recTmp);
+                    error_log('SmartLib recommendations: could not store the cache file.');
+                }
+            } else {
+                if ($recTmp !== false) {
+                    @unlink($recTmp);
+                }
+                error_log('SmartLib recommendations: cache folder not writable; serving uncached.');
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('SmartLib recommendations: cache write failed: ' . $e->getMessage());
+    }
+}

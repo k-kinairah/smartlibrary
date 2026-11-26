@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
 /**
  * Library card signup, last step: choose the kiosk PIN.
  *
@@ -60,8 +61,8 @@ if (!$stageOk) {
     // Same rule as every other PIN entry point (admin/manage_users.php,
     // reset_pin.php): exactly 4 digits, auth_kiosk_pin_valid(). Not trimmed,
     // kept as a string (a leading zero stays).
-    $pin = (string)($_POST['pin'] ?? '');
-    $confirmPin = (string)($_POST['confirm_pin'] ?? '');
+    $pin = smartlib_request_string($_POST, 'pin');
+    $confirmPin = smartlib_request_string($_POST, 'confirm_pin');
 
     if (!smartlib_csrf_verify($csrfKey, $_POST['csrf_token'] ?? '')) {
         $message = 'Your session expired. Please enter your PIN again.';

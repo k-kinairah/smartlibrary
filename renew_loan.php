@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
 session_start();
 require 'config/db_connect.php';
 require_once 'config/borrow_fine_rules.php';
@@ -24,7 +25,7 @@ require_once 'config/session_guard.php';
 $userId = smartlib_active_session_user_id($conn); // 0 if signed out, inactive or deleted
 $userRole = strtolower(trim((string)($_SESSION['role'] ?? '')));
 if ($userId <= 0) {
-    respond(['status' => 'error', 'message' => 'Please sign in first before renewing a book.'], 401);
+    respond(smartlib_session_signed_out_payload('Please sign in first before renewing a book.'), 401);
 }
 
 $allowedBorrowerRoles = ['student', 'faculty', 'librarian', 'admin'];
@@ -32,7 +33,7 @@ if (!in_array($userRole, $allowedBorrowerRoles, true)) {
     respond(['status' => 'error', 'message' => 'This account type is not allowed to renew books.'], 403);
 }
 
-$recordId = (int)($_POST['record_id'] ?? 0);
+$recordId = smartlib_request_int($_POST, 'record_id');
 if ($recordId <= 0) {
     respond(['status' => 'error', 'message' => 'Invalid loan selection.'], 422);
 }

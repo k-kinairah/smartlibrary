@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id']) || !in_array($currentRole, ['librarian', 'admin
 require '../config/db_connect.php';
 require_once '../config/session_guard.php';
 if (!smartlib_active_staff_session($conn)) {
-    header('Location: ../index.php');
+    header('Location: ' . smartlib_staff_signed_out_location());
     exit;
 }
 require_once '../config/admin_audit.php';
@@ -19,6 +19,7 @@ require_once '../config/csrf.php';
 
 require_once __DIR__ . '/includes/manage_books_functions.php';
 require_once __DIR__ . '/../config/cover_fetch_helpers.php';
+require_once __DIR__ . '/../config/staff_errors.php';
 require_once __DIR__ . '/../config/book_cover.php';
 
 $categories = $conn->query('SELECT category_id, category_name FROM categories ORDER BY category_name ASC');
@@ -418,13 +419,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_book'])) {
 
             $conn->rollback();
 
-            $msg = (string)$e->getMessage();
-            if (stripos($msg, 'duplicate') !== false && stripos($msg, 'isbn') !== false) {
-                $msg = 'ISBN already exists. Each book must have a unique ISBN.';
-            } elseif (stripos($msg, 'duplicate') !== false && stripos($msg, 'accession') !== false) {
-                $msg = 'One of the accession numbers already exists. Please review the copy accessions.';
-            } elseif ($msg === '') {
-                $msg = 'Unable to add book and copies right now. Please try again.';
+            // Duplicate keys get their usual friendly text; the app's own
+            // messages show as written; any other error is logged and shown
+            // as a plain message (config/staff_errors.php, SR-20).
+            $msg = smartlib_staff_duplicate_message($e,
+                'ISBN already exists. Each book must have a unique ISBN.',
+                'One of the accession numbers already exists. Please review the copy accessions.');
+            if ($msg === '') {
+                $msg = smartlib_staff_error_message($e, 'Unable to add book and copies right now. Nothing was saved. Please try again.', 'add book');
             }
 
             $flash = ['type' => 'error', 'message' => $msg];
@@ -802,9 +804,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_book'])) {
             exit;
         } catch (Throwable $e) {
             $conn->rollback();
-            $msg = trim((string)$e->getMessage());
+            $msg = smartlib_staff_duplicate_message($e,
+                'ISBN already exists. Each book must have a unique ISBN.',
+                'One of the accession numbers already exists. Please review the copy accessions.');
             if ($msg === '') {
-                $msg = 'Unable to update book details right now. Please try again.';
+                $msg = smartlib_staff_error_message($e, 'Unable to update book details right now. Nothing was changed. Please try again.', 'edit book');
             }
 
             $flash = ['type' => 'error', 'message' => $msg];
@@ -972,13 +976,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_cover'])) {
         exit;
     }
 
+    // The book must exist before anything is written (security review
+    // 2026-11-24, SR-15): no orphan cover_<id> file for a made-up ID.
+    $coverBookExists = false;
+    $coverBookCheck = $conn->prepare('SELECT 1 FROM books WHERE book_id = ? LIMIT 1');
+    if ($coverBookCheck) {
+        $coverBookCheck->bind_param('i', $coverBookId);
+        $coverBookCheck->execute();
+        $coverBookCheck->store_result();
+        $coverBookExists = $coverBookCheck->num_rows > 0;
+        $coverBookCheck->close();
+    }
+    if (!$coverBookExists) {
+        header('Location: manage_books.php');
+        exit;
+    }
+
     $uploadOk = false;
     $uploadMessage = 'Please choose a JPG or PNG image to upload.';
 
     $fileInfo = $_FILES['cover_image'] ?? null;
     $uploadError = (int)($fileInfo['error'] ?? UPLOAD_ERR_NO_FILE);
 
-    if ($fileInfo && $uploadError === UPLOAD_ERR_OK && is_uploaded_file((string)($fileInfo['tmp_name'] ?? ''))) {
+    if ($fileInfo && $uploadError === UPLOAD_ERR_OK && (int)($fileInfo['size'] ?? 0) > FBC_UPLOAD_MAX_BYTES) {
+        $uploadMessage = FBC_UPLOAD_TOO_LARGE_MESSAGE;
+    } elseif ($fileInfo && in_array($uploadError, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)) {
+        $uploadMessage = FBC_UPLOAD_TOO_LARGE_MESSAGE;
+    } elseif ($fileInfo && $uploadError === UPLOAD_ERR_OK && is_uploaded_file((string)($fileInfo['tmp_name'] ?? ''))) {
         $validated = fbc_validate_uploaded_image((string)$fileInfo['tmp_name']);
         if ($validated['ok']) {
             $uploadSaveResult = fbc_save_cover_bytes($conn, $coverBookId, $validated['bytes'], $validated['ext']);

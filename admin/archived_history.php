@@ -11,8 +11,9 @@ if (!isset($_SESSION['user_id']) || !in_array($currentRole, ['librarian', 'admin
 
 require '../config/db_connect.php';
 require_once '../config/session_guard.php';
+require_once '../config/staff_errors.php';
 if (!smartlib_active_staff_session($conn)) {
-    header('Location: ../index.php');
+    header('Location: ' . smartlib_staff_signed_out_location());
     exit;
 }
 require_once '../config/admin_audit.php';
@@ -466,7 +467,7 @@ if ($tableReady && $_SERVER['REQUEST_METHOD'] === 'POST') {
             archive_redirect();
         } catch (Throwable $e) {
             $conn->rollback();
-            set_archive_flash('error', 'Retrieve failed. ' . $e->getMessage());
+            set_archive_flash('error', 'Retrieve failed. ' . smartlib_staff_error_message($e, 'Nothing was changed. Please try again.', 'retrieve archived book'));
             archive_redirect();
         }
     }

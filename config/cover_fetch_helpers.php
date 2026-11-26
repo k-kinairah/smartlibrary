@@ -1005,9 +1005,17 @@ function fbc_save_cover_bytes(mysqli $conn, int $bookId, string $bytes, string $
  * @return array{ok:bool,bytes?:string,ext?:string,error?:string}
  */
 function fbc_validate_uploaded_image(string $tmpPath): array {
+    // Size cap for librarian uploads (security review 2026-11-24, SR-15).
+    $size = @filesize($tmpPath);
+    if ($size !== false && $size > FBC_UPLOAD_MAX_BYTES) {
+        return ['ok' => false, 'error' => FBC_UPLOAD_TOO_LARGE_MESSAGE];
+    }
     $bytes = @file_get_contents($tmpPath);
     if ($bytes === false || $bytes === '') {
         return ['ok' => false, 'error' => 'Could not read the uploaded file.'];
+    }
+    if (strlen($bytes) > FBC_UPLOAD_MAX_BYTES) {
+        return ['ok' => false, 'error' => FBC_UPLOAD_TOO_LARGE_MESSAGE];
     }
     if (strlen($bytes) < MIN_IMAGE_BYTES) {
         return ['ok' => false, 'error' => 'That file is too small to be a real cover image.'];
@@ -1016,7 +1024,129 @@ function fbc_validate_uploaded_image(string $tmpPath): array {
     if ($ext === null) {
         return ['ok' => false, 'error' => 'Only JPG and PNG images are supported.'];
     }
-    return ['ok' => true, 'bytes' => $bytes, 'ext' => $ext];
+    $clean = fbc_reencode_uploaded_image($bytes, $ext);
+    return ['ok' => true, 'bytes' => $clean['bytes'], 'ext' => $clean['ext']];
+}
+
+const FBC_UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
+const FBC_UPLOAD_TOO_LARGE_MESSAGE = 'That image is larger than 5 MB. Please choose a smaller file (a cover photo of 1 MB or less is plenty).';
+
+/**
+ * EXIF orientation (1-8) of JPEG bytes, or 1 when there is none. A small
+ * reader of the APP1 "Exif" segment, so it works without PHP's exif
+ * extension.
+ */
+function fbc_jpeg_exif_orientation(string $bytes): int {
+    $len = strlen($bytes);
+    $pos = 2; // after SOI
+    while ($pos + 4 <= $len && $bytes[$pos] === "\xFF") {
+        $marker = ord($bytes[$pos + 1]);
+        $segLen = (ord($bytes[$pos + 2]) << 8) | ord($bytes[$pos + 3]);
+        if ($marker === 0xDA || $segLen < 2) {
+            break; // start of scan: no more metadata
+        }
+        if ($marker === 0xE1 && substr($bytes, $pos + 4, 6) === "Exif\0\0") {
+            $tiff = $pos + 10;
+            $little = substr($bytes, $tiff, 2) === 'II';
+            $u16 = static function (int $at) use ($bytes, $little): int {
+                $v = unpack($little ? 'v' : 'n', substr($bytes, $at, 2));
+                return $v ? (int)$v[1] : 0;
+            };
+            $u32 = static function (int $at) use ($bytes, $little): int {
+                $v = unpack($little ? 'V' : 'N', substr($bytes, $at, 4));
+                return $v ? (int)$v[1] : 0;
+            };
+            $ifd = $tiff + $u32($tiff + 4);
+            if ($ifd + 2 > $len) {
+                return 1;
+            }
+            $count = $u16($ifd);
+            for ($i = 0; $i < $count; $i++) {
+                $entry = $ifd + 2 + $i * 12;
+                if ($entry + 12 > $len) {
+                    break;
+                }
+                if ($u16($entry) === 0x0112) {
+                    $o = $u16($entry + 8);
+                    return ($o >= 1 && $o <= 8) ? $o : 1;
+                }
+            }
+            return 1;
+        }
+        $pos += 2 + $segLen;
+    }
+    return 1;
+}
+
+/**
+ * Re-encodes a librarian-uploaded cover with GD (security review
+ * 2026-11-24, SR-15): the picture is decoded and written out fresh -- JPEG
+ * at quality 90, PNG with its transparency kept -- so EXIF/GPS metadata and
+ * any bytes appended after the image are dropped. A JPEG's EXIF rotation is
+ * applied first so the cover still shows upright. If GD (or one of its
+ * functions) is missing, or decoding fails, the original bytes are kept
+ * exactly as before and the reason is logged: this step never blocks an
+ * upload.
+ *
+ * @return array{bytes:string,ext:string}
+ */
+function fbc_reencode_uploaded_image(string $bytes, string $ext): array {
+    $keep = ['bytes' => $bytes, 'ext' => $ext];
+    $needed = ['imagecreatefromstring', 'imagedestroy', $ext === 'png' ? 'imagepng' : 'imagejpeg'];
+    foreach ($needed as $fn) {
+        if (!function_exists($fn)) {
+            error_log('SmartLib cover upload: GD function ' . $fn . ' missing; saving the upload as received.');
+            return $keep;
+        }
+    }
+    try {
+        $img = @imagecreatefromstring($bytes);
+        if ($img === false) {
+            error_log('SmartLib cover upload: GD could not decode the ' . $ext . ' upload; saving it as received.');
+            return $keep;
+        }
+        if ($ext === 'jpg') {
+            $orientation = fbc_jpeg_exif_orientation($bytes);
+            if ($orientation !== 1 && function_exists('imagerotate') && function_exists('imageflip')) {
+                if (in_array($orientation, [2, 4, 5, 7], true)) {
+                    imageflip($img, IMG_FLIP_HORIZONTAL);
+                }
+                $angle = [3 => 180, 4 => 180, 5 => 270, 6 => 270, 7 => 90, 8 => 90][$orientation] ?? 0;
+                if ($angle !== 0) {
+                    $rotated = imagerotate($img, $angle, 0);
+                    if ($rotated !== false) {
+                        imagedestroy($img);
+                        $img = $rotated;
+                    }
+                }
+            }
+        }
+        ob_start();
+        if ($ext === 'png') {
+            if (function_exists('imagealphablending')) {
+                imagealphablending($img, false);
+            }
+            if (function_exists('imagesavealpha')) {
+                imagesavealpha($img, true);
+            }
+            $ok = imagepng($img, null, 6);
+        } else {
+            $ok = imagejpeg($img, null, 90);
+        }
+        $out = (string)ob_get_clean();
+        imagedestroy($img);
+        if (!$ok || $out === '' || fbc_image_extension($out) !== $ext) {
+            error_log('SmartLib cover upload: GD re-encode produced no usable ' . $ext . '; saving the upload as received.');
+            return $keep;
+        }
+        return ['bytes' => $out, 'ext' => $ext];
+    } catch (Throwable $e) {
+        if (ob_get_level() > 0) {
+            @ob_end_clean();
+        }
+        error_log('SmartLib cover upload: re-encode failed (' . $e->getMessage() . '); saving the upload as received.');
+        return $keep;
+    }
 }
 
 /**

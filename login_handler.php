@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 error_reporting(E_ALL);
@@ -89,8 +90,8 @@ if (!smartlib_csrf_verify('signin_csrf', $_POST['csrf_token'] ?? '')) {
 // Same normalization as signup, reprint and the door scanner: IDs are stored
 // without dashes, but the card prints new-format IDs with them, so a patron
 // typing their ID exactly as printed must still match.
-$identifier = library_card_normalize_id((string)($_POST['identifier'] ?? ''));
-$password = trim((string)($_POST['password'] ?? ''));
+$identifier = library_card_normalize_id(smartlib_request_string($_POST, 'identifier'));
+$password = trim(smartlib_request_string($_POST, 'password'));
 $clientIp = auth_client_ip();
 // The role comes only from library_users.role for this ID. A posted
 // account_type (from the old Account Type dropdown) is ignored.

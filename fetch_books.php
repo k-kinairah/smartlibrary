@@ -1,6 +1,9 @@
 <?php
 session_start();
 require 'config/db_connect.php';
+require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
+require_once 'config/session_guard.php';
+smartlib_active_session_user_id($conn); // idle rule + live account check (signs out if needed)
 require_once 'config/book_cover.php';
 
 function esc(mysqli $conn, string $str): string {
@@ -63,7 +66,17 @@ function log_search_query(mysqli $conn, string $search, int $resultCount): void 
     $now = time();
     $lastTerm = isset($_SESSION['last_logged_search_term']) ? (string)$_SESSION['last_logged_search_term'] : '';
     $lastAt = isset($_SESSION['last_logged_search_at']) ? (int)$_SESSION['last_logged_search_at'] : 0;
-    if ($lastTerm !== '' && strcasecmp($lastTerm, $term) === 0 && ($now - $lastAt) < 30) {
+    if ($lastTerm !== '' && strcasecmp($lastTerm, $term) === 0 && ($now - $lastAt) < 60) {
+        return;
+    }
+    // Logging ceilings (security review 2026-11-24, SR-12): one log row per
+    // session and term per 60 s (also when terms alternate) and at most 120
+    // a minute per IP (a flood ceiling; the kiosks share one public IP).
+    // Only the logging is limited -- the search results never are. Fails
+    // open: see config/rate_limit.php.
+    require_once __DIR__ . '/config/rate_limit.php';
+    if (!smartlib_rate_limit_allow($conn, 'search_log_term', session_id() . '|' . strtolower($term), 1, 60)
+        || !smartlib_rate_limit_allow($conn, 'search_log_ip', smartlib_rate_limit_ip(), 120, 60)) {
         return;
     }
     $_SESSION['last_logged_search_term'] = $term;
@@ -95,10 +108,10 @@ function log_search_query(mysqli $conn, string $search, int $resultCount): void 
     $stmt->close();
 }
 
-$search = trim($_GET['search'] ?? '');
-$genres = $_GET['genre'] ?? [];
-$yearFromRaw = trim((string)($_GET['year_from'] ?? ''));
-$yearToRaw = trim((string)($_GET['year_to'] ?? ''));
+$search = trim(smartlib_request_string($_GET, 'search'));
+$genres = smartlib_request_string_list($_GET, 'genre');
+$yearFromRaw = trim(smartlib_request_string($_GET, 'year_from'));
+$yearToRaw = trim(smartlib_request_string($_GET, 'year_to'));
 
 // Paging: search shows the catalog a page at a time (filters.js asks for
 // the next page as the grid scrolls) instead of all ~2,000 cards at once.

@@ -1,8 +1,11 @@
 <?php
 require 'config/db_connect.php';
+require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
 require_once 'config/book_cover.php';
 require_once 'config/loan_policy.php';
 session_start();
+require_once 'config/session_guard.php';
+smartlib_active_session_user_id($conn); // idle rule + live account check (signs out if needed)
 
 function h($value) {
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
@@ -345,8 +348,8 @@ function icon_svg($name) {
     return $icons[$name] ?? '';
 }
 
-$id = (int)($_GET['id'] ?? 0);
-$coverParam = trim((string)($_GET['cover'] ?? ''));
+$id = smartlib_request_int($_GET, 'id');
+$coverParam = trim(smartlib_request_string($_GET, 'cover'));
 $requestedCover = $coverParam !== '' ? basename(urldecode($coverParam)) : '';
 $book = null;
 

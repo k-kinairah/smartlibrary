@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
 session_start();
 require 'config/db_connect.php';
 require 'config/barcode_code128.php';
@@ -31,7 +32,7 @@ $barcodeSvg = $holder ? code128_svg((string)$holder['user_number']) : null;
 $csrfKey = 'library_card_email_csrf';
 $csrfToken = smartlib_csrf_token($csrfKey);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'email_card') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && smartlib_request_string($_POST, 'action') === 'email_card') {
     header('Content-Type: application/json');
 
     if (!$holder || $barcodeSvg === null) {
@@ -49,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'email
         exit;
     }
 
-    $dataUrl = (string)($_POST['image'] ?? '');
+    $dataUrl = smartlib_request_string($_POST, 'image');
     if (!preg_match('/^data:image\/png;base64,([A-Za-z0-9+\/=]+)$/', $dataUrl, $m)) {
         echo json_encode(['ok' => false, 'message' => 'Could not read the card image. Please try again.']);
         exit;
