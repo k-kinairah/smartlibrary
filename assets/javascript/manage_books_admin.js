@@ -800,3 +800,31 @@ function initProgramPicker(root) {
 }
 
 document.querySelectorAll('.pp-picker').forEach(initProgramPicker);
+
+// Back on the list after Close or a saved edit (#book-row-<id>): put that
+// row in the middle of the window and flash it for about 1.6 s. With
+// prefers-reduced-motion the row is still scrolled to and marked, without
+// the fade. Runs after load, once the browser's own jump to the #anchor
+// (row at the very top) has happened.
+(function highlightReturnedBookRow() {
+    const match = /^#book-row-([1-9][0-9]*)$/.exec(window.location.hash || '');
+    if (!match) return;
+    const row = document.getElementById('book-row-' + match[1]);
+    if (!row) return;
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const flashClass = reduceMotion ? 'mb-row-flash-still' : 'mb-row-flash';
+    const show = function () {
+        window.requestAnimationFrame(function () {
+            row.scrollIntoView({ block: 'center', behavior: 'auto' });
+            row.classList.add(flashClass);
+            window.setTimeout(function () {
+                row.classList.remove(flashClass);
+            }, 1600);
+        });
+    };
+    if (document.readyState === 'complete') {
+        show();
+    } else {
+        window.addEventListener('load', show, { once: true });
+    }
+})();

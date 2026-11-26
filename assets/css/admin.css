@@ -15301,3 +15301,146 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     background: #fff1cf;
     color: #6f510e;
 }
+
+/* ============================================================
+   Manage Books: pager under the table + "you were here" row flash
+   ------------------------------------------------------------
+   The buttons reuse .filter-reset-btn (ghost pill) and .btn-primary
+   (current page), so every theme / palette / dark variant already
+   styles them; this block only sizes and lays them out. The row
+   flash uses an inset box-shadow because the light green palette
+   forces row and cell backgrounds with !important.
+   ============================================================ */
+.mb-pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+    padding: 14px 4px 2px;
+}
+
+.mb-pager-summary {
+    margin: 0;
+    font-size: 13px;
+    color: rgb(var(--pb-a9c8e8));
+}
+
+.mb-pager-summary strong {
+    color: rgb(var(--pb-dcebfa));
+    font-weight: 700;
+}
+
+.mb-pager-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.mb-pager .mb-pager-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-width: 38px;
+    min-height: 36px;
+    padding: 6px 12px !important;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.mb-pager .mb-pager-btn.is-disabled {
+    opacity: 0.42;
+    cursor: default;
+    pointer-events: none;
+}
+
+.mb-pager-gap {
+    min-width: 18px;
+    text-align: center;
+    color: rgb(var(--pb-a9c8e8));
+}
+
+[data-theme="light"] .mb-pager-summary,
+[data-theme="light"] .mb-pager-gap {
+    color: rgb(var(--pb-2c5488));
+}
+
+[data-theme="light"] .mb-pager-summary strong {
+    color: rgb(var(--pb-1c4573));
+}
+
+@media (max-width: 640px) {
+    /* On a phone the books table makes its panel wider than the screen;
+       keep the pager inside the visible width so it wraps there. */
+    .mb-pager {
+        justify-content: center;
+        box-sizing: border-box;
+        width: min(100%, calc(100vw - 66px));
+    }
+
+    .mb-pager-summary {
+        width: 100%;
+        text-align: center;
+    }
+
+    .mb-pager-list {
+        justify-content: center;
+        gap: 4px;
+    }
+
+    .mb-pager .mb-pager-btn {
+        min-width: 34px;
+        padding: 6px 8px !important;
+    }
+
+    .mb-pager-gap {
+        min-width: 14px;
+    }
+
+    /* Previous / Next share the first line; the numbers wrap below. */
+    .mb-pager-list > li:first-child,
+    .mb-pager-list > li:last-child {
+        order: -1;
+        flex: 1 1 calc(50% - 3px);
+    }
+
+    .mb-pager-list > li:first-child .mb-pager-btn,
+    .mb-pager-list > li:last-child .mb-pager-btn {
+        width: 100%;
+    }
+}
+
+@keyframes mb-row-flash {
+    0%, 35% { box-shadow: inset 0 0 0 100vmax rgba(var(--pb-8cb9eb), 0.30); }
+    100% { box-shadow: inset 0 0 0 100vmax rgba(var(--pb-8cb9eb), 0); }
+}
+
+@keyframes mb-row-flash-light {
+    0%, 35% { box-shadow: inset 0 0 0 100vmax rgba(var(--pb-3f7cc2), 0.20); }
+    100% { box-shadow: inset 0 0 0 100vmax rgba(var(--pb-3f7cc2), 0); }
+}
+
+.manage-books-table tr.mb-row-flash > td {
+    animation: mb-row-flash 1.6s ease-out 1;
+}
+
+[data-theme="light"] .manage-books-table tr.mb-row-flash > td {
+    animation-name: mb-row-flash-light;
+}
+
+/* prefers-reduced-motion: the same highlight, shown still (no fade). */
+.manage-books-table tr.mb-row-flash-still > td {
+    box-shadow: inset 0 0 0 100vmax rgba(var(--pb-8cb9eb), 0.24);
+}
+
+[data-theme="light"] .manage-books-table tr.mb-row-flash-still > td {
+    box-shadow: inset 0 0 0 100vmax rgba(var(--pb-3f7cc2), 0.16);
+}

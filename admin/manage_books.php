@@ -21,6 +21,7 @@ require_once __DIR__ . '/includes/manage_books_functions.php';
 require_once __DIR__ . '/../config/cover_fetch_helpers.php';
 require_once __DIR__ . '/../config/staff_errors.php';
 require_once __DIR__ . '/../config/book_cover.php';
+require_once __DIR__ . '/../config/request_input.php';
 
 $categories = $conn->query('SELECT category_id, category_name FROM categories ORDER BY category_name ASC');
 $programs = $conn->query('SELECT program_id, program_name FROM programs ORDER BY program_name ASC');
@@ -112,6 +113,57 @@ foreach ($programOptions as $programOption) {
     $programNameById[(int)$programOption['program_id']] = (string)$programOption['program_name'];
 }
 $programIdSet = array_fill_keys(array_keys($programNameById), true);
+
+// --- List position: search, status chip and page. Edit, Close, a saved
+// edit, the cover actions and Delete all carry these three so the librarian
+// lands back where they were. The modal forms have no action attribute, so
+// they post to the current URL and the handlers read the same $_GET values.
+// Only these three are ever copied from the request into a URL. ---
+const MANAGE_BOOKS_PER_PAGE = 50;
+$allowedStatus = ['', 'available', 'borrowed', 'no_copies', 'newly_added'];
+$search = trim(smartlib_request_string($_GET, 'search'));
+$activeStatus = strtolower(trim(smartlib_request_string($_GET, 'status')));
+if (!in_array($activeStatus, $allowedStatus, true)) {
+    $activeStatus = '';
+}
+// int only: missing, non-numeric, arrays, 0 or negative = page 1 (the upper
+// end is clamped to the last page once the filtered total is known).
+$booksPage = max(1, smartlib_request_int($_GET, 'page', 1));
+$listContext = ['search' => $search, 'status' => $activeStatus, 'page' => $booksPage];
+
+/**
+ * Every Manage Books list/edit URL. Known keys only, in a fixed order;
+ * empty values and page 1 are left out; values are URL-encoded and the
+ * result is always a relative manage_books.php URL (no open redirect).
+ * $fragment is only ever 'book-row-<id>' built here from an int.
+ */
+$buildManageBooksUrl = static function (array $params, string $fragment = ''): string {
+    $clean = [];
+    foreach (['edit', 'search', 'status', 'page', 'updated', 'cover_status', 'cover_msg'] as $key) {
+        if (!array_key_exists($key, $params) || is_array($params[$key])) {
+            continue;
+        }
+        $text = trim((string)$params[$key]);
+        if ($key === 'edit' || $key === 'page') {
+            $number = (int)$text;
+            if ($number <= ($key === 'page' ? 1 : 0)) {
+                continue;
+            }
+            $text = (string)$number;
+        }
+        if ($text !== '') {
+            $clean[$key] = $text;
+        }
+    }
+
+    return 'manage_books.php'
+        . (!empty($clean) ? ('?' . http_build_query($clean, '', '&', PHP_QUERY_RFC3986)) : '')
+        . (preg_match('/^book-row-[1-9][0-9]*$/', $fragment) ? ('#' . $fragment) : '');
+};
+// The list URL for the current position, plus extra keys (extra wins).
+$manageBooksUrl = static function (array $extra = [], string $fragment = '') use (&$listContext, $buildManageBooksUrl): string {
+    return $buildManageBooksUrl($extra + $listContext, $fragment);
+};
 $addBookForm = [
     'isbn' => '',
     'title' => '',
@@ -437,7 +489,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_book'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_book'])) {
     $postedToken = trim((string)($_POST['csrf_token'] ?? ''));
     if ($postedToken === '' || !hash_equals($csrfToken, $postedToken)) {
-        header('Location: manage_books.php');
+        header('Location: ' . $manageBooksUrl());
         exit;
     }
 
@@ -800,7 +852,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_book'])) {
                 ]
             );
             $conn->commit();
-            header('Location: manage_books.php?updated=1');
+            header('Location: ' . $manageBooksUrl(['updated' => '1'], 'book-row-' . (int)$bookId));
             exit;
         } catch (Throwable $e) {
             $conn->rollback();
@@ -827,7 +879,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_book'])) {
 
     $postedToken = trim((string)($_POST['csrf_token'] ?? ''));
     if ($postedToken === '' || !hash_equals($csrfToken, $postedToken)) {
-        header('Location: manage_books.php');
+        header('Location: ' . $manageBooksUrl());
         exit;
     }
 
@@ -897,7 +949,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_book'])) {
         }
     }
 
-    header('Location: manage_books.php');
+    // Same list page (a page that became empty is clamped to the new last page).
+    header('Location: ' . $manageBooksUrl());
     exit;
 }
 
@@ -910,7 +963,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['refetch_cover'])) {
     $postedToken = trim((string)($_POST['csrf_token'] ?? ''));
     $coverBookId = (int)($_POST['book_id'] ?? 0);
     if ($postedToken === '' || !hash_equals($csrfToken, $postedToken) || $coverBookId <= 0) {
-        header('Location: manage_books.php');
+        header('Location: ' . $manageBooksUrl());
         exit;
     }
 
@@ -964,7 +1017,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['refetch_cover'])) {
         }
     }
 
-    header('Location: manage_books.php?edit=' . $coverBookId . '&cover_status=' . ($refetchOk ? 'ok' : 'error') . '&cover_msg=' . rawurlencode($refetchMessage));
+    header('Location: ' . $manageBooksUrl(['edit' => $coverBookId, 'cover_status' => $refetchOk ? 'ok' : 'error', 'cover_msg' => $refetchMessage]));
     exit;
 }
 
@@ -972,7 +1025,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_cover'])) {
     $postedToken = trim((string)($_POST['csrf_token'] ?? ''));
     $coverBookId = (int)($_POST['book_id'] ?? 0);
     if ($postedToken === '' || !hash_equals($csrfToken, $postedToken) || $coverBookId <= 0) {
-        header('Location: manage_books.php');
+        header('Location: ' . $manageBooksUrl());
         exit;
     }
 
@@ -988,7 +1041,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_cover'])) {
         $coverBookCheck->close();
     }
     if (!$coverBookExists) {
-        header('Location: manage_books.php');
+        header('Location: ' . $manageBooksUrl());
         exit;
     }
 
@@ -1022,7 +1075,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_cover'])) {
         $uploadMessage = 'Upload failed (the file may be too large). Please try a smaller image.';
     }
 
-    header('Location: manage_books.php?edit=' . $coverBookId . '&cover_status=' . ($uploadOk ? 'ok' : 'error') . '&cover_msg=' . rawurlencode($uploadMessage));
+    header('Location: ' . $manageBooksUrl(['edit' => $coverBookId, 'cover_status' => $uploadOk ? 'ok' : 'error', 'cover_msg' => $uploadMessage]));
     exit;
 }
 
@@ -1030,7 +1083,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_cover'])) {
     $postedToken = trim((string)($_POST['csrf_token'] ?? ''));
     $coverBookId = (int)($_POST['book_id'] ?? 0);
     if ($postedToken === '' || !hash_equals($csrfToken, $postedToken) || $coverBookId <= 0) {
-        header('Location: manage_books.php');
+        header('Location: ' . $manageBooksUrl());
         exit;
     }
 
@@ -1061,14 +1114,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_cover'])) {
         }
     }
 
-    header('Location: manage_books.php?edit=' . $coverBookId . '&cover_status=ok&cover_msg=' . rawurlencode($clearMessage));
+    header('Location: ' . $manageBooksUrl(['edit' => $coverBookId, 'cover_status' => 'ok', 'cover_msg' => $clearMessage]));
     exit;
 }
 
 $editBook = null;
 $editId = isset($editId) ? (int)$editId : 0;
 if ($editId <= 0) {
-    $editId = (int)($_GET['edit'] ?? 0);
+    $editId = smartlib_request_int($_GET, 'edit', 0);
 }
 if ($editId <= 0 && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_book'])) {
     $editId = (int)($_POST['book_id'] ?? 0);
@@ -1109,25 +1162,6 @@ if ($editId > 0) {
     }
 }
 
-$search = trim((string)($_GET['search'] ?? ''));
-$activeStatus = strtolower(trim((string)($_GET['status'] ?? '')));
-$allowedStatus = ['', 'available', 'borrowed', 'no_copies', 'newly_added'];
-if (!in_array($activeStatus, $allowedStatus, true)) {
-    $activeStatus = '';
-}
-
-$buildManageBooksUrl = static function (array $params): string {
-    $clean = [];
-    foreach ($params as $key => $value) {
-        $text = trim((string)$value);
-        if ($text !== '') {
-            $clean[(string)$key] = $text;
-        }
-    }
-
-    return 'manage_books.php' . (!empty($clean) ? ('?' . http_build_query($clean)) : '');
-};
-
 $baseFilterParams = [
     'search' => $search
 ];
@@ -1164,6 +1198,32 @@ if ($activeStatus === 'available') {
     $havingSql = "HAVING MAX(CASE WHEN DATE(b.created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) = 1";
 }
 
+// Filtered total: the same grouped query (joins, WHERE, HAVING), counted.
+$filteredBooksTotal = 0;
+$filteredCountRes = $conn->query(
+    "
+    SELECT COUNT(*) AS filtered_total FROM (
+        SELECT b.book_id
+        FROM books b
+        LEFT JOIN categories c ON b.category_id = c.category_id
+        LEFT JOIN programs p ON b.program_id = p.program_id
+        LEFT JOIN book_copies bc ON bc.book_id = b.book_id
+        LEFT JOIN library_locations loc ON loc.location_id = b.location_id
+        {$whereSql}
+        GROUP BY b.book_id
+        {$havingSql}
+    ) filtered_books
+    "
+);
+if ($filteredCountRes && ($filteredCountRow = $filteredCountRes->fetch_assoc())) {
+    $filteredBooksTotal = (int)($filteredCountRow['filtered_total'] ?? 0);
+}
+$totalPages = max(1, (int)ceil($filteredBooksTotal / MANAGE_BOOKS_PER_PAGE));
+$booksPage = min($booksPage, $totalPages);
+$listContext['page'] = $booksPage;
+$pageOffset = ($booksPage - 1) * MANAGE_BOOKS_PER_PAGE;
+$pageLimitSql = 'LIMIT ' . (int)$pageOffset . ', ' . (int)MANAGE_BOOKS_PER_PAGE;
+
 $books = $conn->query(
     "
     SELECT
@@ -1187,7 +1247,8 @@ $books = $conn->query(
     {$whereSql}
     GROUP BY b.book_id
     {$havingSql}
-    ORDER BY b.created_at DESC
+    ORDER BY b.created_at DESC, b.book_id DESC
+    {$pageLimitSql}
     "
 );
 
@@ -1307,8 +1368,8 @@ $updatedFlag = isset($_GET['updated']) && (string)$_GET['updated'] === '1';
 $coverFlash = null;
 if (isset($_GET['cover_status'])) {
     $coverFlash = [
-        'status' => (string)$_GET['cover_status'],
-        'message' => (string)($_GET['cover_msg'] ?? '')
+        'status' => smartlib_request_string($_GET, 'cover_status'),
+        'message' => smartlib_request_string($_GET, 'cover_msg')
     ];
 }
 
@@ -1540,7 +1601,7 @@ require 'layout_top.php';
                                 $statusClass = 'inactive';
                             }
                         ?>
-                        <tr>
+                        <tr id="book-row-<?= $bookId ?>">
                             <td class="book-id-col"><?= $bookId ?></td>
                             <td><?= htmlspecialchars($primaryIdentifier) ?></td>
                             <td><?= htmlspecialchars($row['title'] ?? '') ?></td>
@@ -1592,7 +1653,7 @@ require 'layout_top.php';
                             <td class="book-actions-cell">
                                 <a
                                     class="btn-status user-pin-btn user-action-icon-btn"
-                                    href="?edit=<?= $bookId ?>"
+                                    href="<?= htmlspecialchars($manageBooksUrl(['edit' => $bookId])) ?>"
                                     aria-label="Update book">
                                     <?= admin_icon('square-pen') ?>
                                 </a>
@@ -1722,6 +1783,61 @@ require 'layout_top.php';
             </tbody>
         </table>
     </div>
+    <?php if ($totalPages > 1): ?>
+        <?php
+            // Page numbers: first, last and current +/- 2; a gap of one page
+            // shows that page instead of an ellipsis.
+            $pagerNumbers = [1, $totalPages];
+            for ($pagerN = $booksPage - 2; $pagerN <= $booksPage + 2; $pagerN++) {
+                if ($pagerN >= 1 && $pagerN <= $totalPages) {
+                    $pagerNumbers[] = $pagerN;
+                }
+            }
+            $pagerNumbers = array_values(array_unique($pagerNumbers));
+            sort($pagerNumbers);
+            $pagerItems = [];
+            $previousNumber = 0;
+            foreach ($pagerNumbers as $pagerN) {
+                if ($previousNumber > 0 && $pagerN - $previousNumber === 2) {
+                    $pagerItems[] = $previousNumber + 1;
+                } elseif ($previousNumber > 0 && $pagerN - $previousNumber > 2) {
+                    $pagerItems[] = 0;
+                }
+                $pagerItems[] = $pagerN;
+                $previousNumber = $pagerN;
+            }
+            $pagerFirstShown = $pageOffset + 1;
+            $pagerLastShown = min($filteredBooksTotal, $pageOffset + MANAGE_BOOKS_PER_PAGE);
+        ?>
+        <nav class="mb-pager" aria-label="Pagination">
+            <p class="mb-pager-summary">Showing <strong><?= number_format($pagerFirstShown) ?>&ndash;<?= number_format($pagerLastShown) ?></strong> of <strong><?= number_format($filteredBooksTotal) ?></strong> books</p>
+            <ul class="mb-pager-list">
+                <li>
+                    <?php if ($booksPage > 1): ?>
+                        <a class="filter-reset-btn mb-pager-btn mb-pager-step" href="<?= htmlspecialchars($manageBooksUrl(['page' => $booksPage - 1])) ?>" rel="prev">&lsaquo; Previous</a>
+                    <?php else: ?>
+                        <span class="filter-reset-btn mb-pager-btn mb-pager-step is-disabled" aria-disabled="true">&lsaquo; Previous</span>
+                    <?php endif; ?>
+                </li>
+                <?php foreach ($pagerItems as $pagerItem): ?>
+                    <?php if ($pagerItem === 0): ?>
+                        <li class="mb-pager-gap" aria-hidden="true">&hellip;</li>
+                    <?php elseif ($pagerItem === $booksPage): ?>
+                        <li><a class="btn-primary mb-pager-btn mb-pager-current" href="<?= htmlspecialchars($manageBooksUrl(['page' => $pagerItem])) ?>" aria-current="page" aria-label="Page <?= $pagerItem ?>, current page"><?= number_format($pagerItem) ?></a></li>
+                    <?php else: ?>
+                        <li><a class="filter-reset-btn mb-pager-btn" href="<?= htmlspecialchars($manageBooksUrl(['page' => $pagerItem])) ?>" aria-label="Page <?= $pagerItem ?>"><?= number_format($pagerItem) ?></a></li>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+                <li>
+                    <?php if ($booksPage < $totalPages): ?>
+                        <a class="filter-reset-btn mb-pager-btn mb-pager-step" href="<?= htmlspecialchars($manageBooksUrl(['page' => $booksPage + 1])) ?>" rel="next">Next &rsaquo;</a>
+                    <?php else: ?>
+                        <span class="filter-reset-btn mb-pager-btn mb-pager-step is-disabled" aria-disabled="true">Next &rsaquo;</span>
+                    <?php endif; ?>
+                </li>
+            </ul>
+        </nav>
+    <?php endif; ?>
 </section>
 
 <?php
@@ -1906,7 +2022,7 @@ require 'layout_top.php';
     <div class="overlay-card glass-card edit-book-modal-card">
         <div class="panel-head">
             <h2><span class="modal-icon" aria-hidden="true"><?= admin_icon('edit') ?></span>Edit Book</h2>
-            <a class="icon-close" href="manage_books.php" aria-label="Close">&times;</a>
+            <a class="icon-close" href="<?= htmlspecialchars($manageBooksUrl([], 'book-row-' . (int)($editForm['book_id'] ?? 0))) ?>" aria-label="Close">&times;</a>
         </div>
 
         <?php
