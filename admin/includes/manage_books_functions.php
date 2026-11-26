@@ -118,6 +118,21 @@ function manage_books_resolve_location_id(
     return get_or_create_location_id($conn, $section, $classCode, $className, $shelf, $row, $position);
 }
 
+/**
+ * Class letter for a book's location, from its call number: the first
+ * letter when it is a Library of Congress class in $classLabels (e.g.
+ * "HF5635 .B35 2019" -> H); E and F share the list's "E/F" entry.
+ * Otherwise (a digit, a letter we don't list) ''. Add Book and Edit Book
+ * both use this; shelf, row and position are left empty in both.
+ */
+function manage_books_class_from_call_number(string $callNumber, array $classLabels): string {
+    $firstLetter = strtoupper(substr($callNumber, 0, 1));
+    if ($firstLetter === 'E' || $firstLetter === 'F') {
+        $firstLetter = 'E/F';
+    }
+    return ($firstLetter !== '' && isset($classLabels[$firstLetter])) ? $firstLetter : '';
+}
+
 function build_legacy_location_text(string $section, string $classCode, string $shelf, string $row, string $position, string $callNumber): string {
     $locationParts = [];
     if ($section !== '') $locationParts[] = 'Section: ' . $section;

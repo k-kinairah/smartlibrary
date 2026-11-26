@@ -248,6 +248,7 @@ const editCopyCountInput = document.getElementById('editCopyCountInput');
 const editCurrentCopyCountInput = document.getElementById('editCurrentCopyCount');
 const editNewAccessionInputsWrap = document.getElementById('editNewAccessionInputsWrap');
 const editCopyAdjustmentHint = document.getElementById('editCopyAdjustmentHint');
+const editNewCopiesBlock = document.getElementById('editNewCopiesBlock');
 
 function getEditCurrentCopyCount() {
     if (!editCurrentCopyCountInput) {
@@ -278,34 +279,84 @@ function renderEditNewAccessionInputs() {
     });
 
     editNewAccessionInputsWrap.innerHTML = '';
+    // The "New accession numbers" block shows only while new copies are added.
+    const showNewBlock = function (show) {
+        if (editNewCopiesBlock) editNewCopiesBlock.hidden = !show;
+    };
 
     if (desiredCount === null) {
-        setEditCopyHint('Enter a valid Number of Copies (1-200).');
+        showNewBlock(false);
+        setEditCopyHint('Enter a number of copies from 1 to 200.');
         return;
     }
 
     const additionalCount = Math.max(0, desiredCount - currentCount);
 
     if (additionalCount === 0) {
+        showNewBlock(false);
         if (desiredCount < currentCount) {
-            setEditCopyHint('Lower copy count will remove available copies first (borrowed/overdue/missing stay protected).');
+            setEditCopyHint('Lowering the count removes available copies first; borrowed, overdue and missing copies are kept.');
         } else {
-            setEditCopyHint('Copy count matches current inventory. No new accession fields needed.');
+            setEditCopyHint('');
         }
         return;
     }
 
-    setEditCopyHint('Provide accession numbers for ' + additionalCount + ' new ' + (additionalCount === 1 ? 'copy.' : 'copies.'));
+    showNewBlock(true);
+    setEditCopyHint('Add an accession number for ' + (additionalCount === 1 ? 'the new copy.' : 'each of the ' + additionalCount + ' new copies.'));
 
     for (let i = 0; i < additionalCount; i += 1) {
         const input = document.createElement('input');
         input.type = 'text';
+        input.className = 'ab-input';
         input.name = 'new_accession_numbers[]';
-        input.placeholder = 'New Accession #' + (i + 1);
+        input.placeholder = 'New accession #' + (i + 1);
+        input.setAttribute('aria-label', 'Accession number, new copy ' + (i + 1));
         input.value = existingValues[i] || '';
         editNewAccessionInputsWrap.appendChild(input);
     }
 }
+
+// Edit Book copies stepper: the same 1-200 steps as Add Book's, on the
+// Edit form's own count field (the button's aria-controls).
+document.querySelectorAll('#editBookForm .ab-step').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        const input = document.getElementById(btn.getAttribute('aria-controls') || '');
+        if (!input) return;
+        const step = Number.parseInt(btn.getAttribute('data-step') || '0', 10);
+        const current = /^\d+$/.test(input.value.trim()) ? Number.parseInt(input.value.trim(), 10) : 0;
+        let next = current + step;
+        if (current < 1) next = 1;
+        next = Math.min(200, Math.max(1, next));
+        input.value = String(next);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+});
+
+// Edit Book window: Tab and Shift+Tab wrap around inside it, as in Add
+// Book. Escape is left as it was (it does not close this window: that
+// would reload the list and drop unsaved edits); with a dropdown open,
+// Escape still closes just the dropdown.
+document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Tab') return;
+    const modal = document.getElementById('editBookModal');
+    if (!modal || !modal.classList.contains('show')) return;
+    const focusable = Array.from(modal.querySelectorAll(
+        'button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+    )).filter(function (el) {
+        return el.offsetParent !== null && !(el.tagName !== 'SELECT' && el.closest('select'));
+    });
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+    }
+});
 
 if (editCopyCountInput && editNewAccessionInputsWrap) {
     editCopyCountInput.addEventListener('input', renderEditNewAccessionInputs);

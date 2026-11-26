@@ -84,17 +84,6 @@ foreach ($libraryClassNames as $code => $name) {
     $libraryClassLabels[$code] = $code . ' - ' . $name;
 }
 
-$shelfOptions = [];
-foreach (['YA', 'GC', 'REF', 'RES', 'NUR', 'PSY'] as $prefix) {
-    $max = $prefix === 'YA' ? 12 : 8;
-    for ($i = 1; $i <= $max; $i++) {
-        $shelfOptions[] = sprintf('%s-%02d', $prefix, $i);
-    }
-}
-
-$rowOptions = ['First row', 'Second row', 'Third row', 'Fourth row', 'Fifth row'];
-$positionOptions = ['Eye Level', 'Upper Shelf', 'Middle Shelf', 'Lower Shelf', 'Bottom Shelf'];
-
 $hasLocationTable = table_exists($conn, 'library_locations');
 $hasBookLocationId = column_exists($conn, 'books', 'location_id');
 $hasBookCallNumber = column_exists($conn, 'books', 'call_number');
@@ -206,18 +195,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_book'])) {
     $locationSection = trim((string)($_POST['location_section'] ?? ''));
     $callNumber = trim((string)($_POST['call_number'] ?? ''));
     // The Add Book window asks for Section and Call Number only. The class
-    // letter comes from the call number's first letter when that letter is
-    // a Library of Congress class we list (e.g. "HF5635 .B35 2019" -> H);
-    // E and F share the list's "E/F" entry. Otherwise (a digit, a letter
-    // we don't list) it stays empty. Shelf, row and position are left
-    // empty; they can still be set later in the Edit Book window.
-    $callNumberFirstLetter = strtoupper(substr($callNumber, 0, 1));
-    if ($callNumberFirstLetter === 'E' || $callNumberFirstLetter === 'F') {
-        $callNumberFirstLetter = 'E/F';
-    }
-    $locationClass = ($callNumberFirstLetter !== '' && isset($libraryClassLabels[$callNumberFirstLetter]))
-        ? $callNumberFirstLetter
-        : '';
+    // letter comes from the call number (manage_books_class_from_call_number,
+    // shared with Edit Book); shelf, row and position are left empty.
+    $locationClass = manage_books_class_from_call_number($callNumber, $libraryClassLabels);
     $locationShelf = '';
     $locationRow = '';
     $locationPosition = '';
@@ -505,11 +485,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_book'])) {
     $programIds = $programSelection['ids'];
     $programId = $programSelection['main'];
 
+    // Location: the Section only. location_class / _shelf / _row / _position
+    // are never read (an old cached page may still post them); see the
+    // location update below for what a Section change does.
     $locationSection = trim((string)($_POST['location_section'] ?? ''));
-    $locationClass = trim((string)($_POST['location_class'] ?? ''));
-    $locationShelf = trim((string)($_POST['location_shelf'] ?? ''));
-    $locationRow = trim((string)($_POST['location_row'] ?? ''));
-    $locationPosition = trim((string)($_POST['location_position'] ?? ''));
     $callNumber = trim((string)($_POST['call_number'] ?? ''));
     $copyCountRaw = trim((string)($_POST['copy_count'] ?? ''));
     $desiredCopyCount = 0;
@@ -553,10 +532,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_book'])) {
         'program_id' => $programId,
         'program_ids' => $programIds,
         'location_section' => $locationSection,
-        'location_class' => $locationClass,
-        'location_shelf' => $locationShelf,
-        'location_row' => $locationRow,
-        'location_position' => $locationPosition,
         'call_number' => $callNumber,
         'copy_count' => $copyCountRaw,
         'edit_copy_accessions' => $editCopyAccessions,
@@ -568,8 +543,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_book'])) {
         $errorMessage = 'Invalid book selection.';
     } elseif ($title === '') {
         $errorMessage = 'Title is required.';
-    } elseif ($locationSection === '') {
-        $errorMessage = 'Section is required.';
     } elseif ($callNumber === '') {
         $errorMessage = 'Call Number is required.';
     } elseif (!$hasBookCopiesTable) {
@@ -730,7 +703,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_book'])) {
         $openEditBookModal = true;
         $editId = $bookId;
     } else {
-        $legacyLocationText = build_legacy_location_text($locationSection, $locationClass, $locationShelf, $locationRow, $locationPosition, $callNumber);
+        // The book's stored Section, to tell a real Section change from a
+        // save that leaves it as it was.
+        $storedLocationId = 0;
+        $storedSection = '';
+        if ($hasLocationTable && $hasBookLocationId) {
+            $storedLocStmt = $conn->prepare(
+                'SELECT COALESCE(b.location_id, 0) AS location_id, COALESCE(loc.section, \'\') AS section
+                 FROM books b
+                 LEFT JOIN library_locations loc ON loc.location_id = b.location_id
+                 WHERE b.book_id = ?
+                 LIMIT 1'
+            );
+            if ($storedLocStmt) {
+                $storedLocStmt->bind_param('i', $bookId);
+                $storedLocStmt->execute();
+                $storedLocRes = $storedLocStmt->get_result();
+                $storedLocRow = $storedLocRes ? $storedLocRes->fetch_assoc() : null;
+                $storedLocStmt->close();
+                $storedLocationId = (int)($storedLocRow['location_id'] ?? 0);
+                $storedSection = (string)($storedLocRow['section'] ?? '');
+            }
+        }
         $copyIsbn = substr($isbn, 0, 20);
 
         $conn->begin_transaction();
@@ -757,25 +751,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_book'])) {
                 manage_books_sync_book_programs($conn, $bookId, $programIds, $programId);
             }
 
+            // Location (Section only; never invented, never wiped):
+            // - blank Section: left as it is;
+            // - the same Section as stored: left as it is (no new row);
+            // - a different Section (or none stored yet): a location for that
+            //   Section with the class letter from the call number, exactly as
+            //   Add Book does, and empty shelf, row and position. The old
+            //   library_locations row is left alone.
             if ($hasLocationTable && $hasBookLocationId) {
-                // Section only is enough (class/shelf/row/position optional).
-                $locationId = manage_books_resolve_location_id(
-                    $conn,
-                    $libraryClassNames,
-                    $locationSection,
-                    $locationClass,
-                    $locationShelf,
-                    $locationRow,
-                    $locationPosition
-                );
-
-                $locUpd = $conn->prepare('UPDATE books SET location_id = NULLIF(?, 0) WHERE book_id = ?');
-                if ($locUpd) {
-                    $locUpd->bind_param('ii', $locationId, $bookId);
-                    $locUpd->execute();
-                    $locUpd->close();
+                if ($locationSection !== '' && !($storedLocationId > 0 && $locationSection === $storedSection)) {
+                    $locationId = manage_books_resolve_location_id(
+                        $conn,
+                        $libraryClassNames,
+                        $locationSection,
+                        manage_books_class_from_call_number($callNumber, $libraryClassLabels),
+                        '',
+                        '',
+                        ''
+                    );
+                    if ($locationId > 0) {
+                        $locUpd = $conn->prepare('UPDATE books SET location_id = ? WHERE book_id = ?');
+                        if ($locUpd) {
+                            $locUpd->bind_param('ii', $locationId, $bookId);
+                            $locUpd->execute();
+                            $locUpd->close();
+                        }
+                    }
                 }
-            } elseif ($hasLegacyLocation) {
+            } elseif ($hasLegacyLocation && $locationSection !== '') {
+                // Installs without the location tables: text from the Section and call number only.
+                $legacyLocationText = build_legacy_location_text($locationSection, '', '', '', '', $callNumber);
                 $legacyUpd = $conn->prepare('UPDATE books SET location = ? WHERE book_id = ?');
                 if ($legacyUpd) {
                     $legacyUpd->bind_param('si', $legacyLocationText, $bookId);
@@ -1398,11 +1403,8 @@ $editForm = [
     'program_id' => (int)($editBook['program_id'] ?? 0),
     'program_ids' => [],
     'cover' => (string)($editBook['cover'] ?? ''),
-    'location_section' => 'Circulation',
-    'location_class' => 'T',
-    'location_shelf' => 'YA-05',
-    'location_row' => 'First row',
-    'location_position' => 'Eye Level',
+    // The stored Section only (blank -> "Select Section"); nothing invented.
+    'location_section' => '',
     'call_number' => '',
     'copy_count' => $editCopyTotal > 0 ? (string)$editCopyTotal : '',
     'edit_copy_accessions' => [],
@@ -1414,11 +1416,7 @@ if ($editBook) {
         ? (manage_books_fetch_book_programs($conn, [(int)$editBook['book_id']])[(int)$editBook['book_id']] ?? [])
         : [];
     $editForm['program_ids'] = manage_books_ordered_program_ids((int)$editForm['program_id'], $editBookLinks, $programNameById);
-    $editForm['location_section'] = (string)($editBook['loc_section'] ?? $editForm['location_section']);
-    $editForm['location_class'] = (string)($editBook['loc_class_code'] ?? $editForm['location_class']);
-    $editForm['location_shelf'] = (string)($editBook['loc_shelf_code'] ?? $editForm['location_shelf']);
-    $editForm['location_row'] = (string)($editBook['loc_row_label'] ?? $editForm['location_row']);
-    $editForm['location_position'] = (string)($editBook['loc_position_label'] ?? $editForm['location_position']);
+    $editForm['location_section'] = (string)($editBook['loc_section'] ?? '');
     $editForm['call_number'] = (string)($editBook['db_call_number'] ?? '');
 }
 
@@ -2018,20 +2016,32 @@ require 'layout_top.php';
 </div>
 
 <?php if ($editBook): ?>
-<div class="overlay-modal show" id="editBookModal" aria-hidden="false">
-    <div class="overlay-card glass-card edit-book-modal-card">
-        <div class="panel-head">
-            <h2><span class="modal-icon" aria-hidden="true"><?= admin_icon('edit') ?></span>Edit Book</h2>
-            <a class="icon-close" href="<?= htmlspecialchars($manageBooksUrl([], 'book-row-' . (int)($editForm['book_id'] ?? 0))) ?>" aria-label="Close">&times;</a>
+<?php
+    // Edit Book window: the Add Book look (ab- classes, styled for both
+    // windows in admin.css and admin_palette_green.css) with the book's
+    // current cover and its cover tools on the left.
+    $editCoverFilename = trim((string)($editForm['cover'] ?? ''));
+    $editBookIdForCover = (int)($editForm['book_id'] ?? 0);
+    $editCoverIsExcluded = $editBookIdForCover > 0 && fbc_cover_rejection_reason($conn, $editBookIdForCover) !== null;
+    $editCloseUrl = $manageBooksUrl([], 'book-row-' . (int)($editForm['book_id'] ?? 0));
+    $editBookError = ($openEditBookModal && ($flash['type'] ?? '') === 'error') ? (string)($flash['message'] ?? '') : '';
+    $editCopiesNowText = number_format($editCopyTotal) . ($editCopyTotal === 1 ? ' copy now' : ' copies now');
+?>
+<div class="overlay-modal ab-modal show" id="editBookModal" aria-hidden="false">
+    <div class="ab-card" role="dialog" aria-modal="true" aria-labelledby="ebTitle" aria-describedby="ebSubtitle">
+        <div class="ab-head">
+            <span class="ab-chip" aria-hidden="true"><?= admin_icon('square-pen') ?></span>
+            <div class="ab-head-text">
+                <h2 class="ab-title" id="ebTitle">Edit Book</h2>
+                <p class="ab-subtitle" id="ebSubtitle">Update this title in the catalog</p>
+            </div>
+            <a class="ab-close" href="<?= htmlspecialchars($editCloseUrl) ?>" aria-label="Close">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+            </a>
         </div>
 
-        <?php
-            $editCoverFilename = trim((string)($editForm['cover'] ?? ''));
-            $editBookIdForCover = (int)($editForm['book_id'] ?? 0);
-            $editCoverIsExcluded = $editBookIdForCover > 0 && fbc_cover_rejection_reason($conn, $editBookIdForCover) !== null;
-        ?>
         <!-- Cover actions are their own POST forms; HTML can't nest forms, so
-             their visible controls live in the Cover section below and attach
+             their visible controls live in the left column below and attach
              back to these through the form="" attribute. -->
         <form method="POST" id="editCoverUploadForm" enctype="multipart/form-data" hidden>
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
@@ -2048,232 +2058,216 @@ require 'layout_top.php';
             </form>
         <?php endif; ?>
 
-        <form method="POST" class="form-grid edit-book-layout">
+        <form method="POST" class="ab-form" id="editBookForm">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
             <input type="hidden" name="book_id" value="<?= intval($editForm['book_id'] ?? 0) ?>">
             <input type="hidden" id="editCurrentCopyCount" value="<?= intval($editCopyTotal) ?>">
 
-            <section class="edit-book-section edit-book-section-cover">
-                <h3 class="edit-book-section-title">Cover</h3>
-                <div class="book-cover-preview">
-                    <?php if ($editCoverFilename !== ''): ?>
-                        <img src="../assets/covers/<?= htmlspecialchars($editCoverFilename) ?>?v=<?= time() ?>" alt="Current cover for this book" class="book-cover-thumb-img">
-                    <?php else: ?>
-                        <?php // Generated default cover (config/book_cover.php), the same one the kiosk shows for this book. ?>
-                        <img src="../book_cover.php?id=<?= intval($editForm['book_id'] ?? 0) ?>&amp;v=<?= BOOK_COVER_VERSION ?>" alt="Generated cover (no cover image yet)" class="book-cover-thumb-img">
-                    <?php endif; ?>
-                </div>
-
-                <div class="book-cover-actions">
-                    <?php if (($coverFlash['message'] ?? '') !== ''): ?>
-                        <p class="book-cover-flash book-cover-flash-<?= ($coverFlash['status'] ?? '') === 'ok' ? 'success' : 'error' ?>">
-                            <?= htmlspecialchars((string)$coverFlash['message']) ?>
-                        </p>
-                    <?php endif; ?>
-
-                    <?php if ($editCoverIsExcluded): ?>
-                        <p class="book-cover-caution">Heads up: automated lookups have returned the wrong image for this book before. Check any re-fetched result carefully, or upload the correct cover yourself.</p>
-                    <?php endif; ?>
-
-                    <label class="book-cover-drop" id="editCoverDrop">
-                        <input type="file" name="cover_image" form="editCoverUploadForm" class="book-cover-file" id="editCoverFileInput" accept="image/jpeg,image/png" required aria-label="Cover image file">
-                        <span class="book-cover-drop-icon" aria-hidden="true"><?= admin_icon('image') ?></span>
-                        <span class="book-cover-drop-text">
-                            <strong id="editCoverFileName">Choose an image</strong>
-                            <small id="editCoverFileHint">JPG/PNG &middot; or drop here</small>
-                        </span>
-                    </label>
-                    <button type="submit" name="upload_cover" form="editCoverUploadForm" class="filter-reset-btn book-cover-btn book-cover-btn-upload"><span class="book-cover-btn-icon" aria-hidden="true"><?= admin_icon('upload') ?></span>Upload cover</button>
-                    <button type="submit" name="refetch_cover" form="editCoverRefetchForm" class="filter-reset-btn book-cover-btn book-cover-btn-refetch"><span class="book-cover-btn-icon" aria-hidden="true"><?= admin_icon('refresh') ?></span>Re-fetch cover</button>
-                    <?php if ($editCoverFilename !== ''): ?>
-                        <button type="submit" name="clear_cover" form="editCoverClearForm" class="filter-reset-btn book-cover-btn book-cover-btn-danger"><span class="book-cover-btn-icon" aria-hidden="true"><?= admin_icon('trash') ?></span>Clear cover</button>
-                    <?php endif; ?>
-                </div>
-            </section>
-
-            <section class="edit-book-section edit-book-section-details">
-                <h3 class="edit-book-section-title">Book Details</h3>
-                <div class="edit-field-grid">
-                    <label class="edit-field edit-field-wide">
-                        <span class="edit-field-label">Title</span>
-                        <input type="text" name="title" placeholder="Title" required value="<?= htmlspecialchars((string)($editForm['title'] ?? '')) ?>">
-                    </label>
-                    <label class="edit-field edit-field-half">
-                        <span class="edit-field-label">Author</span>
-                        <input type="text" name="author" placeholder="Author" value="<?= htmlspecialchars((string)($editForm['author'] ?? '')) ?>">
-                    </label>
-                    <label class="edit-field edit-field-half">
-                        <span class="edit-field-label">Publisher</span>
-                        <input type="text" name="publisher" placeholder="Publisher" value="<?= htmlspecialchars((string)($editForm['publisher'] ?? '')) ?>">
-                    </label>
-                    <label class="edit-field">
-                        <span class="edit-field-label">ISBN</span>
-                        <input type="text" name="isbn" placeholder="ISBN" value="<?= htmlspecialchars((string)($editForm['isbn'] ?? '')) ?>">
-                    </label>
-                    <label class="edit-field">
-                        <span class="edit-field-label">Year</span>
-                        <input type="number" name="year_published" placeholder="Year" min="1900" max="2100" value="<?= htmlspecialchars((string)($editForm['year_published'] ?? '')) ?>">
-                    </label>
-                    <label class="edit-field">
-                        <span class="edit-field-label">Call Number</span>
-                        <input type="text" name="call_number" placeholder="Call Number" required value="<?= htmlspecialchars((string)($editForm['call_number'] ?? '')) ?>">
-                    </label>
-                </div>
-            </section>
-
-            <section class="edit-book-section edit-book-section-classification">
-                <h3 class="edit-book-section-title">Classification &amp; Location</h3>
-                <div class="edit-field-grid">
-                    <label class="edit-field">
-                        <span class="edit-field-label">Category</span>
-                        <select name="category_id">
-                            <option value="">Select Category</option>
-                            <?php foreach ($categoryOptions as $categoryOption): ?>
-                                <?php $cid = (int)($categoryOption['category_id'] ?? 0); ?>
-                                <option value="<?= $cid ?>" <?= (int)($editForm['category_id'] ?? 0) === $cid ? 'selected' : '' ?>><?= htmlspecialchars((string)($categoryOption['category_name'] ?? '')) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </label>
-
-                    <div class="edit-field">
-                        <span class="edit-field-label" id="ebProgramLabel">Program</span>
-                        <?= manage_books_render_program_picker([
-                            'id' => 'ebPrograms',
-                            'context' => 'edit',
-                            'label_id' => 'ebProgramLabel',
-                            'programs' => $programOptions,
-                            'ids' => (array)($editForm['program_ids'] ?? []),
-                            'main' => (int)($editForm['program_id'] ?? 0),
-                        ]) ?>
-                    </div>
-                </div>
-
-                <fieldset class="edit-location-group">
-                    <legend class="edit-location-legend">Location</legend>
-                    <div class="edit-field-grid">
-                        <label class="edit-field edit-field-wide">
-                            <span class="edit-field-label">Section</span>
-                            <select name="location_section" required>
-                                <option value="">Select Section</option>
-                                <?php foreach (manage_books_section_options($librarySections, (string)($editForm['location_section'] ?? '')) as $sec => $secLabel): ?>
-                                    <option value="<?= htmlspecialchars((string)$sec) ?>" <?= ((string)($editForm['location_section'] ?? '') === (string)$sec) ? 'selected' : '' ?>><?= htmlspecialchars($secLabel) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </label>
-
-                        <label class="edit-field">
-                            <span class="edit-field-label">Class Letter</span>
-                            <select name="location_class">
-                                <option value="">Select Class Letter (optional)</option>
-                                <?php foreach ($libraryClassLabels as $classCode => $classLabel): ?>
-                                    <option value="<?= htmlspecialchars($classCode) ?>" <?= ((string)($editForm['location_class'] ?? '') === (string)$classCode) ? 'selected' : '' ?>><?= htmlspecialchars($classLabel) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </label>
-
-                        <label class="edit-field">
-                            <span class="edit-field-label">Shelf Code</span>
-                            <select name="location_shelf">
-                                <option value="">Select Shelf Code (optional)</option>
-                                <?php foreach ($shelfOptions as $shelf): ?>
-                                    <option value="<?= htmlspecialchars($shelf) ?>" <?= ((string)($editForm['location_shelf'] ?? '') === (string)$shelf) ? 'selected' : '' ?>><?= htmlspecialchars($shelf) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </label>
-
-                        <label class="edit-field">
-                            <span class="edit-field-label">Row</span>
-                            <select name="location_row">
-                                <option value="">Select Row (optional)</option>
-                                <?php foreach ($rowOptions as $rowOpt): ?>
-                                    <option value="<?= htmlspecialchars($rowOpt) ?>" <?= ((string)($editForm['location_row'] ?? '') === (string)$rowOpt) ? 'selected' : '' ?>><?= htmlspecialchars($rowOpt) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </label>
-
-                        <label class="edit-field">
-                            <span class="edit-field-label">Shelf Level</span>
-                            <select name="location_position">
-                                <option value="">Select Position (optional)</option>
-                                <?php foreach ($positionOptions as $pos): ?>
-                                    <option value="<?= htmlspecialchars($pos) ?>" <?= ((string)($editForm['location_position'] ?? '') === (string)$pos) ? 'selected' : '' ?>><?= htmlspecialchars($pos) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </label>
-                    </div>
-                </fieldset>
-            </section>
-
-            <section class="edit-book-section edit-book-section-copies">
-                <h3 class="edit-book-section-title">Copies</h3>
-                <label class="edit-field edit-field-copy-count">
-                    <span class="edit-field-label">Number of Copies</span>
-                    <input
-                        type="text"
-                        name="copy_count"
-                        id="editCopyCountInput"
-                        placeholder="Number of Copies"
-                        inputmode="numeric"
-                        autocomplete="off"
-                        required
-                        value="<?= htmlspecialchars((string)($editForm['copy_count'] ?? '')) ?>">
-                </label>
-
-                <div class="book-accession-block edit-accession-panel">
-                    <div class="book-accession-head">
-                        <strong>Current Copy Accessions</strong>
-                        <span class="book-accession-hint">
-                            <?= intval($editCopyTotal) ?> copies total.
-                            <?= intval($editLockedCount) ?> locked (borrowed/overdue/missing),
-                            <?= intval($editRemovableCount) ?> editable/removable.
-                        </span>
-                    </div>
-                    <div class="edit-copy-accession-list">
-                        <?php if (!empty($editCopyRows)): ?>
-                            <?php foreach ($editCopyRows as $copyRow): ?>
-                                <?php
-                                    $copyId = (int)($copyRow['copy_id'] ?? 0);
-                                    $statusRaw = strtolower((string)($copyRow['effective_status'] ?? 'unknown'));
-                                    $statusLabel = (string)($copyRow['status_label'] ?? ucfirst(str_replace('_', ' ', $statusRaw)));
-                                    $isLocked = (bool)($copyRow['is_locked'] ?? false);
-                                    $accessionInput = (string)($copyRow['input_accession'] ?? '');
-                                ?>
-                                <div class="edit-copy-accession-row<?= $isLocked ? ' is-locked' : '' ?>">
-                                    <div class="edit-copy-accession-meta">
-                                        <span class="edit-copy-accession-id">Copy #<?= $copyId ?></span>
-                                        <span class="edit-copy-accession-status status-<?= htmlspecialchars($statusRaw) ?>"><?= htmlspecialchars($statusLabel) ?></span>
-                                    </div>
-                                    <input
-                                        type="text"
-                                        name="edit_copy_accessions[<?= $copyId ?>]"
-                                        placeholder="Accession #<?= $copyId ?>"
-                                        value="<?= htmlspecialchars($accessionInput) ?>"
-                                        <?= $isLocked ? 'readonly' : '' ?>>
-                                </div>
-                            <?php endforeach; ?>
+            <div class="ab-body">
+                <div class="ab-preview eb-preview">
+                    <div class="ab-cover">
+                        <?php if ($editCoverFilename !== ''): ?>
+                            <img src="../assets/covers/<?= htmlspecialchars($editCoverFilename) ?>?v=<?= time() ?>" alt="Current cover for this book" width="176" height="264">
                         <?php else: ?>
-                            <p class="copy-detail-empty">No copy records found for this book.</p>
+                            <?php // Generated default cover (config/book_cover.php), the same one the kiosk shows for this book. ?>
+                            <img src="../book_cover.php?id=<?= intval($editForm['book_id'] ?? 0) ?>&amp;v=<?= BOOK_COVER_VERSION ?>" alt="Generated cover (no cover image yet)" width="176" height="264">
+                        <?php endif; ?>
+                    </div>
+                    <div class="ab-preview-text">
+                        <span class="ab-pill">Current cover</span>
+                        <p class="ab-caption">Shown on the kiosk. Upload your own or look for a new one.</p>
+                    </div>
+
+                    <div class="eb-cover-tools">
+                        <?php if (($coverFlash['message'] ?? '') !== ''): ?>
+                            <p class="book-cover-flash book-cover-flash-<?= ($coverFlash['status'] ?? '') === 'ok' ? 'success' : 'error' ?>" role="status">
+                                <?= htmlspecialchars((string)$coverFlash['message']) ?>
+                            </p>
+                        <?php endif; ?>
+
+                        <?php if ($editCoverIsExcluded): ?>
+                            <p class="book-cover-caution">Heads up: automated lookups have returned the wrong image for this book before. Check any re-fetched result carefully, or upload the correct cover yourself.</p>
+                        <?php endif; ?>
+
+                        <label class="book-cover-drop" id="editCoverDrop">
+                            <input type="file" name="cover_image" form="editCoverUploadForm" class="book-cover-file" id="editCoverFileInput" accept="image/jpeg,image/png" required aria-label="Cover image file">
+                            <span class="book-cover-drop-icon" aria-hidden="true"><?= admin_icon('image') ?></span>
+                            <span class="book-cover-drop-text">
+                                <strong id="editCoverFileName">Choose an image</strong>
+                                <small id="editCoverFileHint">JPG/PNG &middot; or drop here</small>
+                            </span>
+                        </label>
+                        <div class="eb-cover-buttons">
+                            <button type="submit" name="upload_cover" form="editCoverUploadForm" class="filter-reset-btn book-cover-btn book-cover-btn-upload" aria-label="Upload cover" title="Upload cover"><span class="book-cover-btn-icon" aria-hidden="true"><?= admin_icon('upload') ?></span>Upload</button>
+                            <button type="submit" name="refetch_cover" form="editCoverRefetchForm" class="filter-reset-btn book-cover-btn book-cover-btn-refetch" aria-label="Re-fetch cover" title="Re-fetch cover"><span class="book-cover-btn-icon" aria-hidden="true"><?= admin_icon('refresh') ?></span>Re-fetch</button>
+                        </div>
+                        <?php if ($editCoverFilename !== ''): ?>
+                            <button type="submit" name="clear_cover" form="editCoverClearForm" class="filter-reset-btn book-cover-btn book-cover-btn-danger"><span class="book-cover-btn-icon" aria-hidden="true"><?= admin_icon('trash') ?></span>Clear cover</button>
                         <?php endif; ?>
                     </div>
                 </div>
 
-                <div class="book-accession-block edit-accession-panel">
-                    <div class="book-accession-head">
-                        <strong>New Copy Accessions</strong>
-                        <span class="book-accession-hint" id="editCopyAdjustmentHint">
-                            Increase Number of Copies to add new accession fields.
-                        </span>
-                    </div>
-                    <div class="book-accession-inputs" id="editNewAccessionInputsWrap">
-                        <?php for ($i = 0; $i < $editAdditionalCopyCount; $i++): ?>
-                            <?php $newAccessionValue = (string)($editNewAccessionsInput[$i] ?? ''); ?>
-                            <input type="text" name="new_accession_numbers[]" placeholder="New Accession #<?= $i + 1 ?>" value="<?= htmlspecialchars($newAccessionValue) ?>">
-                        <?php endfor; ?>
-                    </div>
-                </div>
-            </section>
+                <div class="ab-fields">
+                    <?php if ($editBookError !== ''): ?>
+                        <p class="ab-alert" role="alert"><?= htmlspecialchars($editBookError) ?></p>
+                    <?php endif; ?>
 
-            <button type="submit" name="update_book" class="btn-primary form-submit">Save Changes</button>
+                    <fieldset class="ab-group">
+                        <legend class="ab-group-label">Book details</legend>
+                        <div class="ab-grid">
+                            <div class="ab-field ab-span-2">
+                                <label class="ab-label" for="ebTitleInput">Title<span class="ab-req" aria-hidden="true"></span></label>
+                                <input class="ab-input" type="text" id="ebTitleInput" name="title" placeholder="e.g. Principles of Accounting" required value="<?= htmlspecialchars((string)($editForm['title'] ?? '')) ?>">
+                            </div>
+                            <div class="ab-field">
+                                <label class="ab-label" for="ebAuthorInput">Author</label>
+                                <input class="ab-input" type="text" id="ebAuthorInput" name="author" placeholder="Last name, First name" value="<?= htmlspecialchars((string)($editForm['author'] ?? '')) ?>">
+                            </div>
+                            <div class="ab-field">
+                                <label class="ab-label" for="ebPublisherInput">Publisher</label>
+                                <input class="ab-input" type="text" id="ebPublisherInput" name="publisher" placeholder="Publisher" value="<?= htmlspecialchars((string)($editForm['publisher'] ?? '')) ?>">
+                            </div>
+                            <div class="ab-field">
+                                <label class="ab-label" for="ebIsbnInput">ISBN</label>
+                                <input class="ab-input" type="text" id="ebIsbnInput" name="isbn" placeholder="978…" value="<?= htmlspecialchars((string)($editForm['isbn'] ?? '')) ?>">
+                            </div>
+                            <div class="ab-field">
+                                <label class="ab-label" for="ebYearInput">Year</label>
+                                <input class="ab-input" type="number" id="ebYearInput" name="year_published" placeholder="e.g. 2019" min="1900" max="2100" value="<?= htmlspecialchars((string)($editForm['year_published'] ?? '')) ?>">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="ab-group">
+                        <legend class="ab-group-label">Catalog</legend>
+                        <div class="ab-grid">
+                            <div class="ab-field">
+                                <label class="ab-label" for="ebCategorySelect">Category</label>
+                                <?php /* Same customizable-select button as Add Book (see there). */ ?>
+                                <select class="ab-input ab-select" id="ebCategorySelect" name="category_id">
+                                    <button type="button" class="ab-select-button"><selectedcontent></selectedcontent></button>
+                                    <option value="">Select Category</option>
+                                    <?php foreach ($categoryOptions as $categoryOption): ?>
+                                        <?php $cid = (int)($categoryOption['category_id'] ?? 0); ?>
+                                        <option value="<?= $cid ?>" <?= (int)($editForm['category_id'] ?? 0) === $cid ? 'selected' : '' ?>><?= htmlspecialchars((string)($categoryOption['category_name'] ?? '')) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="ab-field">
+                                <span class="ab-label" id="ebProgramLabel">Program</span>
+                                <?= manage_books_render_program_picker([
+                                    'id' => 'ebPrograms',
+                                    'context' => 'edit',
+                                    'label_id' => 'ebProgramLabel',
+                                    'programs' => $programOptions,
+                                    'ids' => (array)($editForm['program_ids'] ?? []),
+                                    'main' => (int)($editForm['program_id'] ?? 0),
+                                ]) ?>
+                            </div>
+                            <div class="ab-field">
+                                <?php /* Section only: the class letter comes from the call number when
+                                   the Section changes; shelf, row and position are not edited here. */ ?>
+                                <label class="ab-label" for="ebSectionSelect">Section<span class="ab-req" aria-hidden="true"></span></label>
+                                <select class="ab-input ab-select" id="ebSectionSelect" name="location_section" required>
+                                    <button type="button" class="ab-select-button"><selectedcontent></selectedcontent></button>
+                                    <option value="">Select Section</option>
+                                    <?php foreach (manage_books_section_options($librarySections, (string)($editForm['location_section'] ?? '')) as $sec => $secLabel): ?>
+                                        <option value="<?= htmlspecialchars((string)$sec) ?>" <?= ((string)($editForm['location_section'] ?? '') === (string)$sec) ? 'selected' : '' ?>><?= htmlspecialchars($secLabel) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="ab-field">
+                                <label class="ab-label" for="ebCallNumberInput">Call number<span class="ab-req" aria-hidden="true"></span></label>
+                                <input class="ab-input" type="text" id="ebCallNumberInput" name="call_number" placeholder="e.g. HF5635 .B35 2019" required value="<?= htmlspecialchars((string)($editForm['call_number'] ?? '')) ?>">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="ab-group">
+                        <legend class="ab-group-label">Copies</legend>
+                        <div class="ab-copies eb-copies">
+                            <div class="ab-field ab-copies-count">
+                                <label class="ab-label" for="editCopyCountInput">Copies<span class="ab-req" aria-hidden="true"></span></label>
+                                <div class="ab-stepper">
+                                    <button type="button" class="ab-step" data-step="-1" aria-label="One copy fewer" aria-controls="editCopyCountInput">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"></path></svg>
+                                    </button>
+                                    <input
+                                        class="ab-step-input"
+                                        type="text"
+                                        name="copy_count"
+                                        id="editCopyCountInput"
+                                        inputmode="numeric"
+                                        autocomplete="off"
+                                        aria-describedby="ebCopiesHint editCopyAdjustmentHint"
+                                        required
+                                        value="<?= htmlspecialchars((string)($editForm['copy_count'] ?? '')) ?>">
+                                    <button type="button" class="ab-step" data-step="1" aria-label="One copy more" aria-controls="editCopyCountInput">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12"></path></svg>
+                                    </button>
+                                </div>
+                                <span class="ab-hint" id="ebCopiesHint"><?= htmlspecialchars($editCopiesNowText) ?></span>
+                            </div>
+                            <div class="ab-field eb-copies-side">
+                                <span class="ab-label" id="ebCurrentCopiesLabel">Current copies</span>
+                                <div class="eb-copy-list" role="group" aria-labelledby="ebCurrentCopiesLabel">
+                                    <?php if (!empty($editCopyRows)): ?>
+                                        <?php foreach ($editCopyRows as $copyRow): ?>
+                                            <?php
+                                                $copyId = (int)($copyRow['copy_id'] ?? 0);
+                                                $statusRaw = strtolower((string)($copyRow['effective_status'] ?? 'unknown'));
+                                                $statusLabel = (string)($copyRow['status_label'] ?? ucfirst(str_replace('_', ' ', $statusRaw)));
+                                                $isLocked = (bool)($copyRow['is_locked'] ?? false);
+                                                $accessionInput = (string)($copyRow['input_accession'] ?? '');
+                                            ?>
+                                            <div class="eb-copy-row<?= $isLocked ? ' is-locked' : '' ?>">
+                                                <span class="eb-copy-id">Copy #<?= $copyId ?></span>
+                                                <input
+                                                    class="eb-copy-acc"
+                                                    type="text"
+                                                    name="edit_copy_accessions[<?= $copyId ?>]"
+                                                    placeholder="Accession #"
+                                                    aria-label="Accession number, copy #<?= $copyId ?><?= $isLocked ? ' (locked: ' . htmlspecialchars(strtolower($statusLabel)) . ')' : '' ?>"
+                                                    value="<?= htmlspecialchars($accessionInput) ?>"
+                                                    <?= $isLocked ? 'readonly' : '' ?>>
+                                                <span class="eb-copy-status status-<?= htmlspecialchars($statusRaw) ?>"<?= $isLocked ? ' title="Locked while ' . htmlspecialchars(strtolower($statusLabel)) . ': it can\'t be edited or removed"' : '' ?>>
+                                                    <?php if ($isLocked): ?><svg class="eb-copy-lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="10.5" width="13" height="9" rx="2"></rect><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"></path></svg><?php endif; ?><?= htmlspecialchars($statusLabel) ?>
+                                                </span>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <p class="eb-copy-empty">No copy records found for this book.</p>
+                                    <?php endif; ?>
+                                </div>
+                                <?php if ($editLockedCount > 0): ?>
+                                    <p class="ab-hint eb-copy-note"><?= intval($editLockedCount) ?> <?= $editLockedCount === 1 ? 'copy is' : 'copies are' ?> borrowed, overdue or missing: locked, and never removed when you lower the count.</p>
+                                <?php endif; ?>
+                                <p class="ab-hint eb-copy-note" id="editCopyAdjustmentHint" aria-live="polite"></p>
+                                <div class="eb-new-copies" id="editNewCopiesBlock"<?= $editAdditionalCopyCount > 0 ? '' : ' hidden' ?>>
+                                    <span class="ab-label" id="ebNewAccessionLabel">New accession numbers<span class="ab-req" aria-hidden="true"></span><span class="ab-sr"> (required, one per new copy)</span></span>
+                                    <div class="ab-accession-grid" id="editNewAccessionInputsWrap" role="group" aria-labelledby="ebNewAccessionLabel">
+                                        <?php for ($i = 0; $i < $editAdditionalCopyCount; $i++): ?>
+                                            <?php $newAccessionValue = (string)($editNewAccessionsInput[$i] ?? ''); ?>
+                                            <input class="ab-input" type="text" name="new_accession_numbers[]" placeholder="New accession #<?= $i + 1 ?>" aria-label="Accession number, new copy <?= $i + 1 ?>" value="<?= htmlspecialchars($newAccessionValue) ?>">
+                                        <?php endfor; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+                </div>
+            </div>
+
+            <div class="ab-foot">
+                <span class="ab-foot-note"><span class="ab-req" aria-hidden="true"></span>Required</span>
+                <div class="ab-actions">
+                    <a class="ab-btn ab-btn-ghost" href="<?= htmlspecialchars($editCloseUrl) ?>">Cancel</a>
+                    <button type="submit" name="update_book" class="ab-btn ab-btn-primary">
+                        <span class="ab-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg></span>
+                        Save changes
+                    </button>
+                </div>
+            </div>
         </form>
     </div>
 </div>

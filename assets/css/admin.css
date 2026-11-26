@@ -8881,7 +8881,8 @@ select:focus {
     background: rgba(123, 240, 176, 0.1);
 }
 
-.edit-book-layout .book-cover-drop .book-cover-file {
+.edit-book-layout .book-cover-drop .book-cover-file,
+#editBookModal .book-cover-drop .book-cover-file {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -8985,7 +8986,8 @@ select:focus {
     transform: rotate(180deg);
 }
 
-.book-cover-drop.has-file + .filter-reset-btn.book-cover-btn-upload {
+.book-cover-drop.has-file + .filter-reset-btn.book-cover-btn-upload,
+.book-cover-drop.has-file + .eb-cover-buttons .filter-reset-btn.book-cover-btn-upload {
     background: linear-gradient(160deg, rgb(var(--pb-4d8ad4)) 0%, rgb(var(--pb-1c4573)) 100%) !important;
     border-color: rgba(var(--pb-8cb9eb), 0.6) !important;
     color: #ffffff !important;
@@ -13678,16 +13680,18 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
 }
 
 /* ============================================================
-   Add Book window ("Cover preview" layout), admin/manage_books.php
-   #bookModal only. A cover preview on the left, grouped fields on the
-   right, a body that scrolls inside the window and a footer that stays
-   visible. Everything is scoped to #bookModal and the ab- classes, so the
-   Edit Book window and every other page are untouched. Base = dark
+   Add Book and Edit Book windows ("Cover preview" layout),
+   admin/manage_books.php #bookModal and #editBookModal. A cover on the
+   left, grouped fields on the right, a body that scrolls inside the window
+   and a footer that stays visible. Everything is scoped to the two window
+   ids and the ab- classes, so every other page is untouched. The Edit
+   window's own extras (cover tools, current copies) are in the
+   "Edit Book window extras" block further down. Base = dark
    (other dark variants); [data-theme="light"] below; pine dark in
    admin_palette_green.css.
    ============================================================ */
-#bookModal .ab-card {
-    --ab-req: #d89a2b;
+:is(#bookModal, #editBookModal) .ab-card {
+    --ab-req: #ff8f7e;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -13702,7 +13706,7 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     animation: modalCardIn 0.2s ease;
 }
 
-#bookModal .ab-head {
+:is(#bookModal, #editBookModal) .ab-head {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -13710,7 +13714,7 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     flex: 0 0 auto;
 }
 
-#bookModal .ab-chip {
+:is(#bookModal, #editBookModal) .ab-chip {
     width: 38px;
     height: 38px;
     border-radius: 12px;
@@ -13721,10 +13725,10 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     color: #f7d98f;
 }
 
-#bookModal .ab-chip svg,
-#bookModal .ab-close svg,
-#bookModal .ab-step svg,
-#bookModal .ab-btn-icon svg {
+:is(#bookModal, #editBookModal) .ab-chip svg,
+:is(#bookModal, #editBookModal) .ab-close svg,
+:is(#bookModal, #editBookModal) .ab-step svg,
+:is(#bookModal, #editBookModal) .ab-btn-icon svg {
     display: block;
     fill: none;
     stroke: currentColor;
@@ -13732,24 +13736,24 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     stroke-linejoin: round;
 }
 
-#bookModal .ab-chip svg {
+:is(#bookModal, #editBookModal) .ab-chip svg {
     width: 20px;
     height: 20px;
     stroke-width: 1.8;
 }
 
-#bookModal .ab-chip svg *,
-#bookModal .ab-btn-icon svg * {
+:is(#bookModal, #editBookModal) .ab-chip svg *,
+:is(#bookModal, #editBookModal) .ab-btn-icon svg * {
     fill: none;
     stroke: currentColor;
 }
 
-#bookModal .ab-head-text {
+:is(#bookModal, #editBookModal) .ab-head-text {
     flex: 1 1 auto;
     min-width: 0;
 }
 
-#bookModal .ab-title {
+:is(#bookModal, #editBookModal) .ab-title {
     margin: 0;
     font-size: 20px;
     font-weight: 800;
@@ -13758,7 +13762,7 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     color: #eef4f0 !important;
 }
 
-#bookModal .ab-subtitle {
+:is(#bookModal, #editBookModal) .ab-subtitle {
     margin: 2px 0 0;
     font-size: 12.5px;
     font-weight: 500;
@@ -13766,7 +13770,7 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     color: #bccdc4;
 }
 
-#bookModal .ab-close {
+:is(#bookModal, #editBookModal) .ab-close {
     width: 34px;
     height: 34px;
     flex: 0 0 auto;
@@ -13781,19 +13785,19 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
 
-#bookModal .ab-close svg {
+:is(#bookModal, #editBookModal) .ab-close svg {
     width: 16px;
     height: 16px;
     stroke-width: 2.2;
 }
 
-#bookModal .ab-close:hover {
+:is(#bookModal, #editBookModal) .ab-close:hover {
     background: rgba(224, 90, 90, 0.16);
     border-color: rgba(224, 90, 90, 0.5);
     color: #ffc2c2;
 }
 
-#bookModal .ab-form {
+:is(#bookModal, #editBookModal) .ab-form {
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
@@ -13801,7 +13805,7 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     margin: 0;
 }
 
-#bookModal .ab-body {
+:is(#bookModal, #editBookModal) .ab-body {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
@@ -13813,7 +13817,7 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
 }
 
 /* ---------- cover preview ---------- */
-#bookModal .ab-preview {
+:is(#bookModal, #editBookModal) .ab-preview {
     position: sticky;
     top: 0;
     align-self: start;
@@ -13824,7 +13828,7 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     padding-top: 2px;
 }
 
-#bookModal .ab-cover {
+:is(#bookModal, #editBookModal) .ab-cover {
     width: 176px;
     height: 264px;
     border-radius: 7px;
@@ -13834,14 +13838,14 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
-#bookModal .ab-cover img {
+:is(#bookModal, #editBookModal) .ab-cover img {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-#bookModal .ab-preview-text {
+:is(#bookModal, #editBookModal) .ab-preview-text {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -13849,7 +13853,7 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     min-width: 0;
 }
 
-#bookModal .ab-pill {
+:is(#bookModal, #editBookModal) .ab-pill {
     display: inline-block;
     padding: 4px 10px;
     border-radius: 999px;
@@ -13862,7 +13866,7 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     color: #f7d98f;
 }
 
-#bookModal .ab-caption {
+:is(#bookModal, #editBookModal) .ab-caption {
     margin: 0;
     font-size: 11.5px;
     font-weight: 500;
@@ -13872,11 +13876,11 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
 }
 
 /* ---------- field groups ---------- */
-#bookModal .ab-fields {
+:is(#bookModal, #editBookModal) .ab-fields {
     min-width: 0;
 }
 
-#bookModal .ab-alert {
+:is(#bookModal, #editBookModal) .ab-alert {
     margin: 0 0 14px;
     padding: 9px 12px;
     border-radius: 12px;
@@ -13888,20 +13892,20 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     color: #ffc9c9;
 }
 
-#bookModal .ab-group {
+:is(#bookModal, #editBookModal) .ab-group {
     margin: 0 0 18px;
     padding: 0;
     border: 0;
     min-width: 0;
 }
 
-#bookModal .ab-group:last-child {
+:is(#bookModal, #editBookModal) .ab-group:last-child {
     margin-bottom: 0;
 }
 
 /* Small-caps label followed by a hairline. A floated legend lays out
    like an ordinary block, so it can be a flex row. */
-#bookModal .ab-group-label {
+:is(#bookModal, #editBookModal) .ab-group-label {
     float: left;
     width: 100%;
     display: flex;
@@ -13917,31 +13921,31 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     color: #e8b54a;
 }
 
-#bookModal .ab-group-label::after {
+:is(#bookModal, #editBookModal) .ab-group-label::after {
     content: "";
     flex: 1 1 auto;
     height: 1px;
     background: rgba(120, 200, 175, 0.2);
 }
 
-#bookModal .ab-grid {
+:is(#bookModal, #editBookModal) .ab-grid {
     clear: both;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px 14px;
 }
 
-#bookModal .ab-span-2 {
+:is(#bookModal, #editBookModal) .ab-span-2 {
     grid-column: 1 / -1;
 }
 
-#bookModal .ab-field {
+:is(#bookModal, #editBookModal) .ab-field {
     display: flex;
     flex-direction: column;
     min-width: 0;
 }
 
-#bookModal .ab-label {
+:is(#bookModal, #editBookModal) .ab-label {
     display: flex;
     align-items: center;
     margin: 0 0 5px;
@@ -13951,17 +13955,27 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     color: #bccdc4;
 }
 
-#bookModal .ab-req {
-    display: inline-block;
+/* Required marker: a red asterisk after the label and in the footer's
+   "* Required" legend (the span stays empty and aria-hidden; the fields
+   carry the real required attribute). Coral on the dark cards, a darker
+   red in the light theme (--ab-req), both at least 4.5:1 on the card. */
+:is(#bookModal, #editBookModal) .ab-req {
+    display: inline-flex;
+    justify-content: center;
     width: 6px;
-    height: 6px;
-    margin-left: 5px;
-    border-radius: 50%;
-    background: var(--ab-req);
+    margin-left: 4px;
+    color: var(--ab-req);
+    font-size: 1.08em;
+    font-weight: 800;
+    line-height: 1;
     flex: 0 0 auto;
 }
 
-#bookModal .ab-sr {
+:is(#bookModal, #editBookModal) .ab-req::before {
+    content: "*";
+}
+
+:is(#bookModal, #editBookModal) .ab-sr {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -13973,7 +13987,7 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     border: 0;
 }
 
-#bookModal .ab-hint {
+:is(#bookModal, #editBookModal) .ab-hint {
     margin-top: 5px;
     font-size: 11px;
     font-weight: 600;
@@ -13982,7 +13996,7 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
 }
 
 /* ---------- inputs ---------- */
-#bookModal .ab-input {
+:is(#bookModal, #editBookModal) .ab-input {
     box-sizing: border-box;
     width: 100%;
     height: 40px;
@@ -14002,24 +14016,24 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     transition: border-color 0.16s ease, background-color 0.16s ease;
 }
 
-#bookModal .ab-input::placeholder {
+:is(#bookModal, #editBookModal) .ab-input::placeholder {
     color: #9fb5ab !important;
     opacity: 1;
     font-weight: 500;
 }
 
-#bookModal input.ab-input[type="number"] {
+:is(#bookModal, #editBookModal) input.ab-input[type="number"] {
     -moz-appearance: textfield;
     appearance: textfield;
 }
 
-#bookModal input.ab-input[type="number"]::-webkit-inner-spin-button,
-#bookModal input.ab-input[type="number"]::-webkit-outer-spin-button {
+:is(#bookModal, #editBookModal) input.ab-input[type="number"]::-webkit-inner-spin-button,
+:is(#bookModal, #editBookModal) input.ab-input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
 
-#bookModal .ab-select {
+:is(#bookModal, #editBookModal) .ab-select {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
@@ -14036,23 +14050,23 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     background-size: 15px !important;
 }
 
-#bookModal .ab-select option {
+:is(#bookModal, #editBookModal) .ab-select option {
     color: #1f3b2e;
     background: #ffffff;
 }
 
-#bookModal .ab-input:focus,
-#bookModal .ab-input:focus-visible,
-#bookModal .ab-step-input:focus-visible,
-#bookModal .ab-close:focus-visible,
-#bookModal .ab-step:focus-visible,
-#bookModal .ab-btn:focus-visible {
+:is(#bookModal, #editBookModal) .ab-input:focus,
+:is(#bookModal, #editBookModal) .ab-input:focus-visible,
+:is(#bookModal, #editBookModal) .ab-step-input:focus-visible,
+:is(#bookModal, #editBookModal) .ab-close:focus-visible,
+:is(#bookModal, #editBookModal) .ab-step:focus-visible,
+:is(#bookModal, #editBookModal) .ab-btn:focus-visible {
     outline: 2px solid #6ed6ba !important;
     outline-offset: 2px !important;
 }
 
 /* ---------- copies ---------- */
-#bookModal .ab-copies {
+:is(#bookModal, #editBookModal) .ab-copies {
     clear: both;
     display: grid;
     grid-template-columns: 118px minmax(0, 1fr);
@@ -14060,7 +14074,7 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     align-items: start;
 }
 
-#bookModal .ab-stepper {
+:is(#bookModal, #editBookModal) .ab-stepper {
     box-sizing: border-box;
     display: flex;
     align-items: center;
@@ -14073,7 +14087,7 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     background: rgba(255, 255, 255, 0.04);
 }
 
-#bookModal .ab-step {
+:is(#bookModal, #editBookModal) .ab-step {
     width: 28px;
     height: 28px;
     flex: 0 0 auto;
@@ -14087,17 +14101,17 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     cursor: pointer;
 }
 
-#bookModal .ab-step svg {
+:is(#bookModal, #editBookModal) .ab-step svg {
     width: 14px;
     height: 14px;
     stroke-width: 2.4;
 }
 
-#bookModal .ab-step:hover {
+:is(#bookModal, #editBookModal) .ab-step:hover {
     background: rgba(120, 200, 175, 0.2);
 }
 
-#bookModal .ab-step-input {
+:is(#bookModal, #editBookModal) .ab-step-input {
     flex: 1 1 auto;
     min-width: 0;
     width: 100%;
@@ -14115,14 +14129,14 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     box-shadow: none !important;
 }
 
-#bookModal .ab-accession-grid {
+:is(#bookModal, #editBookModal) .ab-accession-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px 10px;
 }
 
 /* ---------- footer ---------- */
-#bookModal .ab-foot {
+:is(#bookModal, #editBookModal) .ab-foot {
     flex: 0 0 auto;
     display: flex;
     align-items: center;
@@ -14133,7 +14147,7 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     background: rgba(0, 0, 0, 0.12);
 }
 
-#bookModal .ab-foot-note {
+:is(#bookModal, #editBookModal) .ab-foot-note {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -14142,17 +14156,17 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     color: #bccdc4;
 }
 
-#bookModal .ab-foot-note .ab-req {
+:is(#bookModal, #editBookModal) .ab-foot-note .ab-req {
     margin-left: 0;
 }
 
-#bookModal .ab-actions {
+:is(#bookModal, #editBookModal) .ab-actions {
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-#bookModal .ab-btn {
+:is(#bookModal, #editBookModal) .ab-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -14169,190 +14183,191 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, color 0.16s ease;
 }
 
-#bookModal .ab-btn-ghost {
+:is(#bookModal, #editBookModal) .ab-btn-ghost {
     border: 1px solid rgba(120, 200, 175, 0.35);
     background: transparent;
     color: #dce9e3;
 }
 
-#bookModal .ab-btn-ghost:hover {
+:is(#bookModal, #editBookModal) .ab-btn-ghost:hover {
     background: rgba(120, 200, 175, 0.1);
 }
 
-#bookModal .ab-btn-primary {
+:is(#bookModal, #editBookModal) .ab-btn-primary {
     border: 0;
     background: linear-gradient(180deg, #20846d 0%, #176451 100%);
     color: #ffffff;
     box-shadow: 0 8px 20px rgba(23, 100, 81, 0.4);
 }
 
-#bookModal .ab-btn-primary:hover {
+:is(#bookModal, #editBookModal) .ab-btn-primary:hover {
     background: linear-gradient(180deg, #1a7360 0%, #125543 100%);
 }
 
-#bookModal .ab-btn-icon svg {
+:is(#bookModal, #editBookModal) .ab-btn-icon svg {
     width: 18px;
     height: 18px;
     stroke-width: 2;
 }
 
 /* ---------- light ---------- */
-[data-theme="light"] #bookModal .ab-card {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-card {
+    --ab-req: #b42318;
     background: linear-gradient(180deg, #ffffff 0%, #f3f8f5 100%);
     border: 1.5px solid #7ab5a0;
     box-shadow: 0 24px 56px rgba(20, 52, 42, 0.2), 0 2px 8px rgba(20, 52, 42, 0.08);
     color: #1f3b2e;
 }
 
-[data-theme="light"] #bookModal .ab-chip {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-chip {
     background: linear-gradient(160deg, #e7f3ee 0%, #d4e9e0 100%);
     color: #1d6149;
 }
 
-[data-theme="light"] #bookModal .ab-title {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-title {
     color: #173a2f !important;
 }
 
-[data-theme="light"] #bookModal .ab-subtitle {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-subtitle {
     color: #4d665d;
 }
 
-[data-theme="light"] #bookModal .ab-close {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-close {
     border-color: #c7ddd3;
     background: #ffffff;
     color: #35524a;
 }
 
-[data-theme="light"] #bookModal .ab-close:hover {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-close:hover {
     background: #fdecec;
     border-color: #e3a5a5;
     color: #b3232c;
 }
 
-[data-theme="light"] #bookModal .ab-cover {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-cover {
     background: #e7efeb;
     box-shadow: 0 14px 28px rgba(20, 52, 42, 0.22), 0 2px 6px rgba(20, 52, 42, 0.12);
 }
 
-[data-theme="light"] #bookModal .ab-pill {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-pill {
     background: rgba(216, 154, 43, 0.16);
     color: #7a4f05;
 }
 
-[data-theme="light"] #bookModal .ab-caption {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-caption {
     color: #4d665d;
 }
 
-[data-theme="light"] #bookModal .ab-alert {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-alert {
     background: #fdeeee;
     border-color: #e6a9ab;
     color: #9b2226;
 }
 
-[data-theme="light"] #bookModal .ab-group-label {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-group-label {
     color: #2d6b55;
 }
 
-[data-theme="light"] #bookModal .ab-group-label::after {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-group-label::after {
     background: #d3e5dd;
 }
 
-[data-theme="light"] #bookModal .ab-label,
-[data-theme="light"] #bookModal .ab-foot-note,
-[data-theme="light"] #bookModal .ab-hint {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-label,
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-foot-note,
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-hint {
     color: #35524a;
 }
 
-[data-theme="light"] #bookModal .ab-input {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-input {
     background-color: #ffffff !important;
     border-color: #c7ddd3 !important;
     color: #1f3b2e !important;
 }
 
-[data-theme="light"] #bookModal input.ab-input:not(:placeholder-shown),
-[data-theme="light"] #bookModal select.ab-input:not(:has(option[value=""]:checked)) {
+[data-theme="light"] :is(#bookModal, #editBookModal) input.ab-input:not(:placeholder-shown),
+[data-theme="light"] :is(#bookModal, #editBookModal) select.ab-input:not(:has(option[value=""]:checked)) {
     border-color: #a9cbbd !important;
 }
 
-[data-theme="light"] #bookModal .ab-input::placeholder {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-input::placeholder {
     color: #5d726a !important;
 }
 
-[data-theme="light"] #bookModal .ab-select {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-select {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232d6b55' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") !important;
 }
 
-[data-theme="light"] #bookModal .ab-input:focus,
-[data-theme="light"] #bookModal .ab-input:focus-visible,
-[data-theme="light"] #bookModal .ab-step-input:focus-visible,
-[data-theme="light"] #bookModal .ab-close:focus-visible,
-[data-theme="light"] #bookModal .ab-step:focus-visible,
-[data-theme="light"] #bookModal .ab-btn:focus-visible {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-input:focus,
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-input:focus-visible,
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-step-input:focus-visible,
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-close:focus-visible,
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-step:focus-visible,
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-btn:focus-visible {
     outline-color: #1d6149 !important;
 }
 
-[data-theme="light"] #bookModal .ab-stepper {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-stepper {
     background: #ffffff;
     border-color: #a9cbbd;
 }
 
-[data-theme="light"] #bookModal .ab-step {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-step {
     background: #eaf4f0;
     border-color: #c7ddd3;
     color: #1d6149;
 }
 
-[data-theme="light"] #bookModal .ab-step:hover {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-step:hover {
     background: #d9ece4;
 }
 
-[data-theme="light"] #bookModal .ab-step-input {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-step-input {
     background: transparent !important;
     color: #173a2f !important;
 }
 
-[data-theme="light"] #bookModal .ab-foot {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-foot {
     border-top-color: #d3e5dd;
     background: #f3f8f5;
 }
 
-[data-theme="light"] #bookModal .ab-btn-ghost {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-btn-ghost {
     border-color: #a9cbbd;
     background: #ffffff;
     color: #2d6b55;
 }
 
-[data-theme="light"] #bookModal .ab-btn-ghost:hover {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-btn-ghost:hover {
     background: #eef6f2;
 }
 
-[data-theme="light"] #bookModal .ab-btn-primary {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-btn-primary {
     background: linear-gradient(180deg, #2f8466 0%, #1d6149 100%);
     box-shadow: 0 8px 18px rgba(29, 97, 73, 0.28);
 }
 
-[data-theme="light"] #bookModal .ab-btn-primary:hover {
+[data-theme="light"] :is(#bookModal, #editBookModal) .ab-btn-primary:hover {
     background: linear-gradient(180deg, #276f56 0%, #17503c 100%);
 }
 
 /* ---------- smaller screens ---------- */
 /* Below 760px: the preview becomes a compact row above the fields. */
 @media (max-width: 759.98px) {
-    #bookModal .ab-body {
+    :is(#bookModal, #editBookModal) .ab-body {
         grid-template-columns: minmax(0, 1fr);
         gap: 16px;
         padding: 2px 18px 18px;
     }
 
-    #bookModal .ab-head {
+    :is(#bookModal, #editBookModal) .ab-head {
         padding: 18px 18px 14px;
     }
 
-    #bookModal .ab-foot {
+    :is(#bookModal, #editBookModal) .ab-foot {
         padding: 12px 18px;
     }
 
-    #bookModal .ab-preview {
+    :is(#bookModal, #editBookModal) .ab-preview {
         position: static;
         flex-direction: row;
         align-items: center;
@@ -14360,45 +14375,46 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
         padding-top: 0;
     }
 
-    #bookModal .ab-cover {
+    :is(#bookModal, #editBookModal) .ab-cover {
         width: 72px;
         height: 108px;
         border-radius: 5px;
     }
 
-    #bookModal .ab-preview-text {
+    :is(#bookModal, #editBookModal) .ab-preview-text {
         align-items: flex-start;
         gap: 6px;
     }
 
-    #bookModal .ab-caption {
+    :is(#bookModal, #editBookModal) .ab-caption {
         text-align: left;
     }
 }
 
 /* Under 520px: one column. */
 @media (max-width: 519.98px) {
-    #bookModal .ab-grid,
-    #bookModal .ab-copies {
+    :is(#bookModal, #editBookModal) .ab-grid,
+    :is(#bookModal, #editBookModal) .ab-copies {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    #bookModal .ab-span-2 {
+    :is(#bookModal, #editBookModal) .ab-span-2 {
         grid-column: auto;
     }
 
-    #bookModal .ab-foot {
+    :is(#bookModal, #editBookModal) .ab-foot {
         flex-wrap: wrap;
     }
 
-    #bookModal .ab-actions {
+    :is(#bookModal, #editBookModal) .ab-actions {
         margin-left: auto;
     }
 }
 
 /* ============================================================
-   Add Book window: premium dropdowns for Category, Program and Section
-   (#bookModal only). Chrome/Edge 135+ "customizable select"
+   Add Book and Edit Book windows: premium dropdowns for Category and
+   Section (#abCategorySelect, #abSectionSelect, #ebCategorySelect,
+   #ebSectionSelect; #abProgramSelect is a leftover id). Chrome/Edge 135+ "customizable select"
    (appearance: base-select) as progressive enhancement: inside
    @supports the select draws its own arrow (::picker-icon) and a styled
    popup (::picker(select)) that is as wide as the select and sits in the
@@ -14410,17 +14426,17 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
    input rules (border, background, !important).
    ============================================================ */
 @media not (forced-colors: active) {
-    #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) {
+    :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) {
         color-scheme: dark;
     }
 
-    [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) {
+    [data-theme="light"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) {
         color-scheme: light;
     }
 
     @supports (appearance: base-select) {
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect),
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect)::picker(select) {
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect),
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect)::picker(select) {
             -webkit-appearance: base-select;
             appearance: base-select;
         }
@@ -14433,8 +14449,8 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
            <button><selectedcontent> inside the select (manage_books.php)
            holds the chosen text so a name that is still too long ends in
            "..." instead of pushing the arrow out. */
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect),
-        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) {
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect),
+        [data-theme="light"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -14445,7 +14461,7 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
             white-space: nowrap;
         }
 
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect)::picker-icon {
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect)::picker-icon {
             content: "";
             flex: none;
             width: 8px;
@@ -14458,7 +14474,7 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
             transition: transform 0.18s ease;
         }
 
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) > button {
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) > button {
             display: flex;
             align-items: center;
             flex: 1 1 auto;
@@ -14473,7 +14489,7 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
             cursor: inherit;
         }
 
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) selectedcontent {
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) selectedcontent {
             display: block;
             min-width: 0;
             overflow: hidden;
@@ -14481,18 +14497,18 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
             white-space: nowrap;
         }
 
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect):open::picker-icon {
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect):open::picker-icon {
             transform: rotate(225deg) translate(-2px, -1px);
         }
 
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect):open {
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect):open {
             border-color: #5fc9ae !important;
             box-shadow: 0 0 0 3px rgba(95, 201, 174, 0.25) !important;
             outline: none !important;
         }
 
         /* Popup */
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect)::picker(select) {
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect)::picker(select) {
             box-sizing: border-box;
             width: anchor-size(width);
             /* Under the select; above it only when the list does not fit
@@ -14517,14 +14533,14 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
         }
 
         @starting-style {
-            #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect)::picker(select) {
+            :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect)::picker(select) {
                 opacity: 0;
                 transform: translateY(-4px);
             }
         }
 
         /* Rows */
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option {
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -14544,23 +14560,23 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
             outline: none;
         }
 
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:hover,
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:focus-visible {
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option:hover,
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option:focus-visible {
             background: rgba(255, 255, 255, 0.07) !important;
         }
 
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:focus-visible {
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option:focus-visible {
             outline: 2px solid #6ed6ba;
             outline-offset: -2px;
         }
 
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:checked:not([value=""]) {
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option:checked:not([value=""]) {
             background: rgba(232, 181, 74, 0.14) !important;
             color: #f7d98f !important;
             font-weight: 800 !important;
         }
 
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option::checkmark {
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option::checkmark {
             order: 2;
             content: "";
             flex: none;
@@ -14573,58 +14589,58 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
         }
 
         /* "Select Category" etc.: muted, never ticked or tinted. */
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""],
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""]:checked {
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option[value=""],
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option[value=""]:checked {
             background: transparent !important;
             color: #9fb5ab !important;
             font-weight: 500 !important;
         }
 
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""]:hover,
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""]:focus-visible {
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option[value=""]:hover,
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option[value=""]:focus-visible {
             background: rgba(255, 255, 255, 0.07) !important;
         }
 
-        #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""]::checkmark {
+        :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option[value=""]::checkmark {
             content: none;
             display: none;
         }
 
         /* ---------- light ---------- */
-        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect):open {
+        [data-theme="light"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect):open {
             border-color: #2f8466 !important;
             box-shadow: 0 0 0 3px rgba(47, 132, 102, 0.22) !important;
         }
 
-        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect)::picker(select) {
+        [data-theme="light"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect)::picker(select) {
             background: #ffffff;
             border: 1px solid #b5d3c6;
             box-shadow: 0 18px 44px rgba(20, 60, 48, 0.26), 0 2px 6px rgba(20, 60, 48, 0.1);
             scrollbar-color: #9cc6b6 transparent;
         }
 
-        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option {
+        [data-theme="light"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option {
             color: #17382e !important;
         }
 
-        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""],
-        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""]:checked {
+        [data-theme="light"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option[value=""],
+        [data-theme="light"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option[value=""]:checked {
             background: transparent !important;
             color: #5d726a !important;
         }
 
-        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:hover,
-        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:focus-visible,
-        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""]:hover,
-        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option[value=""]:focus-visible {
+        [data-theme="light"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option:hover,
+        [data-theme="light"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option:focus-visible,
+        [data-theme="light"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option[value=""]:hover,
+        [data-theme="light"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option[value=""]:focus-visible {
             background: #eaf4ef !important;
         }
 
-        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:focus-visible {
+        [data-theme="light"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option:focus-visible {
             outline-color: #1d6149 !important;
         }
 
-        [data-theme="light"] #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect) option:checked:not([value=""]) {
+        [data-theme="light"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option:checked:not([value=""]) {
             background: #dcefe6 !important;
             color: #0f4a38 !important;
         }
@@ -14633,8 +14649,8 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect)::picker(select),
-    #bookModal select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect)::picker-icon {
+    :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect)::picker(select),
+    :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect)::picker-icon {
         transition: none;
     }
 }
@@ -14682,7 +14698,7 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
-#bookModal .pp-field {
+:is(#bookModal, #editBookModal) .pp-field {
     height: 40px;
     padding: 0 12px 0 13px;
     border-radius: 13px;
@@ -14695,20 +14711,8 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     letter-spacing: -0.01em;
 }
 
-#bookModal .pp-field:not(.is-empty) {
+:is(#bookModal, #editBookModal) .pp-field:not(.is-empty) {
     border-color: rgba(120, 200, 175, 0.38);
-}
-
-/* Edit window: the same box as its other selects (42px, 12px radius,
-   the form controls' font). */
-#editBookModal .pp-field {
-    height: 42px;
-    min-height: 42px;
-    padding: 0 12px 0 14px;
-    border-radius: 12px;
-    border: 1px solid rgba(var(--pb-8cb9eb), 0.3);
-    background: rgba(var(--pb-3f7cc2), 0.15);
-    color: rgb(var(--pb-eaf4ff));
 }
 
 :is(#bookModal, #editBookModal) .pp-summary {
@@ -14719,13 +14723,9 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
     white-space: nowrap;
 }
 
-#bookModal .pp-field.is-empty .pp-summary {
+:is(#bookModal, #editBookModal) .pp-field.is-empty .pp-summary {
     color: #9fb5ab;
     font-weight: 500;
-}
-
-#editBookModal .pp-field.is-empty .pp-summary {
-    color: rgb(var(--pb-9fb6d4));
 }
 
 :is(#bookModal, #editBookModal) .pp-more-pill,
@@ -15068,20 +15068,14 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
 }
 
 /* ---------- light ---------- */
-[data-theme="light"] #bookModal .pp-field {
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-field {
     border-color: #c7ddd3;
     background: #ffffff;
     color: #1f3b2e;
 }
 
-[data-theme="light"] #bookModal .pp-field:not(.is-empty) {
+[data-theme="light"] :is(#bookModal, #editBookModal) .pp-field:not(.is-empty) {
     border-color: #a9cbbd;
-}
-
-[data-theme="light"] #editBookModal .pp-field {
-    border-color: rgba(56, 96, 77, 0.24);
-    background: #ffffff;
-    color: #1f3b2e;
 }
 
 [data-theme="light"] :is(#bookModal, #editBookModal) .pp-field.is-empty .pp-summary {
@@ -15443,4 +15437,247 @@ html:not([data-theme="light"]) #top-borrowers-panel .tb-row .tb-chip {
 
 [data-theme="light"] .manage-books-table tr.mb-row-flash-still > td {
     box-shadow: inset 0 0 0 100vmax rgba(var(--pb-3f7cc2), 0.16);
+}
+
+/* ============================================================
+   Edit Book window extras (#editBookModal): the Add Book window's
+   layout and look (above) plus the current cover's tools under the
+   cover and the "Current copies" list beside the copies stepper.
+   Base = dark (pine uses the same values); light below.
+   ============================================================ */
+#editBookModal a.ab-close,
+#editBookModal a.ab-btn {
+    text-decoration: none;
+}
+
+#editBookModal .eb-cover-tools {
+    box-sizing: border-box;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+#editBookModal .book-cover-drop {
+    min-height: 54px;
+}
+
+#editBookModal .eb-cover-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+#editBookModal .filter-reset-btn.book-cover-btn {
+    min-height: 36px;
+    padding: 7px 8px !important;
+    white-space: nowrap;
+}
+
+#editBookModal .eb-cover-buttons .filter-reset-btn.book-cover-btn {
+    gap: 5px;
+}
+
+/* Current copies: one row per copy (copy number, accession field,
+   status chip); borrowed, overdue and missing copies are locked. */
+#editBookModal .eb-copies-side {
+    gap: 0;
+}
+
+#editBookModal .eb-copy-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 196px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+#editBookModal .eb-copy-row {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 4px 8px 4px 14px;
+    border-radius: 13px;
+    border: 1px solid rgba(120, 200, 175, 0.22);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+#editBookModal .eb-copy-id {
+    flex: 0 0 auto;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #9fb5ab;
+    white-space: nowrap;
+}
+
+#editBookModal .eb-copy-row .eb-copy-acc {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+    height: 30px;
+    margin: 0;
+    padding: 0 8px !important;
+    border: 1px solid transparent !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #eef4f0 !important;
+    font: inherit;
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+}
+
+#editBookModal .eb-copy-row .eb-copy-acc:hover {
+    border-color: rgba(120, 200, 175, 0.3) !important;
+}
+
+#editBookModal .eb-copy-row .eb-copy-acc:focus {
+    outline: none;
+    border-color: #6ed6ba !important;
+    background: rgba(0, 0, 0, 0.18) !important;
+}
+
+#editBookModal .eb-copy-row.is-locked .eb-copy-acc {
+    color: #bccdc4 !important;
+    cursor: not-allowed;
+}
+
+#editBookModal .eb-copy-row.is-locked .eb-copy-acc:hover {
+    border-color: transparent !important;
+}
+
+#editBookModal .eb-copy-status {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 800;
+    line-height: 1.3;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    background: rgba(110, 214, 186, 0.14);
+    color: #7fe0c2;
+}
+
+#editBookModal .eb-copy-status.status-borrowed {
+    background: rgba(232, 181, 74, 0.16);
+    color: #f7d98f;
+}
+
+#editBookModal .eb-copy-status.status-overdue {
+    background: rgba(255, 127, 137, 0.16);
+    color: #ffb4b4;
+}
+
+#editBookModal .eb-copy-status.status-missing,
+#editBookModal .eb-copy-status.status-lost {
+    background: rgba(255, 190, 99, 0.16);
+    color: #ffd08a;
+}
+
+#editBookModal .eb-copy-lock {
+    width: 11px;
+    height: 11px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+#editBookModal .eb-copy-empty {
+    margin: 0;
+    font-size: 12.5px;
+    color: #9fb5ab;
+}
+
+#editBookModal .eb-copy-note:empty {
+    display: none;
+}
+
+#editBookModal .eb-new-copies {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+#editBookModal .eb-new-copies[hidden] {
+    display: none;
+}
+
+[data-theme="light"] #editBookModal .eb-copy-row {
+    border-color: #c7ddd3;
+    background: #ffffff;
+}
+
+[data-theme="light"] #editBookModal .eb-copy-id,
+[data-theme="light"] #editBookModal .eb-copy-empty {
+    color: #5d726a;
+}
+
+[data-theme="light"] #editBookModal .eb-copy-row .eb-copy-acc {
+    color: #1f3b2e !important;
+}
+
+[data-theme="light"] #editBookModal .eb-copy-row .eb-copy-acc:hover {
+    border-color: #c7ddd3 !important;
+}
+
+[data-theme="light"] #editBookModal .eb-copy-row .eb-copy-acc:focus {
+    border-color: #2f8a6c !important;
+    background: #f3f8f5 !important;
+}
+
+[data-theme="light"] #editBookModal .eb-copy-row.is-locked .eb-copy-acc {
+    color: #35524a !important;
+}
+
+[data-theme="light"] #editBookModal .eb-copy-status {
+    background: #e3f4ec;
+    color: #1d6b4f;
+}
+
+[data-theme="light"] #editBookModal .eb-copy-status.status-borrowed,
+[data-theme="light"] #editBookModal .eb-copy-status.status-missing,
+[data-theme="light"] #editBookModal .eb-copy-status.status-lost {
+    background: #fff1cf;
+    color: #6f510e;
+}
+
+[data-theme="light"] #editBookModal .eb-copy-status.status-overdue {
+    background: #fde4e4;
+    color: #9b2c2c;
+}
+
+/* Below 760px the cover is a small thumbnail beside its caption (as in
+   Add Book); the cover tools take the full width under them. */
+@media (max-width: 759.98px) {
+    #editBookModal .eb-preview {
+        flex-wrap: wrap;
+    }
+
+    #editBookModal .ab-preview-text {
+        flex: 1 1 0;
+    }
+
+    #editBookModal .eb-cover-tools {
+        flex: 1 1 100%;
+        margin-top: 0;
+    }
+}
+
+@media (forced-colors: active) {
+    #editBookModal .eb-copy-row,
+    #editBookModal .eb-copy-status {
+        border: 1px solid CanvasText;
+    }
 }
