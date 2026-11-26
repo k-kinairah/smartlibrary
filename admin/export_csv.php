@@ -33,6 +33,25 @@ function export_csv_filename(string $type): string {
     return 'smartlib_' . strtolower($safe) . '_' . date('Ymd_His') . '.csv';
 }
 
+/**
+ * One CSV cell, safe to open in Excel / Google Sheets: text that starts with
+ * = + - @ tab or CR would be read as a formula, so it gets a leading
+ * apostrophe (shown by spreadsheets as plain text). A plain number such as
+ * -3, +63 or 12.50 is left alone so counts and amounts stay numbers.
+ * (Security review 2026-11-24, SR-09.) Note: a title exported this way and
+ * re-imported with Bulk Import keeps the apostrophe.
+ */
+function export_csv_cell($value): string {
+    $text = (string)$value;
+    if ($text === '' || strpos("=+-@\t\r", $text[0]) === false) {
+        return $text;
+    }
+    if (preg_match('/^[+-]?\d+(\.\d+)?$/', $text)) {
+        return $text;
+    }
+    return "'" . $text;
+}
+
 function export_csv_send(mysqli $conn, string $type, array $headers, string $sql): void {
     $res = $conn->query($sql);
     if (!$res) {
@@ -56,7 +75,7 @@ function export_csv_send(mysqli $conn, string $type, array $headers, string $sql
     while ($row = $res->fetch_assoc()) {
         $line = [];
         foreach ($headers as $key) {
-            $line[] = (string)($row[$key] ?? '');
+            $line[] = export_csv_cell($row[$key] ?? '');
         }
         fputcsv($out, $line);
     }
@@ -83,7 +102,7 @@ function export_csv_send_rows(string $type, array $headers, array $rows): void {
     foreach ($rows as $row) {
         $line = [];
         foreach ($headers as $key) {
-            $line[] = (string)($row[$key] ?? '');
+            $line[] = export_csv_cell($row[$key] ?? '');
         }
         fputcsv($out, $line);
     }

@@ -21,6 +21,14 @@ if (!favorites_table_exists($conn)) {
     respond(['status' => 'error', 'message' => 'Favorites are not set up on this server yet.'], 500);
 }
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    respond(['status' => 'error', 'message' => 'Invalid request method.'], 405);
+}
+
+// Anti-forgery: Origin + kiosk token (config/request_guard.php).
+require_once 'config/request_guard.php';
+smartlib_request_guard([SMARTLIB_KIOSK_CSRF_KEY]);
+
 require_once 'config/session_guard.php';
 $userId = smartlib_active_session_user_id($conn); // 0 if signed out, inactive or deleted
 if ($userId <= 0) {

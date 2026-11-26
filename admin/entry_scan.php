@@ -37,6 +37,7 @@ if (!$isStaff) {
 }
 
 require_once '../config/csrf.php';
+require_once '../config/request_guard.php';
 require_once '../config/library_card_helpers.php';
 require_once '../config/entry_log_helpers.php';
 
@@ -150,7 +151,7 @@ $cssVer = @filemtime(__DIR__ . '/../assets/css/entry_scan.css') ?: time();
 
     <footer class="scan-footer">
         <span id="connection-status">Connected to <b>SmartLib</b></span>
-        <span>Signed in as <b><?= htmlspecialchars($staffName !== '' ? $staffName : 'staff') ?></b> &middot; <a href="../logout.php">Sign out</a></span>
+        <span>Signed in as <b><?= htmlspecialchars($staffName !== '' ? $staffName : 'staff') ?></b> &middot; <a href="../logout.php" id="scanSignOut" data-csrf="<?= htmlspecialchars(smartlib_staff_csrf_token()) ?>">Sign out</a></span>
     </footer>
 </div>
 
@@ -518,6 +519,27 @@ $cssVer = @filemtime(__DIR__ . '/../assets/css/entry_scan.css') ?: time();
 
     showReady();
     keepFocus();
+})();
+</script>
+<script>
+// Sign-out is a POST with the staff token (a GET to logout.php changes nothing).
+(function () {
+    var link = document.getElementById('scanSignOut');
+    if (!link) return;
+    link.addEventListener('click', function (event) {
+        event.preventDefault();
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = link.getAttribute('href');
+        form.hidden = true;
+        var token = document.createElement('input');
+        token.type = 'hidden';
+        token.name = 'csrf_token';
+        token.value = link.getAttribute('data-csrf') || '';
+        form.appendChild(token);
+        document.body.appendChild(form);
+        form.submit();
+    });
 })();
 </script>
 </body>

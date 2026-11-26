@@ -13,10 +13,11 @@
         return Array.isArray(v) ? v : [];
     }
 
+    // Also escapes quotes: the result is used inside attribute values too.
     function esc(v) {
         const div = document.createElement('div');
         div.textContent = v == null ? '' : String(v);
-        return div.innerHTML;
+        return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
     function prettifyKeywordLabel(label) {
@@ -465,11 +466,13 @@
                 setRemindState(btn, 'busy', 'Sending\u2026', 'spin', null);
 
                 try {
+                    const csrfMeta = document.querySelector('meta[name="smartlib-csrf"]');
                     const res = await fetch('../send_overdue_reminder_email.php', {
                         method: 'POST',
                         credentials: 'same-origin',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfMeta ? csrfMeta.content : ''
                         },
                         body: JSON.stringify({ record_id: recordId })
                     });
@@ -479,6 +482,18 @@
                         payload = await res.json();
                     } catch (_) {
                         payload = {};
+                    }
+
+                    // The page outlived its session (expired token): reload
+                    // once for a fresh one, at most once per 10 seconds.
+                    if (res.status === 403 && payload.error === 'csrf') {
+                        let last = 0;
+                        try { last = Number(sessionStorage.getItem('smartlib-csrf-reload-at') || 0); } catch (_) { last = 0; }
+                        if (Date.now() - last >= 10000) {
+                            try { sessionStorage.setItem('smartlib-csrf-reload-at', String(Date.now())); } catch (_) { /* storage blocked */ }
+                            window.location.reload();
+                            return;
+                        }
                     }
 
                     if (payload.status === 'success') {

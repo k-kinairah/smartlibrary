@@ -111,6 +111,6 @@ $cssVer = @filemtime(__DIR__ . '/assets/css/library_card.css') ?: time();
         <a class="link" href="index.php">Back to SmartLib</a>
     </div>
 </div>
-<script src="assets/javascript/kiosk-idle.js?v=<?= @filemtime(__DIR__ . '/assets/javascript/kiosk-idle.js') ?: time() ?>"></script>
+<?php require_once __DIR__ . '/config/request_guard.php'; ?><script src="assets/javascript/kiosk-idle.js?v=<?= @filemtime(__DIR__ . '/assets/javascript/kiosk-idle.js') ?: time() ?>" data-csrf="<?= htmlspecialchars(smartlib_kiosk_csrf_token()) ?>"></script>
 </body>
 </html>

@@ -95,6 +95,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond(['status' => 'error', 'message' => 'Invalid request method.'], 405);
 }
 
+// Anti-forgery: Origin, JSON body only, kiosk token (config/request_guard.php).
+// The kiosk always sends JSON; a form-encoded post is refused before $_POST
+// is read.
+require_once 'config/request_guard.php';
+$payload = smartlib_request_guard([SMARTLIB_KIOSK_CSRF_KEY], true);
+
 require_once 'config/session_guard.php';
 require_once 'config/library_settings.php';
 require_once 'config/library_card_helpers.php'; // library_card_school_level_label()
@@ -105,10 +111,8 @@ if ($userId <= 0) {
     respond(['status' => 'error', 'message' => 'Please sign in first.'], 401);
 }
 
-$raw = file_get_contents('php://input');
-$payload = json_decode((string)$raw, true);
 if (!is_array($payload)) {
-    $payload = $_POST;
+    $payload = [];
 }
 
 // The only thing taken from the browser is the transaction ID, and only to

@@ -29,6 +29,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond_json(['status' => 'error', 'message' => 'Invalid request method.'], 405);
 }
 
+// Anti-forgery: Origin + the kiosk sign-in token (the same one
+// login_handler.php checks), config/request_guard.php.
+require_once 'config/request_guard.php';
+smartlib_request_guard(['signin_csrf']);
+
 // Same ID normalization as login_handler.php (dashes as printed on the card).
 $identifier = library_card_normalize_id((string)($_POST['identifier'] ?? ''));
 // The account's real role decides; a posted account_type is ignored.

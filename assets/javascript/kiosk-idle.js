@@ -44,6 +44,13 @@
         form.method = "POST";
         form.action = LOGOUT_URL;
         form.hidden = true;
+        // logout.php only signs out a POST that carries the kiosk token
+        // (data-csrf on this script tag, or index.php's window variable).
+        const token = document.createElement("input");
+        token.type = "hidden";
+        token.name = "csrf_token";
+        token.value = config.csrf || window.SMARTLIB_KIOSK_CSRF || "";
+        form.appendChild(token);
         document.body.appendChild(form);
         form.submit();
     };

@@ -11,6 +11,10 @@ smartlib_active_session_user_id($conn);
 
 // Shared by login_handler.php and verify_2fa.php (sent by filters.js).
 $signinCsrfToken = smartlib_csrf_token('signin_csrf');
+// Kiosk actions (borrow, renew, favourites, receipt email, events, sign-out):
+// filters.js sends it as X-CSRF-Token; see config/request_guard.php.
+require_once 'config/request_guard.php';
+$kioskCsrfToken = smartlib_kiosk_csrf_token();
 
 $kioskCssVer = @filemtime(__DIR__ . '/assets/css/kiosk.css') ?: time();
 $filtersJsVer = @filemtime(__DIR__ . '/assets/javascript/filters.js') ?: time();
@@ -308,6 +312,7 @@ try {
                     <div class="user-menu-divider" role="separator" aria-hidden="true"></div>
 
                     <form action="logout.php" method="POST" class="user-menu-form" id="account-logout-form">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($kioskCsrfToken) ?>">
                         <button class="user-menu-item danger" type="submit">
                             <span class="menu-item-icon" aria-hidden="true">
                                 <svg viewBox="0 0 24 24" role="presentation">
@@ -662,10 +667,10 @@ try {
         </div>
     </div>
 </div>
-<script>window.SMARTLIB_SIGNIN_CSRF = <?= json_encode($signinCsrfToken) ?>;</script>
+<script>window.SMARTLIB_SIGNIN_CSRF = <?= json_encode($signinCsrfToken) ?>; window.SMARTLIB_KIOSK_CSRF = <?= json_encode($kioskCsrfToken) ?>;</script>
 <script src="assets/javascript/year-select-ui.js?v=<?= $yearSelectJsVer ?>"></script>
 <script src="assets/javascript/filters.js?v=<?= $filtersJsVer ?>"></script>
-<script src="assets/javascript/kiosk-idle.js?v=<?= $kioskIdleJsVer ?>" data-home="1" data-signed-in="<?= isset($_SESSION['user_id']) ? '1' : '0' ?>"></script>
+<script src="assets/javascript/kiosk-idle.js?v=<?= $kioskIdleJsVer ?>" data-csrf="<?= htmlspecialchars($kioskCsrfToken) ?>" data-home="1" data-signed-in="<?= isset($_SESSION['user_id']) ? '1' : '0' ?>"></script>
 </body>
 </html>
 

@@ -16,6 +16,7 @@ if (!smartlib_active_staff_session($conn)) {
 }
 require_once '../config/borrow_fine_rules.php';
 require_once '../config/admin_audit.php';
+require_once '../config/request_guard.php';
 
 function qres(mysqli $conn, string $sql) {
     try {
@@ -30,6 +31,15 @@ function set_borrow_flash(string $type, string $message): void {
         'type' => $type,
         'message' => $message
     ];
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_action'])
+    && !smartlib_request_form_ok([SMARTLIB_STAFF_CSRF_KEY])) {
+    // Anti-forgery (Origin + staff token): nothing is changed; back to the
+    // list with a message (a plain 403 would leave a blank page).
+    set_borrow_flash('error', 'This page had expired, so nothing was changed. Please try again.');
+    header('Location: borrow_records.php');
+    exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_action'])) {
@@ -476,6 +486,7 @@ require 'layout_top.php';
                                     <?php if ($canMarkReturned): ?>
                                         <form method="POST" class="row-action-form borrow-confirm-form" data-borrow-action="returned" data-book-title="<?= htmlspecialchars($title) ?>">
                                             <input type="hidden" name="record_action" value="mark_returned">
+                                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(smartlib_staff_csrf_token()) ?>">
                                             <input type="hidden" name="record_id" value="<?= $rid ?>">
                                             <button type="submit" class="borrow-action-icon-btn returned" aria-label="Mark returned">
                                                 <span class="borrow-action-icon" aria-hidden="true"><?= admin_icon('check-circle') ?></span>
@@ -487,6 +498,7 @@ require 'layout_top.php';
                                     <?php if ($canMarkMissing): ?>
                                         <form method="POST" class="row-action-form borrow-confirm-form" data-borrow-action="missing" data-book-title="<?= htmlspecialchars($title) ?>">
                                             <input type="hidden" name="record_action" value="mark_missing">
+                                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(smartlib_staff_csrf_token()) ?>">
                                             <input type="hidden" name="record_id" value="<?= $rid ?>">
                                             <button type="submit" class="borrow-action-icon-btn missing" aria-label="Mark missing">
                                                 <span class="borrow-action-icon" aria-hidden="true"><?= admin_icon('alert-triangle') ?></span>

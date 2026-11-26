@@ -30,15 +30,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond(['status' => 'error', 'message' => 'Method not allowed'], 405);
 }
 
+// Anti-forgery: Origin, JSON body only, kiosk token (config/request_guard.php).
+// filters.js ignores any failure here (analytics only).
+require_once 'config/request_guard.php';
+$guardBody = smartlib_request_guard([SMARTLIB_KIOSK_CSRF_KEY], true);
+
 if (!table_exists($conn, 'recommendation_events')) {
     respond(['status' => 'success', 'tracked' => false, 'message' => 'recommendation_events table not ready']);
 }
 
-$raw = file_get_contents('php://input');
-$payload = json_decode((string)$raw, true);
-if (!is_array($payload)) {
-    $payload = $_POST;
-}
+$payload = is_array($guardBody) ? $guardBody : [];
 
 $eventType = strtolower(trim((string)($payload['event_type'] ?? '')));
 $panelKey = trim((string)($payload['panel_key'] ?? ''));

@@ -1,4 +1,41 @@
-﻿(function () {
+﻿// Kiosk anti-forgery token (security review 2026-11-24, SR-01). index.php
+// prints window.SMARTLIB_KIOSK_CSRF; every state-changing call sends it as
+// the X-CSRF-Token header (config/request_guard.php checks it). When the
+// server answers 403 {"error":"csrf"} -- the page outlived its session --
+// the page reloads once to get a fresh token, never more than once per 10 s.
+window.smartlibKiosk = window.smartlibKiosk || (function () {
+    const RELOAD_KEY = "smartlib-csrf-reload-at";
+    const headers = (extra) => Object.assign({}, extra || {}, { "X-CSRF-Token": window.SMARTLIB_KIOSK_CSRF || "" });
+    const isCsrfRefusal = async (response) => {
+        if (!response || response.status !== 403) return false;
+        try {
+            const data = await response.clone().json();
+            return !!data && data.error === "csrf";
+        } catch (_) {
+            return false;
+        }
+    };
+    const reloadOnce = () => {
+        let last = 0;
+        try { last = Number(window.sessionStorage.getItem(RELOAD_KEY) || 0); } catch (_) { last = 0; }
+        if (Date.now() - last < 10000) return false;
+        try { window.sessionStorage.setItem(RELOAD_KEY, String(Date.now())); } catch (_) { /* storage blocked */ }
+        window.location.reload();
+        return true;
+    };
+    // true when the response was a token refusal (the page is reloading or
+    // has just reloaded): the caller stops there.
+    const handleRefusal = async (response) => {
+        if (await isCsrfRefusal(response)) {
+            reloadOnce();
+            return true;
+        }
+        return false;
+    };
+    return { headers, isCsrfRefusal, reloadOnce, handleRefusal };
+})();
+
+(function () {
     if (typeof window.smartlibTrackRecommendation === "function") return;
 
     const sentImpressions = new Set();
@@ -19,7 +56,7 @@
 
         fetch("track_recommendation_event.php", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: window.smartlibKiosk.headers({ "Content-Type": "application/json" }),
             body: JSON.stringify({
                 event_type: event,
                 panel_key: panel,
@@ -687,6 +724,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // The chip's remove button: same markup as before (<span class="remove-x">x</span>).
+    function makeRemoveX() {
+        const x = document.createElement("span");
+        x.className = "remove-x";
+        x.textContent = "x";
+        return x;
+    }
+
     function refreshActiveFilterDisplay() {
         const container = document.getElementById("active-filters");
         if (!container) return;
@@ -696,7 +741,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (activeFilters.search.trim() !== "") {
             const chip = document.createElement("div");
             chip.className = "active-chip";
-            chip.innerHTML = `Search: "${activeFilters.search}" <span class="remove-x">x</span>`;
+            // Text nodes, not innerHTML: the search is whatever was typed.
+            chip.append(document.createTextNode(`Search: "${activeFilters.search}" `), makeRemoveX());
             chip.querySelector(".remove-x")?.addEventListener("click", () => {
                 activeFilters.search = "";
                 syncSearchInputs("");
@@ -712,7 +758,8 @@ document.addEventListener("DOMContentLoaded", () => {
             values.forEach(value => {
                 const chip = document.createElement("div");
                 chip.className = "active-chip";
-                chip.innerHTML = `${value} <span class="remove-x">x</span>`;
+                // Text nodes, not innerHTML: subject names come from the catalog.
+                chip.append(document.createTextNode(`${value} `), makeRemoveX());
 
                 chip.querySelector(".remove-x")?.addEventListener("click", () => {
                     removeFilter(type, value);
@@ -727,7 +774,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const toLabel = activeFilters.year_to !== "" ? activeFilters.year_to : "Any";
             const chip = document.createElement("div");
             chip.className = "active-chip";
-            chip.innerHTML = `Year: ${fromLabel} - ${toLabel} <span class="remove-x">x</span>`;
+            chip.append(document.createTextNode(`Year: ${fromLabel} - ${toLabel} `), makeRemoveX());
             chip.querySelector(".remove-x")?.addEventListener("click", () => {
                 activeFilters.year_from = "";
                 activeFilters.year_to = "";
@@ -1453,9 +1500,12 @@ let signinCountdownEndTs = 0;
         fetch("request_pin_reset.php", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: new URLSearchParams({ identifier })
+            body: new URLSearchParams({ identifier, csrf_token: window.SMARTLIB_SIGNIN_CSRF || "" })
         })
-            .then(res => res.json())
+            .then(async res => {
+                if (await window.smartlibKiosk.handleRefusal(res)) return new Promise(() => {});
+                return res.json();
+            })
             .then(data => {
                 setSigninMessage(data.message || "If your ID is registered, a reset link was sent to your email.", data.status === "error" ? "error" : "info");
             })
@@ -1495,10 +1545,12 @@ let signinCountdownEndTs = 0;
         try {
             const res = await fetch("toggle_favorite.php", {
                 method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                headers: window.smartlibKiosk.headers({ "Content-Type": "application/x-www-form-urlencoded" }),
                 body: new URLSearchParams({ book_id: String(bookId), action: nextFavorited ? "add" : "remove" }),
                 credentials: "same-origin"
             });
+
+            if (await window.smartlibKiosk.handleRefusal(res)) return;
 
             if (res.status === 401) {
                 document.querySelectorAll(`.fav-heart-btn[data-book-id="${bookId}"]`).forEach(btn => {
@@ -1856,10 +1908,11 @@ document.addEventListener("DOMContentLoaded", () => {
         error: '<svg viewBox="0 0 24 24" role="presentation"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5"></path><path d="M12 16.4v.1"></path></svg>'
     };
 
+    // Also escapes quotes: the result is used inside attribute values too.
     const escapeHtml = (value) => {
         const div = document.createElement("div");
         div.textContent = value == null ? "" : String(value);
-        return div.innerHTML;
+        return div.innerHTML.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     };
 
     const ensureReceiptStatusUi = () => {
@@ -2167,9 +2220,11 @@ ${receiptFlankLabel("verify", "Verification")}
         try {
             const response = await fetch("checkout_book.php", {
                 method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                headers: window.smartlibKiosk.headers({ "Content-Type": "application/x-www-form-urlencoded" }),
                 body: new URLSearchParams({ book_id: String(bookId) })
             });
+
+            if (await window.smartlibKiosk.handleRefusal(response)) return;
 
             const data = await response.json();
             if (!response.ok || data.status !== "success") {
@@ -2342,9 +2397,11 @@ ${receiptFlankLabel("verify", "Verification")}
         try {
             const response = await fetch("send_receipt_email.php", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: window.smartlibKiosk.headers({ "Content-Type": "application/json" }),
                 body: JSON.stringify({ receipt: lastReceiptData })
             });
+
+            if (await window.smartlibKiosk.handleRefusal(response)) return;
 
             let data = {};
             try {
@@ -2849,10 +2906,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Also escapes quotes: the result is used inside attribute values too.
     const esc = (value) => {
         const div = document.createElement("div");
         div.textContent = value == null ? "" : String(value);
-        return div.innerHTML;
+        return div.innerHTML.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     };
 
     const statusLabel = (status) => {
@@ -3183,10 +3241,12 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const res = await fetch("renew_loan.php", {
                 method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                headers: window.smartlibKiosk.headers({ "Content-Type": "application/x-www-form-urlencoded" }),
                 body: new URLSearchParams({ record_id: String(recordId) }),
                 credentials: "same-origin"
             });
+
+            if (await window.smartlibKiosk.handleRefusal(res)) return;
             const data = await res.json();
 
             if (!res.ok || data.status !== "success") {

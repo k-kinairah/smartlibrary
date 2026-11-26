@@ -149,6 +149,8 @@ function stat_chip_meta(string $title): array {
             }
         }());
     </script>
+    <?php require_once __DIR__ . '/../config/request_guard.php'; ?>
+    <meta name="smartlib-csrf" content="<?= htmlspecialchars(smartlib_staff_csrf_token()) ?>">
     <title>SmartLib Admin</title>
     <link rel="icon" href="../assets/images/stjude_seal_64.png" type="image/png">
     <?php $adminCssVer = @filemtime(__DIR__ . '/../assets/css/admin.css') ?: time(); ?>
@@ -201,8 +203,20 @@ function stat_chip_meta(string $title): array {
             cancelBtn.focus();
         });
 
+        // Sign-out is a POST with the staff token (a GET to logout.php
+        // changes nothing, so a link elsewhere cannot sign anyone out).
         document.getElementById('logoutConfirmSubmit').addEventListener('click', function () {
-            window.location.href = '../logout.php';
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '../logout.php';
+            form.hidden = true;
+            var token = document.createElement('input');
+            token.type = 'hidden';
+            token.name = 'csrf_token';
+            token.value = (document.querySelector('meta[name="smartlib-csrf"]') || {}).content || '';
+            form.appendChild(token);
+            document.body.appendChild(form);
+            form.submit();
         });
 
         cancelBtn.addEventListener('click', closeModal);

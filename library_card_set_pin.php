@@ -216,6 +216,6 @@ $eyeIcons = '<svg class="icon-eye" viewBox="0 0 24 24" role="presentation" aria-
     });
 })();
 </script>
-<script src="assets/javascript/kiosk-idle.js?v=<?= @filemtime(__DIR__ . '/assets/javascript/kiosk-idle.js') ?: time() ?>" data-idle-ms="120000"></script>
+<?php require_once __DIR__ . '/config/request_guard.php'; ?><script src="assets/javascript/kiosk-idle.js?v=<?= @filemtime(__DIR__ . '/assets/javascript/kiosk-idle.js') ?: time() ?>" data-csrf="<?= htmlspecialchars(smartlib_kiosk_csrf_token()) ?>" data-idle-ms="120000"></script>
 </body>
 </html>

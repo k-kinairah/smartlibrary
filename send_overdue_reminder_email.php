@@ -63,6 +63,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond(['status' => 'error', 'message' => 'Invalid request method.'], 405);
 }
 
+// Anti-forgery: Origin, JSON body only, staff token from the admin page's
+// <meta name="smartlib-csrf"> (config/request_guard.php).
+require_once 'config/request_guard.php';
+$guardBody = smartlib_request_guard([SMARTLIB_STAFF_CSRF_KEY], true);
+
 require_once 'config/session_guard.php';
 $userId = smartlib_active_session_user_id($conn); // 0 if signed out, inactive or deleted
 $role = strtolower(trim((string)($_SESSION['role'] ?? '')));
@@ -74,11 +79,7 @@ if (!ensure_overdue_reminder_log_table($conn)) {
     respond(['status' => 'error', 'message' => 'Reminder logging is not available right now.'], 500);
 }
 
-$raw = file_get_contents('php://input');
-$payload = json_decode((string)$raw, true);
-if (!is_array($payload)) {
-    $payload = $_POST;
-}
+$payload = is_array($guardBody) ? $guardBody : [];
 
 $recordId = (int)($payload['record_id'] ?? 0);
 if ($recordId <= 0) {
