@@ -417,7 +417,7 @@
 
 @media (max-width: 960px) {
     /* Add/Edit Book fields: 16px too (their own rules are ID-specific) */
-    html body :is(#bookModal, #editBookModal) :is(.ab-input, .ab-step-input, input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea) {
+    html body :is(#bookModal, #editBookModal, #userModal, #editUserModal) :is(.ab-input, .ab-step-input, input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea) {
         font-size: 16px !important;
     }
 }

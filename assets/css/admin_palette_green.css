@@ -1653,99 +1653,99 @@ html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] #top-bor
 /* ---------- Add Book and Edit Book windows (manage_books.php #bookModal, #editBookModal, ab- classes) ---------- */
 /* Deep pine card with a gold hairline; translucent inputs with a teal
    edge; marigold group labels. Layout comes from admin.css. */
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-card {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-card {
     background: linear-gradient(180deg, #0e2a24 0%, #07150f 100%);
     border: 1px solid rgba(232, 181, 74, 0.5);
     box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
     color: #eef4f0;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-chip {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-chip {
     background: rgba(232, 181, 74, 0.14);
     color: #f7d98f;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-title,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-step-input {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-title,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-step-input {
     color: #eef4f0 !important;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-subtitle,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-caption,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-label,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-hint,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-foot-note {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-subtitle,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-caption,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-label,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-hint,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-foot-note {
     color: #bccdc4;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-group-label {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-group-label {
     color: #e8b54a;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-group-label::after {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-group-label::after {
     background: rgba(120, 200, 175, 0.2);
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-pill {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-pill {
     background: rgba(232, 181, 74, 0.14);
     color: #f7d98f;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-input {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-input {
     background-color: rgba(255, 255, 255, 0.04) !important;
     border-color: rgba(120, 200, 175, 0.22) !important;
     color: #eef4f0 !important;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) input.ab-input:not(:placeholder-shown),
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) select.ab-input:not(:has(option[value=""]:checked)) {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) input.ab-input:not(:placeholder-shown),
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) select.ab-input:not(:has(option[value=""]:checked)) {
     border-color: rgba(120, 200, 175, 0.38) !important;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-input::placeholder {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-input::placeholder {
     color: #9fb5ab !important;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-stepper {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-stepper {
     background: rgba(255, 255, 255, 0.04);
     border-color: rgba(120, 200, 175, 0.38);
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-step {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-step {
     background: rgba(120, 200, 175, 0.1);
     border-color: rgba(120, 200, 175, 0.28);
     color: #eef4f0;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-input:focus,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-input:focus-visible,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-step-input:focus-visible,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-close:focus-visible,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-step:focus-visible,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-btn:focus-visible {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-input:focus,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-input:focus-visible,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-step-input:focus-visible,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-close:focus-visible,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-step:focus-visible,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-btn:focus-visible {
     outline: 2px solid #6ed6ba !important;
     outline-offset: 2px !important;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-foot {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-foot {
     border-top-color: rgba(120, 200, 175, 0.16);
     background: rgba(0, 0, 0, 0.14);
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-btn-ghost {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-btn-ghost {
     border-color: rgba(120, 200, 175, 0.35);
     background: transparent;
     color: #dce9e3;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-btn-primary {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-btn-primary {
     background: linear-gradient(180deg, #20846d 0%, #176451 100%);
     color: #ffffff;
     box-shadow: 0 8px 20px rgba(23, 100, 81, 0.45);
     filter: none;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .ab-btn-primary:hover {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .ab-btn-primary:hover {
     background: linear-gradient(180deg, #1a7360 0%, #125543 100%);
     box-shadow: 0 10px 24px rgba(23, 100, 81, 0.55);
 }
@@ -1755,45 +1755,45 @@ html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#boo
    with a gold hairline, gold tint on the chosen row. Plain selects in
    other browsers get a dark native list (color-scheme). */
 @media not (forced-colors: active) {
-    html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) {
+    html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect, #auRoleSelect, #auLevelSelect, #auProgramSelect, #auDepartmentSelect, #euRoleSelect, #euStatusSelect, #euLevelSelect, #euProgramSelect, #euDepartmentSelect) {
         color-scheme: dark;
     }
 
     @supports (appearance: base-select) {
-        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect):open {
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect, #auRoleSelect, #auLevelSelect, #auProgramSelect, #auDepartmentSelect, #euRoleSelect, #euStatusSelect, #euLevelSelect, #euProgramSelect, #euDepartmentSelect):open {
             border-color: #5fc9ae !important;
             box-shadow: 0 0 0 3px rgba(95, 201, 174, 0.25) !important;
         }
 
-        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect)::picker(select) {
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect, #auRoleSelect, #auLevelSelect, #auProgramSelect, #auDepartmentSelect, #euRoleSelect, #euStatusSelect, #euLevelSelect, #euProgramSelect, #euDepartmentSelect)::picker(select) {
             background: linear-gradient(180deg, #10302a 0%, #08181a 100%);
             border: 1px solid rgba(232, 181, 74, 0.45);
             box-shadow: 0 24px 54px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(0, 0, 0, 0.3), 0 0 36px rgba(26, 120, 98, 0.14);
             scrollbar-color: rgba(120, 200, 175, 0.4) transparent;
         }
 
-        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option {
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect, #auRoleSelect, #auLevelSelect, #auProgramSelect, #auDepartmentSelect, #euRoleSelect, #euStatusSelect, #euLevelSelect, #euProgramSelect, #euDepartmentSelect) option {
             color: #e0e8e2 !important;
         }
 
-        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option[value=""],
-        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option[value=""]:checked {
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect, #auRoleSelect, #auLevelSelect, #auProgramSelect, #auDepartmentSelect, #euRoleSelect, #euStatusSelect, #euLevelSelect, #euProgramSelect, #euDepartmentSelect) option[value=""],
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect, #auRoleSelect, #auLevelSelect, #auProgramSelect, #auDepartmentSelect, #euRoleSelect, #euStatusSelect, #euLevelSelect, #euProgramSelect, #euDepartmentSelect) option[value=""]:checked {
             background: transparent !important;
             color: #9fb5ab !important;
         }
 
-        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option:hover,
-        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option:focus-visible,
-        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option[value=""]:hover,
-        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option[value=""]:focus-visible {
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect, #auRoleSelect, #auLevelSelect, #auProgramSelect, #auDepartmentSelect, #euRoleSelect, #euStatusSelect, #euLevelSelect, #euProgramSelect, #euDepartmentSelect) option:hover,
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect, #auRoleSelect, #auLevelSelect, #auProgramSelect, #auDepartmentSelect, #euRoleSelect, #euStatusSelect, #euLevelSelect, #euProgramSelect, #euDepartmentSelect) option:focus-visible,
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect, #auRoleSelect, #auLevelSelect, #auProgramSelect, #auDepartmentSelect, #euRoleSelect, #euStatusSelect, #euLevelSelect, #euProgramSelect, #euDepartmentSelect) option[value=""]:hover,
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect, #auRoleSelect, #auLevelSelect, #auProgramSelect, #auDepartmentSelect, #euRoleSelect, #euStatusSelect, #euLevelSelect, #euProgramSelect, #euDepartmentSelect) option[value=""]:focus-visible {
             background: rgba(255, 255, 255, 0.07) !important;
         }
 
-        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option:focus-visible {
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect, #auRoleSelect, #auLevelSelect, #auProgramSelect, #auDepartmentSelect, #euRoleSelect, #euStatusSelect, #euLevelSelect, #euProgramSelect, #euDepartmentSelect) option:focus-visible {
             outline-color: #6ed6ba !important;
         }
 
-        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect) option:checked:not([value=""]) {
+        html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) select:is(#abCategorySelect, #abProgramSelect, #abSectionSelect, #ebCategorySelect, #ebSectionSelect, #auRoleSelect, #auLevelSelect, #auProgramSelect, #auDepartmentSelect, #euRoleSelect, #euStatusSelect, #euLevelSelect, #euProgramSelect, #euDepartmentSelect) option:checked:not([value=""]) {
             background: rgba(232, 181, 74, 0.14) !important;
             color: #f7d98f !important;
         }
@@ -1803,107 +1803,107 @@ html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#boo
 /* ---------- Program picker (Add Book / Edit Book, pp- classes) ---------- */
 /* Deep pine panel with a gold hairline, gold-tinted ticked rows with gold
    checkboxes, gold "+N" / MAIN pills. Layout in admin.css. */
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-field {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-field {
     border-color: rgba(120, 200, 175, 0.22);
     background: rgba(255, 255, 255, 0.04);
     color: #eef4f0;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-field:not(.is-empty) {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-field:not(.is-empty) {
     border-color: rgba(120, 200, 175, 0.38);
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-field.is-empty .pp-summary {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-field.is-empty .pp-summary {
     color: #9fb5ab;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-more-pill,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-main-pill,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-more-pill,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-main-pill,
 html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .manage-books-table .pp-cell-pill {
     border-color: rgba(232, 181, 74, 0.5);
     background: rgba(232, 181, 74, 0.14);
     color: #f7d98f;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-picker.is-open .pp-field {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-picker.is-open .pp-field {
     border-color: #5fc9ae;
     box-shadow: 0 0 0 3px rgba(95, 201, 174, 0.25);
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-field:focus-visible,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-check:focus-visible,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-clear:focus-visible,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-done:focus-visible {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-field:focus-visible,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-check:focus-visible,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-clear:focus-visible,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-done:focus-visible {
     outline: 2px solid #6ed6ba;
     outline-offset: 2px;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-panel {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-panel {
     background: linear-gradient(180deg, #10302a 0%, #08181a 100%);
     border-color: rgba(232, 181, 74, 0.45);
     color: #e0e8e2;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-search {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-search {
     border-color: rgba(120, 200, 175, 0.22);
     background: rgba(255, 255, 255, 0.04);
     color: #9fb5ab;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-search .pp-search-input {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-search .pp-search-input {
     color: #eef4f0 !important;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-search .pp-search-input::placeholder {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-search .pp-search-input::placeholder {
     color: #9fb5ab !important;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-row {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-row {
     color: #e0e8e2;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-row:hover,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-row:has(.pp-check:focus-visible) {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-row:hover,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-row:has(.pp-check:focus-visible) {
     background: rgba(255, 255, 255, 0.07);
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-program-row.is-checked {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-program-row.is-checked {
     background: rgba(232, 181, 74, 0.14);
     color: #f7d98f;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-row .pp-check {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-row .pp-check {
     border-color: #7f9c91 !important;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-row .pp-check:checked,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-row .pp-check:indeterminate {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-row .pp-check:checked,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-row .pp-check:indeterminate {
     border-color: #e8b54a !important;
     background-color: #e8b54a !important;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-count,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-empty {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-count,
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-empty {
     color: #9fb5ab;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-selected-count {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-selected-count {
     color: #eef4f0;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-help {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-help {
     color: #bccdc4;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-clear {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-clear {
     color: #cfe3da;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-done {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-done {
     background: linear-gradient(180deg, #20846d 0%, #176451 100%);
     color: #ffffff;
 }
 
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal) .pp-done:hover {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-done:hover {
     background: linear-gradient(180deg, #1a7360 0%, #125543 100%);
 }

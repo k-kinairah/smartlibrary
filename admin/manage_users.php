@@ -734,9 +734,18 @@ require 'layout_top.php';
     <button class="btn-primary" onclick="openUserModal()">+ Add User</button>
 </div>
 
-<?php // Result of create / edit (same page render): shared toast. Same
-      // mapping as before: success stays success, anything else is an error. ?>
-<?php smartlib_admin_toast_render(($flash['type'] ?? '') === 'success' ? 'success' : 'error', (string)($flash['message'] ?? '')); ?>
+<?php
+    // Result of create / edit (same page render): shared toast. Same mapping
+    // as before: success stays success, anything else is an error. An error
+    // that reopens the Add User or Edit User window is shown inside it (its
+    // .ab-alert) instead, like Add Book.
+    $userWindowError = (($flash['type'] ?? '') !== 'success' && ($openCreateUserModal || $openEditUserModal))
+        ? (string)($flash['message'] ?? '')
+        : '';
+    if ($userWindowError === '') {
+        smartlib_admin_toast_render(($flash['type'] ?? '') === 'success' ? 'success' : 'error', (string)($flash['message'] ?? ''));
+    }
+?>
 
 <section class="stats-grid borrow-status-chips manage-users-chip-row">
     <?php foreach ($allChipMetrics as $chip): ?>
@@ -886,64 +895,159 @@ require 'layout_top.php';
     <?php smartlib_list_pager_render($usersPage, $usersTotalPages, $filteredUsersTotal, MANAGE_USERS_PER_PAGE, static function (int $pagerPage) use ($buildManageUsersUrl, $baseFilterParams): string { return $buildManageUsersUrl(['page' => $pagerPage] + $baseFilterParams); }, 'users'); ?>
 </section>
 
-<div class="overlay-modal<?= $openCreateUserModal ? ' show' : '' ?>" id="userModal" aria-hidden="<?= $openCreateUserModal ? 'false' : 'true' ?>">
-    <div class="overlay-card glass-card user-modal-card">
-        <div class="panel-head">
-            <h2><span class="modal-icon" aria-hidden="true"><?= admin_icon('users') ?></span>Add User</h2>
-            <button class="icon-close" type="button" onclick="closeUserModal()">&times;</button>
+<?php // Add User and Edit User: the Add Book window family (ab- classes; styles
+      // in admin.css, every Add Book :is() list names these two ids, plus the
+      // "Add User and Edit User windows" block for what differs). A select
+      // the script hides (hidden attribute) hides its whole field in CSS. ?>
+<div class="overlay-modal ab-modal<?= $openCreateUserModal ? ' show' : '' ?>" id="userModal" aria-hidden="<?= $openCreateUserModal ? 'false' : 'true' ?>">
+    <div class="ab-card" role="dialog" aria-modal="true" aria-labelledby="auTitle" aria-describedby="auSubtitle">
+        <div class="ab-head">
+            <span class="ab-chip" aria-hidden="true"><?= admin_icon('users') ?></span>
+            <div class="ab-head-text">
+                <h2 class="ab-title" id="auTitle">Add User</h2>
+                <p class="ab-subtitle" id="auSubtitle">Create a library account</p>
+            </div>
+            <button type="button" class="ab-close" onclick="closeUserModal()" aria-label="Close">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+            </button>
         </div>
 
-        <form method="POST" class="form-grid user-create-grid user-create-portrait">
+        <form method="POST" class="ab-form">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
-            <input type="text" name="first_name" placeholder="First Name" required>
-            <input type="text" name="last_name" placeholder="Last Name" required>
-            <input type="text" name="user_number" placeholder="Student/Faculty/Librarian ID" required>
-            <input type="email" name="email" placeholder="Email" required>
-            <input type="password" name="pin" placeholder="PIN / Password" required>
-            <small class="pin-rule-note" id="createPinHint">Student/Faculty: exactly 4 digits. Librarian/Admin: at least <?= (int)AUTH_STAFF_PASSWORD_MIN ?> characters with a letter and a number.</small>
 
-            <select name="school_level" aria-label="School level">
-                <?php foreach (LIBRARY_CARD_SCHOOL_LEVELS as $levelValue => $levelLabel): ?>
-                    <option value="<?= htmlspecialchars($levelValue) ?>" <?= $levelValue === 'college' ? 'selected' : '' ?>><?= htmlspecialchars($levelLabel) ?></option>
-                <?php endforeach; ?>
-            </select>
+            <div class="ab-body">
+                <?php if ($openCreateUserModal && $userWindowError !== ''): ?>
+                    <p class="ab-alert" role="alert"><?= htmlspecialchars($userWindowError) ?></p>
+                <?php endif; ?>
 
-            <select name="program_id">
-                <option value="">No Program</option>
-                <?php foreach ($programs as $p): ?>
-                    <option value="<?= intval($p['program_id']) ?>"><?= htmlspecialchars((string)$p['program_name']) ?></option>
-                <?php endforeach; ?>
-            </select>
+                <fieldset class="ab-group">
+                    <legend class="ab-group-label">Identity</legend>
+                    <div class="ab-grid">
+                        <div class="ab-field">
+                            <label class="ab-label" for="auFirstName">First name<span class="ab-req" aria-hidden="true"></span></label>
+                            <input class="ab-input" type="text" id="auFirstName" name="first_name" placeholder="First Name" required>
+                        </div>
+                        <div class="ab-field">
+                            <label class="ab-label" for="auLastName">Last name<span class="ab-req" aria-hidden="true"></span></label>
+                            <input class="ab-input" type="text" id="auLastName" name="last_name" placeholder="Last Name" required>
+                        </div>
+                        <div class="ab-field">
+                            <label class="ab-label" for="auUserNumber">ID number<span class="ab-req" aria-hidden="true"></span></label>
+                            <input class="ab-input" type="text" id="auUserNumber" name="user_number" placeholder="Student/Faculty/Librarian ID" required>
+                        </div>
+                        <div class="ab-field">
+                            <label class="ab-label" for="auEmail">Email<span class="ab-req" aria-hidden="true"></span></label>
+                            <input class="ab-input" type="email" id="auEmail" name="email" placeholder="Email" required>
+                        </div>
+                    </div>
+                </fieldset>
 
-            <select name="department_id" hidden>
-                <option value="">No Department</option>
-                <?php foreach ($departmentsList as $did => $dname): ?>
-                    <option value="<?= (int)$did ?>"><?= htmlspecialchars((string)$dname) ?></option>
-                <?php endforeach; ?>
-            </select>
+                <fieldset class="ab-group">
+                    <legend class="ab-group-label">Access</legend>
+                    <div class="ab-grid">
+                        <div class="ab-field ab-span-2">
+                            <label class="ab-label" for="auRoleSelect">Role<span class="ab-req" aria-hidden="true"></span></label>
+                            <select class="ab-input ab-select" id="auRoleSelect" name="role" required>
+                                <button type="button" class="ab-select-button"><selectedcontent></selectedcontent></button>
+                                <option value="student">Student</option>
+                                <option value="faculty">Faculty</option>
+                                <option value="librarian">Librarian</option>
+                            </select>
+                        </div>
+                        <div class="ab-field">
+                            <label class="ab-label" for="auLevelSelect">School level</label>
+                            <select class="ab-input ab-select" id="auLevelSelect" name="school_level" aria-label="School level">
+                                <button type="button" class="ab-select-button"><selectedcontent></selectedcontent></button>
+                                <?php foreach (LIBRARY_CARD_SCHOOL_LEVELS as $levelValue => $levelLabel): ?>
+                                    <option value="<?= htmlspecialchars($levelValue) ?>" <?= $levelValue === 'college' ? 'selected' : '' ?>><?= htmlspecialchars($levelLabel) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="ab-field">
+                            <label class="ab-label" for="auProgramSelect">Program</label>
+                            <select class="ab-input ab-select" id="auProgramSelect" name="program_id">
+                                <button type="button" class="ab-select-button"><selectedcontent></selectedcontent></button>
+                                <option value="">No Program</option>
+                                <?php foreach ($programs as $p): ?>
+                                    <option value="<?= intval($p['program_id']) ?>"><?= htmlspecialchars((string)$p['program_name']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="ab-field ab-span-2">
+                            <label class="ab-label" for="auDepartmentSelect">Department</label>
+                            <select class="ab-input ab-select" id="auDepartmentSelect" name="department_id" hidden>
+                                <button type="button" class="ab-select-button"><selectedcontent></selectedcontent></button>
+                                <option value="">No Department</option>
+                                <?php foreach ($departmentsList as $did => $dname): ?>
+                                    <option value="<?= (int)$did ?>"><?= htmlspecialchars((string)$dname) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="ab-field ab-span-2">
+                            <label class="ab-label" for="auPin">PIN / Password<span class="ab-req" aria-hidden="true"></span></label>
+                            <input class="ab-input" type="password" id="auPin" name="pin" placeholder="PIN / Password" required aria-describedby="createPinHint">
+                            <small class="ab-hint pin-rule-note" id="createPinHint">Student/Faculty: exactly 4 digits. Librarian/Admin: at least <?= (int)AUTH_STAFF_PASSWORD_MIN ?> characters with a letter and a number.</small>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
 
-            <select name="role" required>
-                <option value="student">Student</option>
-                <option value="faculty">Faculty</option>
-                <option value="librarian">Librarian</option>
-            </select>
-
-            <button type="submit" name="create_user" class="btn-primary form-submit modal-submit-btn">
-                <span class="modal-submit-icon" aria-hidden="true"><?= admin_icon('plus-circle') ?></span>
-                Create User
-            </button>
+            <div class="ab-foot">
+                <span class="ab-foot-note"><span class="ab-req" aria-hidden="true"></span>Required</span>
+                <div class="ab-actions">
+                    <button type="button" class="ab-btn ab-btn-ghost" onclick="closeUserModal()">Cancel</button>
+                    <button type="submit" name="create_user" class="ab-btn ab-btn-primary">
+                        <span class="ab-btn-icon" aria-hidden="true"><?= admin_icon('plus-circle') ?></span>
+                        Create User
+                    </button>
+                </div>
+            </div>
         </form>
     </div>
 </div>
 
-<div class="overlay-modal<?= $openEditUserModal ? ' show' : '' ?>" id="editUserModal" aria-hidden="<?= $openEditUserModal ? 'false' : 'true' ?>">
-    <div class="overlay-card glass-card user-modal-card">
-        <div class="panel-head">
-            <h2>Edit User</h2>
-            <button class="icon-close" type="button" onclick="closeEditUserModal()">&times;</button>
+<?php
+    $editRoleNow = (string)($editUserData['role'] ?? '');
+    $editLevelNow = (string)($editUserData['school_level'] ?? '');
+    $editHideProgram = $editRoleNow === 'faculty' || ($editRoleNow === 'student' && $editLevelNow !== 'college');
+    $editIsFaculty = ($editUserData['role'] ?? '') === 'faculty';
+    // Active departments, plus the person's own retired one (selected).
+    $editCurrentDepartmentId = (int)($editUserData['department_id'] ?? 0);
+    $editDepartmentOptions = array_filter(
+        $allDepartmentsList,
+        static fn($did) => isset($departmentsList[$did]) || (int)$did === $editCurrentDepartmentId,
+        ARRAY_FILTER_USE_KEY
+    );
+    // Role as stored right now (not what a failed save posted), so the
+    // form knows whether choosing Librarian is a promotion.
+    $editOriginalRole = '';
+    if ((int)($editUserData['user_id'] ?? 0) > 0) {
+        $origStmt = $conn->prepare('SELECT role FROM library_users WHERE user_id = ? LIMIT 1');
+        if ($origStmt) {
+            $origId = (int)$editUserData['user_id'];
+            $origStmt->bind_param('i', $origId);
+            $origStmt->execute();
+            $origRow = $origStmt->get_result()->fetch_assoc();
+            $origStmt->close();
+            $editOriginalRole = strtolower(trim((string)($origRow['role'] ?? '')));
+        }
+    }
+    $editWasStaff = in_array($editOriginalRole, ['librarian', 'admin'], true);
+?>
+<div class="overlay-modal ab-modal<?= $openEditUserModal ? ' show' : '' ?>" id="editUserModal" aria-hidden="<?= $openEditUserModal ? 'false' : 'true' ?>">
+    <div class="ab-card" role="dialog" aria-modal="true" aria-labelledby="euTitle" aria-describedby="euSubtitle">
+        <div class="ab-head">
+            <span class="ab-chip" aria-hidden="true"><?= admin_icon('users') ?></span>
+            <div class="ab-head-text">
+                <h2 class="ab-title" id="euTitle">Edit User</h2>
+                <p class="ab-subtitle" id="euSubtitle">Update this account</p>
+            </div>
+            <button type="button" class="ab-close" onclick="closeEditUserModal()" aria-label="Close">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+            </button>
         </div>
 
-        <form method="POST" id="editUserForm" class="form-grid user-create-grid user-create-portrait">
+        <form method="POST" id="editUserForm" class="ab-form">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
             <input type="hidden" name="edit_user_id" value="<?= intval($editUserData['user_id'] ?? 0) ?>">
             <input type="hidden" name="return_search" value="<?= htmlspecialchars($search) ?>">
@@ -951,89 +1055,184 @@ require 'layout_top.php';
             <input type="hidden" name="return_status" value="<?= htmlspecialchars($statusFilter) ?>">
             <input type="hidden" name="return_page" value="<?= intval($usersPage) ?>">
 
-            <input type="text" name="edit_first_name" placeholder="First Name" value="<?= htmlspecialchars((string)($editUserData['first_name'] ?? '')) ?>" required>
-            <input type="text" name="edit_last_name" placeholder="Last Name" value="<?= htmlspecialchars((string)($editUserData['last_name'] ?? '')) ?>" required>
-            <input type="text" name="edit_user_number" placeholder="Student/Faculty/Librarian ID" value="<?= htmlspecialchars((string)($editUserData['user_number'] ?? '')) ?>" required>
-            <input type="email" name="edit_email" placeholder="Email (optional)" value="<?= htmlspecialchars((string)($editUserData['email'] ?? '')) ?>">
-            <input type="password" name="edit_pin" placeholder="New PIN / Password (optional)" autocomplete="new-password">
-            <small class="pin-rule-note" id="editPinHint">Leave blank to keep current PIN/password. Student/Faculty: exactly 4 digits. Librarian/Admin: at least <?= (int)AUTH_STAFF_PASSWORD_MIN ?> characters with a letter and a number.</small>
-
-            <?php
-            $editRoleNow = (string)($editUserData['role'] ?? '');
-            $editLevelNow = (string)($editUserData['school_level'] ?? '');
-            $editHideProgram = $editRoleNow === 'faculty' || ($editRoleNow === 'student' && $editLevelNow !== 'college');
-            ?>
-            <select name="edit_school_level" aria-label="School level"<?= $editRoleNow === 'student' ? '' : ' hidden' ?>>
-                <?php if ($editLevelNow === ''): ?>
-                    <option value="" selected>Select a school level</option>
+            <div class="ab-body">
+                <?php if ($openEditUserModal && $userWindowError !== ''): ?>
+                    <p class="ab-alert" role="alert"><?= htmlspecialchars($userWindowError) ?></p>
                 <?php endif; ?>
-                <?php foreach (LIBRARY_CARD_SCHOOL_LEVELS as $levelValue => $levelLabel): ?>
-                    <option value="<?= htmlspecialchars($levelValue) ?>" <?= $editLevelNow === $levelValue ? 'selected' : '' ?>><?= htmlspecialchars($levelLabel) ?></option>
-                <?php endforeach; ?>
-            </select>
 
-            <select name="edit_program_id"<?= $editHideProgram ? ' hidden' : '' ?>>
-                <option value="">No Program</option>
-                <?php foreach ($programs as $p): ?>
-                    <?php $pid = (int)($p['program_id'] ?? 0); ?>
-                    <option value="<?= $pid ?>" <?= (int)($editUserData['program_id'] ?? 0) === $pid ? 'selected' : '' ?>><?= htmlspecialchars((string)$p['program_name']) ?></option>
-                <?php endforeach; ?>
-            </select>
+                <fieldset class="ab-group">
+                    <legend class="ab-group-label">Identity</legend>
+                    <div class="ab-grid">
+                        <div class="ab-field">
+                            <label class="ab-label" for="euFirstName">First name<span class="ab-req" aria-hidden="true"></span></label>
+                            <input class="ab-input" type="text" id="euFirstName" name="edit_first_name" placeholder="First Name" value="<?= htmlspecialchars((string)($editUserData['first_name'] ?? '')) ?>" required>
+                        </div>
+                        <div class="ab-field">
+                            <label class="ab-label" for="euLastName">Last name<span class="ab-req" aria-hidden="true"></span></label>
+                            <input class="ab-input" type="text" id="euLastName" name="edit_last_name" placeholder="Last Name" value="<?= htmlspecialchars((string)($editUserData['last_name'] ?? '')) ?>" required>
+                        </div>
+                        <div class="ab-field">
+                            <label class="ab-label" for="euUserNumber">ID number<span class="ab-req" aria-hidden="true"></span></label>
+                            <input class="ab-input" type="text" id="euUserNumber" name="edit_user_number" placeholder="Student/Faculty/Librarian ID" value="<?= htmlspecialchars((string)($editUserData['user_number'] ?? '')) ?>" required>
+                        </div>
+                        <div class="ab-field">
+                            <label class="ab-label" for="euEmail">Email</label>
+                            <input class="ab-input" type="email" id="euEmail" name="edit_email" placeholder="Email (optional)" value="<?= htmlspecialchars((string)($editUserData['email'] ?? '')) ?>">
+                        </div>
+                    </div>
+                </fieldset>
 
-            <?php
-            $editIsFaculty = ($editUserData['role'] ?? '') === 'faculty';
-            // Active departments, plus the person's own retired one (selected).
-            $editCurrentDepartmentId = (int)($editUserData['department_id'] ?? 0);
-            $editDepartmentOptions = array_filter(
-                $allDepartmentsList,
-                static fn($did) => isset($departmentsList[$did]) || (int)$did === $editCurrentDepartmentId,
-                ARRAY_FILTER_USE_KEY
-            );
-            ?>
-            <select name="edit_department_id"<?= $editIsFaculty ? '' : ' hidden' ?>>
-                <option value="">No Department</option>
-                <?php foreach ($editDepartmentOptions as $did => $dname): ?>
-                    <option value="<?= (int)$did ?>" <?= (int)($editUserData['department_id'] ?? 0) === (int)$did ? 'selected' : '' ?>><?= htmlspecialchars((string)$dname) ?></option>
-                <?php endforeach; ?>
-            </select>
+                <fieldset class="ab-group">
+                    <legend class="ab-group-label">Access</legend>
+                    <div class="ab-grid">
+                        <div class="ab-field">
+                            <label class="ab-label" for="euRoleSelect">Role<span class="ab-req" aria-hidden="true"></span></label>
+                            <select class="ab-input ab-select" id="euRoleSelect" name="edit_role" required data-was-staff="<?= $editWasStaff ? '1' : '0' ?>">
+                                <button type="button" class="ab-select-button"><selectedcontent></selectedcontent></button>
+                                <option value="student" <?= (($editUserData['role'] ?? '') === 'student') ? 'selected' : '' ?>>Student</option>
+                                <option value="faculty" <?= (($editUserData['role'] ?? '') === 'faculty') ? 'selected' : '' ?>>Faculty</option>
+                                <option value="librarian" <?= (($editUserData['role'] ?? '') === 'librarian') ? 'selected' : '' ?>>Librarian</option>
+                            </select>
+                        </div>
+                        <div class="ab-field">
+                            <label class="ab-label" for="euStatusSelect">Status<span class="ab-req" aria-hidden="true"></span></label>
+                            <select class="ab-input ab-select" id="euStatusSelect" name="edit_status" required>
+                                <button type="button" class="ab-select-button"><selectedcontent></selectedcontent></button>
+                                <option value="active" <?= (($editUserData['status'] ?? '') === 'active') ? 'selected' : '' ?>>Active</option>
+                                <option value="inactive" <?= (($editUserData['status'] ?? '') === 'inactive') ? 'selected' : '' ?>>Inactive</option>
+                            </select>
+                        </div>
+                        <div class="ab-field">
+                            <label class="ab-label" for="euLevelSelect">School level</label>
+                            <select class="ab-input ab-select" id="euLevelSelect" name="edit_school_level" aria-label="School level"<?= $editRoleNow === 'student' ? '' : ' hidden' ?>>
+                                <button type="button" class="ab-select-button"><selectedcontent></selectedcontent></button>
+                                <?php if ($editLevelNow === ''): ?>
+                                    <option value="" selected>Select a school level</option>
+                                <?php endif; ?>
+                                <?php foreach (LIBRARY_CARD_SCHOOL_LEVELS as $levelValue => $levelLabel): ?>
+                                    <option value="<?= htmlspecialchars($levelValue) ?>" <?= $editLevelNow === $levelValue ? 'selected' : '' ?>><?= htmlspecialchars($levelLabel) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="ab-field">
+                            <label class="ab-label" for="euProgramSelect">Program</label>
+                            <select class="ab-input ab-select" id="euProgramSelect" name="edit_program_id"<?= $editHideProgram ? ' hidden' : '' ?>>
+                                <button type="button" class="ab-select-button"><selectedcontent></selectedcontent></button>
+                                <option value="">No Program</option>
+                                <?php foreach ($programs as $p): ?>
+                                    <?php $pid = (int)($p['program_id'] ?? 0); ?>
+                                    <option value="<?= $pid ?>" <?= (int)($editUserData['program_id'] ?? 0) === $pid ? 'selected' : '' ?>><?= htmlspecialchars((string)$p['program_name']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="ab-field ab-span-2">
+                            <label class="ab-label" for="euDepartmentSelect">Department</label>
+                            <select class="ab-input ab-select" id="euDepartmentSelect" name="edit_department_id"<?= $editIsFaculty ? '' : ' hidden' ?>>
+                                <button type="button" class="ab-select-button"><selectedcontent></selectedcontent></button>
+                                <option value="">No Department</option>
+                                <?php foreach ($editDepartmentOptions as $did => $dname): ?>
+                                    <option value="<?= (int)$did ?>" <?= (int)($editUserData['department_id'] ?? 0) === (int)$did ? 'selected' : '' ?>><?= htmlspecialchars((string)$dname) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="ab-field ab-span-2">
+                            <label class="ab-label" for="euPin">New PIN / Password</label>
+                            <input class="ab-input" type="password" id="euPin" name="edit_pin" placeholder="New PIN / Password (optional)" autocomplete="new-password" aria-describedby="editPinHint">
+                            <small class="ab-hint pin-rule-note" id="editPinHint">Leave blank to keep current PIN/password. Student/Faculty: exactly 4 digits. Librarian/Admin: at least <?= (int)AUTH_STAFF_PASSWORD_MIN ?> characters with a letter and a number.</small>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
 
-            <?php
-            // Role as stored right now (not what a failed save posted), so the
-            // form knows whether choosing Librarian is a promotion.
-            $editOriginalRole = '';
-            if ((int)($editUserData['user_id'] ?? 0) > 0) {
-                $origStmt = $conn->prepare('SELECT role FROM library_users WHERE user_id = ? LIMIT 1');
-                if ($origStmt) {
-                    $origId = (int)$editUserData['user_id'];
-                    $origStmt->bind_param('i', $origId);
-                    $origStmt->execute();
-                    $origRow = $origStmt->get_result()->fetch_assoc();
-                    $origStmt->close();
-                    $editOriginalRole = strtolower(trim((string)($origRow['role'] ?? '')));
-                }
-            }
-            $editWasStaff = in_array($editOriginalRole, ['librarian', 'admin'], true);
-            ?>
-            <select name="edit_role" required data-was-staff="<?= $editWasStaff ? '1' : '0' ?>">
-                <option value="student" <?= (($editUserData['role'] ?? '') === 'student') ? 'selected' : '' ?>>Student</option>
-                <option value="faculty" <?= (($editUserData['role'] ?? '') === 'faculty') ? 'selected' : '' ?>>Faculty</option>
-                <option value="librarian" <?= (($editUserData['role'] ?? '') === 'librarian') ? 'selected' : '' ?>>Librarian</option>
-            </select>
-
-            <select name="edit_status" required>
-                <option value="active" <?= (($editUserData['status'] ?? '') === 'active') ? 'selected' : '' ?>>Active</option>
-                <option value="inactive" <?= (($editUserData['status'] ?? '') === 'inactive') ? 'selected' : '' ?>>Inactive</option>
-            </select>
-
-            <button type="submit" name="update_user" class="btn-primary form-submit">Save Changes</button>
+            <div class="ab-foot">
+                <span class="ab-foot-note"><span class="ab-req" aria-hidden="true"></span>Required</span>
+                <div class="ab-actions">
+                    <button type="button" class="ab-btn ab-btn-ghost" onclick="closeEditUserModal()">Cancel</button>
+                    <button type="submit" name="update_user" class="ab-btn ab-btn-primary">
+                        <span class="ab-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg></span>
+                        Save Changes
+                    </button>
+                </div>
+            </div>
         </form>
     </div>
 </div>
 
 <script>
+// Add User / Edit User keyboard (same as the Add Book window): the first
+// field gets the focus when a window opens, Tab and Shift+Tab wrap inside
+// it, Escape closes it (with a dropdown open, Escape only closes the
+// dropdown), and the focus goes back to what opened it.
+let userModalOpener = null;
+
+function userWindowFocusFirst(modal) {
+    const first = modal ? modal.querySelector('.ab-body input:not([type="hidden"])') : null;
+    if (!first) return;
+    // At once (the window is displayed by now); the next frame only as a
+    // fallback: a page that is not painting can hold frames back.
+    first.focus({ preventScroll: true });
+    if (document.activeElement !== first) {
+        window.requestAnimationFrame(function () {
+            first.focus({ preventScroll: true });
+        });
+    }
+}
+
+function userWindowRestoreFocus(fallback) {
+    const target = userModalOpener && document.contains(userModalOpener) ? userModalOpener : fallback;
+    userModalOpener = null;
+    if (target && typeof target.focus === 'function') {
+        target.focus();
+    }
+}
+
+function userWindowSelectIsOpen(el) {
+    const select = el && el.closest ? el.closest('select') : null;
+    if (!select) return false;
+    try {
+        return select.matches(':open');
+    } catch (error) {
+        return false;
+    }
+}
+
+document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape' && event.key !== 'Tab') return;
+    const modal = document.querySelector('#userModal.show, #editUserModal.show');
+    if (!modal) return;
+    if (event.key === 'Escape') {
+        if (event.defaultPrevented || userWindowSelectIsOpen(document.activeElement)) return;
+        event.preventDefault();
+        if (modal.id === 'userModal') {
+            closeUserModal();
+        } else {
+            closeEditUserModal();
+        }
+        return;
+    }
+    const focusable = Array.from(modal.querySelectorAll(
+        'button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+    )).filter(function (el) {
+        return el.offsetParent !== null && !(el.tagName !== 'SELECT' && el.closest('select'));
+    });
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+    }
+});
+
 function openUserModal() {
     const modal = document.getElementById('userModal');
     if (!modal) return;
+    if (document.activeElement && document.activeElement !== document.body && !modal.contains(document.activeElement)) {
+        userModalOpener = document.activeElement;
+    }
     // Program or Department by the role already chosen in the form.
     const form = modal.querySelector('form');
     if (form) {
@@ -1041,6 +1240,7 @@ function openUserModal() {
     }
     modal.classList.add('show');
     modal.setAttribute('aria-hidden', 'false');
+    userWindowFocusFirst(modal);
 }
 
 function closeUserModal() {
@@ -1048,6 +1248,7 @@ function closeUserModal() {
     if (!modal) return;
     modal.classList.remove('show');
     modal.setAttribute('aria-hidden', 'true');
+    userWindowRestoreFocus(document.querySelector('.page-top .btn-primary'));
 }
 
 function closeEditUserModal() {
@@ -1061,6 +1262,11 @@ function closeEditUserModal() {
         url.searchParams.delete('edit_user');
         window.history.replaceState({}, document.title, url.toString());
     }
+
+    // Opened by a page load (the row's Edit link): back to that link.
+    const editedId = modal.querySelector('input[name="edit_user_id"]');
+    const row = editedId ? document.getElementById('user-row-' + editedId.value) : null;
+    userWindowRestoreFocus(row ? row.querySelector('a[href*="edit_user="]') : document.querySelector('.page-top .btn-primary'));
 }
 
 const createUserModal = document.getElementById('userModal');
@@ -1323,10 +1529,15 @@ if (editUserForm) {
     });
 }
 
+userWindowFocusFirst(document.querySelector('#userModal.show, #editUserModal.show'));
+
 const editPinPopupMessage = <?= json_encode($editPinPopupMessage, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 if (editPinPopupMessage && document.getElementById('editUserModal')?.classList.contains('show')) {
     window.setTimeout(function () {
-        window.smartlibToast('error', editPinPopupMessage);
+        // The same message is already in the window (.ab-alert): no toast then.
+        if (!document.querySelector('#editUserModal .ab-alert')) {
+            window.smartlibToast('error', editPinPopupMessage);
+        }
         const pinInput = document.querySelector('#editUserModal input[name="edit_pin"]');
         if (pinInput) {
             pinInput.focus();
