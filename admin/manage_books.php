@@ -1551,17 +1551,32 @@ require 'layout_top.php';
 
 <section class="panel glass-card data-table-panel">
     <div class="table-wrap">
-        <table class="data-table manage-books-table pp-program-table">
+        <?php
+            // Rich rows (Prompt 36): five columns, one floating card per book
+            // and a copies panel under it. pp-program-table is no longer on
+            // this table, so its old ten-column nth-child widths (admin.css,
+            // admin_light_glass.css) do not apply; widths are in admin_rows.css.
+            $rrChevronSvg = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"></path></svg>';
+            $rrInitials = static function (string $first, string $last, string $fallback): string {
+                $letters = '';
+                foreach ([$first, $last] as $part) {
+                    $part = trim($part);
+                    if ($part !== '') {
+                        $letters .= mb_strtoupper(mb_substr($part, 0, 1, 'UTF-8'), 'UTF-8');
+                    }
+                }
+                if ($letters === '') {
+                    $letters = mb_strtoupper(mb_substr(trim($fallback), 0, 2, 'UTF-8'), 'UTF-8');
+                }
+                return $letters !== '' ? $letters : '?';
+            };
+        ?>
+        <table class="data-table manage-books-table rr-table rr-books">
             <thead>
                 <tr>
-                    <th>Book ID</th>
-                    <th><?= $activeStatus === 'borrowed' ? 'Accession #' : 'ISBN' ?></th>
-                    <th>Title</th>
-                    <th>Author</th>
-                    <th>Year</th>
-                    <th>Genre</th>
-                    <th>Program</th>
-                    <th>Copies</th>
+                    <th>Book</th>
+                    <th>ID</th>
+                    <th>Category</th>
                     <th>Status</th>
                     <th>Action</th>
                 </tr>
@@ -1599,14 +1614,38 @@ require 'layout_top.php';
                                 $statusText = 'Borrowed';
                                 $statusClass = 'inactive';
                             }
+                            // Row accent: ok = Available, warn = Borrowed, bad = no copies.
+                            $rowTone = $statusText === 'Available' ? 'ok' : ($statusText === 'Borrowed' ? 'warn' : 'bad');
+
+                            // Cover: the kiosk's logic (fetch_books.php): the real file in
+                            // assets/covers/ when it exists, else the generated cover.
+                            $rowCoverFile = basename((string)($row['cover'] ?? ''));
+                            $rowCoverSrc = ($rowCoverFile !== '' && is_file(__DIR__ . '/../assets/covers/' . $rowCoverFile))
+                                ? '../assets/covers/' . $rowCoverFile
+                                : '../' . book_cover_url($bookId);
+
+                            $rowAuthor = trim((string)($row['author'] ?? ''));
+                            $rowYear = trim((string)($row['year_published'] ?? ''));
+                            $rowSubParts = array_values(array_filter([$rowAuthor, $rowYear], static function ($part) { return $part !== ''; }));
+                            $rowIdentifier = trim($primaryIdentifier);
+                            $rowHasIdentifier = $rowIdentifier !== '' && $rowIdentifier !== '-';
                         ?>
-                        <tr id="book-row-<?= $bookId ?>">
-                            <td class="book-id-col"><?= $bookId ?></td>
-                            <td><?= htmlspecialchars($primaryIdentifier) ?></td>
-                            <td><?= htmlspecialchars($row['title'] ?? '') ?></td>
-                            <td><?= htmlspecialchars($row['author'] ?? '') ?></td>
-                            <td><?= htmlspecialchars($row['year_published'] ?? '') ?></td>
-                            <td><?= htmlspecialchars($row['genre_name'] ?? 'Uncategorized') ?></td>
+                        <tr class="rr-row" id="book-row-<?= $bookId ?>" data-tone="<?= $rowTone ?>">
+                            <td class="rr-c-book">
+                                <div class="rr-book">
+                                    <span class="rr-cover"><img src="<?= htmlspecialchars($rowCoverSrc) ?>" alt="" width="40" height="57" loading="lazy" decoding="async"></span>
+                                    <div class="rr-stack">
+                                        <div class="rr-title"><?= htmlspecialchars($row['title'] ?? '') ?></div>
+                                        <?php if (!empty($rowSubParts)): ?><div class="rr-sub"><?= htmlspecialchars(implode(' · ', $rowSubParts)) ?></div><?php endif; ?>
+                                        <?php if ($activeStatus === 'borrowed'): ?>
+                                            <div class="rr-meta"><?php if ($rowHasIdentifier): ?>Accession <b><?= htmlspecialchars($rowIdentifier) ?></b><?php else: ?>No accession<?php endif; ?></div>
+                                        <?php else: ?>
+                                            <div class="rr-meta"><?php if ($rowHasIdentifier): ?>ISBN <b><?= htmlspecialchars($rowIdentifier) ?></b><?php else: ?>No ISBN<?php endif; ?></div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="rr-c-id book-id-col"><span class="rr-id">#<?= $bookId ?></span></td>
                             <?php
                                 $rowMainProgramId = (int)($row['program_id'] ?? 0);
                                 $rowProgramIds = manage_books_ordered_program_ids($rowMainProgramId, $bookProgramMap[$bookId] ?? [], $programNameById);
@@ -1621,35 +1660,22 @@ require 'layout_top.php';
                                     $rowAllNames[] = $programNameById[$rowProgramId];
                                 }
                             ?>
-                            <td class="pp-program-cell">
-                                <?php if ($rowMainProgramId > 0 && isset($programNameById[$rowMainProgramId])): ?>
-                                    <span class="pp-cell-name"><?= htmlspecialchars($programNameById[$rowMainProgramId]) ?></span><?php if (!empty($rowOtherNames)): ?> <span class="pp-cell-pill" title="<?= htmlspecialchars(implode(', ', $rowAllNames)) ?>">+<?= count($rowOtherNames) ?><span class="pp-sr"> more: <?= htmlspecialchars(implode(', ', $rowOtherNames)) ?></span></span><?php endif; ?>
-                                <?php elseif (!empty($rowProgramIds)): ?>
-                                    <span class="pp-cell-name pp-cell-multi" title="<?= htmlspecialchars(implode(', ', $rowAllNames)) ?>"><?= count($rowProgramIds) === count($programNameById) ? 'All programs' : (count($rowProgramIds) . (count($rowProgramIds) === 1 ? ' program' : ' programs')) ?></span>
-                                <?php else: ?>
-                                    <span class="pp-cell-none">-</span>
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <div class="book-copies-cell">
-                                    <span><?= number_format($available) ?> / <?= number_format($total) ?></span>
-                                    <?php if ($total > 0): ?>
-                                        <button
-                                            type="button"
-                                            class="book-copy-toggle-btn"
-                                            data-target="copy-details-<?= $bookId ?>"
-                                            aria-expanded="false">
-                                            View
-                                        </button>
+                            <td class="rr-c-cat">
+                                <div class="rr-tags">
+                                    <span class="rr-chip soft" title="<?= htmlspecialchars($row['genre_name'] ?? 'Uncategorized') ?>"><?= htmlspecialchars($row['genre_name'] ?? 'Uncategorized') ?></span>
+                                    <?php if ($rowMainProgramId > 0 && isset($programNameById[$rowMainProgramId])): ?>
+                                        <span class="rr-chip gold" title="<?= htmlspecialchars($programNameById[$rowMainProgramId]) ?>"><?= htmlspecialchars($programNameById[$rowMainProgramId]) ?></span><?php if (!empty($rowOtherNames)): ?> <span class="rr-chip gold rr-chip-more" title="<?= htmlspecialchars(implode(', ', $rowAllNames)) ?>">+<?= count($rowOtherNames) ?><span class="pp-sr"> more: <?= htmlspecialchars(implode(', ', $rowOtherNames)) ?></span></span><?php endif; ?>
+                                    <?php elseif (!empty($rowProgramIds)): ?>
+                                        <span class="rr-chip gold" title="<?= htmlspecialchars(implode(', ', $rowAllNames)) ?>"><?= count($rowProgramIds) === count($programNameById) ? 'All programs' : (count($rowProgramIds) . (count($rowProgramIds) === 1 ? ' program' : ' programs')) ?></span>
                                     <?php endif; ?>
                                 </div>
                             </td>
-                            <td>
-                                <span class="badge status-<?= htmlspecialchars($statusClass) ?>">
-                                    <?= htmlspecialchars($statusText) ?>
-                                </span>
+                            <td class="rr-c-status">
+                                <span class="badge status-<?= htmlspecialchars($statusClass) ?>"><?= htmlspecialchars($statusText) ?><?php if ($total > 1): ?><span class="rr-badge-count" title="<?= number_format($available) ?> of <?= number_format($total) ?> copies available"><?= number_format($available) ?>/<?= number_format($total) ?></span><?php endif; ?></span>
                             </td>
-                            <td class="book-actions-cell">
+                            <td class="rr-c-act book-actions-cell">
+                                <div class="rr-actions">
+                                <button type="button" class="rr-expand" data-target="copy-details-<?= $bookId ?>" aria-expanded="false" aria-controls="copy-details-<?= $bookId ?>" aria-label="Show copies" title="Show copies"><?= $rrChevronSvg ?></button>
                                 <a
                                     class="btn-status user-pin-btn user-action-icon-btn"
                                     href="<?= htmlspecialchars($manageBooksUrl(['edit' => $bookId])) ?>"
@@ -1667,24 +1693,15 @@ require 'layout_top.php';
                                         <?= admin_icon('trash-2') ?>
                                     </button>
                                 </form>
+                                </div>
                             </td>
                         </tr>
                         <tr class="book-copy-details-row" id="copy-details-<?= $bookId ?>" hidden>
-                            <td colspan="10">
+                            <td colspan="5">
                                 <div class="book-copy-details-wrap">
                                     <?php $copies = $copiesForRow; ?>
                                     <?php if (!empty($copies)): ?>
-                                        <table class="copy-detail-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Accession #</th>
-                                                    <th>Copy ID</th>
-                                                    <th>Copy Status</th>
-                                                    <th>Borrow Status</th>
-                                                    <th>Borrower</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
+                                        <?php ob_start(); $rrCopiesAvailable = 0; ?>
                                                 <?php foreach ($copies as $copy): ?>
                                                     <?php
                                                         $copyStatusRaw = strtolower((string)($copy['copy_status'] ?? 'unknown'));
@@ -1755,20 +1772,35 @@ require 'layout_top.php';
                                                             : (($copyStatusRaw === 'lost' || $copyStatusRaw === 'missing') ? 'lost'
                                                             : (($copyStatusRaw === 'borrowed' || $copyStatusRaw === 'overdue') ? 'loan' : ''));
                                                     ?>
-                                                    <tr data-copy-state="<?= htmlspecialchars($copyRowState) ?>">
-                                                        <td class="copy-detail-accession"><?= htmlspecialchars((string)($copy['accession_no'] ?? '-')) ?></td>
-                                                        <td class="copy-detail-id"><?= intval($copy['copy_id'] ?? 0) ?></td>
-                                                        <td><span class="<?= htmlspecialchars($copyStatusTextClass) ?>"><?php if ($copyIconKey !== ''): ?><svg class="copy-detail-icon" viewBox="0 0 24 24" aria-hidden="true"><?= $copyStatusIcons[$copyIconKey] ?></svg><?php endif; ?><?= htmlspecialchars($copyStatusText) ?></span></td>
-                                                        <?php if ($hasActiveLoan): ?>
-                                                            <td><span class="<?= htmlspecialchars($borrowStatusClass) ?>"><?= htmlspecialchars($loanStatusText) ?></span></td>
-                                                            <td><?= htmlspecialchars($borrowerText) ?></td>
-                                                        <?php else: ?>
-                                                            <td colspan="2" class="copy-detail-no-loan"><span class="copy-detail-note">Not currently borrowed</span></td>
-                                                        <?php endif; ?>
-                                                    </tr>
+                                                    <?php
+                                                        // Copy card (Prompt 36): same data as the old copy table.
+                                                        // Chip colour by row state; an overdue loan shows the
+                                                        // loan status ("Overdue") on the chip, as in the mockup.
+                                                        if ($copyRowState === 'available') {
+                                                            $rrCopiesAvailable++;
+                                                        }
+                                                        $copyChipTone = ['available' => 'mint', 'loan' => 'gold', 'overdue' => 'red', 'lost' => 'gold'][$copyRowState] ?? 'soft';
+                                                        $copyChipText = $copyRowState === 'overdue' ? $loanStatusText : $copyStatusText;
+                                                        $copyChipIcon = ($copyRowState === 'overdue' || $copyRowState === 'loan') ? 'loan' : $copyIconKey;
+                                                        $copyIdNumber = intval($copy['copy_id'] ?? 0);
+                                                    ?>
+                                                    <li class="rr-copy" data-state="<?= htmlspecialchars($copyRowState) ?>">
+                                                        <div class="rr-copy-top"><span class="rr-copy-acc"><?= htmlspecialchars((string)($copy['accession_no'] ?? '-')) ?></span><span class="rr-chip <?= $copyChipTone ?> rr-copy-chip"><?php if ($copyChipIcon !== ''): ?><svg class="copy-detail-icon" viewBox="0 0 24 24" aria-hidden="true"><?= $copyStatusIcons[$copyChipIcon] ?></svg><?php endif; ?><?= htmlspecialchars($copyChipText) ?></span></div>
+                                                        <div class="rr-copy-sub">
+                                                            <?php if ($hasActiveLoan): ?>
+                                                                <span class="rr-mini-av" aria-hidden="true"><?= htmlspecialchars($rrInitials((string)($copy['first_name'] ?? ''), (string)($copy['last_name'] ?? ''), $borrowerId)) ?></span><span class="rr-copy-who"><?= htmlspecialchars($borrowerText) ?></span><?php if ($copyRowState !== 'overdue' && $loanStatusRaw !== '' && $loanStatusRaw !== 'borrowed'): ?><span class="rr-copy-note"><?= htmlspecialchars($loanStatusText) ?></span><?php endif; ?><span class="rr-copy-id">Copy ID <?= $copyIdNumber ?></span>
+                                                            <?php else: ?>
+                                                                <span class="rr-copy-note">Copy ID <?= $copyIdNumber ?> · Not currently borrowed</span>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    </li>
                                                 <?php endforeach; ?>
-                                            </tbody>
-                                        </table>
+                                        <?php $rrCopyCards = ob_get_clean(); ?>
+                                        <div class="rr-copies-panel">
+                                            <div class="rr-copies-head"><span class="rr-copies-title">Copies</span><span class="rr-copies-sum"><b><?= number_format($rrCopiesAvailable) ?></b> of <?= number_format(count($copies)) ?> available</span></div>
+                                            <ul class="rr-copies-grid">
+<?= $rrCopyCards ?>                                            </ul>
+                                        </div>
                                     <?php else: ?>
                                         <p class="copy-detail-empty">No copy records found for this book.</p>
                                     <?php endif; ?>
@@ -1777,7 +1809,7 @@ require 'layout_top.php';
                         </tr>
                     <?php endforeach; ?>
                 <?php else: ?>
-                    <tr><td colspan="10">No books found.</td></tr>
+                    <tr><td colspan="5">No books found.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>

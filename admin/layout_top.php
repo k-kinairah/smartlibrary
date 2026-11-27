@@ -161,6 +161,9 @@ function stat_chip_meta(string $title): array {
     <?php // Light mode "glass" look (every rule is scoped to light + green palette; dark is untouched). ?>
     <?php $lightGlassCssVer = @filemtime(__DIR__ . '/../assets/css/admin_light_glass.css') ?: time(); ?>
     <link rel="stylesheet" href="../assets/css/admin_light_glass.css?v=<?= $lightGlassCssVer ?>">
+    <?php // Rich list rows (rr-table): light and dark, used by the tables that opt in. ?>
+    <?php $rowsCssVer = @filemtime(__DIR__ . '/../assets/css/admin_rows.css') ?: time(); ?>
+    <link rel="stylesheet" href="../assets/css/admin_rows.css?v=<?= $rowsCssVer ?>">
     <?php endif; ?>
 </head>
 <body>

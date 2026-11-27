@@ -400,7 +400,11 @@ if (editCoverFileInput && editCoverDrop && editCoverFileName) {
     });
 }
 
-document.querySelectorAll('.book-copy-toggle-btn').forEach(function (btn) {
+// Copies panel under a book row: the icon-only chevron (.rr-expand) shows or
+// hides the row named by data-target. Only the hidden attribute, aria-expanded,
+// aria-label and title change; the button's content (the chevron) never does.
+// It is a real <button>, so Enter and Space work without extra handlers.
+document.querySelectorAll('.rr-expand').forEach(function (btn) {
     btn.addEventListener('click', function () {
         const rowId = btn.getAttribute('data-target');
         if (!rowId) return;
@@ -411,13 +415,13 @@ document.querySelectorAll('.book-copy-toggle-btn').forEach(function (btn) {
         const willShow = detailRow.hasAttribute('hidden');
         if (willShow) {
             detailRow.removeAttribute('hidden');
-            btn.setAttribute('aria-expanded', 'true');
-            btn.textContent = 'Hide';
         } else {
             detailRow.setAttribute('hidden', '');
-            btn.setAttribute('aria-expanded', 'false');
-            btn.textContent = 'View';
         }
+        const label = willShow ? 'Hide copies' : 'Show copies';
+        btn.setAttribute('aria-expanded', willShow ? 'true' : 'false');
+        btn.setAttribute('aria-label', label);
+        btn.setAttribute('title', label);
     });
 });
 
