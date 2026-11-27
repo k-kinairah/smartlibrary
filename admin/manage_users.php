@@ -19,6 +19,8 @@ require_once '../config/admin_audit.php';
 require_once '../config/csrf.php';
 require_once '../config/library_card_helpers.php';
 require_once '../config/auth_security.php'; // staff password rule (auth_staff_password_problem)
+require_once __DIR__ . '/../config/request_input.php';
+require_once __DIR__ . '/includes/list_pager.php';
 
 // Shown (server and browser) when a Student/Faculty account is moved to a
 // staff role without a new password in the same save.
@@ -27,16 +29,40 @@ function smartlib_staff_promotion_message(): string {
         . AUTH_STAFF_PASSWORD_MIN . ' characters with a letter and a number).';
 }
 
-$buildManageUsersUrl = static function (array $params): string {
+// List position: search, role and status filters and the page. Edit, a
+// saved edit and Activate/Deactivate carry them so the librarian lands back
+// where they were (the forms have no action attribute, so they post to the
+// current URL). Same approach as Manage Books.
+const MANAGE_USERS_PER_PAGE = 50;
+
+/**
+ * Every Manage Users list/edit URL. Known keys only, in a fixed order;
+ * empty values and page 1 are left out; values are URL-encoded and the
+ * result is always a relative manage_users.php URL (no open redirect).
+ * $fragment is only ever 'user-row-<id>' built from an int.
+ */
+$buildManageUsersUrl = static function (array $params, string $fragment = ''): string {
     $clean = [];
-    foreach ($params as $key => $value) {
-        $text = trim((string)$value);
+    foreach (['edit_user', 'search', 'role', 'status', 'page'] as $key) {
+        if (!array_key_exists($key, $params) || is_array($params[$key])) {
+            continue;
+        }
+        $text = trim((string)$params[$key]);
+        if ($key === 'edit_user' || $key === 'page') {
+            $number = (int)$text;
+            if ($number <= ($key === 'page' ? 1 : 0)) {
+                continue;
+            }
+            $text = (string)$number;
+        }
         if ($text !== '') {
-            $clean[(string)$key] = $text;
+            $clean[$key] = $text;
         }
     }
 
-    return 'manage_users.php' . (!empty($clean) ? ('?' . http_build_query($clean)) : '');
+    return 'manage_users.php'
+        . (!empty($clean) ? ('?' . http_build_query($clean, '', '&', PHP_QUERY_RFC3986)) : '')
+        . (preg_match('/^user-row-[1-9][0-9]*$/', $fragment) ? ('#' . $fragment) : '');
 };
 
 $normalizeRoleFilter = static function (string $role): string {
@@ -250,6 +276,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
     $returnSearch = trim((string)($_POST['return_search'] ?? ''));
     $returnRole = $normalizeRoleFilter((string)($_POST['return_role'] ?? ''));
     $returnStatus = strtolower(trim((string)($_POST['return_status'] ?? '')));
+    $returnPage = max(1, smartlib_request_int($_POST, 'return_page', 1));
 
     if ($editUserId <= 0) {
         $flash = ['type' => 'error', 'message' => 'Invalid user selected for editing.'];
@@ -414,9 +441,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
                 $redirectParams = [
                     'search' => $returnSearch,
                     'role' => $returnRole,
-                    'status' => in_array($returnStatus, $allowedStatusValues, true) ? $returnStatus : ''
+                    'status' => in_array($returnStatus, $allowedStatusValues, true) ? $returnStatus : '',
+                    'page' => $returnPage
                 ];
-                header('Location: ' . $buildManageUsersUrl($redirectParams));
+                header('Location: ' . $buildManageUsersUrl($redirectParams, 'user-row-' . (int)$editUserId));
                 exit;
             }
 
@@ -440,9 +468,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_user'])) {
     }
 }
 
-$search = trim((string)($_GET['search'] ?? ''));
-$roleFilter = $normalizeRoleFilter((string)($_GET['role'] ?? ''));
-$statusFilter = strtolower(trim((string)($_GET['status'] ?? '')));
+$search = trim(smartlib_request_string($_GET, 'search'));
+$roleFilter = $normalizeRoleFilter(smartlib_request_string($_GET, 'role'));
+$statusFilter = strtolower(trim(smartlib_request_string($_GET, 'status')));
+// int only: missing, non-numeric, arrays, 0 or negative = page 1 (the upper
+// end is clamped to the last page once the filtered total is known).
+$usersPage = max(1, smartlib_request_int($_GET, 'page', 1));
 
 $allowedStatusFilters = array_merge([''], $allowedStatusValues);
 if (!in_array($statusFilter, $allowedStatusFilters, true)) {
@@ -452,7 +483,8 @@ if (!in_array($statusFilter, $allowedStatusFilters, true)) {
 $baseFilterParams = [
     'search' => $search,
     'role' => $roleFilter,
-    'status' => $statusFilter
+    'status' => $statusFilter,
+    'page' => $usersPage
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_user_status'])) {
@@ -493,12 +525,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_user_status'])
         }
     }
 
-    header('Location: ' . $buildManageUsersUrl($baseFilterParams));
+    header('Location: ' . $buildManageUsersUrl($baseFilterParams, 'user-row-' . smartlib_request_int($_POST, 'toggle_user_status', 0)));
     exit;
 }
 
 if (!$openEditUserModal && isset($_GET['edit_user'])) {
-    $editId = (int)($_GET['edit_user'] ?? 0);
+    $editId = smartlib_request_int($_GET, 'edit_user', 0);
     if ($editId > 0) {
         $editRow = null;
         $editStmt = $conn->prepare("SELECT user_id, first_name, last_name, user_number, email, program_id, department_id, school_level, role, status FROM library_users WHERE user_id = ? LIMIT 1");
@@ -558,8 +590,31 @@ if ($statusFilter !== '') {
 }
 $whereSql = !empty($whereParts) ? ('WHERE ' . implode(' AND ', $whereParts)) : '';
 
+// Filtered total: the same WHERE as the list, counted.
+$filteredUsersTotal = 0;
+$usersCountStmt = $conn->prepare("SELECT COUNT(*) AS filtered_total FROM library_users {$whereSql}");
+if ($usersCountStmt) {
+    if ($whereTypes !== '') {
+        $usersCountStmt->bind_param($whereTypes, ...$whereParams);
+    }
+    $usersCountStmt->execute();
+    $usersCountRes = $usersCountStmt->get_result();
+    $usersCountRow = $usersCountRes ? $usersCountRes->fetch_assoc() : null;
+    $filteredUsersTotal = (int)($usersCountRow['filtered_total'] ?? 0);
+    $usersCountStmt->close();
+}
+$usersTotalPages = max(1, (int)ceil($filteredUsersTotal / MANAGE_USERS_PER_PAGE));
+$usersPage = min($usersPage, $usersTotalPages);
+$baseFilterParams['page'] = $usersPage;
+$usersPageOffset = ($usersPage - 1) * MANAGE_USERS_PER_PAGE;
+
+// Same order as before (newest first); user_id breaks created_at ties so a
+// row never repeats or goes missing between pages.
 $users = false;
-$usersStmt = $conn->prepare("SELECT * FROM library_users {$whereSql} ORDER BY created_at DESC");
+$usersStmt = $conn->prepare(
+    "SELECT * FROM library_users {$whereSql} ORDER BY created_at DESC, user_id DESC LIMIT "
+    . (int)$usersPageOffset . ', ' . (int)MANAGE_USERS_PER_PAGE
+);
 if ($usersStmt) {
     if ($whereTypes !== '') {
         $usersStmt->bind_param($whereTypes, ...$whereParams);
@@ -765,7 +820,7 @@ require 'layout_top.php';
                                 $userDisplayName = (string)($u['user_number'] ?? 'this user');
                             }
                         ?>
-                        <tr>
+                        <tr id="user-row-<?= intval($u['user_id']) ?>">
                             <td><?= intval($u['user_id']) ?></td>
                             <td><?= htmlspecialchars((string)$u['first_name'] . ' ' . (string)$u['last_name']) ?></td>
                             <td><?= htmlspecialchars((string)$u['user_number']) ?></td>
@@ -795,6 +850,7 @@ require 'layout_top.php';
             </tbody>
         </table>
     </div>
+    <?php smartlib_list_pager_render($usersPage, $usersTotalPages, $filteredUsersTotal, MANAGE_USERS_PER_PAGE, static function (int $pagerPage) use ($buildManageUsersUrl, $baseFilterParams): string { return $buildManageUsersUrl(['page' => $pagerPage] + $baseFilterParams); }, 'users'); ?>
 </section>
 
 <div class="overlay-modal<?= $openCreateUserModal ? ' show' : '' ?>" id="userModal" aria-hidden="<?= $openCreateUserModal ? 'false' : 'true' ?>">
@@ -860,6 +916,7 @@ require 'layout_top.php';
             <input type="hidden" name="return_search" value="<?= htmlspecialchars($search) ?>">
             <input type="hidden" name="return_role" value="<?= htmlspecialchars($roleFilter) ?>">
             <input type="hidden" name="return_status" value="<?= htmlspecialchars($statusFilter) ?>">
+            <input type="hidden" name="return_page" value="<?= intval($usersPage) ?>">
 
             <input type="text" name="edit_first_name" placeholder="First Name" value="<?= htmlspecialchars((string)($editUserData['first_name'] ?? '')) ?>" required>
             <input type="text" name="edit_last_name" placeholder="Last Name" value="<?= htmlspecialchars((string)($editUserData['last_name'] ?? '')) ?>" required>
@@ -1365,6 +1422,27 @@ window.addEventListener('click', function (e) {
             closeModal();
         }
     });
+}());
+
+// Back on the list after a saved edit or Activate/Deactivate
+// (#user-row-<id>): put that row in the middle of the window instead of
+// under the top edge. Runs after load, once the browser's own jump to the
+// #anchor has happened.
+(function centerReturnedUserRow() {
+    const match = /^#user-row-([1-9][0-9]*)$/.exec(window.location.hash || '');
+    if (!match) return;
+    const row = document.getElementById('user-row-' + match[1]);
+    if (!row) return;
+    const show = function () {
+        window.requestAnimationFrame(function () {
+            row.scrollIntoView({ block: 'center', behavior: 'auto' });
+        });
+    };
+    if (document.readyState === 'complete') {
+        show();
+    } else {
+        window.addEventListener('load', show, { once: true });
+    }
 }());
 </script>
 

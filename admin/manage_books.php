@@ -22,6 +22,7 @@ require_once __DIR__ . '/../config/cover_fetch_helpers.php';
 require_once __DIR__ . '/../config/staff_errors.php';
 require_once __DIR__ . '/../config/book_cover.php';
 require_once __DIR__ . '/../config/request_input.php';
+require_once __DIR__ . '/includes/list_pager.php';
 
 $categories = $conn->query('SELECT category_id, category_name FROM categories ORDER BY category_name ASC');
 $programs = $conn->query('SELECT program_id, program_name FROM programs ORDER BY program_name ASC');
@@ -1781,61 +1782,7 @@ require 'layout_top.php';
             </tbody>
         </table>
     </div>
-    <?php if ($totalPages > 1): ?>
-        <?php
-            // Page numbers: first, last and current +/- 2; a gap of one page
-            // shows that page instead of an ellipsis.
-            $pagerNumbers = [1, $totalPages];
-            for ($pagerN = $booksPage - 2; $pagerN <= $booksPage + 2; $pagerN++) {
-                if ($pagerN >= 1 && $pagerN <= $totalPages) {
-                    $pagerNumbers[] = $pagerN;
-                }
-            }
-            $pagerNumbers = array_values(array_unique($pagerNumbers));
-            sort($pagerNumbers);
-            $pagerItems = [];
-            $previousNumber = 0;
-            foreach ($pagerNumbers as $pagerN) {
-                if ($previousNumber > 0 && $pagerN - $previousNumber === 2) {
-                    $pagerItems[] = $previousNumber + 1;
-                } elseif ($previousNumber > 0 && $pagerN - $previousNumber > 2) {
-                    $pagerItems[] = 0;
-                }
-                $pagerItems[] = $pagerN;
-                $previousNumber = $pagerN;
-            }
-            $pagerFirstShown = $pageOffset + 1;
-            $pagerLastShown = min($filteredBooksTotal, $pageOffset + MANAGE_BOOKS_PER_PAGE);
-        ?>
-        <nav class="mb-pager" aria-label="Pagination">
-            <p class="mb-pager-summary">Showing <strong><?= number_format($pagerFirstShown) ?>&ndash;<?= number_format($pagerLastShown) ?></strong> of <strong><?= number_format($filteredBooksTotal) ?></strong> books</p>
-            <ul class="mb-pager-list">
-                <li>
-                    <?php if ($booksPage > 1): ?>
-                        <a class="filter-reset-btn mb-pager-btn mb-pager-step" href="<?= htmlspecialchars($manageBooksUrl(['page' => $booksPage - 1])) ?>" rel="prev">&lsaquo; Previous</a>
-                    <?php else: ?>
-                        <span class="filter-reset-btn mb-pager-btn mb-pager-step is-disabled" aria-disabled="true">&lsaquo; Previous</span>
-                    <?php endif; ?>
-                </li>
-                <?php foreach ($pagerItems as $pagerItem): ?>
-                    <?php if ($pagerItem === 0): ?>
-                        <li class="mb-pager-gap" aria-hidden="true">&hellip;</li>
-                    <?php elseif ($pagerItem === $booksPage): ?>
-                        <li><a class="btn-primary mb-pager-btn mb-pager-current" href="<?= htmlspecialchars($manageBooksUrl(['page' => $pagerItem])) ?>" aria-current="page" aria-label="Page <?= $pagerItem ?>, current page"><?= number_format($pagerItem) ?></a></li>
-                    <?php else: ?>
-                        <li><a class="filter-reset-btn mb-pager-btn" href="<?= htmlspecialchars($manageBooksUrl(['page' => $pagerItem])) ?>" aria-label="Page <?= $pagerItem ?>"><?= number_format($pagerItem) ?></a></li>
-                    <?php endif; ?>
-                <?php endforeach; ?>
-                <li>
-                    <?php if ($booksPage < $totalPages): ?>
-                        <a class="filter-reset-btn mb-pager-btn mb-pager-step" href="<?= htmlspecialchars($manageBooksUrl(['page' => $booksPage + 1])) ?>" rel="next">Next &rsaquo;</a>
-                    <?php else: ?>
-                        <span class="filter-reset-btn mb-pager-btn mb-pager-step is-disabled" aria-disabled="true">Next &rsaquo;</span>
-                    <?php endif; ?>
-                </li>
-            </ul>
-        </nav>
-    <?php endif; ?>
+    <?php smartlib_list_pager_render($booksPage, $totalPages, $filteredBooksTotal, MANAGE_BOOKS_PER_PAGE, static function (int $pagerPage) use ($manageBooksUrl): string { return $manageBooksUrl(['page' => $pagerPage]); }, 'books'); ?>
 </section>
 
 <?php
