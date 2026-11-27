@@ -1,6 +1,7 @@
 <?php
+require_once __DIR__ . '/../config/session_start.php'; // smartlib_session_start(): Secure cookie on HTTPS
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    smartlib_session_start();
 }
 
 $currentRole = strtolower(trim((string)($_SESSION['role'] ?? '')));
@@ -18,6 +19,7 @@ require_once '../config/borrow_fine_rules.php';
 require_once '../config/admin_audit.php';
 require_once '../config/request_guard.php';
 require_once '../config/request_input.php';
+require_once '../config/db_query.php';
 require_once __DIR__ . '/includes/list_pager.php';
 
 const BORROW_RECORDS_PER_PAGE = 50;
@@ -77,9 +79,9 @@ function borrow_records_url(array $params): string {
     return 'borrow_records.php' . (!empty($clean) ? ('?' . http_build_query($clean)) : '');
 }
 
-function qres(mysqli $conn, string $sql) {
+function qres(mysqli $conn, string $sql, array $params = []) {
     try {
-        return $conn->query($sql);
+        return smartlib_db_query($conn, $sql, $params);
     } catch (Throwable $e) {
         return false;
     }
@@ -318,34 +320,38 @@ if ($dateFilter !== '') {
     $dateFilter = $dateFrom;
 }
 
+// Prepared: the WHERE has ? placeholders, $whereParams their values in
+// order (security review SR-16); a typed % or _ is literal (SR-21).
 $where = ['1=1'];
+$whereParams = [];
 
 if ($search !== '') {
-    $safe = $conn->real_escape_string($search);
+    $like = '%' . smartlib_like_escape($search) . '%';
     $where[] = "(
-        br.record_id LIKE '%$safe%'
-        OR u.user_number LIKE '%$safe%'
-        OR u.first_name LIKE '%$safe%'
-        OR u.last_name LIKE '%$safe%'
-        OR b.title LIKE '%$safe%'
-        OR bc.accession_no LIKE '%$safe%'
+        br.record_id LIKE ? ESCAPE '\\\\'
+        OR u.user_number LIKE ? ESCAPE '\\\\'
+        OR u.first_name LIKE ? ESCAPE '\\\\'
+        OR u.last_name LIKE ? ESCAPE '\\\\'
+        OR b.title LIKE ? ESCAPE '\\\\'
+        OR bc.accession_no LIKE ? ESCAPE '\\\\'
     )";
+    array_push($whereParams, $like, $like, $like, $like, $like, $like);
 }
 
 $allowedStatus = BORROW_RECORDS_STATUSES;
 if (in_array($status, $allowedStatus, true)) {
-    $safeStatus = $conn->real_escape_string($status);
-    $where[] = "br.status = '$safeStatus'";
+    $where[] = "br.status = ?";
+    $whereParams[] = $status;
 }
 
 if ($dateFrom !== '') {
-    $safeFrom = $conn->real_escape_string($dateFrom);
-    $where[] = "COALESCE(br.date_borrowed, DATE(br.created_at)) >= '$safeFrom'";
+    $where[] = "COALESCE(br.date_borrowed, DATE(br.created_at)) >= ?";
+    $whereParams[] = $dateFrom;
 }
 
 if ($dateTo !== '') {
-    $safeTo = $conn->real_escape_string($dateTo);
-    $where[] = "COALESCE(br.date_borrowed, DATE(br.created_at)) <= '$safeTo'";
+    $where[] = "COALESCE(br.date_borrowed, DATE(br.created_at)) <= ?";
+    $whereParams[] = $dateTo;
 }
 
 $whereSql = implode(' AND ', $where);
@@ -413,7 +419,8 @@ $resFiltered = qres(
     LEFT JOIN book_copies bc ON br.copy_id = bc.copy_id
     LEFT JOIN books b ON bc.book_id = b.book_id
     WHERE $whereSql
-    "
+    ",
+    $whereParams
 );
 if ($resFiltered && ($r = $resFiltered->fetch_assoc())) {
     $filteredRecordsTotal = (int)($r['total'] ?? 0);
@@ -449,7 +456,8 @@ $records = qres(
     WHERE $whereSql
     ORDER BY COALESCE(br.date_borrowed, DATE(br.created_at)) DESC, br.record_id DESC
     LIMIT " . (int)$borrowPageOffset . ', ' . (int)BORROW_RECORDS_PER_PAGE . "
-    "
+    ",
+    $whereParams
 );
 require 'layout_top.php';
 ?>

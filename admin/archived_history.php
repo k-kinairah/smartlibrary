@@ -1,6 +1,7 @@
 <?php
+require_once __DIR__ . '/../config/session_start.php'; // smartlib_session_start(): Secure cookie on HTTPS
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    smartlib_session_start();
 }
 
 $currentRole = strtolower(trim((string)($_SESSION['role'] ?? '')));
@@ -11,6 +12,7 @@ if (!isset($_SESSION['user_id']) || !in_array($currentRole, ['librarian', 'admin
 
 require '../config/db_connect.php';
 require_once '../config/session_guard.php';
+require_once __DIR__ . '/../config/db_query.php';
 require_once '../config/staff_errors.php';
 if (!smartlib_active_staff_session($conn)) {
     header('Location: ' . smartlib_staff_signed_out_location());
@@ -29,9 +31,9 @@ function archived_fines_on(): bool {
     return $on;
 }
 
-function safe_query(mysqli $conn, string $sql) {
+function safe_query(mysqli $conn, string $sql, array $params = []) {
     try {
-        return $conn->query($sql);
+        return smartlib_db_query($conn, $sql, $params);
     } catch (Throwable $e) {
         return false;
     }
@@ -212,12 +214,10 @@ function meta_summary(?string $json, string $action = '', string $entity = ''): 
     return empty($parts) ? '-' : implode(' | ', $parts);
 }
 
-function sql_nullable_string(mysqli $conn, ?string $value): string {
+// Bound value for a nullable text column: NULL when blank (as before).
+function sql_nullable_string_param(?string $value): ?string {
     $text = trim((string)$value);
-    if ($text === '') {
-        return 'NULL';
-    }
-    return "'" . $conn->real_escape_string($text) . "'";
+    return $text === '' ? null : $text;
 }
 
 function sql_nullable_int($value): string {
@@ -378,22 +378,26 @@ if ($tableReady && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     category_id, program_id, location_id,
                     call_number, description, location, created_at
                 ) VALUES (
-                    " . sql_nullable_string($conn, $isbn) . ",
-                    " . sql_nullable_string($conn, $title) . ",
-                    " . sql_nullable_string($conn, $author) . ",
-                    " . sql_nullable_string($conn, $publisher) . ",
-                    " . sql_nullable_string($conn, $yearPublished) . ",
+                    ?, ?, ?, ?, ?,
                     " . sql_nullable_int($categoryId) . ",
                     " . sql_nullable_int($programId) . ",
                     " . sql_nullable_int($locationId) . ",
-                    " . sql_nullable_string($conn, $callNumber) . ",
-                    " . sql_nullable_string($conn, $description) . ",
-                    " . sql_nullable_string($conn, $legacyLocation) . ",
+                    ?, ?, ?,
                     NOW()
                 )
             ";
+            $insertParams = [
+                sql_nullable_string_param($isbn),
+                sql_nullable_string_param($title),
+                sql_nullable_string_param($author),
+                sql_nullable_string_param($publisher),
+                sql_nullable_string_param($yearPublished),
+                sql_nullable_string_param($callNumber),
+                sql_nullable_string_param($description),
+                sql_nullable_string_param($legacyLocation),
+            ];
 
-            if (!safe_query($conn, $insertSql)) {
+            if (!safe_query($conn, $insertSql, $insertParams)) {
                 throw new RuntimeException('Failed to recreate archived book.');
             }
 
@@ -432,8 +436,8 @@ if ($tableReady && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $meta['restored_by_name'] = $actorName;
 
             $updatedMeta = json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            $updateSql = "UPDATE admin_activity_logs SET metadata_json = " . sql_nullable_string($conn, $updatedMeta) . " WHERE activity_id = {$activityId} LIMIT 1";
-            if (!safe_query($conn, $updateSql)) {
+            $updateSql = "UPDATE admin_activity_logs SET metadata_json = ? WHERE activity_id = {$activityId} LIMIT 1";
+            if (!safe_query($conn, $updateSql, [sql_nullable_string_param($updatedMeta)])) {
                 throw new RuntimeException('Failed to update archive entry metadata.');
             }
 
@@ -451,16 +455,19 @@ if ($tableReady && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     entity_id, entity_title, metadata_json, created_at
                 ) VALUES (
                     " . sql_nullable_int($actorUserId) . ",
-                    " . sql_nullable_string($conn, $actorName) . ",
+                    ?,
                     'retrieved',
                     'book',
                     {$newBookId},
-                    " . sql_nullable_string($conn, $title) . ",
-                    " . sql_nullable_string($conn, $restoreLogMetaJson) . ",
+                    ?, ?,
                     NOW()
                 )
             ";
-            safe_query($conn, $insertLogSql);
+            safe_query($conn, $insertLogSql, [
+                sql_nullable_string_param($actorName),
+                sql_nullable_string_param($title),
+                sql_nullable_string_param($restoreLogMetaJson),
+            ]);
 
             $conn->commit();
             set_archive_flash('success', 'Book retrieved successfully as Book #' . $newBookId . '.');
@@ -507,8 +514,9 @@ function archive_card_for_action(string $actionType): string {
     return 'updated';
 }
 
-function archive_sql_in(mysqli $conn, array $values): string {
-    return implode(', ', array_map(fn($v) => "'" . $conn->real_escape_string((string)$v) . "'", $values));
+// "?, ?, ?" for an IN (...) list; the values are bound separately.
+function archive_sql_placeholders(array $values): string {
+    return implode(', ', array_fill(0, count($values), '?'));
 }
 
 // Strict YYYY-MM-DD check; anything else is reported instead of silently
@@ -531,7 +539,9 @@ if ($dateError === '' && $dateFrom !== '' && $dateTo !== '' && $dateFrom > $date
     $dateError = 'The start date (' . $dateFrom . ') is after the end date (' . $dateTo . '). Swap them, or press Reset.';
 }
 
+// Prepared (SR-16): $whereParams holds the values of the ? in $where, in order.
 $where = ['1=1'];
+$whereParams = [];
 
 if (isset(ARCHIVE_CARD_GROUPS[$action])) {
     if ($action === 'updated') {
@@ -542,37 +552,43 @@ if (isset(ARCHIVE_CARD_GROUPS[$action])) {
                 $others = array_merge($others, $types);
             }
         }
-        $where[] = 'a.action_type NOT IN (' . archive_sql_in($conn, $others) . ')';
+        $where[] = 'a.action_type NOT IN (' . archive_sql_placeholders($others) . ')';
+        array_push($whereParams, ...array_map('strval', $others));
     } else {
-        $where[] = 'a.action_type IN (' . archive_sql_in($conn, ARCHIVE_CARD_GROUPS[$action]) . ')';
+        $where[] = 'a.action_type IN (' . archive_sql_placeholders(ARCHIVE_CARD_GROUPS[$action]) . ')';
+        array_push($whereParams, ...array_map('strval', ARCHIVE_CARD_GROUPS[$action]));
     }
 } elseif (in_array($action, smartlib_admin_audit_actions(), true)) {
     // A single action type, e.g. ?action=status_changed (no card of its own).
-    $where[] = "a.action_type = '" . $conn->real_escape_string($action) . "'";
+    $where[] = "a.action_type = ?";
+    $whereParams[] = $action;
 }
 
 if ($search !== '') {
     // % and _ are literal characters here, not wildcards.
-    $safeSearch = $conn->real_escape_string(addcslashes($search, '\\%_'));
+    $like = '%' . smartlib_like_escape($search) . '%';
     // "By" shows the account's current name when the entry is linked to an
     // account, else the name stored at the time -- search the same thing.
     $where[] = "(
-        a.entity_title LIKE '%{$safeSearch}%'
-        OR a.entity_type LIKE '%{$safeSearch}%'
-        OR a.metadata_json LIKE '%{$safeSearch}%'
+        a.entity_title LIKE ? ESCAPE '\\\\'
+        OR a.entity_type LIKE ? ESCAPE '\\\\'
+        OR a.metadata_json LIKE ? ESCAPE '\\\\'
         OR (CASE WHEN TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) <> ''
                  THEN TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) COLLATE utf8mb4_unicode_ci
-                 ELSE a.actor_name END) LIKE '%{$safeSearch}%'
-        OR COALESCE(u.user_number, '') LIKE '%{$safeSearch}%'
+                 ELSE a.actor_name END) LIKE ? ESCAPE '\\\\'
+        OR COALESCE(u.user_number, '') LIKE ? ESCAPE '\\\\'
     )";
+    array_push($whereParams, $like, $like, $like, $like, $like);
 }
 
 if ($dateError === '') {
     if ($dateFrom !== '') {
-        $where[] = "DATE(a.created_at) >= '" . $conn->real_escape_string($dateFrom) . "'";
+        $where[] = "DATE(a.created_at) >= ?";
+        $whereParams[] = $dateFrom;
     }
     if ($dateTo !== '') {
-        $where[] = "DATE(a.created_at) <= '" . $conn->real_escape_string($dateTo) . "'";
+        $where[] = "DATE(a.created_at) <= ?";
+        $whereParams[] = $dateTo;
     }
 }
 
@@ -597,7 +613,7 @@ if ($tableReady) {
     if ($dateError === '') {
         $fromSql = "FROM admin_activity_logs a LEFT JOIN library_users u ON u.user_id = a.actor_user_id WHERE {$whereSql}";
 
-        $resMatching = safe_query($conn, "SELECT COUNT(*) AS total {$fromSql}");
+        $resMatching = safe_query($conn, "SELECT COUNT(*) AS total {$fromSql}", $whereParams);
         if ($resMatching && ($r = $resMatching->fetch_assoc())) {
             $matchingTotal = (int)($r['total'] ?? 0);
         }
@@ -618,7 +634,8 @@ if ($tableReady) {
                 CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) AS user_full_name
             {$fromSql}
             ORDER BY a.created_at DESC, a.activity_id DESC
-            LIMIT " . ARCHIVE_ROW_LIMIT
+            LIMIT " . ARCHIVE_ROW_LIMIT,
+            $whereParams
         );
 
         if ($historyRes && $historyRes->num_rows > 0) {

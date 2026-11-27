@@ -1,6 +1,7 @@
 <?php
+require_once __DIR__ . '/../config/session_start.php'; // smartlib_session_start(): Secure cookie on HTTPS
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    smartlib_session_start();
 }
 
 $currentRole = strtolower(trim((string)($_SESSION['role'] ?? '')));
@@ -22,6 +23,7 @@ require_once __DIR__ . '/../config/cover_fetch_helpers.php';
 require_once __DIR__ . '/../config/staff_errors.php';
 require_once __DIR__ . '/../config/book_cover.php';
 require_once __DIR__ . '/../config/request_input.php';
+require_once __DIR__ . '/../config/db_query.php';
 require_once __DIR__ . '/includes/list_pager.php';
 
 $categories = $conn->query('SELECT category_id, category_name FROM categories ORDER BY category_name ASC');
@@ -1172,23 +1174,29 @@ $baseFilterParams = [
     'search' => $search
 ];
 
+// Prepared (SR-16); a typed % or _ is literal (SR-21).
 $whereParts = [];
+$whereParams = [];
 if ($search !== '') {
-    $safeSearch = $conn->real_escape_string($search);
+    $like = '%' . smartlib_like_escape($search) . '%';
     $whereParts[] = "(
-        b.isbn LIKE '%{$safeSearch}%'
-        OR b.title LIKE '%{$safeSearch}%'
-        OR b.author LIKE '%{$safeSearch}%'
-        OR b.year_published LIKE '%{$safeSearch}%'
-        OR c.category_name LIKE '%{$safeSearch}%'
-        OR p.program_name LIKE '%{$safeSearch}%'
-        OR bc.accession_no LIKE '%{$safeSearch}%'" . ($hasBookProgramsTable ? "
+        b.isbn LIKE ? ESCAPE '\\\\'
+        OR b.title LIKE ? ESCAPE '\\\\'
+        OR b.author LIKE ? ESCAPE '\\\\'
+        OR b.year_published LIKE ? ESCAPE '\\\\'
+        OR c.category_name LIKE ? ESCAPE '\\\\'
+        OR p.program_name LIKE ? ESCAPE '\\\\'
+        OR bc.accession_no LIKE ? ESCAPE '\\\\'" . ($hasBookProgramsTable ? "
         OR EXISTS (
             SELECT 1 FROM book_programs bpx
             INNER JOIN programs px ON px.program_id = bpx.program_id
-            WHERE bpx.book_id = b.book_id AND px.program_name LIKE '%{$safeSearch}%'
+            WHERE bpx.book_id = b.book_id AND px.program_name LIKE ? ESCAPE '\\\\'
         )" : '') . "
     )";
+    array_push($whereParams, $like, $like, $like, $like, $like, $like, $like);
+    if ($hasBookProgramsTable) {
+        $whereParams[] = $like;
+    }
 }
 
 $whereSql = !empty($whereParts) ? ('WHERE ' . implode(' AND ', $whereParts)) : '';
@@ -1206,7 +1214,8 @@ if ($activeStatus === 'available') {
 
 // Filtered total: the same grouped query (joins, WHERE, HAVING), counted.
 $filteredBooksTotal = 0;
-$filteredCountRes = $conn->query(
+$filteredCountRes = smartlib_db_query(
+    $conn,
     "
     SELECT COUNT(*) AS filtered_total FROM (
         SELECT b.book_id
@@ -1219,7 +1228,8 @@ $filteredCountRes = $conn->query(
         GROUP BY b.book_id
         {$havingSql}
     ) filtered_books
-    "
+    ",
+    $whereParams
 );
 if ($filteredCountRes && ($filteredCountRow = $filteredCountRes->fetch_assoc())) {
     $filteredBooksTotal = (int)($filteredCountRow['filtered_total'] ?? 0);
@@ -1230,7 +1240,8 @@ $listContext['page'] = $booksPage;
 $pageOffset = ($booksPage - 1) * MANAGE_BOOKS_PER_PAGE;
 $pageLimitSql = 'LIMIT ' . (int)$pageOffset . ', ' . (int)MANAGE_BOOKS_PER_PAGE;
 
-$books = $conn->query(
+$books = smartlib_db_query(
+    $conn,
     "
     SELECT
         b.*,
@@ -1255,7 +1266,8 @@ $books = $conn->query(
     {$havingSql}
     ORDER BY b.created_at DESC, b.book_id DESC
     {$pageLimitSql}
-    "
+    ",
+    $whereParams
 );
 
 $bookRows = [];

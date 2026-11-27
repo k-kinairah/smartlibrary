@@ -1,14 +1,12 @@
 <?php
-session_start();
+require_once __DIR__ . '/config/session_start.php'; // smartlib_session_start(): Secure cookie on HTTPS
+smartlib_session_start();
 require 'config/db_connect.php';
 require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
+require_once __DIR__ . '/config/db_query.php';
 require_once 'config/session_guard.php';
 smartlib_active_session_user_id($conn); // idle rule + live account check (signs out if needed)
 require_once 'config/book_cover.php';
-
-function esc(mysqli $conn, string $str): string {
-    return mysqli_real_escape_string($conn, $str);
-}
 
 function table_exists(mysqli $conn, string $table): bool {
     // 2026-10-10: hardcoded against a known-good table list instead of
@@ -199,7 +197,9 @@ $sql = "
     {$fromSql}
 ";
 
+// Prepared (SR-16): $whereParams holds the values of the ? in $where.
 $where = [];
+$whereParams = [];
 
 // Books cross-listed to a program (book_programs) match its name too.
 // table_exists() here is a fixed list of known tables (see above), so the
@@ -215,24 +215,30 @@ if ($search !== '' && table_exists($conn, 'book_programs')) {
 }
 
 if ($search !== '') {
-    $s = esc($conn, $search);
+    $like = '%' . smartlib_like_escape($search) . '%'; // a typed % or _ is literal (SR-21)
     $where[] = "(
-        b.title LIKE '%$s%'
-        OR b.author LIKE '%$s%'
-        OR b.isbn LIKE '%$s%'
-        OR {$genreExpr} LIKE '%$s%'
-        OR p.program_name LIKE '%$s%'" . ($hasBookProgramsTable ? "
+        b.title LIKE ? ESCAPE '\\\\'
+        OR b.author LIKE ? ESCAPE '\\\\'
+        OR b.isbn LIKE ? ESCAPE '\\\\'
+        OR {$genreExpr} LIKE ? ESCAPE '\\\\'
+        OR p.program_name LIKE ? ESCAPE '\\\\'" . ($hasBookProgramsTable ? "
         OR EXISTS (
             SELECT 1 FROM book_programs bpx
             INNER JOIN programs px ON px.program_id = bpx.program_id
-            WHERE bpx.book_id = b.book_id AND px.program_name LIKE '%$s%'
+            WHERE bpx.book_id = b.book_id AND px.program_name LIKE ? ESCAPE '\\\\'
         )" : '') . "
     )";
+    array_push($whereParams, $like, $like, $like, $like, $like);
+    if ($hasBookProgramsTable) {
+        $whereParams[] = $like;
+    }
 }
 
 if (is_array($genres) && count($genres) > 0) {
-    $list = array_map(fn($g) => "'" . esc($conn, (string)$g) . "'", $genres);
-    $where[] = "{$genreExpr} IN (" . implode(',', $list) . ")";
+    $where[] = "{$genreExpr} IN (" . implode(',', array_fill(0, count($genres), '?')) . ")";
+    foreach ($genres as $g) {
+        $whereParams[] = (string)$g;
+    }
 }
 
 $yearFrom = ctype_digit($yearFromRaw) ? (int)$yearFromRaw : null;
@@ -267,7 +273,7 @@ $sql .= " ORDER BY
 // Totals for the "X of Y books" label: every book matching the filters
 // (same joins and WHERE as the page query) and the whole catalog.
 $totalMatching = 0;
-$countRes = mysqli_query($conn, "SELECT COUNT(*) AS n {$fromSql} {$whereSql}");
+$countRes = smartlib_db_query($conn, "SELECT COUNT(*) AS n {$fromSql} {$whereSql}", $whereParams);
 if ($countRes) {
     $totalMatching = (int)(mysqli_fetch_assoc($countRes)['n'] ?? 0);
 }
@@ -279,7 +285,7 @@ if ($catalogRes) {
 header('X-Total-Matching: ' . $totalMatching);
 header('X-Catalog-Total: ' . $catalogTotal);
 
-$res = mysqli_query($conn, $sql);
+$res = smartlib_db_query($conn, $sql, $whereParams);
 $resultCount = $res ? mysqli_num_rows($res) : 0;
 // Only the first page logs, so loading more never adds search_logs rows.
 if ($offset === 0) {

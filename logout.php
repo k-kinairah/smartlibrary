@@ -4,7 +4,8 @@
 // token (admin pages). Anything else -- a plain GET from a link or an image
 // tag, or a post from another site -- changes nothing and just goes to the
 // kiosk home. (Security review 2026-11-24, SR-17.)
-session_start();
+require_once __DIR__ . '/config/session_start.php'; // smartlib_session_start(): Secure cookie on HTTPS
+smartlib_session_start();
 require_once __DIR__ . '/config/request_guard.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST'

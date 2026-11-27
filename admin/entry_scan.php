@@ -10,8 +10,9 @@
 // raising the limit here wouldn't protect this session. Instead the open page
 // sends a heartbeat (action=ping below), which keeps the session file fresh
 // and doubles as the connection check shown on screen.
+require_once __DIR__ . '/../config/session_start.php'; // smartlib_session_start(): Secure cookie on HTTPS
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    smartlib_session_start();
 }
 
 $currentRole = strtolower(trim((string)($_SESSION['role'] ?? '')));

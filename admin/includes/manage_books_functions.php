@@ -8,27 +8,32 @@
  */
 
 function table_exists(mysqli $conn, string $table): bool {
-    $table = $conn->real_escape_string($table);
     $dbRes = $conn->query('SELECT DATABASE() AS db');
     $db = $dbRes ? (string)($dbRes->fetch_assoc()['db'] ?? '') : '';
     if ($db === '') return false;
-    $db = $conn->real_escape_string($db);
 
-    $sql = "SELECT 1 FROM information_schema.tables WHERE table_schema = '$db' AND table_name = '$table' LIMIT 1";
-    $res = $conn->query($sql);
+    $stmt = $conn->prepare('SELECT 1 FROM information_schema.tables WHERE table_schema = ? AND table_name = ? LIMIT 1');
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('ss', $db, $table);
+    $stmt->execute();
+    $res = $stmt->get_result();
     return $res && $res->num_rows > 0;
 }
 
 function column_exists(mysqli $conn, string $table, string $column): bool {
-    $table = $conn->real_escape_string($table);
-    $column = $conn->real_escape_string($column);
     $dbRes = $conn->query('SELECT DATABASE() AS db');
     $db = $dbRes ? (string)($dbRes->fetch_assoc()['db'] ?? '') : '';
     if ($db === '') return false;
-    $db = $conn->real_escape_string($db);
 
-    $sql = "SELECT 1 FROM information_schema.columns WHERE table_schema = '$db' AND table_name = '$table' AND column_name = '$column' LIMIT 1";
-    $res = $conn->query($sql);
+    $stmt = $conn->prepare('SELECT 1 FROM information_schema.columns WHERE table_schema = ? AND table_name = ? AND column_name = ? LIMIT 1');
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('sss', $db, $table, $column);
+    $stmt->execute();
+    $res = $stmt->get_result();
     return $res && $res->num_rows > 0;
 }
 

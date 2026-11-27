@@ -1,6 +1,9 @@
 <?php
 require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
-session_start();
+require_once __DIR__ . '/config/session_start.php'; // smartlib_session_start(): Secure cookie on HTTPS
+smartlib_session_start();
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0'); // per-patron response: never stored
+header('Pragma: no-cache');
 require 'config/db_connect.php';
 require_once 'config/borrow_fine_rules.php';
 require_once 'config/loan_policy.php';

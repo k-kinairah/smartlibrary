@@ -3,8 +3,9 @@
 // fines on/off (off by default) and the amount per weekday late. Stored in
 // library_settings (config/library_settings.php); every change is written to
 // the admin activity log (Archives).
+require_once __DIR__ . '/../config/session_start.php'; // smartlib_session_start(): Secure cookie on HTTPS
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    smartlib_session_start();
 }
 
 $currentRole = strtolower(trim((string)($_SESSION['role'] ?? '')));

@@ -16,6 +16,7 @@
  */
 
 require_once __DIR__ . '/../../config/library_card_helpers.php';
+require_once __DIR__ . '/../../config/db_query.php';
 
 if (!function_exists('smartlib_top_borrowers_date')) {
     function smartlib_top_borrowers_date(?string $value): ?string {
@@ -42,14 +43,18 @@ if (!function_exists('smartlib_top_borrowers')) {
 
         $dateExpr = 'COALESCE(br.date_borrowed, DATE(br.created_at))';
         $where = ["u.role IN ('student','faculty')"];
+        $params = []; // prepared (SR-16)
         if ($from !== null) {
-            $where[] = "{$dateExpr} >= '" . $conn->real_escape_string($from) . "'";
+            $where[] = "{$dateExpr} >= ?";
+            $params[] = $from;
         }
         if ($to !== null) {
-            $where[] = "{$dateExpr} <= '" . $conn->real_escape_string($to) . "'";
+            $where[] = "{$dateExpr} <= ?";
+            $params[] = $to;
         }
         if ($status !== 'all') {
-            $where[] = "br.status = '" . $conn->real_escape_string($status) . "'";
+            $where[] = "br.status = ?";
+            $params[] = $status;
         }
 
         $sql = "SELECT u.user_id,
@@ -72,7 +77,7 @@ if (!function_exists('smartlib_top_borrowers')) {
                 LIMIT {$limit}";
 
         try {
-            $res = $conn->query($sql);
+            $res = smartlib_db_query($conn, $sql, $params);
             if (!$res) {
                 return [];
             }

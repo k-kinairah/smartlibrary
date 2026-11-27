@@ -1,6 +1,7 @@
 <?php
+require_once __DIR__ . '/../config/session_start.php'; // smartlib_session_start(): Secure cookie on HTTPS
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    smartlib_session_start();
 }
 
 $currentRole = strtolower(trim((string)($_SESSION['role'] ?? '')));
@@ -569,8 +570,8 @@ $whereParts = [];
 $whereTypes = '';
 $whereParams = [];
 if ($search !== '') {
-    $like = '%' . $search . '%';
-    $whereParts[] = "(first_name LIKE ? OR last_name LIKE ? OR user_number LIKE ? OR email LIKE ?)";
+    $like = '%' . smartlib_like_escape($search) . '%'; // a typed % or _ is literal (SR-21)
+    $whereParts[] = "(first_name LIKE ? ESCAPE '\\\\' OR last_name LIKE ? ESCAPE '\\\\' OR user_number LIKE ? ESCAPE '\\\\' OR email LIKE ? ESCAPE '\\\\')";
     $whereTypes .= 'ssss';
     array_push($whereParams, $like, $like, $like, $like);
 }

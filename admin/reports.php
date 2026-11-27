@@ -1,6 +1,7 @@
 <?php
+require_once __DIR__ . '/../config/session_start.php'; // smartlib_session_start(): Secure cookie on HTTPS
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    smartlib_session_start();
 }
 
 $currentRole = strtolower(trim((string)($_SESSION['role'] ?? '')));
@@ -21,11 +22,11 @@ require_once '../config/library_settings.php';
 // column or amount appears on screen or in the PDFs.
 $finesOn = smartlib_fines_enabled($conn);
 require_once __DIR__ . '/includes/reports_modal_view.php';
-require_once __DIR__ . '/includes/top_borrowers.php';
+require_once __DIR__ . '/includes/top_borrowers.php'; // also loads config/db_query.php
 
-function reports_query(mysqli $conn, string $sql) {
+function reports_query(mysqli $conn, string $sql, array $params = []) {
     try {
-        return $conn->query($sql);
+        return smartlib_db_query($conn, $sql, $params);
     } catch (Throwable $e) {
         return false;
     }
@@ -874,18 +875,19 @@ $trendBucketLabel = reports_trend_bucket_label($trendBucket);
     $dateTo
 );
 
-$safeFrom = $conn->real_escape_string($rangeFrom);
-$safeTo = $conn->real_escape_string($rangeTo);
 $dateExpr = 'COALESCE(br.date_borrowed, DATE(br.created_at))';
 
+// Prepared (SR-16): every query below that uses {$whereSql} binds
+// $whereParams (and the search_logs ones bind the range) in that order.
 $whereParts = [
-    "$dateExpr >= '{$safeFrom}'",
-    "$dateExpr <= '{$safeTo}'"
+    "$dateExpr >= ?",
+    "$dateExpr <= ?"
 ];
+$whereParams = [$rangeFrom, $rangeTo];
 
 if ($statusFilter !== 'all') {
-    $safeStatus = $conn->real_escape_string($statusFilter);
-    $whereParts[] = "br.status = '{$safeStatus}'";
+    $whereParts[] = "br.status = ?";
+    $whereParams[] = $statusFilter;
 }
 
 $whereSql = implode(' AND ', $whereParts);
@@ -917,7 +919,8 @@ $resTotals = reports_query(
         COALESCE(SUM(br.fine), 0) AS total_fine
     FROM borrow_records br
     WHERE {$whereSql}
-    "
+    ",
+    [...$whereParams]
 );
 
 if ($resTotals && ($row = $resTotals->fetch_assoc())) {
@@ -938,7 +941,8 @@ $resStatusBreakdown = reports_query(
     WHERE {$whereSql}
     GROUP BY br.status
     ORDER BY FIELD(br.status, 'borrowed', 'returned', 'overdue', 'missing'), br.status
-    "
+    ",
+    [...$whereParams]
 );
 
 if ($resStatusBreakdown) {
@@ -959,7 +963,8 @@ $resActivityByMonth = reports_query(
     WHERE {$whereSql}
     GROUP BY period_key
     ORDER BY period_key ASC
-    "
+    ",
+    [...$whereParams]
 );
 
 if ($resActivityByMonth) {
@@ -985,7 +990,8 @@ $resTopBooks = reports_query(
     GROUP BY bc.book_id, b.title
     ORDER BY borrow_count DESC, b.title ASC
     LIMIT 10
-    "
+    ",
+    [...$whereParams]
 );
 
 if ($resTopBooks) {
@@ -1011,7 +1017,8 @@ $resBorrowTrend = reports_query(
     WHERE {$whereSql}
     GROUP BY bucket_label
     ORDER BY {$borrowTrendSortExpr} ASC
-    "
+    ",
+    [...$whereParams]
 );
 
 if ($resBorrowTrend) {
@@ -1032,11 +1039,12 @@ if (reports_table_exists($conn, 'search_logs')) {
             {$searchTrendLabelExpr} AS bucket_label,
             COUNT(*) AS total
         FROM search_logs
-        WHERE DATE(created_at) >= '{$safeFrom}'
-          AND DATE(created_at) <= '{$safeTo}'
+        WHERE DATE(created_at) >= ?
+          AND DATE(created_at) <= ?
         GROUP BY bucket_label
         ORDER BY {$searchTrendSortExpr} ASC
-        "
+        ",
+        [$rangeFrom, $rangeTo]
     );
 
     if ($resSearchTrend) {
@@ -1060,7 +1068,8 @@ $resBorrowTrendDisplay = reports_query(
     WHERE {$whereSql}
     GROUP BY bucket_label
     ORDER BY bucket_label ASC
-    "
+    ",
+    [...$whereParams]
 );
 
 if ($resBorrowTrendDisplay) {
@@ -1081,11 +1090,12 @@ if (reports_table_exists($conn, 'search_logs')) {
             DATE(created_at) AS bucket_label,
             COUNT(*) AS total
         FROM search_logs
-        WHERE DATE(created_at) >= '{$safeFrom}'
-          AND DATE(created_at) <= '{$safeTo}'
+        WHERE DATE(created_at) >= ?
+          AND DATE(created_at) <= ?
         GROUP BY bucket_label
         ORDER BY bucket_label ASC
-        "
+        ",
+        [$rangeFrom, $rangeTo]
     );
 
     if ($resSearchTrendDisplay) {
@@ -1113,7 +1123,8 @@ $resProgramActivity = reports_query(
     GROUP BY p.program_id, p.program_name
     ORDER BY borrow_count DESC, program_name ASC
     LIMIT 10
-    "
+    ",
+    [...$whereParams]
 );
 
 if ($resProgramActivity) {
@@ -1284,7 +1295,8 @@ if (in_array($exportMode, ['summary', 'detailed', 'summary_pdf', 'detailed_pdf']
             WHERE {$whereSql}
             ORDER BY {$dateExpr} DESC, br.record_id DESC
             LIMIT 1000
-            "
+            ",
+            [...$whereParams]
         );
 
         if ($resDetailed) {
@@ -1354,7 +1366,8 @@ $resPreviewRows = reports_query(
     WHERE {$whereSql}
     ORDER BY {$dateExpr} DESC, br.record_id DESC
     LIMIT 300
-    "
+    ",
+    [...$whereParams]
 );
 
 if ($resPreviewRows) {

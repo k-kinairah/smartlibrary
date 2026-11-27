@@ -35,7 +35,10 @@ register_shutdown_function(static function (): void {
     ], JSON_UNESCAPED_UNICODE);
 });
 
-session_start();
+require_once __DIR__ . '/config/session_start.php'; // smartlib_session_start(): Secure cookie on HTTPS
+smartlib_session_start();
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0'); // per-patron response: never stored
+header('Pragma: no-cache');
 require 'config/db_connect.php';
 require 'config/auth_security.php';
 require 'config/csrf.php';

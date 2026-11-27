@@ -7,8 +7,9 @@
 // real cover lookup still happens when the book is added.
 //
 // Librarian/admin sessions only: anyone else gets a bare 403.
+require_once __DIR__ . '/../config/session_start.php'; // smartlib_session_start(): Secure cookie on HTTPS
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    smartlib_session_start();
 }
 
 $currentRole = strtolower(trim((string)($_SESSION['role'] ?? '')));

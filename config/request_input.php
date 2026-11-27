@@ -64,3 +64,13 @@ function smartlib_request_int(array $source, string $key, int $default = 0): int
     }
     return $default;
 }
+
+/**
+ * Text for a LIKE pattern: backslash, % and _ get a backslash in front, so a
+ * typed % or _ matches only itself (security review 2026-11-24, SR-21). Use
+ * with  LIKE ? ESCAPE '\\'  and add the surrounding % yourself, e.g.
+ * '%' . smartlib_like_escape($search) . '%'.
+ */
+function smartlib_like_escape(string $s): string {
+    return strtr($s, ['\\' => '\\\\', '%' => '\\%', '_' => '\\_']);
+}

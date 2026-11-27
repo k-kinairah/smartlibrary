@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
-session_start();
+require_once __DIR__ . '/config/session_start.php'; // smartlib_session_start(): Secure cookie on HTTPS
+smartlib_session_start();
 require 'config/db_connect.php';
 require 'config/auth_security.php';
 require 'config/csrf.php';

@@ -1,6 +1,7 @@
 <?php
+require_once __DIR__ . '/../config/session_start.php'; // smartlib_session_start(): Secure cookie on HTTPS
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    smartlib_session_start();
 }
 
 $currentRole = strtolower(trim((string)($_SESSION['role'] ?? '')));
@@ -16,6 +17,14 @@ if (!isset($_SESSION['user_id']) || !in_array($currentRole, ['librarian', 'admin
 require_once __DIR__ . '/../config/db_connect.php';
 require_once __DIR__ . '/../config/session_guard.php';
 require_once __DIR__ . '/includes/admin_toast.php'; // smartlib_admin_toast_render() for every admin page
+// Signed-in staff pages are never stored by the browser, so after sign-out
+// the Back button cannot show patron names (asks the server again, which
+// sends the sign-in page). Same as PHP's session default, set explicitly so
+// it does not depend on the host's session.cache_limiter.
+if (!headers_sent()) {
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+}
 if (!smartlib_active_staff_session($conn)) {
     header('Location: ' . smartlib_staff_signed_out_location());
     exit;

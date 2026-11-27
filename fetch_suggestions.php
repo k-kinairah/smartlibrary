@@ -1,13 +1,11 @@
 <?php
 require_once __DIR__ . '/config/request_input.php'; // smartlib_request_string(): arrays in scalar params count as empty
-session_start();
+require_once __DIR__ . '/config/db_query.php';
+require_once __DIR__ . '/config/session_start.php'; // smartlib_session_start(): Secure cookie on HTTPS
+smartlib_session_start();
 require 'config/db_connect.php';
 
 header('Content-Type: application/json; charset=utf-8');
-
-function esc(mysqli $conn, string $str): string {
-    return mysqli_real_escape_string($conn, $str);
-}
 
 function normalize_term(string $raw): string {
     $term = trim($raw);
@@ -38,9 +36,10 @@ $genreExpr = $hasCategoryGroup
     ? "TRIM(COALESCE(NULLIF(c.category_group, ''), c.category_name))"
     : "TRIM(c.category_name)";
 
-$safeTerm = esc($conn, $term);
-$likeContains = '%' . $safeTerm . '%';
-$likePrefix = $safeTerm . '%';
+// Prepared (SR-16); a typed % or _ is literal (SR-21).
+$likeTerm = smartlib_like_escape($term);
+$likeContains = '%' . $likeTerm . '%';
+$likePrefix = $likeTerm . '%';
 
 $sql = "
     SELECT
@@ -52,52 +51,52 @@ $sql = "
         SELECT
             TRIM(b.title) AS suggestion,
             1 AS kind_priority,
-            CASE WHEN TRIM(b.title) LIKE '{$likePrefix}' THEN 0 ELSE 1 END AS prefix_rank
+            CASE WHEN TRIM(b.title) LIKE ? ESCAPE '\\\\' THEN 0 ELSE 1 END AS prefix_rank
         FROM books b
         WHERE TRIM(COALESCE(b.title, '')) <> ''
-          AND TRIM(b.title) LIKE '{$likeContains}'
+          AND TRIM(b.title) LIKE ? ESCAPE '\\\\'
 
         UNION ALL
 
         SELECT
             TRIM(b.author) AS suggestion,
             2 AS kind_priority,
-            CASE WHEN TRIM(b.author) LIKE '{$likePrefix}' THEN 0 ELSE 1 END AS prefix_rank
+            CASE WHEN TRIM(b.author) LIKE ? ESCAPE '\\\\' THEN 0 ELSE 1 END AS prefix_rank
         FROM books b
         WHERE TRIM(COALESCE(b.author, '')) <> ''
-          AND TRIM(b.author) LIKE '{$likeContains}'
+          AND TRIM(b.author) LIKE ? ESCAPE '\\\\'
 
         UNION ALL
 
         SELECT
             TRIM(b.isbn) AS suggestion,
             3 AS kind_priority,
-            CASE WHEN TRIM(b.isbn) LIKE '{$likePrefix}' THEN 0 ELSE 1 END AS prefix_rank
+            CASE WHEN TRIM(b.isbn) LIKE ? ESCAPE '\\\\' THEN 0 ELSE 1 END AS prefix_rank
         FROM books b
         WHERE TRIM(COALESCE(b.isbn, '')) <> ''
-          AND TRIM(b.isbn) LIKE '{$likeContains}'
+          AND TRIM(b.isbn) LIKE ? ESCAPE '\\\\'
 
         UNION ALL
 
         SELECT
             {$genreExpr} AS suggestion,
             4 AS kind_priority,
-            CASE WHEN {$genreExpr} LIKE '{$likePrefix}' THEN 0 ELSE 1 END AS prefix_rank
+            CASE WHEN {$genreExpr} LIKE ? ESCAPE '\\\\' THEN 0 ELSE 1 END AS prefix_rank
         FROM books b
         LEFT JOIN categories c ON b.category_id = c.category_id
         WHERE TRIM(COALESCE({$genreExpr}, '')) <> ''
-          AND {$genreExpr} LIKE '{$likeContains}'
+          AND {$genreExpr} LIKE ? ESCAPE '\\\\'
 
         UNION ALL
 
         SELECT
             TRIM(p.program_name) AS suggestion,
             5 AS kind_priority,
-            CASE WHEN TRIM(p.program_name) LIKE '{$likePrefix}' THEN 0 ELSE 1 END AS prefix_rank
+            CASE WHEN TRIM(p.program_name) LIKE ? ESCAPE '\\\\' THEN 0 ELSE 1 END AS prefix_rank
         FROM books b
         LEFT JOIN programs p ON b.program_id = p.program_id
         WHERE TRIM(COALESCE(p.program_name, '')) <> ''
-          AND TRIM(p.program_name) LIKE '{$likeContains}'
+          AND TRIM(p.program_name) LIKE ? ESCAPE '\\\\'
     ) matched
     WHERE suggestion <> ''
     GROUP BY suggestion
@@ -105,7 +104,7 @@ $sql = "
     LIMIT {$limit}
 ";
 
-$result = $conn->query($sql);
+$result = smartlib_db_query($conn, $sql, [$likePrefix, $likeContains, $likePrefix, $likeContains, $likePrefix, $likeContains, $likePrefix, $likeContains, $likePrefix, $likeContains]);
 
 $suggestions = [];
 if ($result) {

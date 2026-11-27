@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/config/session_start.php'; // smartlib_session_start(): Secure cookie on HTTPS
+smartlib_session_start();
 require 'config/db_connect.php';
 require_once 'config/session_guard.php';
 $recSessionUserId = smartlib_active_session_user_id($conn); // idle rule + live account check (signs out if needed)
@@ -11,6 +12,7 @@ header('Content-Type: application/json; charset=utf-8');
 // 1) Flood ceiling: 300 calls a minute per IP (the school's kiosks share one
 //    public IP, so this is far above real use). Fails open.
 require_once 'config/rate_limit.php';
+require_once __DIR__ . '/config/db_query.php';
 if (!smartlib_rate_limit_allow($conn, 'recommend_ip', smartlib_rate_limit_ip(), 300, 60)) {
     smartlib_rate_limit_refuse('Too many requests. Please try again in a minute.');
 }
@@ -147,9 +149,9 @@ function normalize_book(array $row, string $reason = '', string $reasonType = ''
     ];
 }
 
-function query_rows(mysqli $conn, string $sql): array {
+function query_rows(mysqli $conn, string $sql, array $params = []): array {
     try {
-        $res = $conn->query($sql);
+        $res = smartlib_db_query($conn, $sql, $params);
     } catch (Throwable $e) {
         return [];
     }
@@ -695,7 +697,10 @@ if ($searchLogsEnabled) {
          LIMIT 12"
     );
 
+    // Prepared (SR-16): the logged terms are bound, not pasted in; a logged
+    // % or _ is literal (SR-21). $scoreParams follows the ? order.
     $scoreParts = [];
+    $scoreParams = [];
     foreach ($termRows as $termRow) {
         $term = trim((string)($termRow['term'] ?? ''));
         $hits = (int)($termRow['hits'] ?? 0);
@@ -704,17 +709,18 @@ if ($searchLogsEnabled) {
             continue;
         }
 
-        $safeTerm = $conn->real_escape_string($term);
+        $like = '%' . smartlib_like_escape($term) . '%';
         $searchTopTermsCount += 1;
 
         $scoreParts[] = "CASE
-            WHEN b.title LIKE '%{$safeTerm}%'
-              OR b.author LIKE '%{$safeTerm}%'
-              OR b.isbn LIKE '%{$safeTerm}%'
-              OR {$genreExpr} LIKE '%{$safeTerm}%'
+            WHEN b.title LIKE ? ESCAPE '\\\\'
+              OR b.author LIKE ? ESCAPE '\\\\'
+              OR b.isbn LIKE ? ESCAPE '\\\\'
+              OR {$genreExpr} LIKE ? ESCAPE '\\\\'
             THEN {$hits}
             ELSE 0
         END";
+        array_push($scoreParams, $like, $like, $like, $like);
     }
 
     if (!empty($scoreParts)) {
@@ -734,7 +740,8 @@ if ($searchLogsEnabled) {
              LEFT JOIN categories c ON c.category_id = b.category_id
              HAVING topic_score > 0
              ORDER BY topic_score DESC, b.created_at DESC, b.book_id DESC
-             LIMIT 80"
+             LIMIT 80",
+            $scoreParams
         );
     }
 }

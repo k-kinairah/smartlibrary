@@ -2,7 +2,8 @@
 // Same rules as ../logout.php: only a POST from this site with a valid
 // token ends the session; a GET changes nothing. Lands on the kiosk home
 // (../index.php -- there is no admin/index.php).
-session_start();
+require_once __DIR__ . '/../config/session_start.php'; // smartlib_session_start(): Secure cookie on HTTPS
+smartlib_session_start();
 require_once __DIR__ . '/../config/request_guard.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST'
