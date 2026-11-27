@@ -686,17 +686,8 @@ require 'layout_top.php';
     </p>
 </div>
 
-<?php if ($archiveFlash['message'] !== ''): ?>
-    <?php
-        $flashType = strtolower(trim((string)$archiveFlash['type']));
-        if (!in_array($flashType, ['success', 'error', 'info'], true)) {
-            $flashType = 'info';
-        }
-    ?>
-    <section class="panel glass-card borrow-flash borrow-flash-<?= htmlspecialchars($flashType) ?>">
-        <?= htmlspecialchars((string)$archiveFlash['message']) ?>
-    </section>
-<?php endif; ?>
+<?php // One-shot result (session flash after the redirect): shared toast. ?>
+<?php smartlib_admin_toast_render((string)$archiveFlash['type'], (string)$archiveFlash['message']); ?>
 
 <section class="stats-grid borrow-status-chips">
     <?php foreach ($chipMetrics as $chip): ?>

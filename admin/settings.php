@@ -131,11 +131,8 @@ require 'layout_top.php';
     </div>
 </div>
 
-<?php if (is_array($flash) && !empty($flash['message'])): ?>
-    <section class="panel glass-card borrow-flash borrow-flash-<?= htmlspecialchars((string)($flash['type'] ?? 'info')) ?>" role="status">
-        <?= htmlspecialchars((string)$flash['message']) ?>
-    </section>
-<?php endif; ?>
+<?php // One-shot result (session flash after the redirect): shared toast. ?>
+<?php if (is_array($flash)) { smartlib_admin_toast_render((string)($flash['type'] ?? 'info'), (string)($flash['message'] ?? '')); } ?>
 
 <section class="panel glass-card settings-panel data-table-panel">
     <div class="panel-head">

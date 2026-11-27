@@ -734,11 +734,9 @@ require 'layout_top.php';
     <button class="btn-primary" onclick="openUserModal()">+ Add User</button>
 </div>
 
-<?php if (!empty($flash['message'])): ?>
-    <section class="panel glass-card borrow-flash borrow-flash-<?= htmlspecialchars($flash['type'] === 'success' ? 'success' : 'error') ?>">
-        <?= htmlspecialchars($flash['message']) ?>
-    </section>
-<?php endif; ?>
+<?php // Result of create / edit (same page render): shared toast. Same
+      // mapping as before: success stays success, anything else is an error. ?>
+<?php smartlib_admin_toast_render(($flash['type'] ?? '') === 'success' ? 'success' : 'error', (string)($flash['message'] ?? '')); ?>
 
 <section class="stats-grid borrow-status-chips manage-users-chip-row">
     <?php foreach ($allChipMetrics as $chip): ?>
@@ -1242,7 +1240,7 @@ if (createUserForm) {
             e.preventDefault();
             createPin.setCustomValidity(msg);
             createPin.reportValidity();
-            window.alert(msg);
+            window.smartlibToast('error', msg);
             createPin.focus();
             createPin.select();
             return;
@@ -1253,7 +1251,7 @@ if (createUserForm) {
             e.preventDefault();
             createPin.setCustomValidity(msg);
             createPin.reportValidity();
-            window.alert(msg);
+            window.smartlibToast('error', msg);
             createPin.focus();
             createPin.select();
         }
@@ -1307,7 +1305,7 @@ if (editUserForm) {
             e.preventDefault();
             pinInput.setCustomValidity(msg);
             pinInput.reportValidity();
-            window.alert(msg);
+            window.smartlibToast('error', msg);
             pinInput.focus();
             pinInput.select();
             return;
@@ -1318,7 +1316,7 @@ if (editUserForm) {
             e.preventDefault();
             pinInput.setCustomValidity(msg);
             pinInput.reportValidity();
-            window.alert(msg);
+            window.smartlibToast('error', msg);
             pinInput.focus();
             pinInput.select();
         }
@@ -1328,7 +1326,7 @@ if (editUserForm) {
 const editPinPopupMessage = <?= json_encode($editPinPopupMessage, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 if (editPinPopupMessage && document.getElementById('editUserModal')?.classList.contains('show')) {
     window.setTimeout(function () {
-        window.alert(editPinPopupMessage);
+        window.smartlibToast('error', editPinPopupMessage);
         const pinInput = document.querySelector('#editUserModal input[name="edit_pin"]');
         if (pinInput) {
             pinInput.focus();

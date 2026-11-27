@@ -118,7 +118,7 @@ if (createUserForm) {
             e.preventDefault();
             createPin.setCustomValidity(msg);
             createPin.reportValidity();
-            window.alert(msg);
+            window.smartlibToast('error', msg);
             createPin.focus();
             createPin.select();
         }
@@ -150,7 +150,7 @@ if (editUserForm) {
             e.preventDefault();
             pinInput.setCustomValidity(msg);
             pinInput.reportValidity();
-            window.alert(msg);
+            window.smartlibToast('error', msg);
             pinInput.focus();
             pinInput.select();
         }
@@ -160,7 +160,7 @@ if (editUserForm) {
 const editPinPopupMessage = window.EDIT_PIN_POPUP_MESSAGE;
 if (editPinPopupMessage && document.getElementById('editUserModal')?.classList.contains('show')) {
     window.setTimeout(function () {
-        window.alert(editPinPopupMessage);
+        window.smartlibToast('error', editPinPopupMessage);
         const pinInput = document.querySelector('#editUserModal input[name="edit_pin"]');
         if (pinInput) {
             pinInput.focus();

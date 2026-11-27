@@ -15,6 +15,7 @@ if (!isset($_SESSION['user_id']) || !in_array($currentRole, ['librarian', 'admin
 // require_once and the guard's per-request memo make this a no-op for them.
 require_once __DIR__ . '/../config/db_connect.php';
 require_once __DIR__ . '/../config/session_guard.php';
+require_once __DIR__ . '/includes/admin_toast.php'; // smartlib_admin_toast_render() for every admin page
 if (!smartlib_active_staff_session($conn)) {
     header('Location: ' . smartlib_staff_signed_out_location());
     exit;
@@ -169,6 +170,11 @@ function stat_chip_meta(string $title): array {
     <?php // Phone and tablet shell (960px and below): top bar, slide-over menu, small-screen fixes. ?>
     <?php $mobileCssVer = @filemtime(__DIR__ . '/../assets/css/admin_mobile.css') ?: time(); ?>
     <link rel="stylesheet" href="../assets/css/admin_mobile.css?v=<?= $mobileCssVer ?>">
+    <?php // Shared toast for every notification (admin/includes/admin_toast.php, window.smartlibToast). ?>
+    <?php $toastCssVer = @filemtime(__DIR__ . '/../assets/css/admin_toast.css') ?: time(); ?>
+    <link rel="stylesheet" href="../assets/css/admin_toast.css?v=<?= $toastCssVer ?>">
+    <?php $toastJsVer = @filemtime(__DIR__ . '/../assets/javascript/admin_toast.js') ?: time(); ?>
+    <script src="../assets/javascript/admin_toast.js?v=<?= $toastJsVer ?>" defer></script>
 </head>
 <body>
 <div class="admin-container">

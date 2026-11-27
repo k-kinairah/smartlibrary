@@ -1503,16 +1503,29 @@ require 'layout_top.php';
     </div>
 </div>
 
-<?php if ($updatedFlag): ?>
-    <section class="panel glass-card borrow-flash borrow-flash-success">
-        Book updated successfully.
-    </section>
-<?php endif; ?>
-
-<?php if (($flash['message'] ?? '') !== ''): ?>
-    <section class="panel glass-card borrow-flash <?= ($flash['type'] ?? '') === 'error' ? 'borrow-flash-error' : 'borrow-flash-info' ?>">
-        <?= htmlspecialchars((string)($flash['message'] ?? '')) ?>
-    </section>
+<?php
+    // One-shot results as the shared toast. An error that is shown inside
+    // the open Add / Edit Book window (its .ab-alert) is not repeated here.
+    if ($updatedFlag) {
+        smartlib_admin_toast_render('success', 'Book updated successfully.');
+    }
+    $flashInWindow = ($flash['type'] ?? '') === 'error' && ($openAddBookModal || $openEditBookModal);
+    if (!$flashInWindow) {
+        smartlib_admin_toast_render(($flash['type'] ?? '') === 'error' ? 'error' : smartlib_admin_toast_type((string)($flash['type'] ?? 'info')), (string)($flash['message'] ?? ''));
+    }
+?>
+<?php if ($updatedFlag || isset($_GET['cover_status']) || isset($_GET['cover_msg'])): ?>
+<script>
+// The one-shot flags (?updated=1 and the cover result) are shown once: drop
+// them from the address so a reload does not show them again.
+(function () {
+    try {
+        var url = new URL(window.location.href);
+        ['updated', 'cover_status', 'cover_msg'].forEach(function (key) { url.searchParams.delete(key); });
+        window.history.replaceState(window.history.state, document.title, url.pathname + url.search + url.hash);
+    } catch (e) { /* old browser: the flag simply stays */ }
+}());
+</script>
 <?php endif; ?>
 
 <section class="stats-grid borrow-status-chips">

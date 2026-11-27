@@ -379,11 +379,8 @@ require 'layout_top.php';
     <h1 class="page-heading"><span class="page-icon" aria-hidden="true"><?= admin_icon('borrow') ?></span>Borrow Records</h1>
 </div>
 
-<?php if (is_array($flash) && !empty($flash['message'])): ?>
-    <section class="panel glass-card borrow-flash borrow-flash-<?= htmlspecialchars((string)($flash['type'] ?? 'info')) ?>">
-        <?= htmlspecialchars((string)$flash['message']) ?>
-    </section>
-<?php endif; ?>
+<?php // One-shot result (session flash after the redirect): shared toast. ?>
+<?php if (is_array($flash)) { smartlib_admin_toast_render((string)($flash['type'] ?? 'info'), (string)($flash['message'] ?? '')); } ?>
 
 <section class="stats-grid borrow-status-chips">
     <?php foreach ($chipMetrics as $chip): ?>

@@ -781,36 +781,6 @@ require 'layout_top.php';
 
     .bulk-import-panel > form .borrow-flash { margin-bottom: 18px; }
 
-    /* ---- Flash message rendered as a floating, auto-dismissing toast instead of an inline banner ---- */
-    .bulk-import-flash-toast {
-        /* `left` starts as a 50%-of-viewport fallback and is immediately replaced with an
-           exact pixel value by the script right below it, once it can measure where
-           .main-content actually sits (it shares the row with the sidebar, so centering
-           on the viewport as a whole would skew the toast toward the sidebar). */
-        position: fixed; top: 22px; left: 50%; transform: translateX(-50%);
-        z-index: 1000; display: flex; align-items: flex-start; gap: 12px;
-        max-width: min(560px, calc(100vw - 32px));
-        box-shadow: 0 18px 40px rgba(var(--pb-040e1c), 0.35), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
-        animation: bulkImportToastIn 0.25s ease-out;
-    }
-    .bulk-import-flash-toast.is-positioned { transform: none; }
-    .bulk-import-flash-toast-text { flex: 1; }
-    .bulk-import-flash-toast-close {
-        flex-shrink: 0; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
-        background: rgba(255, 255, 255, 0.08); border: none; border-radius: 50%; cursor: pointer;
-        color: inherit; font-size: 15px; line-height: 1; opacity: 0.75; padding: 0;
-        transition: opacity .12s ease, background .12s ease;
-    }
-    .bulk-import-flash-toast-close:hover { opacity: 1; background: rgba(255, 255, 255, 0.16); }
-    .bulk-import-flash-toast.is-leaving { animation: bulkImportToastOut 0.2s ease-in forwards; }
-    @keyframes bulkImportToastIn {
-        from { opacity: 0; margin-top: -14px; }
-        to { opacity: 1; margin-top: 0; }
-    }
-    @keyframes bulkImportToastOut {
-        from { opacity: 1; margin-top: 0; }
-        to { opacity: 0; margin-top: -14px; }
-    }
 
     .bulk-import-submit-row { display: flex; justify-content: center; margin-top: 20px; }
     .bulk-import-submit-row .btn-primary { min-width: 190px; }
@@ -867,41 +837,10 @@ require 'layout_top.php';
     $bulkImportStageIndex = (int)array_search($bulkImportStage, $bulkImportStepKeys, true);
 ?>
 
-<?php if (($flash['message'] ?? '') !== ''): ?>
-    <!-- Rendered outside the glass-card panel below on purpose: that panel has a
-         backdrop-filter, and backdrop-filter (like transform) creates a new containing
-         block for position:fixed descendants -- a fixed-position toast nested inside it
-         would be "fixed" relative to the panel instead of the real viewport. -->
-    <div class="borrow-flash <?= ($flash['type'] ?? '') === 'error' ? 'borrow-flash-error' : 'borrow-flash-info' ?> bulk-import-flash-toast" id="bulkImportFlash" role="alert">
-        <span class="bulk-import-flash-toast-text"><?= htmlspecialchars((string)$flash['message']) ?></span>
-        <button type="button" class="bulk-import-flash-toast-close" id="bulkImportFlashClose" aria-label="Dismiss">&times;</button>
-    </div>
-    <script>
-    (function () {
-        // Center the toast over .main-content specifically, not the whole viewport --
-        // the sidebar sits beside it, so a plain 50vw center skews the toast toward the
-        // sidebar on any normal desktop width. Runs immediately (before the entrance
-        // animation is visible) and again on resize.
-        var toast = document.getElementById('bulkImportFlash');
-        var main = document.querySelector('.main-content');
-        if (!toast || !main) { return; }
-
-        function positionToast() {
-            var rect = main.getBoundingClientRect();
-            var centerX = rect.left + rect.width / 2;
-            var width = toast.offsetWidth;
-            var left = centerX - width / 2;
-            var maxLeft = window.innerWidth - width - 16;
-            left = Math.max(16, Math.min(left, maxLeft));
-            toast.style.left = left + 'px';
-            toast.classList.add('is-positioned');
-        }
-
-        positionToast();
-        window.addEventListener('resize', positionToast);
-    })();
-    </script>
-<?php endif; ?>
+<?php // Result of the upload / preview / commit: the shared toast (it is
+      // moved to <body> by admin_toast.js, so the glass panel's
+      // backdrop-filter cannot pin it to the panel). ?>
+<?php smartlib_admin_toast_render(($flash['type'] ?? '') === 'error' ? 'error' : smartlib_admin_toast_type((string)($flash['type'] ?? 'info')), (string)($flash['message'] ?? '')); ?>
 
 <section class="panel glass-card bulk-import-panel data-table-panel">
 
@@ -1073,32 +1012,6 @@ require 'layout_top.php';
         </form>
 
         <script>
-        (function () {
-            // Auto-dismiss the upload-error toast after a while, or right away if the
-            // person closes it themselves -- either way it fades out rather than vanishing.
-            var AUTO_DISMISS_MS = 8000;
-            var toast = document.getElementById('bulkImportFlash');
-            if (toast) {
-                var dismissed = false;
-                var dismiss = function () {
-                    if (dismissed) { return; }
-                    dismissed = true;
-                    toast.classList.add('is-leaving');
-                    setTimeout(function () {
-                        if (toast.parentNode) { toast.parentNode.removeChild(toast); }
-                    }, 200);
-                };
-                var autoTimer = setTimeout(dismiss, AUTO_DISMISS_MS);
-                var closeBtn = document.getElementById('bulkImportFlashClose');
-                if (closeBtn) {
-                    closeBtn.addEventListener('click', function () {
-                        clearTimeout(autoTimer);
-                        dismiss();
-                    });
-                }
-            }
-        })();
-
         (function () {
             var dropzone = document.getElementById('bulkImportDropzone');
             var input = document.getElementById('bulkImportFile');

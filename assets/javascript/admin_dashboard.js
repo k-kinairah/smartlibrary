@@ -499,11 +499,13 @@
                     if (payload.status === 'success') {
                         setRemindState(btn, 'sent', 'Sent', 'check', 'Sent just now');
                         btn.title = payload.message || 'Reminder sent.';
+                        if (window.smartlibToast) window.smartlibToast('success', payload.message || 'Reminder sent.');
                         return;
                     }
                     if (payload.status === 'cooldown') {
                         setRemindState(btn, 'sent', 'Sent', 'check', cooldownStatus(btn, payload.next_allowed_at));
                         btn.title = payload.message || 'Reminder already sent.';
+                        if (window.smartlibToast) window.smartlibToast('info', payload.message || 'Reminder already sent.');
                         return;
                     }
 
@@ -512,6 +514,7 @@
                     const msg = (err && err.message) ? err.message : 'Failed to send reminder.';
                     setRemindState(btn, 'error', 'Retry', 'mail', "Couldn't send. Try again.");
                     btn.title = msg;
+                    if (window.smartlibToast) window.smartlibToast('error', msg);
 
                     window.setTimeout(() => {
                         if (btn.closest('.od-remind')?.dataset.state === 'error') {
