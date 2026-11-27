@@ -193,6 +193,26 @@ html[data-theme="light"][data-palette="green"] body .stats-grid {
     border: 0 !important;
 }
 
+/* Manage Users status row: admin.css gives it overflow-x: auto (so it can
+   scroll sideways), which clipped the active tile's ring and glow into a
+   flat-edged square. Room for them as padding, cancelled by an equal
+   negative margin so nothing moves (measured: margin 0 0 16px, padding
+   0 0 2px before; 22px - 4px = the old 16px + 2px below the tiles; 20px
+   clears the 20px glow of the active tile). The
+   padding must not catch clicks meant for what sits under it. The other
+   stat rows are overflow: visible and do not clip, so they are left alone. */
+@media (min-width: 761px) {
+    html[data-theme="light"][data-palette="green"] body .stats-grid.manage-users-chip-row {
+        padding: 20px 20px 22px !important;
+        margin: -20px -20px -4px !important;
+        pointer-events: none;
+    }
+
+    html[data-theme="light"][data-palette="green"] body .stats-grid.manage-users-chip-row > * {
+        pointer-events: auto;
+    }
+}
+
 html[data-theme="light"][data-palette="green"] .metric-icon-badge {
     color: #0b6a4d !important;
 }
@@ -250,8 +270,12 @@ html[data-theme="light"][data-palette="green"] body .panel.overdue-books-panel {
         var(--g-body-flat) !important;
     background-color: transparent !important;
     background-repeat: no-repeat !important;
-    background-position: 0 0, 0 0, 0 0, 0 0 !important;
-    background-size: 100% 2px, 100% 100%, 100% 100%, 100% 100% !important;
+    /* the gold strip runs only along the straight part of the top edge:
+       inset by the corner radius (22px on all four selectors, measured),
+       so its ends never poke out past the rounded corners */
+    --g-strip-inset: 22px;
+    background-position: var(--g-strip-inset) 0, 0 0, 0 0, 0 0 !important;
+    background-size: calc(100% - 2 * var(--g-strip-inset)) 2px, 100% 100%, 100% 100%, 100% 100% !important;
 }
 
 html[data-theme="light"][data-palette="green"] .metric-card,
