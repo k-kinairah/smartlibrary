@@ -1672,9 +1672,15 @@ require 'layout_top.php';
                                 <div class="rr-tags">
                                     <span class="rr-chip soft" title="<?= htmlspecialchars($row['genre_name'] ?? 'Uncategorized') ?>"><span class="rr-chip-text"><?= htmlspecialchars($row['genre_name'] ?? 'Uncategorized') ?></span></span>
                                     <?php if ($rowMainProgramId > 0 && isset($programNameById[$rowMainProgramId])): ?>
-                                        <span class="rr-chip gold" title="<?= htmlspecialchars($programNameById[$rowMainProgramId]) ?>"><span class="rr-chip-text"><?= htmlspecialchars($programNameById[$rowMainProgramId]) ?></span></span><?php if (!empty($rowOtherNames)): ?> <span class="rr-chip gold rr-chip-more" title="<?= htmlspecialchars(implode(', ', $rowAllNames)) ?>">+<?= count($rowOtherNames) ?><span class="pp-sr"> more: <?= htmlspecialchars(implode(', ', $rowOtherNames)) ?></span></span><?php endif; ?>
+                                        <?php if (!empty($rowOtherNames)): ?>
+                                            <?php $rowProgramAria = $programNameById[$rowMainProgramId] . ' and ' . count($rowOtherNames) . (count($rowOtherNames) === 1 ? ' more program: ' : ' more programs: ') . implode(', ', $rowOtherNames); ?>
+                                            <span class="rr-chip gold rr-chip-prog" role="img" title="<?= htmlspecialchars(implode(', ', $rowAllNames)) ?>" aria-label="<?= htmlspecialchars($rowProgramAria) ?>"><span class="rr-chip-text"><?= htmlspecialchars($programNameById[$rowMainProgramId]) ?></span><span class="rr-chip-count" aria-hidden="true">+<?= count($rowOtherNames) ?></span></span>
+                                        <?php else: ?>
+                                            <span class="rr-chip gold rr-chip-prog" title="<?= htmlspecialchars($programNameById[$rowMainProgramId]) ?>"><span class="rr-chip-text"><?= htmlspecialchars($programNameById[$rowMainProgramId]) ?></span></span>
+                                        <?php endif; ?>
                                     <?php elseif (!empty($rowProgramIds)): ?>
-                                        <span class="rr-chip gold" title="<?= htmlspecialchars(implode(', ', $rowAllNames)) ?>"><span class="rr-chip-text"><?= count($rowProgramIds) === count($programNameById) ? 'All programs' : (count($rowProgramIds) . (count($rowProgramIds) === 1 ? ' program' : ' programs')) ?></span></span>
+                                        <?php $rowProgramLabel = count($rowProgramIds) === count($programNameById) ? 'All programs' : (count($rowProgramIds) . (count($rowProgramIds) === 1 ? ' program' : ' programs')); ?>
+                                        <span class="rr-chip gold rr-chip-prog" role="img" title="<?= htmlspecialchars(implode(', ', $rowAllNames)) ?>" aria-label="<?= htmlspecialchars($rowProgramLabel . ': ' . implode(', ', $rowAllNames)) ?>"><span class="rr-chip-text"><?= htmlspecialchars($rowProgramLabel) ?></span></span>
                                     <?php endif; ?>
                                 </div>
                             </td>
@@ -1708,6 +1714,18 @@ require 'layout_top.php';
                             <td colspan="5">
                                 <div class="book-copy-details-wrap">
                                     <?php $copies = $copiesForRow; ?>
+                                    <?php
+                                        // Every program, readable without hover (touch): main first in gold.
+                                        $rrProgramsLine = '';
+                                        if (count($rowProgramIds) > 1) {
+                                            $rrProgramsLine = '<div class="rr-copies-programs"><span class="rr-copies-title">Programs</span><span class="rr-programs-list">';
+                                            foreach ($rowProgramIds as $rrProgramId) {
+                                                $rrProgramsLine .= '<span class="rr-chip ' . ($rrProgramId === $rowMainProgramId ? 'gold' : 'soft') . ' rr-chip-mini"><span class="rr-chip-text">'
+                                                    . htmlspecialchars($programNameById[$rrProgramId]) . '</span></span>';
+                                            }
+                                            $rrProgramsLine .= '</span></div>';
+                                        }
+                                    ?>
                                     <?php if (!empty($copies)): ?>
                                         <?php ob_start(); $rrCopiesAvailable = 0; ?>
                                                 <?php foreach ($copies as $copy): ?>
@@ -1805,12 +1823,15 @@ require 'layout_top.php';
                                                 <?php endforeach; ?>
                                         <?php $rrCopyCards = ob_get_clean(); ?>
                                         <div class="rr-copies-panel">
+                                            <?= $rrProgramsLine ?>
                                             <div class="rr-copies-head"><span class="rr-copies-title">Copies</span><span class="rr-copies-sum"><b><?= number_format($rrCopiesAvailable) ?></b> of <?= number_format(count($copies)) ?> available</span></div>
                                             <ul class="rr-copies-grid">
 <?= $rrCopyCards ?>                                            </ul>
                                         </div>
                                     <?php else: ?>
+                                        <?php if ($rrProgramsLine !== ''): ?><div class="rr-copies-panel"><?= $rrProgramsLine ?><?php endif; ?>
                                         <p class="copy-detail-empty">No copy records found for this book.</p>
+                                        <?php if ($rrProgramsLine !== ''): ?></div><?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             </td>

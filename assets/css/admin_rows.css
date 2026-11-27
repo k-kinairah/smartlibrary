@@ -763,6 +763,75 @@ html[data-theme="dark"][data-palette="green"] body table.data-table.rr-books .co
 }
 
 /* ============================================================
+   3a. Books category cell (Prompt 38): at most two lines, centred:
+   the genre chip, then ONE gold program chip. Extra programs are a small
+   "+N" badge inside that chip (never truncated; the program name keeps
+   its ellipsis). The full list is in the chip's title and aria-label,
+   and in the expanded panel's "Programs" line (touch screens).
+   ============================================================ */
+@media (min-width: 761px) {
+    html[data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row > td.rr-c-cat .rr-tags {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 6px;
+    }
+}
+
+html[data-palette="green"] body table.data-table.rr-books .rr-chip.rr-chip-prog {
+    max-width: 100%;
+}
+
+html[data-palette="green"] body table.data-table.rr-books .rr-chip-count {
+    flex-shrink: 0;
+    padding: 0 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.25;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+html[data-palette="green"] body table.data-table.rr-books .rr-copies-programs {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-bottom: 12px;
+}
+
+html[data-palette="green"] body table.data-table.rr-books .rr-programs-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+}
+
+html[data-palette="green"] body table.data-table.rr-books .rr-chip.rr-chip-mini {
+    font-size: 11.5px;
+    padding: 3px 9px;
+}
+
+html[data-theme="light"][data-palette="green"] body table.data-table.rr-books .rr-chip-count {
+    color: #5a3700;
+    background: rgba(107, 66, 0, 0.14);
+    box-shadow: inset 0 0 0 1px rgba(107, 66, 0, 0.22);
+}
+
+html[data-theme="dark"][data-palette="green"] body table.data-table.rr-books .rr-chip-count {
+    color: #fff0d6;
+    background: rgba(20, 30, 22, 0.45);
+    box-shadow: inset 0 0 0 1px rgba(255, 190, 99, 0.5);
+}
+
+/* Borrow Records cards (below 1180px): the red date chip sits on the card
+   background there; a slightly lighter pink keeps it above 4.5:1 */
+html[data-theme="dark"][data-palette="green"] body table.data-table.rr-borrow .rr-due .rr-chip.red {
+    color: #ffadb4;
+}
+
+/* ============================================================
    3b. Manage Users (rr-users) and Borrow Records (rr-borrow), Prompt 37.
    Same column layout rule as Books (Prompt 36b): the identity columns
    are left-aligned, the others centred with 8px side padding on header
@@ -845,6 +914,22 @@ html[data-palette="green"] body table.data-table.rr-users .rr-role-stack .rr-met
 }
 
 /* Borrow Records: History link in the meta line */
+/* the relative-date badge wraps onto a second line instead of losing its
+   date ("Returned / Dec 31, 2025"); it only wraps when it does not fit */
+html[data-palette="green"] body table.data-table.rr-borrow .rr-due .rr-chip {
+    white-space: normal;
+    overflow: visible;
+    max-width: 100%;
+}
+
+html[data-palette="green"] body table.data-table.rr-borrow .rr-due .rr-chip-text {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    text-align: center;
+    line-height: 1.25;
+}
+
 html[data-palette="green"] body table.data-table.rr-borrow .rr-meta .borrower-history-inline-link {
     margin: 0 !important;
     padding: 0 !important;
@@ -919,11 +1004,7 @@ html[data-palette="green"] body table.data-table:is(.rr-users, .rr-borrow) > tbo
     html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(n+3),
     html[data-palette="green"] body table.data-table.rr-users > tbody > tr.rr-row > td.rr-c-role,
     html[data-palette="green"] body table.data-table.rr-users > tbody > tr.rr-row > td.rr-c-status,
-    html[data-palette="green"] body table.data-table.rr-users > tbody > tr.rr-row > td.rr-c-act,
-    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(n+4),
-    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-dates,
-    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-status,
-    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-act {
+    html[data-palette="green"] body table.data-table.rr-users > tbody > tr.rr-row > td.rr-c-act {
         text-align: center !important;
         padding-left: 8px !important;
         padding-right: 8px !important;
@@ -931,17 +1012,13 @@ html[data-palette="green"] body table.data-table:is(.rr-users, .rr-borrow) > tbo
 
     /* left-aligned columns after the first keep the same 8px padding as their header */
     html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(2),
-    html[data-palette="green"] body table.data-table.rr-users > tbody > tr.rr-row > td.rr-c-email,
-    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(2),
-    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(3),
-    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-user,
-    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-book {
+    html[data-palette="green"] body table.data-table.rr-users > tbody > tr.rr-row > td.rr-c-email {
         text-align: left !important;
         padding-left: 8px !important;
         padding-right: 8px !important;
     }
 
-    html[data-palette="green"] body table.data-table:is(.rr-users, .rr-borrow) > tbody > tr.rr-row > td.rr-c-act .rr-actions {
+    html[data-palette="green"] body table.data-table.rr-users > tbody > tr.rr-row > td.rr-c-act .rr-actions {
         justify-content: center !important;
     }
 
@@ -951,13 +1028,43 @@ html[data-palette="green"] body table.data-table:is(.rr-users, .rr-borrow) > tbo
     html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(3) { width: 18% !important; }
     html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(4) { width: 16% !important; }
     html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(5) { width: 20% !important; }
+}
 
-    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(1) { width: 9% !important; }
-    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(2) { width: 20% !important; }
-    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(3) { width: 19% !important; }
-    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(4) { width: 17% !important; }
-    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(5) { width: 17% !important; }
-    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(6) { width: 18% !important; }
+/* Borrow Records as a six-column table from 1180px (Prompt 38). Between
+   761px and 1179px the sidebar leaves the table only 616-795px, and six
+   clean columns need about 772px (Record header 88, User 160, Book 190,
+   Dates 105 with the badge wrapped, Status 109, Action 120), so it uses
+   the stacked cards there (section 4b). 1180-1279px: percentages; from
+   1280px the clamp() widths below take over unchanged. */
+@media (min-width: 1180px) {
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(n+4),
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-dates,
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-status,
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-act {
+        text-align: center !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(2),
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(3),
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-user,
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-book {
+        text-align: left !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-act .rr-actions {
+        justify-content: center !important;
+    }
+
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(1) { width: 11.5% !important; }
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(2) { width: 19.5% !important; }
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(3) { width: 24% !important; }
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(4) { width: 15% !important; }
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(5) { width: 14% !important; }
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(6) { width: 16% !important; }
 }
 
 @media (min-width: 1280px) {
@@ -1212,6 +1319,58 @@ html[data-theme="dark"][data-palette="green"] body table.data-table.rr-borrow .r
         align-items: flex-start;
     }
 
+}
+
+/* ============================================================
+   4b. Borrow Records as stacked cards below 1180px (Prompt 38): the same
+   card as on the phone (areas rec/status, user, book, dates, act), here
+   also for narrow desktop windows where six columns cannot fit.
+   ============================================================ */
+@media (max-width: 1179px) {
+    html[data-palette="green"] body table.data-table.rr-borrow {
+        table-layout: auto !important;
+        border-spacing: 0 !important;
+        display: block;
+        width: 100% !important;
+    }
+
+    html[data-palette="green"] body table.data-table.rr-borrow > thead {
+        display: none;
+    }
+
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody {
+        display: block;
+        width: 100%;
+    }
+
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: 12px;
+        row-gap: 10px;
+        padding: 14px 14px 12px 18px;
+        margin-bottom: 12px;
+    }
+
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row:hover,
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row:focus-within {
+        transform: none;
+    }
+
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td {
+        display: block;
+        padding: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        min-width: 0;
+        width: auto !important;
+        text-align: left !important;
+    }
+
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr:not(.rr-row):not(.borrow-detail-row) {
+        display: block;
+    }
+
     html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row {
         grid-template-areas:
             "rec status"
@@ -1248,6 +1407,20 @@ html[data-theme="dark"][data-palette="green"] body table.data-table.rr-borrow .r
     html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.borrow-detail-row > td {
         display: block;
         padding: 0 !important;
+    }
+}
+
+@media (max-width: 1179px) {
+    html[data-theme="light"][data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row,
+    html[data-theme="light"][data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row:hover,
+    html[data-theme="light"][data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row:focus-within {
+        box-shadow: inset 4px 0 0 rgb(var(--acc)), 0 16px 24px -20px rgba(15, 59, 47, 0.55), 0 0 0 1px rgba(26, 78, 66, 0.1), inset 0 1px 0 #fff;
+    }
+
+    html[data-theme="dark"][data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row,
+    html[data-theme="dark"][data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row:hover,
+    html[data-theme="dark"][data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row:focus-within {
+        box-shadow: inset 4px 0 0 rgb(var(--acc)), 0 0 0 1px rgba(255, 255, 255, 0.07);
     }
 }
 
