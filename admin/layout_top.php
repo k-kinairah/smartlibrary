@@ -128,24 +128,25 @@ function stat_chip_meta(string $title): array {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en" data-theme="dark"<?= $adminPalettePilot ? ' data-palette="green"' : '' ?><?= $adminDarkVariant !== '' ? ' data-dark-variant="' . $adminDarkVariant . '"' : '' ?>>
+<html lang="en" data-theme="light"<?= $adminPalettePilot ? ' data-palette="green"' : '' ?><?= $adminDarkVariant !== '' ? ' data-dark-variant="' . $adminDarkVariant . '"' : '' ?>>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
-        // Dark is the default; a saved choice from the Appearance switch
+        // Light is the default (Prompt 39; dark was the default from
+        // Prompt 25). A saved choice from the Appearance switch
         // (localStorage, written only when someone clicks it) wins. Runs
-        // before the stylesheets so a saved light never flashes dark, and
-        // a first visit paints dark at once (<html> already says dark for
-        // the no-script case). If storage is blocked, dark.
+        // before the stylesheets so a saved dark never flashes light, and
+        // a first visit paints light at once (<html> already says light
+        // for the no-script case). If storage is blocked, light.
         (function () {
             try {
                 var key = 'smartlib-admin-theme';
                 var storedTheme = localStorage.getItem(key);
-                var resolvedTheme = (storedTheme === 'light' || storedTheme === 'dark') ? storedTheme : 'dark';
+                var resolvedTheme = (storedTheme === 'light' || storedTheme === 'dark') ? storedTheme : 'light';
                 document.documentElement.setAttribute('data-theme', resolvedTheme);
             } catch (error) {
-                document.documentElement.setAttribute('data-theme', 'dark');
+                document.documentElement.setAttribute('data-theme', 'light');
             }
         }());
     </script>
@@ -165,6 +166,9 @@ function stat_chip_meta(string $title): array {
     <?php $rowsCssVer = @filemtime(__DIR__ . '/../assets/css/admin_rows.css') ?: time(); ?>
     <link rel="stylesheet" href="../assets/css/admin_rows.css?v=<?= $rowsCssVer ?>">
     <?php endif; ?>
+    <?php // Phone and tablet shell (960px and below): top bar, slide-over menu, small-screen fixes. ?>
+    <?php $mobileCssVer = @filemtime(__DIR__ . '/../assets/css/admin_mobile.css') ?: time(); ?>
+    <link rel="stylesheet" href="../assets/css/admin_mobile.css?v=<?= $mobileCssVer ?>">
 </head>
 <body>
 <div class="admin-container">
@@ -242,7 +246,19 @@ function stat_chip_meta(string $title): array {
     }());
     </script>
 
-    <aside class="sidebar glass-card">
+    <!-- Phone and tablet top bar (960px and below; hidden above). The menu
+         button opens the sidebar below as a slide-over drawer
+         (admin_mobile.css, admin.js): one list of links for every size. -->
+    <header class="admin-topbar">
+        <button type="button" class="admin-menu-btn" id="adminMenuButton" aria-label="Open menu" aria-expanded="false" aria-controls="adminSidebar">
+            <span class="admin-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+        </button>
+        <img src="../assets/images/stjude_seal_64.png" class="admin-topbar-seal" alt="" width="32" height="32">
+        <span class="admin-topbar-title">SmartLib</span>
+    </header>
+    <div class="admin-nav-backdrop" id="adminNavBackdrop" aria-hidden="true"></div>
+
+    <aside class="sidebar glass-card" id="adminSidebar" aria-label="Main menu">
         <div class="sidebar-header">
             <img src="../assets/images/stjude_logo.jpg" class="sidebar-logo" alt="St. Jude logo">
             <h2>SmartLib</h2>
@@ -252,14 +268,14 @@ function stat_chip_meta(string $title): array {
                     type="button"
                     id="adminThemeToggle"
                     class="theme-toggle-btn"
-                    data-theme="dark"
-                    aria-label="Switch to light mode"
-                    title="Switch to light mode"
-                    aria-pressed="false"
+                    data-theme="light"
+                    aria-label="Switch to dark mode"
+                    title="Switch to dark mode"
+                    aria-pressed="true"
                 >
                     <span class="theme-toggle-copy">
                         <span class="theme-toggle-label">Appearance</span>
-                        <span class="theme-toggle-state">Dark mode</span>
+                        <span class="theme-toggle-state">Light mode</span>
                     </span>
                     <span class="theme-toggle-switch" aria-hidden="true">
                         <span class="theme-toggle-knob"></span>

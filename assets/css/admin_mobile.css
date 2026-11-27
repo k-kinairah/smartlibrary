@@ -1,0 +1,437 @@
+/* ============================================================
+   SmartLib admin: phone and tablet shell (Prompt 39)
+   ------------------------------------------------------------
+   Loaded last on every admin page (admin/layout_top.php). Everything
+   that changes the layout is inside @media (max-width: 960px); above
+   that only the top bar and the backdrop are hidden, so the desktop is
+   unchanged. Neutral rules are unscoped, colours are scoped per theme
+   (html[data-theme="light"] / html[data-theme="dark"]).
+
+   1. Top bar and slide-over menu (the existing sidebar becomes the
+      drawer; one list of links for every size). Behaviour: admin.js.
+   2. Small-screen fixes found by the audit, one page group at a time.
+
+   Stacking order (960px and below): top bar 900 < backdrop 940 <
+   drawer 950 < every modal and confirmation (admin.css, 1000+).
+   ============================================================ */
+
+/* hidden on the desktop */
+.admin-topbar,
+.admin-nav-backdrop {
+    display: none;
+}
+
+/* ============================================================
+   1. Top bar and drawer
+   ============================================================ */
+@media (max-width: 960px) {
+    .admin-topbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        position: sticky;
+        top: 0;
+        z-index: 900;
+        margin: -16px -16px 0;
+        padding: calc(env(safe-area-inset-top, 0px) + 6px) 14px 6px 8px;
+        min-height: 56px;
+        box-sizing: border-box;
+    }
+
+    .admin-menu-btn {
+        flex: none;
+        width: 44px;
+        height: 44px;
+        display: inline-grid;
+        place-items: center;
+        padding: 0;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+    }
+
+    .admin-menu-btn:focus-visible {
+        outline: 2px solid #d89a2b;
+        outline-offset: 2px;
+    }
+
+    .admin-menu-icon {
+        display: grid;
+        gap: 4px;
+        width: 20px;
+    }
+
+    .admin-menu-icon > span {
+        display: block;
+        height: 2px;
+        border-radius: 2px;
+        background: currentColor;
+    }
+
+    .admin-topbar-seal {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        flex: none;
+    }
+
+    .admin-topbar-title {
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: 0.01em;
+    }
+
+    /* the sidebar becomes an off-canvas drawer */
+    html body .admin-container > .sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0;
+        bottom: 0;
+        z-index: 950;
+        width: min(300px, 86vw) !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        max-height: none;
+        margin: 0;
+        overflow-y: auto !important;
+        overscroll-behavior: contain;
+        padding-top: calc(env(safe-area-inset-top, 0px) + 18px);
+        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+        border-radius: 0 24px 24px 0 !important;
+        transform: translateX(-105%);
+        visibility: hidden;
+        transition: transform 0.22s ease, visibility 0s linear 0.22s;
+    }
+
+    html.is-nav-open body .admin-container > .sidebar {
+        transform: none;
+        visibility: visible;
+        transition: transform 0.22s ease, visibility 0s linear 0s;
+    }
+
+    .admin-nav-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 940;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.22s ease;
+    }
+
+    html.is-nav-open .admin-nav-backdrop {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* the page behind does not scroll while the menu is open */
+    html.is-nav-open,
+    html.is-nav-open body {
+        overflow: hidden;
+    }
+
+    /* nav links: comfortable tap targets in the drawer */
+    html body .admin-container > .sidebar .nav-link,
+    html body .admin-container > .sidebar .logout-btn {
+        min-height: 44px;
+    }
+
+    /* ---- light ---- */
+    html[data-theme="light"] .admin-topbar {
+        color: #0f3b2f;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(240, 250, 245, 0.78));
+        -webkit-backdrop-filter: blur(18px) saturate(1.6);
+        backdrop-filter: blur(18px) saturate(1.6);
+        box-shadow: 0 1px 0 rgba(26, 78, 66, 0.12), 0 10px 22px -18px rgba(15, 59, 47, 0.45);
+    }
+
+    html[data-theme="light"] .admin-menu-btn {
+        color: #0f3b2f;
+        background: linear-gradient(180deg, #fff, #eef7f3);
+        border-color: rgba(26, 78, 66, 0.24);
+    }
+
+    html[data-theme="light"] body .admin-container > .sidebar {
+        background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(240, 251, 246, 0.92)) !important;
+    }
+
+    html[data-theme="light"] .admin-nav-backdrop {
+        background: rgba(10, 40, 30, 0.38);
+    }
+
+    /* ---- dark ---- */
+    html[data-theme="dark"] .admin-topbar {
+        color: #f1fbf5;
+        background: linear-gradient(180deg, rgba(18, 52, 44, 0.97), rgba(8, 24, 20, 0.95));
+        box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08), 0 10px 22px -18px rgba(0, 0, 0, 0.8);
+    }
+
+    html[data-theme="dark"] .admin-menu-btn {
+        color: #f1fbf5;
+        background: rgba(61, 150, 127, 0.3);
+        border-color: rgba(153, 214, 197, 0.45);
+    }
+
+    /* the drawer sits over page text: no see-through in dark */
+    html[data-theme="dark"][data-palette="green"] body .admin-container > .sidebar {
+        background:
+            linear-gradient(180deg, #12342c, #08181a) padding-box,
+            linear-gradient(145deg, rgba(232, 181, 74, 0.58), rgba(232, 181, 74, 0.06) 35%, rgba(90, 190, 165, 0.06) 62%, rgba(90, 190, 165, 0.36)) border-box !important;
+    }
+
+    html[data-theme="dark"] .admin-nav-backdrop {
+        background: rgba(0, 0, 0, 0.55);
+    }
+}
+
+@media (max-width: 960px) and (prefers-reduced-motion: reduce) {
+    html body .admin-container > .sidebar,
+    html.is-nav-open body .admin-container > .sidebar,
+    .admin-nav-backdrop {
+        transition: none;
+    }
+}
+
+/* ============================================================
+   2. Small-screen fixes (audit)
+   ============================================================ */
+@media (max-width: 960px) {
+    /* 2a. The main column is as wide as the screen. admin.css aligns the
+       column items to flex-start, which let <main> grow to its widest
+       content (a long subtitle, a 730px filter bar) and pushed Archives,
+       Data Export, Bulk Import, Borrower History and the Dashboard
+       sideways. */
+    .admin-container {
+        align-items: stretch;
+    }
+
+    .admin-container > .main-content {
+        align-self: stretch;
+        width: auto;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    /* page header rows (title + buttons) wrap; buttons keep 44px */
+    .main-content .page-top {
+        flex-wrap: wrap;
+        gap: 10px 12px;
+        align-items: flex-start;
+    }
+
+    .main-content .page-top > * {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .main-content .page-top .page-top-actions {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .main-content .page-top :is(.btn-primary, .filter-reset-btn, .panel-link-btn, a.btn-primary) {
+        min-height: 44px;
+    }
+
+    .main-content :is(.page-heading, .page-subtitle, h1, h2) {
+        overflow-wrap: anywhere;
+    }
+
+    /* filter bars: buttons at 44px */
+    .main-content .filters-inline :is(button, .btn-primary, .filter-reset-btn) {
+        min-height: 44px;
+    }
+
+    /* form fields at 16px so iOS does not zoom in on focus */
+    .main-content :is(input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea),
+    .overlay-modal :is(input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea) {
+        font-size: 16px !important;
+    }
+
+    /* non-rr tables: scroll inside their own box, never widen the page */
+    .main-content .table-wrap {
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+@media (max-width: 600px) {
+    .admin-container > .main-content {
+        padding: 14px 12px;
+    }
+
+    .main-content .panel {
+        padding: 14px;
+    }
+
+    /* page header: the primary button may take the full width */
+    .main-content .page-top .page-top-actions {
+        width: 100%;
+    }
+
+    .main-content .page-top .page-top-actions > :is(.btn-primary, a.btn-primary) {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+
+    /* filter bars stack into one column with full-width inputs */
+    .main-content .filters-inline {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .main-content .filters-inline > *,
+    .main-content .filters-inline .search-field-wrap {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        flex: 1 1 auto;
+    }
+
+    /* stat tiles: two columns everywhere (no hidden tiles, no sideways
+       scroll). The Users row was a one-line scroller. */
+    .main-content .stats-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 10px !important;
+        overflow: visible !important;
+    }
+
+    .main-content .stats-grid > * {
+        min-width: 0 !important;
+        width: auto !important;
+    }
+
+    /* rich-row cards: row buttons at 40px */
+    .main-content table.rr-table .rr-actions :is(a, button) {
+        min-width: 40px;
+        min-height: 40px;
+    }
+}
+
+@media (max-width: 960px) {
+    /* 2b. Tap targets: buttons and fields at 40px or more */
+    .main-content :is(.btn-primary, .filter-reset-btn, .panel-link-btn, .od-remind-btn, .tb-tab, .reports-icon-btn, .reports-action-link, .archive-action-btn, .export-card .btn-primary) {
+        min-height: 40px;
+    }
+
+    .main-content :is(.borrower-history-back-link, .bulk-import-back-btn) {
+        min-width: 40px;
+        min-height: 40px;
+    }
+
+    .main-content :is(input:not([type=checkbox]):not([type=radio]):not([type=file]), select) {
+        min-height: 40px;
+    }
+
+    .main-content details > summary {
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+    }
+
+    /* 2c. Tables that are not rr- tables scroll inside their box; admin.js
+       marks them (is-scrollable / is-scrolled / is-at-end) and the edge
+       that hides more columns fades out, so it is clear they scroll. */
+    .main-content .table-wrap.is-scrollable:not(.is-scrolled):not(.is-at-end) {
+        -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+        mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+    }
+
+    .main-content .table-wrap.is-scrollable.is-scrolled:not(.is-at-end) {
+        -webkit-mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent);
+        mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent);
+    }
+
+    .main-content .table-wrap.is-scrollable.is-scrolled.is-at-end {
+        -webkit-mask-image: linear-gradient(to right, transparent, #000 36px);
+        mask-image: linear-gradient(to right, transparent, #000 36px);
+    }
+}
+
+@media (max-width: 600px) {
+    /* Books cards: the chevron like its neighbours, 40px */
+    html body .main-content table.data-table.rr-books .rr-actions .rr-expand {
+        width: 40px !important;
+        min-width: 40px !important;
+        height: 40px !important;
+    }
+
+
+    /* Bulk Import stepper: the labels wrap instead of pushing the page */
+    .main-content .bulk-import-stepper .bulk-import-stepper-step {
+        flex: 0 1 auto;
+        min-width: 0;
+        gap: 6px;
+    }
+
+    .main-content .bulk-import-stepper .bulk-import-stepper-label {
+        white-space: normal;
+        font-size: 12px;
+        line-height: 1.25;
+    }
+
+    .main-content .bulk-import-stepper .bulk-import-stepper-line {
+        min-width: 8px;
+        margin: 0 6px;
+    }
+}
+
+@media (max-width: 960px) {
+    /* 2d. Touch screens: list row buttons and pager numbers at 40px */
+    html body .main-content table.data-table.rr-table .rr-actions :is(.rr-expand, .user-action-icon-btn, .manage-book-icon-btn, .user-pin-btn, .user-toggle-btn) {
+        width: 40px !important;
+        min-width: 40px !important;
+        height: 40px !important;
+        min-height: 40px !important;
+    }
+
+    html body .main-content table.data-table.rr-borrow .borrow-action-icon-btn {
+        min-height: 40px !important;
+    }
+
+    .main-content .mb-pager .mb-pager-btn {
+        min-width: 40px;
+        min-height: 40px;
+    }
+
+    /* Borrow Records cards: a taller tap area for the History link without
+       moving the text (inline padding does not change the line box) */
+    html body .main-content table.data-table.rr-borrow .rr-meta .borrower-history-inline-link {
+        padding: 12px 4px !important;
+        margin: -12px -4px !important;
+    }
+}
+
+@media (min-width: 761px) and (max-width: 960px) {
+    /* Tablet tables (Books, Users): the Action column holds three 40px
+       buttons (128px + padding), so it takes a little from ID / Email. */
+    html[data-palette="green"] body table.data-table.rr-books > thead > tr > th:nth-child(2) { width: 8% !important; }
+    html[data-palette="green"] body table.data-table.rr-books > thead > tr > th:nth-child(5) { width: 24% !important; }
+    html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(2) { width: 16% !important; }
+    html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(5) { width: 22% !important; }
+}
+
+@media (max-width: 960px) {
+    /* Add/Edit Book fields: 16px too (their own rules are ID-specific) */
+    html body :is(#bookModal, #editBookModal) :is(.ab-input, .ab-step-input, input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea) {
+        font-size: 16px !important;
+    }
+}
+
+@media (min-width: 601px) and (max-width: 960px) {
+    /* Users status tiles: the one-line sideways scroller becomes 3 x 2,
+       like the other tile rows that wrap (no hidden tiles). */
+    .main-content .stats-grid.manage-users-chip-row {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        overflow: visible !important;
+    }
+
+    .main-content .stats-grid.manage-users-chip-row > * {
+        min-width: 0 !important;
+    }
+}
