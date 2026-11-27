@@ -17,6 +17,65 @@ if (!smartlib_active_staff_session($conn)) {
 require_once '../config/borrow_fine_rules.php';
 require_once '../config/admin_audit.php';
 require_once '../config/request_guard.php';
+require_once '../config/request_input.php';
+require_once __DIR__ . '/includes/list_pager.php';
+
+const BORROW_RECORDS_PER_PAGE = 50;
+const BORROW_RECORDS_STATUSES = ['borrowed', 'returned', 'overdue', 'missing'];
+
+/**
+ * The list's filters and page, read from $_GET ($prefix '') or from the
+ * row forms' hidden return_* inputs ($prefix 'return_'). Strings only;
+ * status from the whitelist; dates as YYYY-MM-DD (what the date input
+ * sends); page at least 1 (the list clamps it to the last page).
+ */
+function borrow_records_filters(array $source, string $prefix): array {
+    $text = static function (string $key) use ($source, $prefix): string {
+        $value = $source[$prefix . $key] ?? '';
+        return is_string($value) ? trim($value) : '';
+    };
+    $date = static function (string $key) use ($text): string {
+        $value = $text($key);
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) ? $value : '';
+    };
+    $status = $text('status');
+    return [
+        'search' => $text('search'),
+        'status' => in_array($status, BORROW_RECORDS_STATUSES, true) ? $status : '',
+        'date' => $date('date'),
+        'date_from' => $date('date_from'),
+        'date_to' => $date('date_to'),
+        'page' => max(1, smartlib_request_int($source, $prefix . 'page', 1)),
+    ];
+}
+
+/**
+ * Every Borrow Records list URL. Known keys only (in the order given);
+ * empty values and page 1 are left out; values are URL-encoded and the
+ * result is always a relative borrow_records.php URL (no open redirect).
+ */
+function borrow_records_url(array $params): string {
+    $allowed = ['search', 'status', 'date', 'date_from', 'date_to', 'page'];
+    $clean = [];
+    foreach ($params as $key => $value) {
+        if (!in_array($key, $allowed, true) || is_array($value)) {
+            continue;
+        }
+        $text = trim((string)$value);
+        if ($key === 'page') {
+            $number = (int)$text;
+            if ($number <= 1) {
+                continue;
+            }
+            $text = (string)$number;
+        }
+        if ($text !== '') {
+            $clean[$key] = $text;
+        }
+    }
+
+    return 'borrow_records.php' . (!empty($clean) ? ('?' . http_build_query($clean)) : '');
+}
 
 function qres(mysqli $conn, string $sql) {
     try {
@@ -43,6 +102,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_action'])
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_action'])) {
+    // Back to the page and filters the row was on (return_* inputs, same
+    // whitelist as the list). A page that no longer exists after the
+    // change shows the new last page (the list clamps it).
+    $borrowReturnUrl = borrow_records_url(borrow_records_filters($_POST, 'return_'));
     $action = trim((string)($_POST['record_action'] ?? ''));
     $recordId = (int)($_POST['record_id'] ?? 0);
     $allowedActions = ['mark_returned', 'mark_missing'];
@@ -97,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_action'])) {
                 if ($currentStatus === 'returned') {
                     $conn->rollback();
                     set_borrow_flash('info', 'This record is already marked as returned.');
-                    header('Location: borrow_records.php');
+                    header('Location: ' . $borrowReturnUrl);
                     exit;
                 }
 
@@ -163,14 +226,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_action'])) {
                 if ($currentStatus === 'missing') {
                     $conn->rollback();
                     set_borrow_flash('info', 'This record is already marked as missing.');
-                    header('Location: borrow_records.php');
+                    header('Location: ' . $borrowReturnUrl);
                     exit;
                 }
 
                 if ($currentStatus === 'returned') {
                     $conn->rollback();
                     set_borrow_flash('error', 'Returned records cannot be marked as missing.');
-                    header('Location: borrow_records.php');
+                    header('Location: ' . $borrowReturnUrl);
                     exit;
                 }
 
@@ -230,7 +293,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_action'])) {
         set_borrow_flash('error', 'Invalid request.');
     }
 
-    header('Location: borrow_records.php');
+    header('Location: ' . $borrowReturnUrl);
     exit;
 }
 
@@ -240,11 +303,13 @@ $finesOn = smartlib_fines_enabled($conn);
 $flash = $_SESSION['borrow_flash'] ?? null;
 unset($_SESSION['borrow_flash']);
 
-$search = trim($_GET['search'] ?? '');
-$status = trim($_GET['status'] ?? '');
-$dateFilter = trim($_GET['date'] ?? '');
-$dateFrom = trim($_GET['date_from'] ?? '');
-$dateTo = trim($_GET['date_to'] ?? '');
+$borrowFilters = borrow_records_filters($_GET, '');
+$search = $borrowFilters['search'];
+$status = $borrowFilters['status'];
+$dateFilter = $borrowFilters['date'];
+$dateFrom = $borrowFilters['date_from'];
+$dateTo = $borrowFilters['date_to'];
+$borrowPage = $borrowFilters['page'];
 
 if ($dateFilter !== '') {
     $dateFrom = $dateFilter;
@@ -267,7 +332,7 @@ if ($search !== '') {
     )";
 }
 
-$allowedStatus = ['borrowed', 'returned', 'overdue', 'missing'];
+$allowedStatus = BORROW_RECORDS_STATUSES;
 if (in_array($status, $allowedStatus, true)) {
     $safeStatus = $conn->real_escape_string($status);
     $where[] = "br.status = '$safeStatus'";
@@ -294,15 +359,7 @@ $baseFilterParams = [
 ];
 
 $buildBorrowRecordsUrl = static function (array $params): string {
-    $clean = [];
-    foreach ($params as $key => $value) {
-        $text = trim((string)$value);
-        if ($text !== '') {
-            $clean[(string)$key] = $text;
-        }
-    }
-
-    return 'borrow_records.php' . (!empty($clean) ? ('?' . http_build_query($clean)) : '');
+    return borrow_records_url($params);
 };
 
 $totalRecords = 0;
@@ -344,6 +401,28 @@ $chipMetrics = [
     ['status' => 'missing', 'title' => 'Missing', 'count' => $missingCount]
 ];
 
+// Paging: the filtered total uses the same joins and WHERE as the list.
+// The status tiles above still count every record.
+$filteredRecordsTotal = 0;
+$resFiltered = qres(
+    $conn,
+    "
+    SELECT COUNT(*) AS total
+    FROM borrow_records br
+    LEFT JOIN library_users u ON br.user_id = u.user_id
+    LEFT JOIN book_copies bc ON br.copy_id = bc.copy_id
+    LEFT JOIN books b ON bc.book_id = b.book_id
+    WHERE $whereSql
+    "
+);
+if ($resFiltered && ($r = $resFiltered->fetch_assoc())) {
+    $filteredRecordsTotal = (int)($r['total'] ?? 0);
+}
+$borrowTotalPages = max(1, (int)ceil($filteredRecordsTotal / BORROW_RECORDS_PER_PAGE));
+$borrowPage = min($borrowPage, $borrowTotalPages);
+$borrowPageOffset = ($borrowPage - 1) * BORROW_RECORDS_PER_PAGE;
+$borrowListParams = $baseFilterParams + ['status' => $activeStatus, 'page' => $borrowPage];
+
 $records = qres(
     $conn,
     "
@@ -369,7 +448,7 @@ $records = qres(
     LEFT JOIN books b ON bc.book_id = b.book_id
     WHERE $whereSql
     ORDER BY COALESCE(br.date_borrowed, DATE(br.created_at)) DESC, br.record_id DESC
-    LIMIT 250
+    LIMIT " . (int)$borrowPageOffset . ', ' . (int)BORROW_RECORDS_PER_PAGE . "
     "
 );
 require 'layout_top.php';
@@ -551,6 +630,9 @@ require 'layout_top.php';
                                             <input type="hidden" name="record_action" value="mark_returned">
                                             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(smartlib_staff_csrf_token()) ?>">
                                             <input type="hidden" name="record_id" value="<?= $rid ?>">
+                                            <?php foreach ($borrowListParams as $returnKey => $returnValue): ?>
+                                                <input type="hidden" name="return_<?= htmlspecialchars($returnKey) ?>" value="<?= htmlspecialchars((string)$returnValue) ?>">
+                                            <?php endforeach; ?>
                                             <button type="submit" class="borrow-action-icon-btn returned" aria-label="Mark returned">
                                                 <span class="borrow-action-icon" aria-hidden="true"><?= admin_icon('check-circle') ?></span>
                                                 <span class="borrow-action-label">Returned</span>
@@ -563,6 +645,9 @@ require 'layout_top.php';
                                             <input type="hidden" name="record_action" value="mark_missing">
                                             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(smartlib_staff_csrf_token()) ?>">
                                             <input type="hidden" name="record_id" value="<?= $rid ?>">
+                                            <?php foreach ($borrowListParams as $returnKey => $returnValue): ?>
+                                                <input type="hidden" name="return_<?= htmlspecialchars($returnKey) ?>" value="<?= htmlspecialchars((string)$returnValue) ?>">
+                                            <?php endforeach; ?>
                                             <button type="submit" class="borrow-action-icon-btn missing" aria-label="Mark missing">
                                                 <span class="borrow-action-icon" aria-hidden="true"><?= admin_icon('alert-triangle') ?></span>
                                                 <span class="borrow-action-label">Missing</span>
@@ -598,6 +683,7 @@ require 'layout_top.php';
             </tbody>
         </table>
     </div>
+    <?php smartlib_list_pager_render($borrowPage, $borrowTotalPages, $filteredRecordsTotal, BORROW_RECORDS_PER_PAGE, static function (int $pagerPage) use ($borrowListParams): string { return borrow_records_url(array_merge($borrowListParams, ['page' => $pagerPage])); }, 'records'); ?>
 </section>
 
 <script>
