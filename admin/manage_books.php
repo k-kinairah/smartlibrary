@@ -1639,10 +1639,12 @@ require 'layout_top.php';
                             }
 
                             // Cover: the kiosk's logic (fetch_books.php): the real file in
-                            // assets/covers/ when it exists, else the generated cover.
+                            // assets/covers/ when it exists, else the generated cover. The
+                            // list shows it at 40x57, so it uses the small thumbnail
+                            // (config/cover_thumbs.php) when one is up to date.
                             $rowCoverFile = basename((string)($row['cover'] ?? ''));
                             $rowCoverSrc = ($rowCoverFile !== '' && is_file(__DIR__ . '/../assets/covers/' . $rowCoverFile))
-                                ? '../assets/covers/' . $rowCoverFile
+                                ? smartlib_cover_thumb_url($rowCoverFile, '../')
                                 : '../' . book_cover_url($bookId);
 
                             $rowAuthor = trim((string)($row['author'] ?? ''));

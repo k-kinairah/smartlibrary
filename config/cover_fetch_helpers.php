@@ -24,6 +24,11 @@ declare(strict_types=1);
 // functions exist for the admin panel's single-book actions.
 
 const COVERS_DIR = __DIR__ . '/../assets/covers';
+
+// Small list thumbnails (assets/covers/thumbs/): made when a cover is saved
+// below, removed when it is cleared or replaced. A thumbnail that cannot be
+// made never fails the cover save (the lists then show the original).
+require_once __DIR__ . '/cover_thumbs.php';
 const USER_AGENT = 'SmartLibCoverFetch/1.0 (+library kiosk cataloging tool)';
 const TITLE_SIMILARITY_THRESHOLD = 90.0; // percent, via similar_text()
 const MIN_IMAGE_BYTES = 1000; // Open Library's "not found" placeholder is tiny; real covers aren't.
@@ -939,6 +944,11 @@ function fbc_db_set_cover(mysqli &$conn, int $bookId, string $filename, ?string 
             $stmt->bind_param('si', $filename, $bookId);
             $ok = $stmt->execute();
             $stmt->close();
+            if ($ok) {
+                // The nightly fetch (tools/fetch_book_covers.php) has just
+                // written this file: its thumbnail follows.
+                smartlib_cover_thumb_make(COVERS_DIR . '/' . basename($filename));
+            }
             return $ok;
         } catch (Throwable $e) {
             $error = $e->getMessage();
@@ -975,6 +985,7 @@ function fbc_save_cover_bytes(mysqli $conn, int $bookId, string $bytes, string $
     foreach (glob(COVERS_DIR . '/cover_' . $bookId . '.*') as $oldFile) {
         if (basename($oldFile) !== $filename) {
             @unlink($oldFile);
+            smartlib_cover_thumb_delete(basename($oldFile));
         }
     }
 
@@ -982,6 +993,10 @@ function fbc_save_cover_bytes(mysqli $conn, int $bookId, string $bytes, string $
     if ($written === false) {
         return ['ok' => false, 'error' => 'Could not write the cover image file.'];
     }
+    // The old thumbnail goes first, so a failed rebuild never leaves it in
+    // place (lists then show the new original); the result never matters here.
+    smartlib_cover_thumb_delete($filename);
+    smartlib_cover_thumb_make($fullPath);
     $stmt = $conn->prepare('UPDATE books SET cover = ? WHERE book_id = ?');
     if (!$stmt) {
         return ['ok' => false, 'error' => 'Database error preparing the cover update.'];
@@ -1175,6 +1190,9 @@ function fbc_clear_cover(mysqli $conn, int $bookId, ?string $coverFilename, stri
     }
     if ($ownFile !== null && is_file($ownFile)) {
         @unlink($ownFile);
+    }
+    if ($ownFile !== null) {
+        smartlib_cover_thumb_delete($coverFilename);
     }
     $stmt = $conn->prepare('UPDATE books SET cover = NULL WHERE book_id = ?');
     if (!$stmt) {
