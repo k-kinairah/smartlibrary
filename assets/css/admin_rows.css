@@ -66,13 +66,50 @@ html[data-palette="green"] body table.data-table.rr-table > tbody > tr[hidden] {
     display: none !important;
 }
 
-/* column widths (the thead is rebuilt, so nth-child is safe here) */
-html[data-palette="green"] body table.data-table.rr-books > thead > tr > th:nth-child(1) { width: 38% !important; }
-html[data-palette="green"] body table.data-table.rr-books > thead > tr > th:nth-child(2) { width: 8% !important; }
-html[data-palette="green"] body table.data-table.rr-books > thead > tr > th:nth-child(3) { width: 19% !important; }
-html[data-palette="green"] body table.data-table.rr-books > thead > tr > th:nth-child(4) { width: 19% !important; }
-html[data-palette="green"] body table.data-table.rr-books > thead > tr > th:nth-child(5) { width: 16% !important; }
+/* Column layout (Prompt 36b), desktop only (the card layout under 761px
+   is untouched). Rule for every rr- table: the first column (the identity)
+   is left-aligned; every other column is centred, header and cells, with
+   the same 8px side padding so their centres coincide. Books: ID = Status
+   and Category = Action in width, so on wide screens the four centres are
+   evenly spaced; the Book column takes the rest. Narrower desktops use
+   percentages (fixed widths squeeze the Book column there). */
 html[data-palette="green"] body table.data-table.rr-books > tbody > tr > td { width: auto !important; }
+
+@media (min-width: 761px) {
+    html[data-palette="green"] body table.data-table.rr-books > thead > tr > th:nth-child(n+2),
+    html[data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row > td.rr-c-id,
+    html[data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row > td.rr-c-cat,
+    html[data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row > td.rr-c-status,
+    html[data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row > td.rr-c-act {
+        text-align: center !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    html[data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row > td.rr-c-cat .rr-tags {
+        justify-content: center;
+    }
+
+    html[data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row > td.rr-c-act .rr-actions {
+        justify-content: center !important;
+    }
+
+    /* 761px to 1279px (measured: Book stays at 190px+ down to 800px, the
+       Action cell still holds its three 34px buttons) */
+    html[data-palette="green"] body table.data-table.rr-books > thead > tr > th:nth-child(1) { width: 28% !important; }
+    html[data-palette="green"] body table.data-table.rr-books > thead > tr > th:nth-child(2) { width: 10% !important; }
+    html[data-palette="green"] body table.data-table.rr-books > thead > tr > th:nth-child(3) { width: 21% !important; }
+    html[data-palette="green"] body table.data-table.rr-books > thead > tr > th:nth-child(4) { width: 21% !important; }
+    html[data-palette="green"] body table.data-table.rr-books > thead > tr > th:nth-child(5) { width: 20% !important; }
+}
+
+@media (min-width: 1280px) {
+    html[data-palette="green"] body table.data-table.rr-books > thead > tr > th:nth-child(1) { width: auto !important; }
+    html[data-palette="green"] body table.data-table.rr-books > thead > tr > th:nth-child(2),
+    html[data-palette="green"] body table.data-table.rr-books > thead > tr > th:nth-child(4) { width: clamp(140px, 10.5vw, 170px) !important; }
+    html[data-palette="green"] body table.data-table.rr-books > thead > tr > th:nth-child(3),
+    html[data-palette="green"] body table.data-table.rr-books > thead > tr > th:nth-child(5) { width: clamp(186px, 14vw, 220px) !important; }
+}
 
 /* the row card (no backdrop-filter on rows, ever) */
 html[data-palette="green"] body table.data-table.rr-table > tbody > tr.rr-row {
@@ -208,6 +245,20 @@ html[data-palette="green"] body table.data-table.rr-table .rr-chip {
     overflow: hidden;
     text-overflow: ellipsis;
     border: 1px solid transparent;
+}
+
+/* chip text in its own span so a long name ends in an ellipsis (the
+   chip is a flex container, where text-overflow has no effect) */
+html[data-palette="green"] body table.data-table.rr-table .rr-chip {
+    min-width: 0;
+}
+
+html[data-palette="green"] body table.data-table.rr-table .rr-chip-text {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 html[data-palette="green"] body table.data-table.rr-table .rr-chip.soft {
@@ -499,22 +550,24 @@ html[data-theme="light"][data-palette="green"] body table.data-table.rr-table .r
     box-shadow: 0 0 0 1px rgba(190, 60, 60, 0.4), 0 6px 12px -8px rgba(150, 40, 40, 0.5), inset 0 1px 0 #fff;
 }
 
-/* status badge colour follows the row tone (classes stay as they are) */
-html[data-theme="light"][data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row[data-tone="ok"] .badge {
+/* status badge colour follows the status itself (data-badge); the row
+   bar (data-tone) can be red for an overdue copy while the badge stays
+   gold "Borrowed". Classes stay as they are. */
+html[data-theme="light"][data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row .badge[data-badge="ok"] {
     color: #0b4a37 !important;
     background: linear-gradient(180deg, rgba(214, 250, 234, 0.95), rgba(150, 226, 191, 0.55)) !important;
     border: 1px solid rgba(255, 255, 255, 0.9) !important;
     box-shadow: 0 0 0 1px rgba(23, 137, 95, 0.42), 0 6px 12px -8px rgba(15, 100, 76, 0.5), inset 0 1px 0 #fff !important;
 }
 
-html[data-theme="light"][data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row[data-tone="warn"] .badge {
+html[data-theme="light"][data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row .badge[data-badge="warn"] {
     color: #6b4200 !important;
     background: linear-gradient(180deg, rgba(255, 240, 190, 0.95), rgba(250, 214, 120, 0.55)) !important;
     border: 1px solid rgba(255, 255, 255, 0.9) !important;
     box-shadow: 0 0 0 1px rgba(216, 154, 43, 0.5), 0 6px 12px -8px rgba(160, 110, 6, 0.5), inset 0 1px 0 #fff !important;
 }
 
-html[data-theme="light"][data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row[data-tone="bad"] .badge {
+html[data-theme="light"][data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row .badge[data-badge="bad"] {
     color: #8a1f1f !important;
     background: linear-gradient(180deg, rgba(255, 226, 226, 0.95), rgba(244, 170, 170, 0.5)) !important;
     border: 1px solid rgba(255, 255, 255, 0.9) !important;
@@ -639,19 +692,19 @@ html[data-theme="dark"][data-palette="green"] body table.data-table.rr-table .rr
     border-color: rgba(255, 127, 137, 0.4);
 }
 
-html[data-theme="dark"][data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row[data-tone="ok"] .badge {
+html[data-theme="dark"][data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row .badge[data-badge="ok"] {
     color: #89f2b6 !important;
     background: rgba(137, 242, 182, 0.16) !important;
     border: 1px solid rgba(137, 242, 182, 0.4) !important;
 }
 
-html[data-theme="dark"][data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row[data-tone="warn"] .badge {
+html[data-theme="dark"][data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row .badge[data-badge="warn"] {
     color: #ffbe63 !important;
     background: rgba(255, 190, 99, 0.14) !important;
     border: 1px solid rgba(255, 190, 99, 0.4) !important;
 }
 
-html[data-theme="dark"][data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row[data-tone="bad"] .badge {
+html[data-theme="dark"][data-palette="green"] body table.data-table.rr-books > tbody > tr.rr-row .badge[data-badge="bad"] {
     color: #ff98a1 !important;
     background: rgba(255, 152, 161, 0.16) !important;
     border: 1px solid rgba(255, 152, 161, 0.4) !important;
@@ -805,9 +858,35 @@ html[data-theme="dark"][data-palette="green"] body table.data-table.rr-books .co
     }
 }
 
+/* Phone card: the accent bar is drawn on the row itself (the first cell
+   is a grid area there), per theme so it beats the theme's row shadow,
+   and it stays on hover. */
 @media (max-width: 760px) {
-    html[data-theme="dark"][data-palette="green"] body table.data-table.rr-table > tbody > tr.rr-row {
+    html[data-theme="light"][data-palette="green"] body table.data-table.rr-table > tbody > tr.rr-row,
+    html[data-theme="light"][data-palette="green"] body table.data-table.rr-table > tbody > tr.rr-row:hover,
+    html[data-theme="light"][data-palette="green"] body table.data-table.rr-table > tbody > tr.rr-row:focus-within {
+        box-shadow: inset 4px 0 0 rgb(var(--acc)), 0 16px 24px -20px rgba(15, 59, 47, 0.55), 0 0 0 1px rgba(26, 78, 66, 0.1), inset 0 1px 0 #fff;
+    }
+
+    html[data-theme="dark"][data-palette="green"] body table.data-table.rr-table > tbody > tr.rr-row,
+    html[data-theme="dark"][data-palette="green"] body table.data-table.rr-table > tbody > tr.rr-row:hover,
+    html[data-theme="dark"][data-palette="green"] body table.data-table.rr-table > tbody > tr.rr-row:focus-within {
         box-shadow: inset 4px 0 0 rgb(var(--acc)), 0 0 0 1px rgba(255, 255, 255, 0.07);
+    }
+
+    /* copy cards: the borrower name and user number wrap instead of being cut */
+    html[data-palette="green"] body table.data-table.rr-books .rr-copy-sub {
+        flex-wrap: wrap;
+        row-gap: 4px;
+    }
+
+    html[data-palette="green"] body table.data-table.rr-books .rr-copy-who {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        flex: 1 1 0;
+        min-width: 0;
+        overflow-wrap: anywhere;
     }
 }
 

@@ -1590,9 +1590,13 @@ require 'layout_top.php';
                             $total = (int)($row['total_copies'] ?? 0);
                             $copiesForRow = $bookCopyMap[$bookId] ?? [];
                             $borrowedAccessionNos = [];
+                            $rowHasOverdueCopy = false;
                             foreach ($copiesForRow as $copyRowForBook) {
                                 $copyState = strtolower((string)($copyRowForBook['copy_status'] ?? ''));
                                 $loanState = strtolower((string)($copyRowForBook['loan_status'] ?? ''));
+                                if ($loanState === 'overdue') {
+                                    $rowHasOverdueCopy = true;
+                                }
                                 if (in_array($copyState, ['borrowed', 'overdue', 'missing'], true) || in_array($loanState, ['borrowed', 'overdue', 'missing'], true)) {
                                     $accText = trim((string)($copyRowForBook['accession_no'] ?? ''));
                                     if ($accText !== '') {
@@ -1614,8 +1618,12 @@ require 'layout_top.php';
                                 $statusText = 'Borrowed';
                                 $statusClass = 'inactive';
                             }
-                            // Row accent: ok = Available, warn = Borrowed, bad = no copies.
+                            // Row accent: bad = no copies or any copy on an overdue loan,
+                            // warn = Borrowed, ok = Available. The badge text is unchanged.
                             $rowTone = $statusText === 'Available' ? 'ok' : ($statusText === 'Borrowed' ? 'warn' : 'bad');
+                            if ($rowHasOverdueCopy) {
+                                $rowTone = 'bad';
+                            }
 
                             // Cover: the kiosk's logic (fetch_books.php): the real file in
                             // assets/covers/ when it exists, else the generated cover.
@@ -1662,16 +1670,16 @@ require 'layout_top.php';
                             ?>
                             <td class="rr-c-cat">
                                 <div class="rr-tags">
-                                    <span class="rr-chip soft" title="<?= htmlspecialchars($row['genre_name'] ?? 'Uncategorized') ?>"><?= htmlspecialchars($row['genre_name'] ?? 'Uncategorized') ?></span>
+                                    <span class="rr-chip soft" title="<?= htmlspecialchars($row['genre_name'] ?? 'Uncategorized') ?>"><span class="rr-chip-text"><?= htmlspecialchars($row['genre_name'] ?? 'Uncategorized') ?></span></span>
                                     <?php if ($rowMainProgramId > 0 && isset($programNameById[$rowMainProgramId])): ?>
-                                        <span class="rr-chip gold" title="<?= htmlspecialchars($programNameById[$rowMainProgramId]) ?>"><?= htmlspecialchars($programNameById[$rowMainProgramId]) ?></span><?php if (!empty($rowOtherNames)): ?> <span class="rr-chip gold rr-chip-more" title="<?= htmlspecialchars(implode(', ', $rowAllNames)) ?>">+<?= count($rowOtherNames) ?><span class="pp-sr"> more: <?= htmlspecialchars(implode(', ', $rowOtherNames)) ?></span></span><?php endif; ?>
+                                        <span class="rr-chip gold" title="<?= htmlspecialchars($programNameById[$rowMainProgramId]) ?>"><span class="rr-chip-text"><?= htmlspecialchars($programNameById[$rowMainProgramId]) ?></span></span><?php if (!empty($rowOtherNames)): ?> <span class="rr-chip gold rr-chip-more" title="<?= htmlspecialchars(implode(', ', $rowAllNames)) ?>">+<?= count($rowOtherNames) ?><span class="pp-sr"> more: <?= htmlspecialchars(implode(', ', $rowOtherNames)) ?></span></span><?php endif; ?>
                                     <?php elseif (!empty($rowProgramIds)): ?>
-                                        <span class="rr-chip gold" title="<?= htmlspecialchars(implode(', ', $rowAllNames)) ?>"><?= count($rowProgramIds) === count($programNameById) ? 'All programs' : (count($rowProgramIds) . (count($rowProgramIds) === 1 ? ' program' : ' programs')) ?></span>
+                                        <span class="rr-chip gold" title="<?= htmlspecialchars(implode(', ', $rowAllNames)) ?>"><span class="rr-chip-text"><?= count($rowProgramIds) === count($programNameById) ? 'All programs' : (count($rowProgramIds) . (count($rowProgramIds) === 1 ? ' program' : ' programs')) ?></span></span>
                                     <?php endif; ?>
                                 </div>
                             </td>
                             <td class="rr-c-status">
-                                <span class="badge status-<?= htmlspecialchars($statusClass) ?>"><?= htmlspecialchars($statusText) ?><?php if ($total > 1): ?><span class="rr-badge-count" title="<?= number_format($available) ?> of <?= number_format($total) ?> copies available"><?= number_format($available) ?>/<?= number_format($total) ?></span><?php endif; ?></span>
+                                <span class="badge status-<?= htmlspecialchars($statusClass) ?>" data-badge="<?= $statusText === 'Available' ? 'ok' : ($statusText === 'Borrowed' ? 'warn' : 'bad') ?>"><?= htmlspecialchars($statusText) ?><?php if ($total > 1): ?><span class="rr-badge-count" title="<?= number_format($available) ?> of <?= number_format($total) ?> copies available"><?= number_format($available) ?>/<?= number_format($total) ?></span><?php endif; ?></span>
                             </td>
                             <td class="rr-c-act book-actions-cell">
                                 <div class="rr-actions">
