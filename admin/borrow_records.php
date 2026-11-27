@@ -425,17 +425,45 @@ require 'layout_top.php';
 
 <section class="panel glass-card data-table-panel">
     <div class="table-wrap">
-        <table class="data-table borrow-table<?= $finesOn ? '' : ' borrow-table-no-fine' ?>">
+        <?php
+            // Rich rows (Prompt 37). "Today" is the same one the overdue sync uses
+            // (config/borrow_fine_rules.php: new DateTimeImmutable('today') in the
+            // app timezone set by config/db_connect.php); whole dates are compared.
+            $rrToday = new DateTimeImmutable('today');
+            $rrYear = $rrToday->format('Y');
+            $rrDate = static function ($value) {
+                $ymd = substr(trim((string)$value), 0, 10);
+                $d = preg_match('/^\d{4}-\d{2}-\d{2}$/', $ymd) ? DateTimeImmutable::createFromFormat('!Y-m-d', $ymd) : false;
+                return $d ?: null;
+            };
+            $rrShortDate = static function (?DateTimeImmutable $d) use ($rrYear): string {
+                if ($d === null) {
+                    return '-';
+                }
+                return $d->format('Y') === $rrYear ? $d->format('M j') : $d->format('M j, Y');
+            };
+            $rrInitials = static function (string $first, string $last, string $fallback): string {
+                $letters = '';
+                foreach ([$first, $last] as $part) {
+                    $part = trim($part);
+                    if ($part !== '') {
+                        $letters .= mb_strtoupper(mb_substr($part, 0, 1, 'UTF-8'), 'UTF-8');
+                    }
+                }
+                if ($letters === '') {
+                    $letters = mb_strtoupper(mb_substr(trim($fallback), 0, 2, 'UTF-8'), 'UTF-8');
+                }
+                return $letters !== '' ? $letters : '?';
+            };
+        ?>
+        <table class="data-table borrow-table rr-table rr-borrow<?= $finesOn ? '' : ' borrow-table-no-fine' ?>">
             <thead>
                 <tr>
-                    <th>Record #</th>
+                    <th>Record</th>
                     <th>User</th>
                     <th>Book</th>
-                    <th>Borrowed</th>
-                    <th>Due</th>
-                    <th>Returned</th>
+                    <th>Dates</th>
                     <th>Status</th>
-                    <?php if ($finesOn): ?><th>Fine</th><?php endif; ?>
                     <th>Action</th>
                 </tr>
             </thead>
@@ -467,22 +495,60 @@ require 'layout_top.php';
                             $fine = number_format((float)($row['fine'] ?? 0), 2);
                             $canMarkReturned = in_array($statusVal, ['borrowed', 'overdue', 'missing'], true);
                             $canMarkMissing = in_array($statusVal, ['borrowed', 'overdue'], true);
+
+                            // Row accent: Returned ok, Borrowed warn, Overdue / Missing bad.
+                            $rowTone = $statusVal === 'returned' ? 'ok' : (in_array($statusVal, ['overdue', 'missing'], true) ? 'bad' : 'warn');
+                            // Relative date badge.
+                            $rowBorrowed = $rrDate($row['date_borrowed'] ?? null);
+                            $rowDue = $rrDate($row['due_date'] ?? null);
+                            $rowReturned = $rrDate($row['date_returned'] ?? null);
+                            if ($statusVal === 'returned') {
+                                $dueBadgeTone = 'mint';
+                                $dueBadgeText = $rowReturned !== null ? 'Returned ' . $rrShortDate($rowReturned) : 'Returned';
+                            } elseif ($rowDue === null) {
+                                $dueBadgeTone = 'soft';
+                                $dueBadgeText = 'No due date';
+                            } else {
+                                $daysLeft = (int)$rrToday->diff($rowDue)->format('%r%a');
+                                if ($daysLeft < 0) {
+                                    $dueBadgeTone = 'red';
+                                    $dueBadgeText = abs($daysLeft) . (abs($daysLeft) === 1 ? ' day late' : ' days late');
+                                } elseif ($daysLeft === 0) {
+                                    $dueBadgeTone = 'gold';
+                                    $dueBadgeText = 'Due today';
+                                } else {
+                                    $dueBadgeTone = 'gold';
+                                    $dueBadgeText = 'Due in ' . $daysLeft . ($daysLeft === 1 ? ' day' : ' days');
+                                }
+                            }
                         ?>
-                        <tr class="borrow-row" data-detail="detail-<?= $rid ?>">
-                            <td>#<?= $rid ?></td>
-                            <td>
-                                <div><?= htmlspecialchars($borrower) ?></div>
-                                <small><?= htmlspecialchars($userNo) ?></small>
-                                <a class="borrower-history-inline-link" href="borrower_history.php?user_id=<?= (int)($row['user_id'] ?? 0) ?>">History</a>
+                        <tr class="borrow-row rr-row" data-detail="detail-<?= $rid ?>" data-tone="<?= $rowTone ?>">
+                            <td class="rr-c-rec"><span class="rr-id">#<?= $rid ?></span></td>
+                            <td class="rr-c-user">
+                                <div class="rr-person">
+                                    <span class="rr-avatar" aria-hidden="true"><?= htmlspecialchars($rrInitials((string)($row['first_name'] ?? ''), (string)($row['last_name'] ?? ''), $userNo)) ?></span>
+                                    <div class="rr-stack">
+                                        <div class="rr-title"><?= htmlspecialchars($borrower) ?></div>
+                                        <div class="rr-meta"><?= htmlspecialchars($userNo) ?> · <a class="borrower-history-inline-link" href="borrower_history.php?user_id=<?= (int)($row['user_id'] ?? 0) ?>">History</a></div>
+                                    </div>
+                                </div>
                             </td>
-                            <td><?= htmlspecialchars($title) ?></td>
-                            <td><?= htmlspecialchars((string)($row['date_borrowed'] ?? '-')) ?></td>
-                            <td><?= htmlspecialchars((string)($row['due_date'] ?? '-')) ?></td>
-                            <td><?= htmlspecialchars((string)($row['date_returned'] ?? '-')) ?></td>
-                            <td><span class="<?= htmlspecialchars($statusTextClass) ?>"><?= htmlspecialchars($statusText) ?></span></td>
-                            <?php if ($finesOn): ?><td><?= htmlspecialchars($fine) ?></td><?php endif; ?>
-                            <td>
-                                <div class="borrow-action-row">
+                            <td class="rr-c-book">
+                                <div class="rr-stack">
+                                    <div class="rr-title"><?= htmlspecialchars($title) ?></div>
+                                    <div class="rr-meta">Accession <b><?= htmlspecialchars($accession) ?></b></div>
+                                </div>
+                            </td>
+                            <td class="rr-c-dates">
+                                <div class="rr-due">
+                                    <span class="rr-chip <?= $dueBadgeTone ?>"><span class="rr-chip-text"><?= htmlspecialchars($dueBadgeText) ?></span></span>
+                                    <small><?= htmlspecialchars($rrShortDate($rowBorrowed)) ?> &rarr; <?= htmlspecialchars($rrShortDate($rowDue)) ?></small>
+                                    <?php if ($finesOn): ?><small class="rr-fine">Fine <?= htmlspecialchars($fine) ?></small><?php endif; ?>
+                                </div>
+                            </td>
+                            <td class="rr-c-status"><span class="<?= htmlspecialchars($statusTextClass) ?>"><?= htmlspecialchars($statusText) ?></span></td>
+                            <td class="rr-c-act">
+                                <div class="borrow-action-row rr-actions rr-actions-stack">
                                     <?php if ($canMarkReturned): ?>
                                         <form method="POST" class="row-action-form borrow-confirm-form" data-borrow-action="returned" data-book-title="<?= htmlspecialchars($title) ?>">
                                             <input type="hidden" name="record_action" value="mark_returned">
@@ -514,7 +580,8 @@ require 'layout_top.php';
                             </td>
                         </tr>
                         <tr id="detail-<?= $rid ?>" class="borrow-detail-row" hidden>
-                            <td colspan="<?= $finesOn ? 9 : 8 ?>">
+                            <td colspan="6">
+                                <div class="rr-detail-panel">
                                 <div class="borrow-detail-grid">
                                     <div><strong>ISBN</strong><span><?= htmlspecialchars($isbn) ?></span></div>
                                     <div><strong>Accession No</strong><span><?= htmlspecialchars($accession) ?></span></div>
@@ -522,12 +589,13 @@ require 'layout_top.php';
                                     <div><strong>Copy ID</strong><span><?= (int)($row['copy_id'] ?? 0) ?></span></div>
                                     <div><strong>Created At</strong><span><?= htmlspecialchars((string)($row['created_at'] ?? '-')) ?></span></div>
                                 </div>
+                                </div>
                             </td>
                         </tr>
                     <?php endwhile; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="<?= $finesOn ? 9 : 8 ?>">No borrow records found.</td>
+                        <td colspan="6">No borrow records found.</td>
                     </tr>
                 <?php endif; ?>
             </tbody>

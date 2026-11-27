@@ -768,12 +768,26 @@ require 'layout_top.php';
 
 <section class="panel glass-card data-table-panel">
     <div class="table-wrap">
-        <table class="data-table manage-users-table">
+        <?php
+            // Rich rows (Prompt 37): initials of the first and last name, multibyte safe.
+            $rrInitials = static function (string $first, string $last, string $fallback): string {
+                $letters = '';
+                foreach ([$first, $last] as $part) {
+                    $part = trim($part);
+                    if ($part !== '') {
+                        $letters .= mb_strtoupper(mb_substr($part, 0, 1, 'UTF-8'), 'UTF-8');
+                    }
+                }
+                if ($letters === '') {
+                    $letters = mb_strtoupper(mb_substr(trim($fallback), 0, 2, 'UTF-8'), 'UTF-8');
+                }
+                return $letters !== '' ? $letters : '?';
+            };
+        ?>
+        <table class="data-table manage-users-table rr-table rr-users">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>User Number</th>
+                    <th>User</th>
                     <th>Email</th>
                     <th>Role</th>
                     <th>Status</th>
@@ -820,14 +834,34 @@ require 'layout_top.php';
                                 $userDisplayName = (string)($u['user_number'] ?? 'this user');
                             }
                         ?>
-                        <tr id="user-row-<?= intval($u['user_id']) ?>">
-                            <td><?= intval($u['user_id']) ?></td>
-                            <td><?= htmlspecialchars((string)$u['first_name'] . ' ' . (string)$u['last_name']) ?></td>
-                            <td><?= htmlspecialchars((string)$u['user_number']) ?></td>
-                            <td class="user-meta-text"><?= htmlspecialchars((string)($u['email'] ?? '') !== '' ? (string)$u['email'] : '-') ?></td>
-                            <td class="<?= htmlspecialchars($roleTextClass) ?>"><?= htmlspecialchars($displayRole) ?><?php if ($rowAffiliation !== ''): ?><br><small><?= htmlspecialchars($rowAffiliation) ?></small><?php endif; ?></td>
-                            <td><span class="<?= htmlspecialchars($statusClass) ?>"><?= htmlspecialchars($statusLabel) ?></span></td>
-                            <td class="user-actions-cell">
+                        <?php
+                            // Row accent: the only statuses are active (ok) and inactive (bad).
+                            $rowTone = $rowStatus === 'active' ? 'ok' : 'bad';
+                            // Avatar and role chip colours: student emerald/mint, faculty gold, librarian teal.
+                            $rowAvatarTone = $roleClassKey === 'faculty' ? ' gold' : ($roleClassKey === 'librarian' ? ' teal' : '');
+                            $rowRoleChip = $roleClassKey === 'faculty' ? 'gold' : ($roleClassKey === 'librarian' ? 'teal' : 'mint');
+                            $rowEmail = (string)($u['email'] ?? '') !== '' ? (string)$u['email'] : '-';
+                        ?>
+                        <tr class="rr-row" id="user-row-<?= intval($u['user_id']) ?>" data-tone="<?= $rowTone ?>">
+                            <td class="rr-c-user">
+                                <div class="rr-person">
+                                    <span class="rr-avatar<?= $rowAvatarTone ?>" aria-hidden="true"><?= htmlspecialchars($rrInitials((string)$u['first_name'], (string)$u['last_name'], (string)$u['user_number'])) ?></span>
+                                    <div class="rr-stack">
+                                        <div class="rr-title"><?= htmlspecialchars((string)$u['first_name'] . ' ' . (string)$u['last_name']) ?></div>
+                                        <div class="rr-meta">ID <b><?= intval($u['user_id']) ?></b> · <?= htmlspecialchars((string)$u['user_number']) ?></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="rr-c-email user-meta-text"><span class="rr-sub" title="<?= htmlspecialchars($rowEmail) ?>"><?= htmlspecialchars($rowEmail) ?></span></td>
+                            <td class="rr-c-role <?= htmlspecialchars($roleTextClass) ?>">
+                                <div class="rr-stack rr-role-stack">
+                                    <span class="rr-chip <?= $rowRoleChip ?>"><span class="rr-chip-text"><?= htmlspecialchars($displayRole) ?></span></span>
+                                    <?php if ($rowAffiliation !== ''): ?><span class="rr-meta"><?= htmlspecialchars($rowAffiliation) ?></span><?php endif; ?>
+                                </div>
+                            </td>
+                            <td class="rr-c-status"><span class="<?= htmlspecialchars($statusClass) ?>"><?= htmlspecialchars($statusLabel) ?></span></td>
+                            <td class="rr-c-act user-actions-cell">
+                                <div class="rr-actions">
                                 <a class="btn-status user-pin-btn user-action-icon-btn borrower-history-icon-btn" href="<?= htmlspecialchars($historyHref) ?>" aria-label="View borrower history">
                                     <?= admin_icon('history') ?>
                                 </a>
@@ -841,11 +875,12 @@ require 'layout_top.php';
                                         <?= admin_icon($u['status'] === 'active' ? 'user-x' : 'user-check') ?>
                                     </button>
                                 </form>
+                                </div>
                             </td>
                         </tr>
                     <?php endwhile; ?>
                 <?php else: ?>
-                    <tr><td colspan="7">No users found.</td></tr>
+                    <tr><td colspan="5">No users found.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>

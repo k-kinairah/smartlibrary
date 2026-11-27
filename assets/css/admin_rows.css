@@ -3,8 +3,8 @@
    ------------------------------------------------------------
    Loaded after admin_light_glass.css on every admin page
    (admin/layout_top.php). Only tables marked rr-table use it; in this
-   prompt that is the Manage Books list (rr-table rr-books). Users and
-   Borrow Records follow in Prompt 37.
+   prompt that is the Manage Books list (rr-table rr-books); Prompt 37 adds
+   Manage Users (rr-users) and Borrow Records (rr-borrow), section 3b.
 
    MARKUP CONTRACT
      <table class="... rr-table rr-books">
@@ -763,6 +763,306 @@ html[data-theme="dark"][data-palette="green"] body table.data-table.rr-books .co
 }
 
 /* ============================================================
+   3b. Manage Users (rr-users) and Borrow Records (rr-borrow), Prompt 37.
+   Same column layout rule as Books (Prompt 36b): the identity columns
+   are left-aligned, the others centred with 8px side padding on header
+   and cells; on wide screens the centred columns have equal widths so
+   their centres are evenly spaced, and Email / Book take the rest.
+   ============================================================ */
+
+/* ---- shared building blocks (both themes) ---- */
+html[data-palette="green"] body table.data-table.rr-table .rr-person {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    min-width: 0;
+}
+
+html[data-palette="green"] body table.data-table.rr-table .rr-avatar {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    line-height: 1;
+}
+
+html[data-palette="green"] body table.data-table.rr-table .rr-due {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+    min-width: 0;
+}
+
+html[data-palette="green"] body table.data-table.rr-table .rr-due small {
+    font-size: 11.5px;
+    white-space: nowrap;
+}
+
+html[data-palette="green"] body table.data-table.rr-table .rr-due .rr-chip {
+    max-width: 100%;
+}
+
+/* status texts that already exist (.user-status-text, .borrow-record-status-text):
+   inside rr tables only the pill shape, never wrapping */
+html[data-palette="green"] body table.data-table.rr-table .user-status-text,
+html[data-palette="green"] body table.data-table.rr-table .borrow-record-status-text {
+    border-radius: 999px !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center;
+    max-width: 100%;
+}
+
+/* Users: email on one line with an ellipsis (full address in title) */
+html[data-palette="green"] body table.data-table.rr-users td.rr-c-email .rr-sub {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 13px;
+}
+
+/* Users: role chip and the program under it, centred; long programs wrap */
+html[data-palette="green"] body table.data-table.rr-users td.rr-c-role {
+    white-space: normal !important;
+}
+
+html[data-palette="green"] body table.data-table.rr-users .rr-role-stack {
+    gap: 5px;
+    align-items: center;
+}
+
+html[data-palette="green"] body table.data-table.rr-users .rr-role-stack .rr-meta {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.3;
+}
+
+/* Borrow Records: History link in the meta line */
+html[data-palette="green"] body table.data-table.rr-borrow .rr-meta .borrower-history-inline-link {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: inherit !important;
+    font-weight: 700;
+    background: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    display: inline !important;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+/* Borrow Records: stacked Returned / Missing buttons, centred */
+html[data-palette="green"] body table.data-table.rr-borrow .rr-actions.rr-actions-stack {
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+}
+
+/* Borrow Records: the expanded detail, an inset card tucked under its row
+   (the Books copies panel look). NOT approved yet. */
+html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.borrow-detail-row:not([hidden]) {
+    background: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.borrow-detail-row > td {
+    padding: 0 14px 6px 64px !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+html[data-palette="green"] body table.data-table.rr-borrow .rr-detail-panel {
+    margin-top: -4px;
+    padding: 14px 16px;
+    border-radius: 18px;
+}
+
+html[data-palette="green"] body table.data-table.rr-borrow .rr-detail-panel .borrow-detail-grid {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: none !important;
+    box-shadow: none !important;
+}
+
+html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row {
+    cursor: pointer;
+}
+
+/* Pages with a rich-row list: the main column never grows wider than its
+   container. Manage Users' status tile row (6 tiles, 168px minimum, its own
+   sideways scroll) used to widen the whole page below about 1100px; now it
+   scrolls inside the column instead. */
+html[data-palette="green"] body:has(table.data-table.rr-table) .main-content {
+    max-width: 100%;
+    min-width: 0;
+}
+
+/* ---- column layout (desktop) ---- */
+html[data-palette="green"] body table.data-table:is(.rr-users, .rr-borrow) > tbody > tr > td {
+    width: auto !important;
+}
+
+@media (min-width: 761px) {
+    /* centred columns, header and cells */
+    html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(n+3),
+    html[data-palette="green"] body table.data-table.rr-users > tbody > tr.rr-row > td.rr-c-role,
+    html[data-palette="green"] body table.data-table.rr-users > tbody > tr.rr-row > td.rr-c-status,
+    html[data-palette="green"] body table.data-table.rr-users > tbody > tr.rr-row > td.rr-c-act,
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(n+4),
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-dates,
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-status,
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-act {
+        text-align: center !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    /* left-aligned columns after the first keep the same 8px padding as their header */
+    html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(2),
+    html[data-palette="green"] body table.data-table.rr-users > tbody > tr.rr-row > td.rr-c-email,
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(2),
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(3),
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-user,
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-book {
+        text-align: left !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    html[data-palette="green"] body table.data-table:is(.rr-users, .rr-borrow) > tbody > tr.rr-row > td.rr-c-act .rr-actions {
+        justify-content: center !important;
+    }
+
+    /* 761px to 1279px: percentages */
+    html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(1) { width: 28% !important; }
+    html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(2) { width: 18% !important; }
+    html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(3) { width: 18% !important; }
+    html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(4) { width: 16% !important; }
+    html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(5) { width: 20% !important; }
+
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(1) { width: 9% !important; }
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(2) { width: 20% !important; }
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(3) { width: 19% !important; }
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(4) { width: 17% !important; }
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(5) { width: 17% !important; }
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(6) { width: 18% !important; }
+}
+
+@media (min-width: 1280px) {
+    /* Users: Role = Status = Action (evenly spaced centres), User fixed range, Email the rest */
+    html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(1) { width: clamp(250px, 21vw, 340px) !important; }
+    html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(2) { width: auto !important; }
+    html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(3),
+    html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(4),
+    html[data-palette="green"] body table.data-table.rr-users > thead > tr > th:nth-child(5) { width: clamp(150px, 11.5vw, 200px) !important; }
+
+    /* Borrow Records: Dates = Status = Action, Record and User fixed ranges, Book the rest */
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(1) { width: clamp(90px, 6.5vw, 110px) !important; }
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(2) { width: clamp(200px, 17vw, 280px) !important; }
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(3) { width: auto !important; }
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(4),
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(5),
+    html[data-palette="green"] body table.data-table.rr-borrow > thead > tr > th:nth-child(6) { width: clamp(150px, 11vw, 190px) !important; }
+}
+
+/* ---- light colours (mockups 06 and 07) ---- */
+html[data-theme="light"][data-palette="green"] body table.data-table.rr-table .rr-avatar {
+    color: #0b4a37;
+    background: linear-gradient(160deg, rgba(214, 250, 234, 0.95), rgba(150, 226, 191, 0.6));
+    box-shadow: 0 0 0 1.5px rgba(23, 137, 95, 0.5), 0 8px 14px -8px rgba(15, 100, 76, 0.6), inset 0 1px 0 #fff;
+}
+
+html[data-theme="light"][data-palette="green"] body table.data-table.rr-table .rr-avatar.gold {
+    color: #6b4200;
+    background: linear-gradient(160deg, rgba(255, 240, 190, 0.98), rgba(250, 214, 120, 0.6));
+    box-shadow: 0 0 0 1.5px rgba(216, 154, 43, 0.65), 0 8px 14px -8px rgba(160, 110, 6, 0.6), inset 0 1px 0 #fff;
+}
+
+html[data-theme="light"][data-palette="green"] body table.data-table.rr-table .rr-avatar.teal {
+    color: #fff;
+    background: linear-gradient(135deg, #1c8058, #0f3b2f);
+    box-shadow: 0 0 0 1.5px rgba(216, 154, 43, 0.6), 0 8px 14px -8px rgba(15, 59, 47, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+html[data-theme="light"][data-palette="green"] body table.data-table.rr-table .rr-chip.teal {
+    color: #fff;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 52%), linear-gradient(135deg, #1c8058, #0f3b2f);
+    border-color: rgba(255, 255, 255, 0.35);
+    box-shadow: 0 0 0 1px rgba(216, 154, 43, 0.5), 0 8px 14px -8px rgba(15, 59, 47, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+html[data-theme="light"][data-palette="green"] body table.data-table.rr-users td.rr-c-email .rr-sub { color: #465e58; }
+html[data-theme="light"][data-palette="green"] body table.data-table.rr-users .rr-role-stack .rr-meta { color: #586d68; }
+html[data-theme="light"][data-palette="green"] body table.data-table.rr-table .rr-due small { color: #586d68; }
+html[data-theme="light"][data-palette="green"] body table.data-table.rr-borrow .rr-meta .borrower-history-inline-link { color: #1a6a52 !important; }
+
+/* detail labels: the admin.css green was 3.4:1 on the panel */
+html[data-theme="light"][data-palette="green"] body table.data-table.rr-borrow .rr-detail-panel .borrow-detail-grid strong {
+    color: #2f6352 !important;
+}
+
+html[data-theme="light"][data-palette="green"] body table.data-table.rr-borrow .rr-detail-panel {
+    background: linear-gradient(180deg, rgba(231, 248, 240, 0.92), rgba(220, 243, 233, 0.78));
+    box-shadow: 0 0 0 1px rgba(23, 137, 95, 0.2), 0 16px 24px -20px rgba(15, 59, 47, 0.55), inset 0 1px 0 #fff;
+}
+
+/* ---- dark colours (NOT approved; close to the current dark tables) ---- */
+html[data-theme="dark"][data-palette="green"] body table.data-table.rr-table .rr-avatar {
+    color: #89f2b6;
+    background: rgba(137, 242, 182, 0.16);
+    box-shadow: 0 0 0 1.5px rgba(137, 242, 182, 0.45);
+}
+
+html[data-theme="dark"][data-palette="green"] body table.data-table.rr-table .rr-avatar.gold {
+    color: #ffbe63;
+    background: rgba(255, 190, 99, 0.14);
+    box-shadow: 0 0 0 1.5px rgba(255, 190, 99, 0.45);
+}
+
+html[data-theme="dark"][data-palette="green"] body table.data-table.rr-table .rr-avatar.teal {
+    color: #fff;
+    background: linear-gradient(135deg, #1c8058, #0f3b2f);
+    box-shadow: 0 0 0 1.5px rgba(226, 178, 74, 0.7);
+}
+
+html[data-theme="dark"][data-palette="green"] body table.data-table.rr-table .rr-chip.teal {
+    color: #fff;
+    background: linear-gradient(135deg, #1c8058, #0f3b2f);
+    border-color: rgba(226, 178, 74, 0.7);
+}
+
+html[data-theme="dark"][data-palette="green"] body table.data-table.rr-users td.rr-c-email .rr-sub { color: #bccdc4; }
+html[data-theme="dark"][data-palette="green"] body table.data-table.rr-users .rr-role-stack .rr-meta { color: #a9c0b6; }
+html[data-theme="dark"][data-palette="green"] body table.data-table.rr-table .rr-due small { color: #a9c0b6; }
+html[data-theme="dark"][data-palette="green"] body table.data-table.rr-borrow .rr-meta .borrower-history-inline-link { color: #89f2b6 !important; }
+
+/* the existing dark Inactive pink was 4.4:1 on the row card: a lighter pink */
+html[data-theme="dark"][data-palette="green"] body table.data-table.rr-users .user-status-text.user-status-inactive {
+    color: #ffb3ba !important;
+}
+
+html[data-theme="dark"][data-palette="green"] body table.data-table.rr-borrow .rr-detail-panel .borrow-detail-grid strong {
+    color: #8fd9c1 !important;
+}
+
+html[data-theme="dark"][data-palette="green"] body table.data-table.rr-borrow .rr-detail-panel {
+    background: rgba(45, 201, 140, 0.07);
+    box-shadow: 0 0 0 1px rgba(45, 201, 140, 0.18);
+}
+
+/* ============================================================
    4. Phone layout (under 760px). UNAPPROVED sketch.
    Each row is a stacked card: book / id + status / category / actions.
    ============================================================ */
@@ -887,6 +1187,67 @@ html[data-theme="dark"][data-palette="green"] body table.data-table.rr-books .co
         flex: 1 1 0;
         min-width: 0;
         overflow-wrap: anywhere;
+    }
+}
+
+/* Phone cards for Users and Borrow Records (UNAPPROVED sketch). The row
+   grid, the per-theme accent bar on the row and the hidden thead come
+   from the shared rr-table phone rules above; only the areas differ. */
+@media (max-width: 760px) {
+    html[data-palette="green"] body table.data-table.rr-users > tbody > tr.rr-row {
+        grid-template-areas:
+            "user user"
+            "email email"
+            "role status"
+            "act act";
+    }
+
+    html[data-palette="green"] body table.data-table.rr-users > tbody > tr.rr-row > td.rr-c-user { grid-area: user; }
+    html[data-palette="green"] body table.data-table.rr-users > tbody > tr.rr-row > td.rr-c-email { grid-area: email; }
+    html[data-palette="green"] body table.data-table.rr-users > tbody > tr.rr-row > td.rr-c-role { grid-area: role; }
+    html[data-palette="green"] body table.data-table.rr-users > tbody > tr.rr-row > td.rr-c-status { grid-area: status; justify-self: end; align-self: start; }
+    html[data-palette="green"] body table.data-table.rr-users > tbody > tr.rr-row > td.rr-c-act { grid-area: act; }
+
+    html[data-palette="green"] body table.data-table.rr-users .rr-role-stack {
+        align-items: flex-start;
+    }
+
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row {
+        grid-template-areas:
+            "rec status"
+            "user user"
+            "book book"
+            "dates dates"
+            "act act";
+    }
+
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-rec { grid-area: rec; align-self: center; }
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-status { grid-area: status; justify-self: end; }
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-user { grid-area: user; }
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-book { grid-area: book; }
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-dates { grid-area: dates; }
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.rr-row > td.rr-c-act { grid-area: act; }
+
+    html[data-palette="green"] body table.data-table.rr-borrow .rr-due {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 10px;
+    }
+
+    html[data-palette="green"] body table.data-table.rr-borrow .rr-actions.rr-actions-stack {
+        flex-direction: row !important;
+        justify-content: flex-end !important;
+    }
+
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.borrow-detail-row:not([hidden]) {
+        display: block;
+        margin: -4px 0 12px;
+    }
+
+    html[data-palette="green"] body table.data-table.rr-borrow > tbody > tr.borrow-detail-row > td {
+        display: block;
+        padding: 0 !important;
     }
 }
 
