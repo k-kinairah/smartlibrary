@@ -446,7 +446,6 @@ html[data-theme="light"][data-palette="green"] .tb-report-link {
 
 html[data-theme="light"][data-palette="green"] body .filter-reset-btn,
 html[data-theme="light"][data-palette="green"] body .mb-pager-btn:not(.btn-primary),
-html[data-theme="light"][data-palette="green"] body .btn-secondary,
 html[data-theme="light"][data-palette="green"] body .btn-ghost {
     color: #1a4e42 !important;
     background: var(--g-sheen), linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.46)) !important;
@@ -486,15 +485,6 @@ html[data-theme="light"][data-palette="green"] body .borrow-action-icon-btn {
     background: var(--g-sheen), var(--g-chip) !important;
     border: 1px solid rgba(255, 255, 255, 0.95) !important;
     box-shadow: 0 0 0 1px rgba(26, 78, 66, 0.28), 0 8px 14px -8px rgba(15, 59, 47, 0.5), inset 0 1px 0 #fff !important;
-}
-
-html[data-theme="light"][data-palette="green"] body .book-copy-toggle-btn {
-    color: #1a4e42 !important;
-    font-weight: 700;
-    background: var(--g-sheen), var(--g-chip) !important;
-    border: 1px solid rgba(255, 255, 255, 0.95) !important;
-    border-radius: 999px !important;
-    box-shadow: 0 0 0 1px rgba(26, 78, 66, 0.22), 0 6px 12px -8px rgba(15, 59, 47, 0.45), inset 0 1px 0 #fff !important;
 }
 
 /* ============================================================

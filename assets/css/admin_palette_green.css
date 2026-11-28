@@ -592,13 +592,6 @@ html[data-palette="green"][data-theme="light"] .course-popularity-panel {
 
 /* Contrast fixes found by measuring the pilot (WCAG AA, 4.5:1 small text). */
 
-/* "Send Reminder" (dark): white on the bright #3fcf8e -> #1f9f68 pill was
-   2.0-2.6:1 -- it failed on the old blue theme too. Deeper greens from the
-   same family give 5.3:1+ (and stay above 4.5:1 under the hover brighten). */
-html[data-palette="green"][data-theme="dark"] .overdue-reminder-btn {
-    background: linear-gradient(180deg, #1d7a50 0%, #176240 100%) !important;
-    border-color: rgba(111, 224, 168, 0.5) !important;
-}
 
 /* Sidebar "Appearance" label (dark): 3.9:1 at 10.5px -> lifted sage. */
 html[data-palette="green"][data-theme="dark"] .theme-toggle-label {
@@ -764,7 +757,6 @@ html[data-palette="green"][data-theme="light"] .reports-card-body p,
 html[data-palette="green"][data-theme="light"] .arrival-activity-row .overdue-books-panel .panel-sub,
 html[data-palette="green"][data-theme="light"] .arrival-activity-row .live-activity-panel .panel-sub,
 html[data-palette="green"][data-theme="light"] .arrival-activity-row .panel-sub,
-html[data-palette="green"][data-theme="light"] .book-accession-hint,
 html[data-palette="green"][data-theme="light"] .reports-group-label,
 html[data-palette="green"][data-theme="light"] .reports-custom-sub,
 html[data-palette="green"][data-theme="light"] .reports-glance-note,
@@ -1101,9 +1093,7 @@ html[data-palette="green"][data-theme="light"] .copy-detail-status-borrowed {
    in the card-frame green (88% -- 3.2:1+ against white, so it reads as a
    real edge rather than a hairline). Text stays deep seal green. */
 html[data-palette="green"][data-theme="light"] .data-table thead th,
-html[data-palette="green"][data-theme="light"] .overdue-books-panel .overdue-preview-table thead th,
-html[data-palette="green"][data-theme="light"] .copy-detail-table thead th,
-html[data-palette="green"][data-theme="light"] .copy-detail-table th {
+html[data-palette="green"][data-theme="light"] .overdue-books-panel .overdue-preview-table thead th {
     background: #ffffff !important;
     color: #1f4c40 !important;
     border-bottom: 2px solid rgba(55, 135, 114, 0.88) !important;
@@ -1111,20 +1101,17 @@ html[data-palette="green"][data-theme="light"] .copy-detail-table th {
 
 /* Data rows: no zebra / tinted fills -- white throughout, except the
    existing hover highlight, which is left to show through. */
-html[data-palette="green"][data-theme="light"] .data-table tbody tr:not(:hover),
-html[data-palette="green"][data-theme="light"] .copy-detail-table tbody tr:not(:hover) {
+html[data-palette="green"][data-theme="light"] .data-table tbody tr:not(:hover) {
     background: #ffffff !important;
 }
 
 html[data-palette="green"][data-theme="light"] .data-table tbody td,
-html[data-palette="green"][data-theme="light"] .copy-detail-table tbody td,
 html[data-palette="green"][data-theme="light"] .book-copy-details-wrap {
     background: transparent !important;
 }
 
 /* A subtle 1px green divider between rows instead of alternating fills. */
-html[data-palette="green"][data-theme="light"] .data-table:not(.overdue-preview-table) tbody td,
-html[data-palette="green"][data-theme="light"] .copy-detail-table tbody td {
+html[data-palette="green"][data-theme="light"] .data-table:not(.overdue-preview-table) tbody td {
     border-top-color: transparent !important;
     border-bottom: 1px solid rgba(55, 135, 114, 0.22) !important;
 }
@@ -1638,7 +1625,6 @@ html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .reports
 
 /* Field labels on the report filter bar ("Report Period"): 4.1:1 on the
    gold-tinted period card. */
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .reports-filter-bar label,
 html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .reports-filters label {
     color: #d8eee6 !important;
 }
@@ -1818,8 +1804,7 @@ html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#boo
 }
 
 html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-more-pill,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-main-pill,
-html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] .manage-books-table .pp-cell-pill {
+html[data-palette="green"][data-theme="dark"][data-dark-variant="pine"] :is(#bookModal, #editBookModal, #userModal, #editUserModal) .pp-main-pill {
     border-color: rgba(232, 181, 74, 0.5);
     background: rgba(232, 181, 74, 0.14);
     color: #f7d98f;
